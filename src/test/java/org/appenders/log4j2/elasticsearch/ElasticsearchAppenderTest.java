@@ -29,20 +29,22 @@ package org.appenders.log4j2.elasticsearch;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 import org.apache.logging.log4j.message.Message;
-import org.appenders.log4j2.elasticsearch.BatchDelivery;
-import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
-import org.appenders.log4j2.elasticsearch.JestBatchDelivery;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
+
+import java.io.IOException;
 
 public class ElasticsearchAppenderTest {
 
@@ -72,15 +74,19 @@ public class ElasticsearchAppenderTest {
         builder.build();
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderFailsWhenLayoutIsNull() {
+    @Test
+    public void builderInitializesDefaultLayoutWhenLayoutIsNotProvided() throws IllegalAccessException {
 
         // given
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withLayout(null);
 
         // when
-        builder.build();
+        ElasticsearchAppender appender = builder.build();
+
+        // then
+        assertNotNull(PowerMockito.field(ElasticsearchAppender.class, "layout").get(appender));
+
     }
 
     @Test(expected = ConfigurationException.class)
@@ -123,11 +129,34 @@ public class ElasticsearchAppenderTest {
         assertEquals(testMessageString, captor.getValue());
     }
 
+
+    @Test
+    public void appenderUsesProvidedLayoutWhenMessageOnlyIsSetToFalse() throws IOException, NoSuchMethodException, SecurityException {
+
+        // given
+        AbstractStringLayout layout = PowerMockito.mock(AbstractStringLayout.class);
+
+        ElasticsearchAppender.Builder builder = ElasticsearchAppenderTest.createTestElasticsearchAppenderBuilder();
+        builder.withMessageOnly(false);
+        builder.withLayout(layout);
+
+        LogEvent logEvent = mock(LogEvent.class);
+
+        ElasticsearchAppender appender = builder.build();
+
+        // when
+        appender.append(logEvent);
+
+        // then
+        ArgumentCaptor<LogEvent> captor = ArgumentCaptor.forClass(LogEvent.class);
+        verify(layout, times(1)).toSerializable(captor.capture());
+        assertEquals(logEvent, captor.getValue());
+    }
+
     public static Builder createTestElasticsearchAppenderBuilder() {
         Builder builder = ElasticsearchAppender.newBuilder();
 
         builder.withName(TEST_APPENDER_NAME);
-        builder.withLayout(JsonLayout.createDefaultLayout());
         builder.withIgnoreExceptions(false);
         builder.withBatchDelivery(Mockito.mock(JestBatchDelivery.class));
         builder.withMessageOnly(false);

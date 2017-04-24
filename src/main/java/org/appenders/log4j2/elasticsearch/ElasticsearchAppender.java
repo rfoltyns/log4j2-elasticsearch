@@ -37,6 +37,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 
 @Plugin(name = ElasticsearchAppender.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
@@ -47,7 +48,7 @@ public class ElasticsearchAppender extends AbstractAppender {
     private BatchDelivery<String> batchDelivery;
     private boolean messageOnly;
 
-    protected ElasticsearchAppender(String name, JsonLayout layout,
+    protected ElasticsearchAppender(String name, AbstractStringLayout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly) {
         super(name, null, layout, ignoreExceptions);
         this.messageOnly = messageOnly;
@@ -70,8 +71,7 @@ public class ElasticsearchAppender extends AbstractAppender {
         private String name;
 
         @PluginElement("layout")
-        @Required(message = "No JsonLayout provided for Elasticsearch appender")
-        private JsonLayout layout;
+        private AbstractStringLayout layout;
 
         @PluginBuilderAttribute
         private boolean ignoreExceptions;
@@ -88,12 +88,14 @@ public class ElasticsearchAppender extends AbstractAppender {
             if (name == null) {
                 throw new ConfigurationException("No name provided for Elasticsearch appender");
             }
-            if (layout == null) {
-                throw new ConfigurationException("No layuot [JsonLayout] provided for Elasticsearch appender");
-            }
             if (batchDelivery == null) {
                 throw new ConfigurationException("No batchDelivery [JestBatchDelivery] provided for Elasticsearch appender");
             }
+
+            if (layout == null) {
+                layout = JsonLayout.newBuilder().setCompact(true).build();
+            }
+
             return new ElasticsearchAppender(name, layout, ignoreExceptions, batchDelivery, messageOnly);
         }
 
@@ -101,7 +103,7 @@ public class ElasticsearchAppender extends AbstractAppender {
             this.name = name;
         }
 
-        public void withLayout(JsonLayout layout) {
+        public void withLayout(AbstractStringLayout layout) {
             this.layout = layout;
         }
 
