@@ -32,10 +32,10 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
 @Plugin(name = "NoopFailoverPolicy", category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
-public class NoopFailoverPolicy implements FailoverPolicy {
+public class NoopFailoverPolicy implements FailoverPolicy<Object> {
 
     @Override
-    public void deliver(String failedEntry) {
+    public void deliver(Object failedDeliverable) {
         // noop
     }
 

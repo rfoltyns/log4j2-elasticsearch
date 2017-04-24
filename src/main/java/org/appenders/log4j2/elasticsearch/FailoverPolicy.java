@@ -27,10 +27,10 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-public interface FailoverPolicy {
+public interface FailoverPolicy<T> {
 
     String ELEMENT_TYPE = "failoverPolicy";
 
-    void deliver(String failedEntry);
+    void deliver(T failedDeliverable);
 
 }
