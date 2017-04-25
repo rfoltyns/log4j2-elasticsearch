@@ -58,6 +58,12 @@
             <version>2.8.0</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.2.0</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- TEST -->
         <dependency>

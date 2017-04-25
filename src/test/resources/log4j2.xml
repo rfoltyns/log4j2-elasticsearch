@@ -41,17 +41,16 @@
                 <NoopFailoverPolicy />
             </JestBatchDelivery>
         </Elasticsearch>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout
-                pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
-        </Console>
-    </Appenders>
-    <Loggers>
-        <Logger name="elasticsearch" additivity="false">
+        <Async name="asyncLogger">
             <AppenderRef ref="elasticsearchAsyncBatch" />
-        </Logger>
-        <Root level="info">
-            <AppenderRef ref="Console" />
-        </Root>
+        </Async>
+    </Appenders>
+
+    <Loggers>
+        <AsyncLogger name="elasticsearch" level="info" additivity="false">
+            <AppenderRef ref="asyncLogger" />
+        </AsyncLogger>
+        <Root level="info" />
     </Loggers>
+
 </Configuration>
