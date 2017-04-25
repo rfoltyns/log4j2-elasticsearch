@@ -29,6 +29,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import java.util.Observable;
 import java.util.Observer;
+import java.util.function.Function;
 
 import org.appenders.log4j2.elasticsearch.BulkEmitter;
 import org.junit.Test;
@@ -49,8 +50,8 @@ public class BulkEmitterTest {
         // given
         int batchSize = 3;
         BulkEmitter emitter = createTestBulkEmitter(batchSize, LARGE_TEST_INTERVAL);
-        Observer dummyObserver = dummyObserver();
-        emitter.addObserver(dummyObserver);
+        Function<Bulk, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
 
         // when
         for (int ii = 0; ii < batchSize; ii++) {
@@ -59,7 +60,7 @@ public class BulkEmitterTest {
 
         // then
         ArgumentCaptor<Bulk> captor = ArgumentCaptor.forClass(Bulk.class);
-        Mockito.verify(dummyObserver, Mockito.times(1)).update(Mockito.any(BulkEmitter.class), captor.capture());
+        Mockito.verify(dummyObserver, Mockito.times(1)).apply(captor.capture());
 
     }
 
@@ -68,8 +69,8 @@ public class BulkEmitterTest {
 
         // given
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, LARGE_TEST_INTERVAL);
-        Observer dummyObserver = dummyObserver();
-        emitter.addObserver(dummyObserver);
+        Function<Bulk, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
 
         int expectedNumberOfBatches = 4;
 
@@ -80,7 +81,7 @@ public class BulkEmitterTest {
 
         // then
         ArgumentCaptor<Bulk> captor = ArgumentCaptor.forClass(Bulk.class);
-        Mockito.verify(dummyObserver, Mockito.times(expectedNumberOfBatches)).update(Mockito.any(BulkEmitter.class), captor.capture());
+        Mockito.verify(dummyObserver, Mockito.times(expectedNumberOfBatches)).apply(captor.capture());
 
     }
 
@@ -88,13 +89,14 @@ public class BulkEmitterTest {
         return Mockito.spy(new BulkEmitter(batchSize, LARGE_TEST_INTERVAL));
     }
 
-    private Observer dummyObserver() {
-        return Mockito.spy(new Observer() {
-            @Override
-            public void update(Observable arg0, Object arg1) {
-                // dummy observer
-            }
-        });
+    private Function<Bulk, Boolean> dummyObserver() {
+        return Mockito.spy(new DummyListener());
     }
 
+    class DummyListener implements Function<Bulk, Boolean> {
+        @Override
+        public Boolean apply(Bulk arg1) {
+            return true;
+        }
+    }
 }

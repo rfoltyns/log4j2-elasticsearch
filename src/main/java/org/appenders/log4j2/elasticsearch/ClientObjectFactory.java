@@ -39,7 +39,7 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
 
     CLIENT_TYPE createClient();
 
-    Observer createBatchListener(FailoverPolicy failoverPolicy);
+    Function<BATCH_TYPE, Boolean> createBatchListener(FailoverPolicy failoverPolicy);
 
     Function<BATCH_TYPE, Boolean> createFailureHandler(FailoverPolicy failover);
 

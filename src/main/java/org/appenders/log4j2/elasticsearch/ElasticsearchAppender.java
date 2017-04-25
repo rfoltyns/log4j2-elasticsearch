@@ -77,7 +77,7 @@ public class ElasticsearchAppender extends AbstractAppender {
         private boolean ignoreExceptions;
 
         @PluginElement("batchDelivery")
-        @Required(message = "No BatchDelivery method provided for Elasticsearch appender")
+        @Required(message = "No BatchDelivery method provided for ElasticSearch appender")
         private BatchDelivery batchDelivery;
 
         @PluginBuilderAttribute

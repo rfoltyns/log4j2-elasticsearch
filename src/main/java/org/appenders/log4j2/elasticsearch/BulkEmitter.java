@@ -27,16 +27,16 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import java.util.Observable;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 
-public class BulkEmitter extends Observable {
+public class BulkEmitter {
 
     private final AtomicInteger size = new AtomicInteger();
 
@@ -46,9 +46,10 @@ public class BulkEmitter extends Observable {
     private final AtomicReference<Bulk.Builder> builder = new AtomicReference<>(new Bulk.Builder());
 
     private final Timer scheduler = new Timer();
+    private Function<Bulk, Boolean> listener;
 
     private final BuilderLock builderLock = new BuilderLock();
-    private final ObserverLock observerLock = new ObserverLock();
+    private final ListenerLock listenerLock = new ListenerLock();
 
     public BulkEmitter(int atSize, int intervalInMillis) {
         this.maxSize = atSize;
@@ -56,15 +57,13 @@ public class BulkEmitter extends Observable {
         this.scheduler.scheduleAtFixedRate(createNotificationTask(), 0, interval);
     }
 
-    @Override
-    public final void notifyObservers() {
+    public final void notifyListener() {
         if (size.get() == 0) {
             return;
         }
         this.size.set(0);
-        synchronized (observerLock) {
-            setChanged();
-            notifyObservers(builder.getAndSet(new Bulk.Builder()).build());
+        synchronized (listenerLock) {
+            listener.apply(builder.getAndSet(new Bulk.Builder()).build());
         }
     }
 
@@ -73,7 +72,7 @@ public class BulkEmitter extends Observable {
             builder.get().addAction(action);
         }
         if (size.incrementAndGet() >= maxSize) {
-            notifyObservers();
+            notifyListener();
         }
     }
 
@@ -81,15 +80,19 @@ public class BulkEmitter extends Observable {
         return new TimerTask() {
             @Override
             public void run() {
-                notifyObservers();
+                notifyListener();
             }
         };
+    }
+
+    public void addListener(Function<Bulk, Boolean> onReadyListener) {
+        this.listener = onReadyListener;
     }
 
     /*
      * Class used as monitor to increase lock visibility in profiling tools
      */
-    private class ObserverLock {
+    private class ListenerLock {
     }
 
     /*

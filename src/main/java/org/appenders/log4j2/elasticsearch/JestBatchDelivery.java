@@ -50,7 +50,7 @@ public class JestBatchDelivery implements BatchDelivery<String> {
     public JestBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory<JestClient, Bulk> objectFactory, FailoverPolicy failoverPolicy) {
         this.indexName = indexName;
         this.bulkEmitter = new BulkEmitter(batchSize, deliveryInterval);
-        this.bulkEmitter.addObserver(objectFactory.createBatchListener(failoverPolicy));
+        this.bulkEmitter.addListener(objectFactory.createBatchListener(failoverPolicy));
     }
 
     @Override

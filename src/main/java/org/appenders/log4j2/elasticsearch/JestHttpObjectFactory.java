@@ -88,17 +88,17 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     }
 
     @Override
-    public Observer createBatchListener(FailoverPolicy failoverPolicy) {
-        return new Observer() {
+    public Function<Bulk, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
+        return new Function<Bulk, Boolean>() {
 
             private Function<Bulk, Boolean> failureHandler = createFailureHandler(failoverPolicy);
             private JestClient client = createClient();
 
             @Override
-            public void update(Observable o, Object bulk) {
-                JestBatchIntrospector introspector = new JestBatchIntrospector();
-                JestResultHandler<JestResult> jestResultHandler = createResultHandler((Bulk) bulk, failureHandler);
-                client.executeAsync((Bulk) bulk, jestResultHandler);
+            public Boolean apply(Bulk bulk) {
+                JestResultHandler<JestResult> jestResultHandler = createResultHandler(bulk, failureHandler);
+                client.executeAsync(bulk, jestResultHandler);
+                return true;
             }
 
         };

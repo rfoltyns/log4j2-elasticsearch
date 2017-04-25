@@ -39,14 +39,9 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Observer;
 import java.util.function.Function;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
-import org.appenders.log4j2.elasticsearch.JestHttpObjectFactory;
-import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.JestHttpObjectFactory.Builder;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -161,7 +156,7 @@ public class JestHttpObjectFactoryTest {
     }
 
     @Test
-    public void clientIsCalledWhenObserverIsNotified() {
+    public void clientIsCalledWhenListenerIsNotified() {
 
         // given
         Builder builder = createTestObjectFactoryBuilder();
@@ -171,14 +166,14 @@ public class JestHttpObjectFactoryTest {
         when(config.createClient()).thenReturn(mockedJestClient);
 
         FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
-        Observer observer = config.createBatchListener(failoverPolicy);
+        Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
 
         String payload1 = "test1";
         String payload2 = "test2";
         Bulk bulk = createTestBatch(payload1, payload2);
 
         // when
-        observer.update(null, bulk);
+        listener.apply(bulk);
 
         // then
         ArgumentCaptor<Bulk> captor = ArgumentCaptor.forClass(Bulk.class);
