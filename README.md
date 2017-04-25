@@ -17,9 +17,13 @@ This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Ela
 ## Configurability
 
 ### Delivery frequency
-Delivery frequency can be adjusted via `JestBatchDelivery` attributes :
+Delivery frequency can be adjusted via `JestBatchDelivery` attributes:
 * `deliveryInterval` - millis between deliveries
-* `batchSize` - maximum (rough) number of undelivered logs
+* `batchSize` - maximum (rough) number of logs in one batch
+
+Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
+
+`deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
 
 ### Message output
 There are at least three ways to generate output
