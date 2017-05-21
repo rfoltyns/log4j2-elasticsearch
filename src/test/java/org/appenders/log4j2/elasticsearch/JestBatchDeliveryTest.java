@@ -33,11 +33,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.appenders.log4j2.elasticsearch.BatchDelivery;
-import org.appenders.log4j2.elasticsearch.BulkEmitter;
-import org.appenders.log4j2.elasticsearch.JestBatchDelivery;
-import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.JestBatchDelivery.Builder;
+import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery.Builder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -51,8 +47,8 @@ public class JestBatchDeliveryTest {
     private static final int TEST_DELIVERY_INTERVAL = 100;
     private static final String TEST_INDEX_NAME = "test_index";
     
-    public static JestBatchDelivery.Builder createTestBatchDeliveryBuilder() {
-        return spy(JestBatchDelivery.newBuilder()
+    public static AsyncBatchDelivery.Builder createTestBatchDeliveryBuilder() {
+        return spy(AsyncBatchDelivery.newBuilder()
                 .withIndexName(TEST_INDEX_NAME)
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
@@ -104,8 +100,8 @@ public class JestBatchDeliveryTest {
         BulkEmitter emitter = BulkEmitterTest.createTestBulkEmitter(
                 BulkEmitterTest.TEST_BATCH_SIZE, BulkEmitterTest.LARGE_TEST_INTERVAL);
 
-        JestBatchDelivery delivery = createTestBatchDeliveryBuilder().build();
-        PowerMockito.field(JestBatchDelivery.class, "bulkEmitter").set(delivery, emitter);
+        AsyncBatchDelivery delivery = createTestBatchDeliveryBuilder().build();
+        PowerMockito.field(AsyncBatchDelivery.class, "bulkEmitter").set(delivery, emitter);
 
         String testMessage = "test message";
 

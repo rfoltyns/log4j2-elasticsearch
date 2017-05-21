@@ -36,7 +36,6 @@ import static org.mockito.Mockito.verify;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
-import org.apache.logging.log4j.core.layout.JsonLayout;
 import org.apache.logging.log4j.message.Message;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.junit.Test;
@@ -158,7 +157,7 @@ public class ElasticsearchAppenderTest {
 
         builder.withName(TEST_APPENDER_NAME);
         builder.withIgnoreExceptions(false);
-        builder.withBatchDelivery(Mockito.mock(JestBatchDelivery.class));
+        builder.withBatchDelivery(Mockito.mock(AsyncBatchDelivery.class));
         builder.withMessageOnly(false);
 
         return builder;

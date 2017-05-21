@@ -35,31 +35,23 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
-import io.searchbox.client.JestClient;
-import io.searchbox.core.Bulk;
-import io.searchbox.core.Index;
-
-@Plugin(name = "JestBatchDelivery", category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
-public class JestBatchDelivery implements BatchDelivery<String> {
-
-    private static String ACTION_TYPE = "index";
+@Plugin(name = "AsyncBatchDelivery", category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
+public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     private final String indexName;
     private final BulkEmitter bulkEmitter;
+    private final BatchOperations batchOperations;
 
-    public JestBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory<JestClient, Bulk> objectFactory, FailoverPolicy failoverPolicy) {
+    public AsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy) {
         this.indexName = indexName;
-        this.bulkEmitter = new BulkEmitter(batchSize, deliveryInterval);
+        this.batchOperations = objectFactory.createBatchOperations();
+        this.bulkEmitter = new BulkEmitter(batchSize, deliveryInterval, this.batchOperations);
         this.bulkEmitter.addListener(objectFactory.createBatchListener(failoverPolicy));
     }
 
     @Override
     public void add(String logObject) {
-        this.bulkEmitter.add(
-                new Index.Builder(logObject)
-                .index(indexName)
-                .type(ACTION_TYPE)
-                .build());
+        this.bulkEmitter.add(batchOperations.createBatchItem(indexName, logObject));
     }
 
     @PluginBuilderFactory
@@ -67,18 +59,18 @@ public class JestBatchDelivery implements BatchDelivery<String> {
         return new Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<JestBatchDelivery> {
+    public static class Builder implements org.apache.logging.log4j.core.util.Builder<AsyncBatchDelivery> {
 
         public static final int DEFAULT_BATCH_SIZE = 1000;
         public static final int DEFAULT_DELIVERY_INTERVAL = 1000;
         public static final FailoverPolicy DEFAULT_FAILOVER_POLICY = new NoopFailoverPolicy();
 
         @PluginBuilderAttribute
-        @Required(message = "No indexName provided for JestBatchDelivery")
+        @Required(message = "No indexName provided for AsyncBatchDelivery")
         private String indexName;
 
         @PluginElement("elasticsearchClientFactory")
-        @Required(message = "No Elasticsearch client factory [JestHttp] provided for JestBatchDelivery")
+        @Required(message = "No Elasticsearch client factory [JestHttp] provided for AsyncBatchDelivery")
         private ClientObjectFactory clientObjectFactory;
 
         @PluginBuilderAttribute
@@ -91,14 +83,14 @@ public class JestBatchDelivery implements BatchDelivery<String> {
         private FailoverPolicy failoverPolicy = DEFAULT_FAILOVER_POLICY;
 
         @Override
-        public JestBatchDelivery build() {
+        public AsyncBatchDelivery build() {
             if (indexName == null) {
-                throw new ConfigurationException("No indexName provided for JestClientConfig");
+                throw new ConfigurationException("No indexName provided for AsyncBatch");
             }
             if (clientObjectFactory == null) {
-                throw new ConfigurationException("No Elasticsearch client factory [JestHttp] provided for JestBatchDelivery");
+                throw new ConfigurationException("No Elasticsearch client factory [JestHttp] provided for AsyncBatchDelivery");
             }
-            return new JestBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
+            return new AsyncBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
         }
 
         public Builder withIndexName(String indexName) {

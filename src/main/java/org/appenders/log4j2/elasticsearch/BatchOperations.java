@@ -26,21 +26,10 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+public interface BatchOperations<BATCH_TYPE> {
 
-import java.util.Collection;
-import java.util.function.Function;
+    Object createBatchItem(String indexName, Object source);
 
-public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
+    BatchBuilder<BATCH_TYPE> createBatchBuilder();
 
-    String ELEMENT_TYPE = "objectFactory";
-
-    Collection<String> getServerList();
-
-    CLIENT_TYPE createClient();
-
-    Function<BATCH_TYPE, Boolean> createBatchListener(FailoverPolicy failoverPolicy);
-
-    Function<BATCH_TYPE, Boolean> createFailureHandler(FailoverPolicy failover);
-
-    BatchOperations<BATCH_TYPE> createBatchOperations();
 }

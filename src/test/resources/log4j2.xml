@@ -30,16 +30,16 @@
     <Appenders>
         <Elasticsearch name="elasticsearchAsyncBatch">
             <JsonLayout compact="true" />
-            <JestBatchDelivery indexName="app_index"
-                               batchSize="2000"
-                               deliveryInterval="1000" >
+            <AsyncBatchDelivery indexName="log4j2"
+                               batchSize="10000"
+                               deliveryInterval="3000" >
                 <JestHttp serverUris="http://localhost:9200"
                     connTimeout="500"
                     readTimeout="5000"
                     maxTotalConnection="40"
                     defaultMaxTotalConnectionPerRoute="4" />
                 <NoopFailoverPolicy />
-            </JestBatchDelivery>
+            </AsyncBatchDelivery>
         </Elasticsearch>
         <Async name="asyncLogger">
             <AppenderRef ref="elasticsearchAsyncBatch" />

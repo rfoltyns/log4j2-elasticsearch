@@ -26,12 +26,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-import java.util.Observable;
-import java.util.Observer;
 import java.util.function.Function;
 
-import org.appenders.log4j2.elasticsearch.BulkEmitter;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -86,7 +82,7 @@ public class BulkEmitterTest {
     }
 
     public static BulkEmitter createTestBulkEmitter(int batchSize, int interval) {
-        return Mockito.spy(new BulkEmitter(batchSize, LARGE_TEST_INTERVAL));
+        return Mockito.spy(new BulkEmitter(batchSize, LARGE_TEST_INTERVAL, new JestBulkOperations()));
     }
 
     private Function<Bulk, Boolean> dummyObserver() {

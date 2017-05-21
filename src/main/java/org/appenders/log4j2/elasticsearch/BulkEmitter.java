@@ -33,43 +33,44 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import io.searchbox.action.BulkableAction;
-import io.searchbox.core.Bulk;
-
-public class BulkEmitter {
+public class BulkEmitter<BATCH_TYPE> {
 
     private final AtomicInteger size = new AtomicInteger();
 
     private final int maxSize;
     private final int interval;
+    private final BatchOperations<BATCH_TYPE> batchOperations;
 
-    private final AtomicReference<Bulk.Builder> builder = new AtomicReference<>(new Bulk.Builder());
+    private final AtomicReference<BatchBuilder<BATCH_TYPE>> builder;
 
     private final Timer scheduler = new Timer();
-    private Function<Bulk, Boolean> listener;
+    private Function<BATCH_TYPE, Boolean> listener;
 
-    private final BuilderLock builderLock = new BuilderLock();
     private final ListenerLock listenerLock = new ListenerLock();
+    private final BuilderLock builderLock = new BuilderLock();
 
-    public BulkEmitter(int atSize, int intervalInMillis) {
+    public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
         this.interval = intervalInMillis;
+        this.batchOperations = batchOperations;
+        this.builder = new AtomicReference<>(batchOperations.createBatchBuilder());
         this.scheduler.scheduleAtFixedRate(createNotificationTask(), 0, interval);
     }
 
     public final void notifyListener() {
-        if (size.get() == 0) {
-            return;
-        }
-        this.size.set(0);
         synchronized (listenerLock) {
-            listener.apply(builder.getAndSet(new Bulk.Builder()).build());
+            if (size.get() == 0) {
+                return;
+            }
+            this.size.set(0);
+            listener.apply(builder.getAndSet(batchOperations.createBatchBuilder()).build());
         }
     }
 
-    public void add(BulkableAction action) {
+    public void add(Object batchItem) {
+        // has to be synchronized until https://github.com/searchbox-io/Jest/issues/517 is resolved
         synchronized (builderLock) {
-            builder.get().addAction(action);
+            builder.get().add(batchItem);
         }
         if (size.incrementAndGet() >= maxSize) {
             notifyListener();
@@ -85,7 +86,7 @@ public class BulkEmitter {
         };
     }
 
-    public void addListener(Function<Bulk, Boolean> onReadyListener) {
+    public void addListener(Function<BATCH_TYPE, Boolean> onReadyListener) {
         this.listener = onReadyListener;
     }
 

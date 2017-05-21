@@ -89,7 +89,7 @@ public class ElasticsearchAppender extends AbstractAppender {
                 throw new ConfigurationException("No name provided for Elasticsearch appender");
             }
             if (batchDelivery == null) {
-                throw new ConfigurationException("No batchDelivery [JestBatchDelivery] provided for Elasticsearch appender");
+                throw new ConfigurationException("No batchDelivery [AsyncBatchDelivery] provided for Elasticsearch appender");
             }
 
             if (layout == null) {

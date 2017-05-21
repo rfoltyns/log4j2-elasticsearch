@@ -6,9 +6,9 @@ This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Ela
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
-        <JestBatchDelivery indexName="app_index">
+        <AsyncBatchDelivery indexName="log4j2">
             <JestHttp serverUris="http://localhost:9200" />
-        </JestBatchDelivery>
+        </AsyncBatchDelivery>
     </Elasticsearch>
 </Appenders>
 ```
@@ -17,7 +17,7 @@ This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Ela
 ## Configurability
 
 ### Delivery frequency
-Delivery frequency can be adjusted via `JestBatchDelivery` attributes:
+Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
 * `deliveryInterval` - millis between deliveries
 * `batchSize` - maximum (rough) number of logs in one batch
 
@@ -43,6 +43,7 @@ Jest uses Apache HTTP client. Basic configuration parameters were exposed via `J
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
 
 ### Compile
+Be aware that this project has following transitive dependencies:
 * Apache HTTP components
 * Google Guava
 * Gson

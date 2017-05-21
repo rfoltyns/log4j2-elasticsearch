@@ -26,21 +26,38 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import io.searchbox.action.BulkableAction;
+import io.searchbox.core.Bulk;
+import io.searchbox.core.Index;
 
-import java.util.Collection;
-import java.util.function.Function;
+public class JestBulkOperations implements BatchOperations<Bulk> {
 
-public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
+    private static String ACTION_TYPE = "index";
 
-    String ELEMENT_TYPE = "objectFactory";
+    @Override
+    public Object createBatchItem(String indexName, Object source) {
+        return new Index.Builder(source)
+                .index(indexName)
+                .type(ACTION_TYPE)
+                .build();
+    }
 
-    Collection<String> getServerList();
+    @Override
+    public BatchBuilder<Bulk> createBatchBuilder() {
+        return new BatchBuilder<Bulk>() {
 
-    CLIENT_TYPE createClient();
+            private final Bulk.Builder builder = new Bulk.Builder();
 
-    Function<BATCH_TYPE, Boolean> createBatchListener(FailoverPolicy failoverPolicy);
+            @Override
+            public void add(Object item) {
+                builder.addAction((BulkableAction)item);
+            }
 
-    Function<BATCH_TYPE, Boolean> createFailureHandler(FailoverPolicy failover);
+            @Override
+            public Bulk build() {
+                return builder.build();
+            }
+        };
+    }
 
-    BatchOperations<BATCH_TYPE> createBatchOperations();
 }

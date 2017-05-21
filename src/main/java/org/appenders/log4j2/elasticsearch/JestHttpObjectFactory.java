@@ -119,6 +119,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         };
     }
 
+    @Override
+    public BatchOperations<Bulk> createBatchOperations() {
+        return new JestBulkOperations();
+    }
+
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {
         return new JestResultHandler<JestResult>() {
             @Override
