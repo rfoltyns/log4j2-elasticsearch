@@ -2,7 +2,6 @@ package io.searchbox.core;
 
 /*-
  * #%L
- * log4j2-elasticsearch
  * %%
  * Copyright (C) 2017 Rafal Foltynski
  * %%
@@ -25,6 +24,7 @@ package io.searchbox.core;
  * THE SOFTWARE.
  * #L%
  */
+
 
 
 import java.util.List;

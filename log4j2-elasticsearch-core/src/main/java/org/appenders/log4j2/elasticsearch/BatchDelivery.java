@@ -2,7 +2,6 @@ package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
- * log4j2-elasticsearch
  * %%
  * Copyright (C) 2017 Rafal Foltynski
  * %%
@@ -25,6 +24,8 @@ package org.appenders.log4j2.elasticsearch;
  * THE SOFTWARE.
  * #L%
  */
+
+
 
 
 public interface BatchDelivery<T> {

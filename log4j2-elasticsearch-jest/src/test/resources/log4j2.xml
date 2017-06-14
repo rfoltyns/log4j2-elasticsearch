@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   #%L
-  log4j2-elasticsearch
   %%
   Copyright (C) 2017 Rafal Foltynski
   %%
@@ -24,6 +23,7 @@
   THE SOFTWARE.
   #L%
   -->
+
 
 <Configuration status="WARN">
 
