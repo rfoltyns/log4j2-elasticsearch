@@ -26,12 +26,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-
-
-import org.appenders.log4j2.elasticsearch.BatchEmitter;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
-
 public interface BatchEmitterFactory<T extends BatchEmitter> {
 
     boolean accepts(Class clientObjectFactoryClass);

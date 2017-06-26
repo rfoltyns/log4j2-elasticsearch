@@ -26,8 +26,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-
-
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.mockito.Mockito;
 

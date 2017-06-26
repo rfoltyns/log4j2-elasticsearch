@@ -25,8 +25,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;

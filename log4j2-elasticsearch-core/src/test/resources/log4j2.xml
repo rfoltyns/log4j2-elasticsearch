@@ -24,36 +24,12 @@
   #L%
   -->
 
-
-
 <Configuration status="WARN">
-
 
     <Appenders>
         <Console nam="CONSOLE" />
     </Appenders>
-    <!--    <Elasticsearch name="elasticsearchAsyncBatch">
-            <JsonLayout compact="true" />
-            <AsyncBatchDelivery indexName="log4j2"
-                               batchSize="10000"
-                               deliveryInterval="3000" >
-                <JestHttp serverUris="http://localhost:9200"
-                    connTimeout="500"
-                    readTimeout="5000"
-                    maxTotalConnection="40"
-                    defaultMaxTotalConnectionPerRoute="4" />
-                <NoopFailoverPolicy />
-            </AsyncBatchDelivery>
-        </Elasticsearch>
-        <Async name="asyncLogger">
-            <AppenderRef ref="elasticsearchAsyncBatch" />
-        </Async>
-    </Appenders>
--->
     <Loggers>
-   <!--     <AsyncLogger name="elasticsearch" level="info" additivity="false">
-            <AppenderRef ref="asyncLogger" />
-        </AsyncLogger>-->
         <Root level="info">
             <AppenderRef ref="asyncLogger" />
         </Root>

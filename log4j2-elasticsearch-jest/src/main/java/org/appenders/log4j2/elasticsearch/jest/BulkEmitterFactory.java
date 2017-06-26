@@ -26,7 +26,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.BulkEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;

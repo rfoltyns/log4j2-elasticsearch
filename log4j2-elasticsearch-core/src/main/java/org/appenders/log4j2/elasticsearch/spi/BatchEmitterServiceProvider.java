@@ -26,8 +26,6 @@ package org.appenders.log4j2.elasticsearch.spi;
  */
 
 
-
-
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.status.StatusLogger;
