@@ -1,10 +1,5 @@
-# log4j2-elaticsearch overview
-
-This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch cluster.
-
-Project consists of:
-* `log4j-elasticsearch-core` module - skeleton provider for conrete implementations
-* `log4j-elasticsearch-*` modules - concrete implementations using different clients (e.g.: Jest, BulkProcessor)
+# log4j2-elasticsearch-jest
+This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
 ### Example
 
@@ -17,6 +12,7 @@ Project consists of:
     </Elasticsearch>
 </Appenders>
 ```
+##### It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/src/test/resources/log4j2.xml) example.
 
 ## Configurability
 
@@ -38,7 +34,16 @@ There are at least three ways to generate output
 ### Failover
 Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
 
+### HTTP parameters
+Jest uses Apache HTTP client. Basic configuration parameters were exposed via `JestHttp` appender config element.
+
 ## Dependencies
 
 ### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+
+### Compile
+Be aware that this project has following transitive dependencies:
+* Apache HTTP components
+* Google Guava
+* Gson

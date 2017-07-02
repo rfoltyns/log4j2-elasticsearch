@@ -80,7 +80,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         private String indexName;
 
         @PluginElement("elasticsearchClientFactory")
-        @Required(message = "No Elasticsearch client factory [JestHttp] provided for AsyncBatchDelivery")
+        @Required(message = "No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
         private ClientObjectFactory clientObjectFactory;
 
         @PluginBuilderAttribute
@@ -98,7 +98,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                 throw new ConfigurationException("No indexName provided for AsyncBatchDelivery");
             }
             if (clientObjectFactory == null) {
-                throw new ConfigurationException("No Elasticsearch client factory [JestHttp] provided for AsyncBatchDelivery");
+                throw new ConfigurationException("No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
             }
             return new AsyncBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
         }

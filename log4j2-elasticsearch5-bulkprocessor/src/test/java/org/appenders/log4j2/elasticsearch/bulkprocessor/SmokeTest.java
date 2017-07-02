@@ -1,7 +1,8 @@
-package org.appenders.log4j2.elasticsearch.jest;
+package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 /*-
  * #%L
+ * log4j2-elasticsearch
  * %%
  * Copyright (C) 2017 Rafal Foltynski
  * %%
@@ -30,7 +31,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -52,7 +52,7 @@ public class SmokeTest {
         }
     }
 
-    public static void main(String[] args) throws InterruptedException, IOException {
+    public static void main(String[] args) throws InterruptedException {
 
         Logger logger = LogManager.getLogger("elasticsearch");
         AtomicInteger counter = new AtomicInteger();
@@ -72,11 +72,11 @@ public class SmokeTest {
             }).start();
         }
 
-        do {
+        while (latch.getCount() != 0) {
             sleep(1000);
             System.out.println("Added " + counter + " messages");
-        } while (latch.getCount() != 0);
-        sleep(5000);
+        }
+        sleep(10000);
 //        LogManager.shutdown();
     }
 }

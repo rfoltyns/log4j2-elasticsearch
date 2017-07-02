@@ -1,22 +1,19 @@
-# log4j2-elaticsearch overview
+# log4j2-elasticsearch-core
+Core provides a skeleton for `ClientObjectFactory` implementations: a set of interfaces and base classes to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
-This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch cluster.
+## Extensibility
 
-Project consists of:
-* `log4j-elasticsearch-core` module - skeleton provider for conrete implementations
-* `log4j-elasticsearch-*` modules - concrete implementations using different clients (e.g.: Jest, BulkProcessor)
+Main parts of the skeleton are:
+* `ClientObjectFactory` - provider of client-specific request classes, factories and error handlers
+* `BatchEmitter` - intermediate log collector which will trigger batch delivery as configured (see below).
 
-### Example
+### AsyncBatchDelivery
 
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        <AsyncBatchDelivery indexName="log4j2">
-            <JestHttp serverUris="http://localhost:9200" />
-        </AsyncBatchDelivery>
-    </Elasticsearch>
-</Appenders>
-```
+`AsyncBatchDelivery` uses `ClientObjectFactory` objects to produce client specific requests and deliver them to cluster via `BatchEmitter` implementations.
+
+### BatchEmitter
+
+`BatchEmitterFactory<T extends BatchEmitter>` implementations are located using `java.util.ServiceLoader`. `org.appenders.log4j2.elasticsearch.BulkEmitter` is the current default implementation.
 
 ## Configurability
 

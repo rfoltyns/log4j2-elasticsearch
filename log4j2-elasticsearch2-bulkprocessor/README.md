@@ -1,10 +1,5 @@
-# log4j2-elaticsearch overview
-
-This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch cluster.
-
-Project consists of:
-* `log4j-elasticsearch-core` module - skeleton provider for conrete implementations
-* `log4j-elasticsearch-*` modules - concrete implementations using different clients (e.g.: Jest, BulkProcessor)
+# Overview
+This log4j2 appender plugin uses Elasticsearch `org.elasticsearch.action.bulk.BulkProcessor` to push logs to Elasticsearch 2.x cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
 ### Example
 
@@ -12,11 +7,12 @@ Project consists of:
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
         <AsyncBatchDelivery indexName="log4j2">
-            <JestHttp serverUris="http://localhost:9200" />
+            <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300" />
         </AsyncBatchDelivery>
     </Elasticsearch>
 </Appenders>
 ```
+##### It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch2-bulkprocessor/src/test/resources/log4j2.xml) example.
 
 ## Configurability
 
@@ -42,3 +38,9 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 
 ### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+
+### Compile
+Be aware that this project has following transitive dependencies:
+* Netty 3.10.6.Final
+* Lucene 5.5.2
+* Elasticsearch 2.4.0
