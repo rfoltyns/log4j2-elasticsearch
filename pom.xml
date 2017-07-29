@@ -4,7 +4,7 @@
     <groupId>org.appenders.log4j</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <modules>
         <module>log4j2-elasticsearch-core</module>
         <module>log4j2-elasticsearch-jest</module>
