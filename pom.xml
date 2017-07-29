@@ -1,16 +1,27 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
     <version>1.0.0-SNAPSHOT</version>
-    <modules>
-        <module>log4j2-elasticsearch-core</module>
-        <module>log4j2-elasticsearch-jest</module>
-        <module>log4j2-elasticsearch2-bulkprocessor</module>
-        <module>log4j2-elasticsearch5-bulkprocessor</module>
-    </modules>
+    <name>appenders.org Parent</name>
+    <description>appenders.org Parent POM</description>
+
+    <url>https://github.com/rfoltyns/log4j2-elasticsearch</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Rafal Foltynski</name>
+            <email>r.foltynski@gmail.com</email>
+        </developer>
+    </developers>
 
     <scm>
         <url>https://github.com/rfoltyns/log4j2-elasticsearch</url>
@@ -34,6 +45,13 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
+
+    <modules>
+        <module>log4j2-elasticsearch-core</module>
+        <module>log4j2-elasticsearch-jest</module>
+        <module>log4j2-elasticsearch2-bulkprocessor</module>
+        <module>log4j2-elasticsearch5-bulkprocessor</module>
+    </modules>
 
     <reporting>
         <plugins>
@@ -88,7 +106,7 @@
                 <configuration>
                     <mavenExecutorId>forked-path</mavenExecutorId>
                     <useReleaseProfile>false</useReleaseProfile>
-                    <arguments>${arguments} -Psonatype-oss-release</arguments>
+                    <arguments>-Prelease</arguments>
                 </configuration>
             </plugin>
         </plugins>
