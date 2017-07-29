@@ -8,10 +8,9 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>log4j2-elasticsearch-bulkprocessor</artifactId>
-    <version>2.4.0-SNAPSHOT</version>
-    <name>log4j2-elasticsearch-bulkprocessor (for Elasticsearch 2.x)</name>
+    <artifactId>log4j2-elasticsearch2-bulkprocessor</artifactId>
+    <name>log4j2-elasticsearch2-bulkprocessor</name>
+    <description>Log4j2 Appender for Elasticsearch 5.x</description>
 
     <properties>
         <elasticsearch.version>2.4.0</elasticsearch.version>
