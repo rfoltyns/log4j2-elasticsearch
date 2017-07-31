@@ -1,8 +1,20 @@
 # Overview
 This log4j2 appender plugin uses Elasticsearch `org.elasticsearch.action.bulk.BulkProcessor` to push logs to Elasticsearch 2.x cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
+### Maven
+
+To use it, add this XML snippet to your `pom.xml` file:
+```xml
+<dependency>
+    <groupId>org.appenders.log4j</groupId>
+    <artifactId>log4j2-elasticsearch2-bulkprocessor</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
 ### Example
 
+Add this snippet to `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
@@ -36,11 +48,5 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 
 ## Dependencies
 
-### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
-
-### Compile
-Be aware that this project has following transitive dependencies:
-* Netty 3.10.6.Final
-* Lucene 5.5.2
-* Elasticsearch 2.4.0
+See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch2-bulkprocessor/latest) for a list of dependencies.

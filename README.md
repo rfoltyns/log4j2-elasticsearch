@@ -6,6 +6,11 @@ Project consists of:
 * `log4j-elasticsearch-core` module - skeleton provider for conrete implementations
 * `log4j-elasticsearch-*` modules - concrete implementations using different clients (e.g.: Jest, BulkProcessor)
 
+### Maven
+
+##### Released to [Sonatype OSS repos](https://oss.sonatype.org/content/repositories/releases/org/appenders/log4j/)
+Visit submodules' documentation or [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for XML snippets.
+
 ### Example
 
 ```xml
@@ -40,5 +45,5 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 
 ## Dependencies
 
-### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+Please visit [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for an overview of provided and compile dependencies

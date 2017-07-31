@@ -1,6 +1,19 @@
 # log4j2-elasticsearch-core
 Core provides a skeleton for `ClientObjectFactory` implementations: a set of interfaces and base classes to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
+### Maven
+
+To use it, add this XML snippet to your `pom.xml` file:
+```xml
+<dependency>
+    <groupId>org.appenders.log4j</groupId>
+    <artifactId>log4j2-elasticsearch-core</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+However, direct use of this library is required only in case of Log4j2 configuration with Java API or user-provided extensions. This library is in `compile` scope for `jest` and `bulkprocessor` implementations.
+
 ## Extensibility
 
 Main parts of the skeleton are:
@@ -37,5 +50,5 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 
 ## Dependencies
 
-### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch-core/latest) for a list of dependencies.

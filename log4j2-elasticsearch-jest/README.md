@@ -1,8 +1,20 @@
 # log4j2-elasticsearch-jest
 This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
+### Maven
+
+To use it, add this XML snippet to your `pom.xml` file:
+```xml
+<dependency>
+    <groupId>org.appenders.log4j</groupId>
+    <artifactId>log4j2-elasticsearch-jest</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
 ### Example
 
+Add this snippet to `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
@@ -12,7 +24,10 @@ This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Ela
     </Elasticsearch>
 </Appenders>
 ```
-##### It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/src/test/resources/log4j2.xml) example.
+
+or configure directly via Java API.
+
+##### It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.
 
 ## Configurability
 
@@ -39,11 +54,5 @@ Jest uses Apache HTTP client. Basic configuration parameters were exposed via `J
 
 ## Dependencies
 
-### Provided
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
-
-### Compile
-Be aware that this project has following transitive dependencies:
-* Apache HTTP components
-* Google Guava
-* Gson
+See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch-jest/latest) for a list of dependencies.
