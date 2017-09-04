@@ -25,9 +25,11 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
+/**
+ * Provides an interface over client-specific batch item implementations
+ *
+ * @param <T> type of introspected batch item
+ */
 public interface BatchItemIntrospector<T> {
 
     String getPayload(T introspected);

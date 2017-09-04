@@ -25,11 +25,38 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
+/**
+ * SPI for all {@link BatchEmitter} factories.
+ * <p>
+ * Instances of implementing classes are created by {@link org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider}
+ * using {@link java.util.ServiceLoader}.
+ * <p>
+ * Given that multiple factories might be available in runtime, {@link BatchEmitterFactory#accepts accepts()} can
+ * validate compatibility with {@link ClientObjectFactory}.
+ *
+ * @param <T> return type
+ */
 public interface BatchEmitterFactory<T extends BatchEmitter> {
 
-    boolean accepts(Class clientObjectFactoryClass);
+    /**
+     * Validates given {@link ClientObjectFactory} class
+     *
+     * @param clientObjectFactoryClass class implementing {@link ClientObjectFactory}
+     * @return true if this factory can produce a {@link BatchEmitter} compatible with given {@link
+     * ClientObjectFactory}, false otherwise
+     */
+    boolean accepts(Class<? extends ClientObjectFactory> clientObjectFactoryClass);
 
+    /**
+     * Creates an instance of {@link BatchEmitter}
+     *
+     * @param batchSize           number of elements in a current batch that should trigger a delivery, regardless of
+     *                            the deliveryInterval
+     * @param deliveryInterval    number of millis between two time-triggered deliveries, regardless of the batchSize
+     * @param clientObjectFactory client-specific objects provider
+     * @param failoverPolicy      sink for failed batch items
+     * @return T configured and {@link BatchEmitter}
+     */
     T createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy);
 
 }

@@ -25,12 +25,14 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
+/**
+ * An object that adds given items to the batch processor
+ *
+ * @param <T> type of accepted items
+ */
 public interface BatchDelivery<T> {
 
-    public static String ELEMENT_TYPE = "batchDelivery";
+    String ELEMENT_TYPE = "batchDelivery";
 
     void add(T logObject);
 

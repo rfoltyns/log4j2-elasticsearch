@@ -25,7 +25,6 @@ package org.appenders.log4j2.elasticsearch.spi;
  * #L%
  */
 
-
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.status.StatusLogger;
@@ -37,10 +36,29 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
+/**
+ * {@link BatchEmitterFactory} SPI loader.
+ */
 public class BatchEmitterServiceProvider {
 
     private static final Logger LOG = StatusLogger.getLogger();
 
+    /**
+     * Creates an instance of {@link BatchEmitter} using one of available {@link BatchEmitterFactory} services. A check
+     * for compatibility of given {@link ClientObjectFactory} with available services is performed.
+     * <p>
+     * NOTE: Currently the first found and compatible {@link BatchEmitterFactory} is selected as the {@link
+     * BatchEmitter} provider. This is subject to change after new config features are added in future releases (
+     * priority-based selection will be available to provide more flexible extension capabilities).
+     *
+     * @param batchSize           number of elements in a current batch that should trigger a delivery, regardless of
+     *                            the delivery interval value
+     * @param deliveryInterval    number of millis between two time-triggered deliveries, regardless of the batch size
+     *                            value
+     * @param clientObjectFactory client-specific objects provider
+     * @param failoverPolicy      sink for failed batch items
+     * @return T configured {@link BatchEmitter}
+     */
     public BatchEmitter createInstance(int batchSize,
                                        int deliveryInterval,
                                        ClientObjectFactory clientObjectFactory,

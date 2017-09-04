@@ -25,9 +25,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -37,6 +34,10 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 
+/**
+ * Uses {@link BatchEmitterFactory} SPI to get a {@link BatchEmitter} instance that will hold given items until interval
+ * or size conditions are met.
+ */
 @Plugin(name = "AsyncBatchDelivery", category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
 public class AsyncBatchDelivery implements BatchDelivery<String> {
 
@@ -55,6 +56,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                         failoverPolicy);
     }
 
+    /**
+     * Transforms given items to client-specific model and adds them to provided {@link BatchEmitter}
+     *
+     * @param logObject batch item source
+     */
     @Override
     public void add(String logObject) {
         this.batchEmitter.add(batchOperations.createBatchItem(indexName, logObject));
@@ -71,8 +77,19 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<AsyncBatchDelivery> {
 
+        /**
+         * Default: 1000
+         */
         public static final int DEFAULT_BATCH_SIZE = 1000;
+
+        /**
+         * Default: 1000
+         */
         public static final int DEFAULT_DELIVERY_INTERVAL = 1000;
+
+        /**
+         * Default: {@link NoopFailoverPolicy}
+         */
         public static final FailoverPolicy DEFAULT_FAILOVER_POLICY = new NoopFailoverPolicy();
 
         @PluginBuilderAttribute

@@ -25,15 +25,18 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+/**
+ * Time- and size-based batch scheduler. Uses provided {@link BatchOperations} implementation to produce batches and
+ * delivers them to provided listener.
+ *
+ * @param <BATCH_TYPE> type of processed batches
+ */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     private final AtomicInteger size = new AtomicInteger();
@@ -58,6 +61,9 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
         this.scheduler.scheduleAtFixedRate(createNotificationTask(), 0, interval);
     }
 
+    /**
+     * Delivers current batch to the listener if at least one item is waiting for delivery, no-op otherwise.
+     */
     public final void notifyListener() {
         synchronized (listenerLock) {
             if (size.get() == 0) {
@@ -68,6 +74,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
         }
     }
 
+    @Override
     public void add(Object batchItem) {
         // has to be synchronized until https://github.com/searchbox-io/Jest/issues/517 is resolved
         synchronized (builderLock) {
@@ -87,6 +94,12 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
         };
     }
 
+    /**
+     * Sets new batch listener. Currently only one listener may be set. However, since it's an extension point, this
+     * limitation can be overridden.
+     *
+     * @param onReadyListener batch-to-client handler
+     */
     public void addListener(Function<BATCH_TYPE, Boolean> onReadyListener) {
         this.listener = onReadyListener;
     }

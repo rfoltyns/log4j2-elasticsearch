@@ -25,13 +25,20 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
+/**
+ * Provides a failure handler interface. Implementation of this class MUST handle failed items gracefully.
+ *
+ * @param <T> type of batch item payload
+ */
 public interface FailoverPolicy<T> {
 
     String ELEMENT_TYPE = "failoverPolicy";
 
-    void deliver(T failedDeliverable);
+    /**
+     * SHOULD provide an alternate method of delivery
+     *
+     * @param failedPayload payload to be handled
+     */
+    void deliver(T failedPayload);
 
 }

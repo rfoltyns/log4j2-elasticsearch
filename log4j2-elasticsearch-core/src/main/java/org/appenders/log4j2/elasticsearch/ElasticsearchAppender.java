@@ -25,9 +25,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
@@ -41,6 +38,17 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 
+/**
+ * Plugin class responsible for delivery of incoming {@link LogEvent}(s) to {@link BatchDelivery} implementation.
+ * <p>
+ * Formatted message may be produced by
+ * <ul>
+ * <li> (default) {@code org.apache.logging.log4j.core.layout.JsonLayout.toSerializable(LogEvent)}
+ * <li> provided {@code org.apache.logging.log4j.core.layout.AbstractStringLayout.toSerializable(LogEvent)}
+ * <li> or {@code org.apache.logging.log4j.message.Message.getFormattedMessage()} (see {@link ElasticsearchAppender.Builder#withMessageOnly(boolean)}
+ * messageOnly})
+ * </ul>
+ */
 @Plugin(name = ElasticsearchAppender.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
 public class ElasticsearchAppender extends AbstractAppender {
 
@@ -104,10 +112,22 @@ public class ElasticsearchAppender extends AbstractAppender {
             this.name = name;
         }
 
+        /**
+         * Default: {@code org.apache.logging.log4j.core.layout.JsonLayout}
+         *
+         * @param layout layout to be used
+         */
         public void withLayout(AbstractStringLayout layout) {
             this.layout = layout;
         }
 
+        /**
+         * See {@code org.apache.logging.log4j.core.appender.AbstractAppender.ignoreExceptions}
+         * <p>
+         * Default: false
+         *
+         * @param ignoreExceptions whether to suppress exceptions or not
+         */
         public void withIgnoreExceptions(boolean ignoreExceptions) {
             this.ignoreExceptions = ignoreExceptions;
         }
@@ -116,6 +136,12 @@ public class ElasticsearchAppender extends AbstractAppender {
             this.batchDelivery = batchDelivery;
         }
 
+        /**
+         * Default: false
+         *
+         * @param messageOnly If true, formatted message will be produced by {@link org.apache.logging.log4j.message.Message#getFormattedMessage}.
+         *                    Otherwise, configured {@link AbstractStringLayout} will be used.
+         */
         public void withMessageOnly(boolean messageOnly) {
             this.messageOnly = messageOnly;
         }

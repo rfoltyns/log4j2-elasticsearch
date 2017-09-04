@@ -25,8 +25,11 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
+/**
+ * Allows to create client-specific batch objects
+ *
+ * @param <BATCH_TYPE> type of produced batches
+ */
 public interface BatchOperations<BATCH_TYPE> {
 
     Object createBatchItem(String indexName, Object source);

@@ -25,18 +25,18 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
+/**
+ * Default, no-op failure handler. Doesn't perform any action on failed item.
+ */
 @Plugin(name = "NoopFailoverPolicy", category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
 public class NoopFailoverPolicy implements FailoverPolicy<Object> {
 
     @Override
-    public void deliver(Object failedDeliverable) {
+    public void deliver(Object failedPayload) {
         // noop
     }
 

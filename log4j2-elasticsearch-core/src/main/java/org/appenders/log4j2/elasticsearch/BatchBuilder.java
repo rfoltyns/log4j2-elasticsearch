@@ -25,12 +25,25 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
+/**
+ * Allows to accumulate batch items before being delivered to client
+ *
+ * @param <BATCH_TYPE> produced batch request type
+ */
 public interface BatchBuilder<BATCH_TYPE> {
 
+    /**
+     * Adds given item to current batch
+     *
+     * @param item item to be delivered on the next delivery
+     */
     void add(Object item);
 
+    /**
+     * Creates a batch object
+     *
+     * @return send-ready batch object
+     */
     BATCH_TYPE build();
 
 }

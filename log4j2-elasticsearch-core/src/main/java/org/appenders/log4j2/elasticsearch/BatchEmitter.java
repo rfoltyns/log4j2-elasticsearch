@@ -25,9 +25,17 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
+/**
+ * Implementations of this class MUST provide a delivery mechanism for items added to client-specific batch object
+ * handler
+ *
+ * @param <T> type of accepted batch item
+ */
 public interface BatchEmitter<T> {
 
+    /**
+     * @param batchItem batch item to be processed
+     */
     void add(T batchItem);
 
 }

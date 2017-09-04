@@ -25,13 +25,19 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import java.util.Collection;
 
+/**
+ * Provides an interface over client-specific batch object implementations
+ *
+ * @param <T> type of introspected batch object
+ */
 public interface BatchIntrospector<T> {
 
+    /**
+     * @param introspected client-specific object that holds batch items
+     * @return collection of batch items
+     */
     Collection<String> items(T introspected);
 
 }
