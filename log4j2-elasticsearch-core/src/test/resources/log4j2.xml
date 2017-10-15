@@ -27,7 +27,7 @@
 <Configuration status="WARN">
 
     <Appenders>
-        <Console nam="CONSOLE" />
+        <Console name="CONSOLE" />
     </Appenders>
     <Loggers>
         <Root level="info">
