@@ -11,10 +11,10 @@ package org.appenders.log4j2.elasticsearch;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,6 +26,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
@@ -35,6 +36,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.filter.AbstractFilterable;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 
@@ -57,9 +59,9 @@ public class ElasticsearchAppender extends AbstractAppender {
     private BatchDelivery<String> batchDelivery;
     private boolean messageOnly;
 
-    protected ElasticsearchAppender(String name, AbstractStringLayout layout,
-            boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly) {
-        super(name, null, layout, ignoreExceptions);
+    protected ElasticsearchAppender(String name, AbstractStringLayout layout, Filter filter,
+                                    boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly) {
+        super(name, filter, layout, ignoreExceptions);
         this.messageOnly = messageOnly;
         this.batchDelivery = batchDelivery;
     }
@@ -73,7 +75,7 @@ public class ElasticsearchAppender extends AbstractAppender {
         return new Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<ElasticsearchAppender>  {
+    public static class Builder extends AbstractFilterable.Builder implements org.apache.logging.log4j.core.util.Builder<ElasticsearchAppender>  {
 
         @PluginBuilderAttribute
         @Required(message = "No name provided for Elasticsearch appender")
@@ -105,7 +107,7 @@ public class ElasticsearchAppender extends AbstractAppender {
                 layout = JsonLayout.newBuilder().setCompact(true).build();
             }
 
-            return new ElasticsearchAppender(name, layout, ignoreExceptions, batchDelivery, messageOnly);
+            return new ElasticsearchAppender(name, layout, getFilter(), ignoreExceptions, batchDelivery, messageOnly);
         }
 
         public void withName(String name) {
