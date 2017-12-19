@@ -26,6 +26,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
@@ -58,9 +59,9 @@ public class ElasticsearchAppender extends AbstractAppender {
     private boolean messageOnly;
     private IndexNameFormatter indexNameFormatter;
 
-    protected ElasticsearchAppender(String name, AbstractStringLayout layout,
+    protected ElasticsearchAppender(String name, Filter filter, AbstractStringLayout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
-        super(name, null, layout, ignoreExceptions);
+        super(name, filter, layout, ignoreExceptions);
         this.messageOnly = messageOnly;
         this.batchDelivery = batchDelivery;
         this.indexNameFormatter = indexNameFormatter;
@@ -86,6 +87,9 @@ public class ElasticsearchAppender extends AbstractAppender {
         @PluginBuilderAttribute
         @Required(message = "No name provided for Elasticsearch appender")
         private String name;
+
+        @PluginElement("filter")
+        private Filter filter;
 
         @PluginElement("layout")
         private AbstractStringLayout layout;
@@ -116,11 +120,15 @@ public class ElasticsearchAppender extends AbstractAppender {
                 layout = JsonLayout.newBuilder().setCompact(true).build();
             }
 
-            return new ElasticsearchAppender(name, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
+            return new ElasticsearchAppender(name, filter, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
         }
 
         public void withName(String name) {
             this.name = name;
+        }
+
+        public void withFilter(Filter filter) {
+            this.filter = filter;
         }
 
         /**

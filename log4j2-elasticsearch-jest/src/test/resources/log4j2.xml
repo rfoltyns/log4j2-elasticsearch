@@ -31,6 +31,7 @@
         <Console name="CONSOLE" />
         <Elasticsearch name="elasticsearchAsyncBatch">
             <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
+            <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
                 <JestHttp serverUris="http://localhost:9200"

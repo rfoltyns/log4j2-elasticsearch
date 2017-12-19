@@ -36,8 +36,10 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.message.Message;
@@ -195,6 +197,7 @@ public class ElasticsearchAppenderTest {
         Builder builder = ElasticsearchAppender.newBuilder();
 
         builder.withName(TEST_APPENDER_NAME);
+        builder.withFilter(ThresholdFilter.createFilter(Level.INFO, Filter.Result.ACCEPT, Filter.Result.DENY));
         builder.withIgnoreExceptions(false);
         builder.withBatchDelivery(mock(AsyncBatchDelivery.class));
         builder.withMessageOnly(false);
