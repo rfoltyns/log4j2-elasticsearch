@@ -33,7 +33,7 @@ import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.message.SimpleMessage;
 
 /**
- * Allows to redirect the failed logs to another appender.
+ * Allows to redirect failed logs to another appender.
  */
 @Plugin(name = "AppenderRefFailoverPolicy", category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
 public class AppenderRefFailoverPolicy implements FailoverPolicy<String> {
@@ -58,9 +58,9 @@ public class AppenderRefFailoverPolicy implements FailoverPolicy<String> {
     }
 
     /**
-     * Extension point
+     * Extension point - let's allow to customize e.g.: LogEvent type or any other param
      *
-     * @param failedPayload
+     * @param failedPayload payload to be handled
      */
     protected void doDeliver(String failedPayload) {
         appenderControl.callAppender(DefaultLogEventFactory.getInstance().createEvent(appenderRef.getRef(),

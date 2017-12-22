@@ -25,8 +25,6 @@ package io.searchbox.core;
  * #L%
  */
 
-
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +34,9 @@ import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 import io.searchbox.action.AbstractDocumentTargetedAction;
 import io.searchbox.action.JestActionIntrospector;
 
+/**
+ * Accesses {@link Bulk} non-private members
+ */
 public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
 
     private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector;

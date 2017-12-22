@@ -25,12 +25,13 @@ package io.searchbox.action;
  * #L%
  */
 
-
-
 import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 
 import io.searchbox.core.DocumentResult;
 
+/**
+ * Accesses {@link AbstractDocumentTargetedAction} non-private members.
+ */
 public class JestActionIntrospector implements BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> {
 
     @Override
