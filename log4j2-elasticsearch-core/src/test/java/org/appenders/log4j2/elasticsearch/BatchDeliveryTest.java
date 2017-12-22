@@ -53,7 +53,6 @@ public class BatchDeliveryTest {
 
     public static Builder createTestBatchDeliveryBuilder() {
         return spy(AsyncBatchDelivery.newBuilder()
-                .withIndexName(TEST_INDEX_NAME)
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
                 .withClientObjectFactory(createTestObjectFactoryBuilder().build()))
@@ -74,18 +73,6 @@ public class BatchDeliveryTest {
     }
 
     @Test(expected = ConfigurationException.class)
-    public void builderFailsWhenIndexNameIsNull() {
-
-        // given
-        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
-        batchDeliveryBuilder.withIndexName(null);
-
-        // when
-        batchDeliveryBuilder.build();
-
-    }
-
-    @Test(expected = ConfigurationException.class)
     public void builderFailsWhenClientObjectFactoryIsNull() {
 
         // given
@@ -94,6 +81,19 @@ public class BatchDeliveryTest {
 
         // when
         batchDeliveryBuilder.build();
+
+    }
+
+    @Test(expected = ConfigurationException.class)
+    public void deprecatedDeliveryFailsWhenIndexNameIsNull() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withIndexName(null);
+        BatchDelivery<String> delivery = batchDeliveryBuilder.build();
+
+        // when
+        delivery.add("testLog");
 
     }
 
@@ -121,7 +121,7 @@ public class BatchDeliveryTest {
         String testMessage = "test message";
 
         // when
-        delivery.add(testMessage);
+        delivery.add("testIndexName", testMessage);
 
         // then
         ArgumentCaptor<BulkEmitterTest.TestBatchItem> captor = ArgumentCaptor.forClass(BulkEmitterTest.TestBatchItem.class);

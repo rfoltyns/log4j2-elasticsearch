@@ -25,19 +25,23 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
-
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.message.Message;
+import org.apache.logging.log4j.message.SimpleMessage;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -104,7 +108,7 @@ public class ElasticsearchAppenderTest {
     public void appenderUsedFormattedMessageDirectlyWhenMessageOnlyIsSetToTrue() {
 
         // given
-        BatchDelivery<String> batchDelivery = Mockito.mock(BatchDelivery.class);
+        BatchDelivery<String> batchDelivery = mock(BatchDelivery.class);
 
         ElasticsearchAppender.Builder builder = ElasticsearchAppenderTest.createTestElasticsearchAppenderBuilder();
         builder.withMessageOnly(true);
@@ -112,11 +116,11 @@ public class ElasticsearchAppenderTest {
 
         String testMessageString = "formattedTestMessage";
 
-        Message message = Mockito.mock(Message.class);
-        Mockito.when(message.getFormattedMessage()).thenReturn(testMessageString);
+        Message message = mock(Message.class);
+        when(message.getFormattedMessage()).thenReturn(testMessageString);
 
-        LogEvent logEvent = Mockito.mock(LogEvent.class);
-        Mockito.when(logEvent.getMessage()).thenReturn(message);
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getMessage()).thenReturn(message);
 
         ElasticsearchAppender appender = builder.build();
 
@@ -125,10 +129,9 @@ public class ElasticsearchAppenderTest {
 
         // then
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        Mockito.verify(batchDelivery, times(1)).add(captor.capture());
+        verify(batchDelivery, times(1)).add(anyString(), captor.capture());
         assertEquals(testMessageString, captor.getValue());
     }
-
 
     @Test
     public void appenderUsesProvidedLayoutWhenMessageOnlyIsSetToFalse() throws IOException, NoSuchMethodException, SecurityException {
@@ -153,14 +156,52 @@ public class ElasticsearchAppenderTest {
         assertEquals(logEvent, captor.getValue());
     }
 
+    @Test
+    public void appenderUsesProvidedIndexNameFormatter() throws IOException, NoSuchMethodException, SecurityException {
+
+        // given
+        BatchDelivery<String> batchDelivery = mock(BatchDelivery.class);
+        IndexNameFormatter indexNameFormatter = mock(IndexNameFormatter.class);
+        when(indexNameFormatter.format(any(LogEvent.class))).thenReturn("formattedIndexName");
+
+        ElasticsearchAppender.Builder builder = ElasticsearchAppenderTest.createTestElasticsearchAppenderBuilder();
+        builder.withBatchDelivery(batchDelivery);
+        builder.withMessageOnly(false);
+        builder.withIndexNameFormatter(indexNameFormatter);
+
+        LogEvent logEvent = createTestLogEvent();
+
+        ElasticsearchAppender appender = builder.build();
+
+        // when
+        appender.append(logEvent);
+
+        // then
+        verify(batchDelivery, times(1)).add(eq("formattedIndexName"), anyString());
+    }
+
+    private LogEvent createTestLogEvent() {
+        return DefaultLogEventFactory.getInstance().createEvent("testLogger",
+                null,
+                getClass().getName(),
+                Level.INFO,
+                new SimpleMessage("testMessage"),
+                null,
+                null);
+
+    }
+
     public static Builder createTestElasticsearchAppenderBuilder() {
         Builder builder = ElasticsearchAppender.newBuilder();
 
         builder.withName(TEST_APPENDER_NAME);
         builder.withIgnoreExceptions(false);
-        builder.withBatchDelivery(Mockito.mock(AsyncBatchDelivery.class));
+        builder.withBatchDelivery(mock(AsyncBatchDelivery.class));
         builder.withMessageOnly(false);
 
+        IndexNameFormatter indexNameFormatter = mock(IndexNameFormatter.class);
+        when(indexNameFormatter.format(any(LogEvent.class))).thenReturn("testIndexName");
+        builder.withIndexNameFormatter(indexNameFormatter);
         return builder;
     }
 }

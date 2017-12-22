@@ -56,16 +56,19 @@ public class ElasticsearchAppender extends AbstractAppender {
 
     private BatchDelivery<String> batchDelivery;
     private boolean messageOnly;
+    private IndexNameFormatter indexNameFormatter;
 
     protected ElasticsearchAppender(String name, AbstractStringLayout layout,
-            boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly) {
+            boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
         super(name, null, layout, ignoreExceptions);
         this.messageOnly = messageOnly;
         this.batchDelivery = batchDelivery;
+        this.indexNameFormatter = indexNameFormatter;
     }
 
     public void append(LogEvent event) {
-        batchDelivery.add(messageOnly ? event.getMessage().getFormattedMessage() : (String) getLayout().toSerializable(event));
+        String formattedIndexName = indexNameFormatter.format(event);
+        batchDelivery.add(formattedIndexName, messageOnly ? event.getMessage().getFormattedMessage() : (String) getLayout().toSerializable(event));
     }
 
     @PluginBuilderFactory
@@ -74,6 +77,11 @@ public class ElasticsearchAppender extends AbstractAppender {
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<ElasticsearchAppender>  {
+
+        /**
+         * Default: {@link NoopIndexNameFormatter}
+         */
+        public static final IndexNameFormatter DEFAULT_INDEX_NAME_FORMATTER = NoopIndexNameFormatter.newBuilder().withIndexName("log4j2").build();
 
         @PluginBuilderAttribute
         @Required(message = "No name provided for Elasticsearch appender")
@@ -92,6 +100,9 @@ public class ElasticsearchAppender extends AbstractAppender {
         @PluginBuilderAttribute
         private boolean messageOnly;
 
+        @PluginElement("indexNameFormatter")
+        private IndexNameFormatter indexNameFormatter = DEFAULT_INDEX_NAME_FORMATTER;
+
         @Override
         public ElasticsearchAppender build() {
             if (name == null) {
@@ -105,7 +116,7 @@ public class ElasticsearchAppender extends AbstractAppender {
                 layout = JsonLayout.newBuilder().setCompact(true).build();
             }
 
-            return new ElasticsearchAppender(name, layout, ignoreExceptions, batchDelivery, messageOnly);
+            return new ElasticsearchAppender(name, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
         }
 
         public void withName(String name) {
@@ -146,5 +157,9 @@ public class ElasticsearchAppender extends AbstractAppender {
             this.messageOnly = messageOnly;
         }
 
+        public Builder withIndexNameFormatter(IndexNameFormatter indexNameFormatter) {
+            this.indexNameFormatter = indexNameFormatter;
+            return this;
+        }
     }
 }

@@ -30,18 +30,17 @@
     <Appenders>
         <Console name="CONSOLE" />
         <Elasticsearch name="elasticsearchAsyncBatch">
-            <JsonLayout compact="true" />
-            <AsyncBatchDelivery indexName="log4j2"
-                               batchSize="10000"
+            <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
+            <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
                 <JestHttp serverUris="http://localhost:9200"
                     connTimeout="500"
                     readTimeout="5000"
                     maxTotalConnection="40"
                     defaultMaxTotalConnectionPerRoute="4" />
-                <AppenderRefFailoverPolicy>
-                    <AppenderRef ref="CONSOLE" />
-                </AppenderRefFailoverPolicy>
+                    <!--<AppenderRefFailoverPolicy>
+                        <AppenderRef ref="CONSOLE" />
+                    </AppenderRefFailoverPolicy>-->
             </AsyncBatchDelivery>
         </Elasticsearch>
         <Async name="asyncLogger">
