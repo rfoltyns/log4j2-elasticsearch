@@ -1,4 +1,4 @@
-package org.apache.logging.log4j.core.util.datetime;
+package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.rolling.PatternProcessor;
@@ -8,7 +8,7 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
+import org.apache.logging.log4j.core.util.datetime.FastDateFormat;
 
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
