@@ -1,0 +1,41 @@
+{
+  "template": "log4j*",
+  "settings": {
+    "index": {
+      "refresh_interval": "5s"
+    }
+  },
+  "mappings": {
+    "_default_": {
+      "dynamic_templates": [
+        {
+          "strings": {
+            "mapping": {
+              "type": "string"
+            },
+            "match_mapping_type": "string",
+            "match": "*"
+          }
+        },
+	{
+          "integers": {
+            "mapping": {
+              "type": "integer"
+            },
+            "match_mapping_type": "long",
+            "match": "*"
+          }
+        }
+      ],
+      "_all": {
+        "enabled": false
+      },
+      "properties": {
+        "timeMillis": {
+          "type": "date",
+          "format": "epoch_millis"
+        }
+      }
+    }
+  }
+}

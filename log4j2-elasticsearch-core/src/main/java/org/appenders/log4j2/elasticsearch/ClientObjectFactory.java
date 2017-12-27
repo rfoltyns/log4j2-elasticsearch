@@ -73,4 +73,10 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
      * @return batch items creator
      */
     BatchOperations<BATCH_TYPE> createBatchOperations();
+
+    /**
+     * Updates target with index template
+     */
+    void execute(IndexTemplate indexTemplate);
+
 }

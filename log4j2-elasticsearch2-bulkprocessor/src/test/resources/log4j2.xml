@@ -30,9 +30,10 @@
     <Appenders>
         <Elasticsearch name="elasticsearchAsyncBatch">
             <JsonLayout compact="true" />
-            <IndexName indexName="log4j2_test" />
+            <IndexName indexName="log4j2_test_es2" />
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="1000" >
+                <IndexTemplate name="test_template_es2" path="classpath:indexTemplate.json" />
                 <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300" />
                 <NoopFailoverPolicy />
             </AsyncBatchDelivery>

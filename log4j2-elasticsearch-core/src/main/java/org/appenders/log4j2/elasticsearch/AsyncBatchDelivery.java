@@ -49,7 +49,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
     private final BatchOperations batchOperations;
     private final BatchEmitter batchEmitter;
 
-    public AsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy) {
+    public AsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
         this.indexName = indexName;
         this.batchOperations = objectFactory.createBatchOperations();
         this.batchEmitter = createBatchEmitterServiceProvider()
@@ -58,6 +58,9 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                         deliveryInterval,
                         objectFactory,
                         failoverPolicy);
+        if (indexTemplate != null) {
+            objectFactory.execute(indexTemplate);
+        }
     }
 
     /**
@@ -127,6 +130,9 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         @PluginElement("failoverPolicy")
         private FailoverPolicy failoverPolicy = DEFAULT_FAILOVER_POLICY;
 
+        @PluginElement("indexTemplate")
+        private IndexTemplate indexTemplate;
+
         @Override
         public AsyncBatchDelivery build() {
             if (indexName != null) {
@@ -138,7 +144,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             if (clientObjectFactory == null) {
                 throw new ConfigurationException("No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
             }
-            return new AsyncBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
+            return new AsyncBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy, indexTemplate);
         }
 
         /**
@@ -173,6 +179,10 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             return this;
         }
 
+        public Builder withIndexTemplate(IndexTemplate indexTemplate) {
+            this.indexTemplate = indexTemplate;
+            return this;
+        }
     }
 
 }

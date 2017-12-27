@@ -27,9 +27,13 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 
+import io.searchbox.indices.template.PutTemplate;
+import io.searchbox.indices.template.TemplateAction;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -44,12 +48,16 @@ import io.searchbox.client.JestResultHandler;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.JestBatchIntrospector;
+import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 
 @Plugin(name = "JestHttp", category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bulk> {
+
+    private static Logger LOG = StatusLogger.getLogger();
 
     private final Collection<String> serverUris;
     private final int connTimeout;
@@ -57,6 +65,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final int maxTotalConnections;
     private final int defaultMaxTotalConnectionsPerRoute;
     private final boolean discoveryEnabled;
+
+    private JestClient client;
 
     protected JestHttpObjectFactory(Collection<String> serverUris, int connTimeout, int readTimeout, int maxTotalConnections, int defaultMaxTotalConnectionPerRoute, boolean discoveryEnabled) {
         this.serverUris = serverUris;
@@ -74,19 +84,22 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     @Override
     public JestClient createClient() {
-        JestClientFactory factory = new JestClientFactory();
+        if (client == null) {
+            JestClientFactory factory = new JestClientFactory();
 
-        HttpClientConfig.Builder builder = new HttpClientConfig.Builder(serverUris);
-        builder.maxTotalConnection(maxTotalConnections);
-        builder.defaultMaxTotalConnectionPerRoute(defaultMaxTotalConnectionsPerRoute);
-        builder.connTimeout(connTimeout);
-        builder.readTimeout(readTimeout);
-        builder.discoveryEnabled(discoveryEnabled);
-        builder.multiThreaded(true);
+            HttpClientConfig.Builder builder = new HttpClientConfig.Builder(serverUris);
+            builder.maxTotalConnection(maxTotalConnections);
+            builder.defaultMaxTotalConnectionPerRoute(defaultMaxTotalConnectionsPerRoute);
+            builder.connTimeout(connTimeout);
+            builder.readTimeout(readTimeout);
+            builder.discoveryEnabled(discoveryEnabled);
+            builder.multiThreaded(true);
 
-        factory.setHttpClientConfig(builder.build());
+            factory.setHttpClientConfig(builder.build());
 
-        return factory.getObject();
+            client = factory.getObject();
+        }
+        return client;
     }
 
     @Override
@@ -124,6 +137,19 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
         return new JestBulkOperations();
+    }
+
+    @Override
+    public void execute(IndexTemplate indexTemplate) {
+        TemplateAction templateAction = new PutTemplate.Builder(indexTemplate.getName(), indexTemplate.getSource()).build();
+        try {
+            JestResult result = createClient().execute(templateAction);
+            if (!result.isSucceeded()) {
+                LOG.error("Unable to add index template. " + result.getErrorMessage());
+            }
+        } catch (IOException e) {
+            LOG.error("Unable to add index template", e);
+        }
     }
 
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {

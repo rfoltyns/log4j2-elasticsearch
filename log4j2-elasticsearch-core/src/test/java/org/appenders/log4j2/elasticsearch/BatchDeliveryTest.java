@@ -34,6 +34,8 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
+import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -56,7 +58,8 @@ public class BatchDeliveryTest {
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
                 .withClientObjectFactory(createTestObjectFactoryBuilder().build()))
-                .withFailoverPolicy(new NoopFailoverPolicy());
+                .withFailoverPolicy(new NoopFailoverPolicy())
+                .withIndexTemplate(new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH));
     }
 
     @Test
@@ -113,7 +116,8 @@ public class BatchDeliveryTest {
                 TEST_BATCH_SIZE,
                 TEST_DELIVERY_INTERVAL,
                 objectFactory,
-                new NoopFailoverPolicy()));
+                new NoopFailoverPolicy(),
+                null));
         Mockito.when(builder.build()).thenReturn(testAsyncBatchDelivery);
 
         AsyncBatchDelivery delivery = builder.build();
@@ -130,12 +134,33 @@ public class BatchDeliveryTest {
         assertEquals(testMessage, captor.getValue().getData(null));
     }
 
+    @Test
+    public void batchDeliveryExecutesIndexTemplateDuringStartupWhenIndexTemplatesNotNull() {
+
+        // given
+        TestBatchEmitterFactory batchEmitterFactory = spy(new TestBatchEmitterFactory());
+        TestAsyncBatchDelivery.mockedProvider = batchEmitterFactory;
+
+        TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+        IndexTemplate testIndexTemplate = spy(new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH));
+
+        new TestAsyncBatchDelivery(TEST_INDEX_NAME,
+                TEST_BATCH_SIZE,
+                TEST_DELIVERY_INTERVAL,
+                objectFactory,
+                new NoopFailoverPolicy(),
+                testIndexTemplate);
+
+        // then
+        Mockito.verify(objectFactory, times(1)).execute(eq(testIndexTemplate));
+    }
+
     private static class TestAsyncBatchDelivery extends AsyncBatchDelivery {
 
         public static BatchEmitterServiceProvider mockedProvider;
 
-        public TestAsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy) {
-            super(indexName, batchSize, deliveryInterval, objectFactory, failoverPolicy);
+        public TestAsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
+            super(indexName, batchSize, deliveryInterval, objectFactory, failoverPolicy, indexTemplate);
         }
 
         @Override
