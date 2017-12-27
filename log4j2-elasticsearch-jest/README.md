@@ -18,7 +18,8 @@ Add this snippet to `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
-        <AsyncBatchDelivery indexName="log4j2">
+        <IndexName indexName="log4j2" />
+        <AsyncBatchDelivery>
             <JestHttp serverUris="http://localhost:9200" />
         </AsyncBatchDelivery>
     </Elasticsearch>
@@ -39,6 +40,71 @@ Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
 Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
 
 `deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
+
+### Index name
+Since 1.1, index name can be defined using `IndexName` tag:
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <IndexName indexName="log4j2" />
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+### Index rollover
+Since 1.1, rolling index can be defined using `RollingIndexName` tag:
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <!-- zone is optional. "UTC" is used by default -->
+        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" zone="Europe/Warsaw" />
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+`pattern` accepts any valid date pattern with years down to millis (although rolling daily or weekly should be sufficient for most use cases)
+`IndexName` and `RollingIndexName` are mutually exclusive. Only one per appender should be defined, otherwise they'll override each other.
+
+### Index template
+Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be created during appender startup. Template can be loaded from specified file or defined directly in the XML config:
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <IndexTemplate name="template1" path="<absolute_path_or_classpath>" />
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+or
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <IndexTemplate name="template1" >
+            {
+                // your index template in JSON format
+            }
+            </IndexTemplate>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+NOTE: Be aware that template parsing errors on cluster side DO NOT prevent plugin from loading - error is logged on client side and startup continues.
 
 ### Message output
 There are at least three ways to generate output
