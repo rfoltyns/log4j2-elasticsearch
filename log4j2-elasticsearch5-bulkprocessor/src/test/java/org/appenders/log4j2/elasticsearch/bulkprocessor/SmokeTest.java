@@ -28,6 +28,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,6 +39,11 @@ import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 
 public class SmokeTest {
+
+    @BeforeClass
+    public static void beforeClass() {
+        System.setProperty("log4j.configurationFile", "log4j2.xml");
+    }
 
     @Test
     public void initializeLogger() {
@@ -52,6 +58,8 @@ public class SmokeTest {
     }
 
     public static void main(String[] args) throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2.xml");
 
         Logger logger = LogManager.getLogger("elasticsearch");
         AtomicInteger counter = new AtomicInteger();
