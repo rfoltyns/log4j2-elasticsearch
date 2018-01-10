@@ -109,7 +109,7 @@ public class RollingIndexNameFormatter implements IndexNameFormatter {
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<RollingIndexNameFormatter> {
 
-        public static final String DEFAULT_TIME_ZONE = "UTC";
+        public static final String DEFAULT_TIME_ZONE = TimeZone.getDefault().getID();
 
         @PluginBuilderAttribute
         @Required(message = "No indexName provided for RollingIndexName")

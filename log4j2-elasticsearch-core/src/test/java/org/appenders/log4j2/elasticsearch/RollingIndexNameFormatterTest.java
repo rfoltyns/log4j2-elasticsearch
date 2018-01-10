@@ -8,7 +8,15 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
@@ -26,8 +34,14 @@ public class RollingIndexNameFormatterTest {
 
     private static final String TEST_INDEX_NAME = "testIndexName";
     private static final String DATE_PATTERN_WITH_MINUTES = "yyyy-MM-dd-HH.mm";
-    private static final long DEFAULT_TEST_TIME_IN_MILLIS = 1513792440000L;
     private static final TimeZone TEST_TIME_ZONE = TimeZone.getTimeZone(RollingIndexNameFormatter.Builder.DEFAULT_TIME_ZONE);
+    private static final long DEFAULT_TEST_TIME_IN_MILLIS = getTestTimeInMillis();
+
+    private static long getTestTimeInMillis() {
+        return LocalDateTime.of(2017, 12, 20, 23, 54, 0, 0)
+                .atZone(ZoneId.of(RollingIndexNameFormatter.Builder.DEFAULT_TIME_ZONE))
+                .toInstant().toEpochMilli();
+    }
 
     public static RollingIndexNameFormatter.Builder createRollingIndexNameFormatterBuilder() {
 
@@ -37,7 +51,7 @@ public class RollingIndexNameFormatterTest {
 
         builder.withIndexName(TEST_INDEX_NAME);
         builder.withPattern(DATE_PATTERN_WITH_MINUTES);
-        builder.withTimeZone("UTC");
+        builder.withTimeZone(TEST_TIME_ZONE.getID());
         return builder;
     }
 
@@ -87,7 +101,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-17.54", formattedIndexName);
+        Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
     }
 
 
@@ -96,7 +110,7 @@ public class RollingIndexNameFormatterTest {
 
         // given
         LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.MINUTES.toMillis(1));
+        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.HOURS.toMillis(1));
 
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
@@ -104,7 +118,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-17.55", formattedIndexName);
+        Assert.assertEquals("testIndexName-2017-12-21-00.54", formattedIndexName);
     }
 
     @Test
@@ -112,7 +126,7 @@ public class RollingIndexNameFormatterTest {
 
         // given
         LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS - TimeUnit.MINUTES.toMillis(1));
+        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS - TimeUnit.HOURS.toMillis(1));
 
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
@@ -120,7 +134,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-17.53", formattedIndexName);
+        Assert.assertEquals("testIndexName-2017-12-20-22.54", formattedIndexName);
     }
 
 
@@ -163,7 +177,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-17.55", formattedIndexName);
+        Assert.assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
         countDownLatch.await();
         Assert.assertEquals(testNextTimeResult, ((RollingIndexNameFormatter)formatter).getNextRolloverTime());
 
@@ -203,13 +217,13 @@ public class RollingIndexNameFormatterTest {
 
                         // then
                         if (tuple.getIncrement() < 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-17.53", formattedIndexName);
+                            Assert.assertEquals("testIndexName-2017-12-20-23.53", formattedIndexName);
                         }
                         if (tuple.getIncrement() == 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-17.54", formattedIndexName);
+                            Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
                         }
                         if (tuple.getIncrement() > 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-17.55", formattedIndexName);
+                            Assert.assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
                         }
                     }
                 } finally {
