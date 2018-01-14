@@ -8,7 +8,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch2-bulkprocessor</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
@@ -58,7 +58,7 @@ Since 1.1, rolling index can be defined using `RollingIndexName` tag:
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
         ...
-        <!-- zone is optional. "UTC" is used by default -->
+        <!-- zone is optional. OS timezone is used by default -->
         <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" zone="Europe/Warsaw" />
         ...
     </Elasticsearch>
