@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 public class BulkRequestIntrospector implements BatchIntrospector<BulkRequest> {
 
-    private BulkActionIntrospector itemIntrospector;
+    private BulkActionIntrospector itemIntrospector = new BulkActionIntrospector();
 
     @Override
     public Collection<String> items(BulkRequest introspected) {
@@ -48,9 +48,6 @@ public class BulkRequestIntrospector implements BatchIntrospector<BulkRequest> {
     }
 
     public BatchItemIntrospector<IndexRequest> itemIntrospector() {
-        if (itemIntrospector == null) {
-            itemIntrospector= new BulkActionIntrospector();
-        }
         return itemIntrospector;
     }
 }

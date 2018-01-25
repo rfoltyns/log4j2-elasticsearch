@@ -39,7 +39,7 @@ import io.searchbox.action.JestActionIntrospector;
  */
 public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
 
-    private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector;
+    private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector = new JestActionIntrospector();
 
     @Override
     public List<String> items(Bulk introspected) {
@@ -50,9 +50,6 @@ public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
     }
 
     public BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector() {
-        if (itemIntrospector == null) {
-            itemIntrospector= new JestActionIntrospector();
-        }
         return itemIntrospector;
     }
 
