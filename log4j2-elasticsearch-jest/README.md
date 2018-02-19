@@ -62,7 +62,7 @@ Since 1.1, rolling index can be defined using `RollingIndexName` tag:
     <Elasticsearch name="elasticsearchAsyncBatch">
         ...
         <!-- zone is optional. OS timezone is used by default -->
-        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" zone="Europe/Warsaw" />
+        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" />
         ...
     </Elasticsearch>
 </Appenders>
