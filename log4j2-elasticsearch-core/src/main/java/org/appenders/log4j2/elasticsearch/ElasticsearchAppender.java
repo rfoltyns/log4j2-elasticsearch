@@ -123,12 +123,14 @@ public class ElasticsearchAppender extends AbstractAppender {
             return new ElasticsearchAppender(name, filter, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
         }
 
-        public void withName(String name) {
+        public Builder withName(String name) {
             this.name = name;
+            return this;
         }
 
-        public void withFilter(Filter filter) {
+        public Builder withFilter(Filter filter) {
             this.filter = filter;
+            return this;
         }
 
         /**
@@ -136,8 +138,9 @@ public class ElasticsearchAppender extends AbstractAppender {
          *
          * @param layout layout to be used
          */
-        public void withLayout(AbstractStringLayout layout) {
+        public Builder withLayout(AbstractStringLayout layout) {
             this.layout = layout;
+            return this;
         }
 
         /**
@@ -147,12 +150,14 @@ public class ElasticsearchAppender extends AbstractAppender {
          *
          * @param ignoreExceptions whether to suppress exceptions or not
          */
-        public void withIgnoreExceptions(boolean ignoreExceptions) {
+        public Builder withIgnoreExceptions(boolean ignoreExceptions) {
             this.ignoreExceptions = ignoreExceptions;
+            return this;
         }
 
-        public void withBatchDelivery(BatchDelivery batchDelivery) {
+        public Builder withBatchDelivery(BatchDelivery batchDelivery) {
             this.batchDelivery = batchDelivery;
+            return this;
         }
 
         /**
@@ -161,8 +166,9 @@ public class ElasticsearchAppender extends AbstractAppender {
          * @param messageOnly If true, formatted message will be produced by {@link org.apache.logging.log4j.message.Message#getFormattedMessage}.
          *                    Otherwise, configured {@link AbstractStringLayout} will be used.
          */
-        public void withMessageOnly(boolean messageOnly) {
+        public Builder withMessageOnly(boolean messageOnly) {
             this.messageOnly = messageOnly;
+            return this;
         }
 
         public Builder withIndexNameFormatter(IndexNameFormatter indexNameFormatter) {

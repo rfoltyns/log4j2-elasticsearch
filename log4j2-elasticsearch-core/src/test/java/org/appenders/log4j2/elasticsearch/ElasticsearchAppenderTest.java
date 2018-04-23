@@ -194,13 +194,12 @@ public class ElasticsearchAppenderTest {
     }
 
     public static Builder createTestElasticsearchAppenderBuilder() {
-        Builder builder = ElasticsearchAppender.newBuilder();
-
-        builder.withName(TEST_APPENDER_NAME);
-        builder.withFilter(ThresholdFilter.createFilter(Level.INFO, Filter.Result.ACCEPT, Filter.Result.DENY));
-        builder.withIgnoreExceptions(false);
-        builder.withBatchDelivery(mock(AsyncBatchDelivery.class));
-        builder.withMessageOnly(false);
+        Builder builder = ElasticsearchAppender.newBuilder()
+                .withName(TEST_APPENDER_NAME)
+                .withFilter(ThresholdFilter.createFilter(Level.INFO, Filter.Result.ACCEPT, Filter.Result.DENY))
+                .withIgnoreExceptions(false)
+                .withBatchDelivery(mock(AsyncBatchDelivery.class))
+                .withMessageOnly(false);
 
         IndexNameFormatter indexNameFormatter = mock(IndexNameFormatter.class);
         when(indexNameFormatter.format(any(LogEvent.class))).thenReturn("testIndexName");
