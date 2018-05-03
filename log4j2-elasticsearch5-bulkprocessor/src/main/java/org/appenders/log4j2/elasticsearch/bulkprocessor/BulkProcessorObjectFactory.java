@@ -38,6 +38,7 @@ import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
 import org.apache.logging.log4j.status.StatusLogger;
@@ -61,11 +62,13 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
 
     private final Collection<String> serverUris;
     private final UriParser uriParser = new UriParser();
+    private final ClientProvider clientProvider;
 
     private TransportClient client;
 
-    protected BulkProcessorObjectFactory(Collection<String> serverUris) {
+    protected BulkProcessorObjectFactory(Collection<String> serverUris, Auth auth) {
         this.serverUris = serverUris;
+        this.clientProvider = auth == null ? new InsecureTransportClientProvider() : new SecureClientProvider(auth);
     }
 
     @Override
@@ -76,7 +79,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     @Override
     public TransportClient createClient() {
         if (client == null) {
-            TransportClient client = new PreBuiltTransportClient(Settings.Builder.EMPTY_SETTINGS, Collections.EMPTY_LIST);
+            TransportClient client = getClientProvider().createClient();
             for (String serverUri : serverUris) {
                 try {
                     String host = uriParser.getHost(serverUri);
@@ -89,6 +92,11 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
             this.client = client;
         }
         return client;
+    }
+
+    // visible for testing
+    ClientProvider getClientProvider() {
+        return clientProvider;
     }
 
     @Override
@@ -137,20 +145,36 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<BulkProcessorObjectFactory> {
 
         @PluginBuilderAttribute
-        @Required(message = "No serverUris provided for JestClientConfig")
+        @Required(message = "No serverUris provided for ElasticsearchBulkProcessor")
         private String serverUris;
+
+        @PluginElement("auth")
+        private Auth auth;
 
         @Override
         public BulkProcessorObjectFactory build() {
             if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for JestClientConfig");
+                throw new ConfigurationException("No serverUris provided for ElasticsearchBulkProcessor");
             }
-            return new BulkProcessorObjectFactory(Arrays.asList(serverUris.split(";")));
+            return new BulkProcessorObjectFactory(Arrays.asList(serverUris.split(";")), auth);
         }
 
         public Builder withServerUris(String serverUris) {
             this.serverUris = serverUris;
             return this;
+        }
+
+        public Builder withAuth(Auth auth) {
+            this.auth = auth;
+            return this;
+        }
+    }
+
+    static class InsecureTransportClientProvider implements ClientProvider {
+
+        @Override
+        public TransportClient createClient() {
+            return new PreBuiltTransportClient(Settings.Builder.EMPTY_SETTINGS, Collections.EMPTY_LIST);
         }
 
     }

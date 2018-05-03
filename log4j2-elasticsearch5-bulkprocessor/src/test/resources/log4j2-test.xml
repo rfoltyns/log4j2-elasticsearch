@@ -26,7 +26,16 @@
 
 <Configuration status="WARN">
 
+    <Appenders>
+        <Console name="CONSOLE" />
+    </Appenders>
     <Loggers>
+        <Logger name="org.elasticsearch.xpack.ssl.SSLService" level="DEBUG" >
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
+        <Logger name="org.elasticsearch.client.transport.TransportClientNodesService" level="DEBUG" >
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
         <Root level="info" />
     </Loggers>
 

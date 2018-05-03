@@ -25,16 +25,26 @@
   #L%
   -->
 
-<Configuration status="WARN">
+<Configuration status="DEBUG">
 
     <Appenders>
+
+        <Console name="CONSOLE" level="DEBUG" />
+
         <Elasticsearch name="elasticsearchAsyncBatch">
             <JsonLayout compact="true" />
             <IndexName indexName="log4j2_test_es5" />
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="1000" >
                 <IndexTemplate name="test_template_es5" path="classpath:indexTemplate.json" />
-                <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300" />
+                <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300">
+                    <XPackAuth>
+                        <PlainCredentials username="admin" password="changeme" />
+                        <PEM keyPath="${sys:certInfo.keyPath}"
+                             clientCertPath="${sys:certInfo.clientCertPath}"
+                             caPath="${sys:certInfo.caPath}" />
+                    </XPackAuth>
+                </ElasticsearchBulkProcessor>
                 <NoopFailoverPolicy />
             </AsyncBatchDelivery>
         </Elasticsearch>
@@ -44,6 +54,12 @@
     </Appenders>
 
     <Loggers>
+        <Logger name="org.elasticsearch.xpack.ssl.SSLService">
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
+        <Logger name="org.elasticsearch.client.transport.TransportClientNodesService">
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
         <AsyncLogger name="elasticsearch" level="info" additivity="false">
             <AppenderRef ref="asyncLogger" />
         </AsyncLogger>

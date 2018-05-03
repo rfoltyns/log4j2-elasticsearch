@@ -31,6 +31,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,6 +60,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -117,6 +119,61 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @Test
+    public void clientIsInitializedOnlyOnce() {
+
+        // given
+        BulkProcessorObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
+
+        BulkProcessorObjectFactory.InsecureTransportClientProvider clientProvider =
+                new BulkProcessorObjectFactory.InsecureTransportClientProvider();
+
+        when(factory.getClientProvider()).thenReturn(spy(clientProvider));
+
+        // when
+        TransportClient client1 = factory.createClient();
+        TransportClient client2 = factory.createClient();
+
+        // then
+        verify(factory, times(1)).getClientProvider();
+        assertEquals(client1, client2);
+
+    }
+
+    @Test
+    public void secureTransportIsSetupByDefaultWhenAuthIsConfigured() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withAuth(XPackAuthTest.createTestBuilder().build());
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        ClientProvider clientProvider = factory.getClientProvider();
+
+        // then
+        Assert.assertTrue(clientProvider instanceof SecureClientProvider);
+
+    }
+
+    @Test
+    public void insecureTransportIsSetupByDefaultWhenAuthIsNotConfigured() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withAuth(null);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        ClientProvider clientProvider = factory.getClientProvider();
+
+        // then
+        Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+
+    }
+
+    @Test
     public void failureHandlerExecutesFailoverForEachBatchItemSeparately() {
 
         // given
@@ -136,7 +193,7 @@ public class BulkProcessorObjectFactoryTest {
 
         // then
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(failoverPolicy, times(2)).deliver((String) captor.capture());
+        verify(failoverPolicy, times(2)).deliver(captor.capture());
 
         assertTrue(captor.getAllValues().contains(payload1));
         assertTrue(captor.getAllValues().contains(payload2));
@@ -149,7 +206,6 @@ public class BulkProcessorObjectFactoryTest {
         Builder builder = createTestObjectFactoryBuilder();
         ClientObjectFactory<TransportClient, BulkRequest> config = spy(builder.build());
 
-//        Settings settings = Settings.builder().put("node.local", "true").build();
         Settings settings = Settings.builder().build();
         TransportClient client = spy(new PreBuiltTransportClient(settings));
         client.addTransportAddress(new LocalTransportAddress("1"));
@@ -188,7 +244,6 @@ public class BulkProcessorObjectFactoryTest {
         Function handler = spy(config.createFailureHandler(failoverPolicy));
         when(config.createFailureHandler(any())).thenReturn(handler);
 
-//        Settings settings = Settings.builder().put("node.local", "true").build();
         Settings settings = Settings.builder().build();
         TransportClient client = spy(new PreBuiltTransportClient(settings));
         client.addTransportAddress(new LocalTransportAddress("1"));

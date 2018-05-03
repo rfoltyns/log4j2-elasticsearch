@@ -26,18 +26,28 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.config.AppenderRef;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
+import org.appenders.log4j2.elasticsearch.BatchDelivery;
+import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 
+@Ignore
 public class SmokeTest {
 
     @BeforeClass
@@ -46,22 +56,79 @@ public class SmokeTest {
     }
 
     @Test
-    public void initializeLogger() {
+    public void programmaticConfigTest() throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
+        createLoggerProgramatically();
 
         Logger logger = LogManager.getLogger("elasticsearch");
-        logger.info("logger started");
-        try {
-            TimeUnit.MILLISECONDS.sleep(500);
-        } catch (InterruptedException e) {
-            interrupted();
-        }
+        indexLogs(logger);
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    @Test
+    public void xmlConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2.xml");
 
         Logger logger = LogManager.getLogger("elasticsearch");
+        indexLogs(logger);
+    }
+
+
+    private static void createLoggerProgramatically() {
+        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        final Configuration config = ctx.getConfiguration();
+
+        PEMCertInfo certInfo = PEMCertInfo.newBuilder()
+                .withKeyPath(System.getProperty("certInfo.keyPath"))
+                .withClientCertPath(System.getProperty("certInfo.clientCertPath"))
+                .withCaPath(System.getProperty("certInfo.caPath"))
+                .build();
+
+        PlainCredentials credentials = PlainCredentials.newBuilder()
+                .withUsername("admin")
+                .withPassword("changeme")
+                .build();
+
+        XPackAuth auth = XPackAuth.newBuilder()
+                .withCertInfo(certInfo)
+                .withCredentials(credentials)
+                .build();
+
+        BulkProcessorObjectFactory bulkProcessorObjectFactory = BulkProcessorObjectFactory.newBuilder()
+                .withServerUris("tcp://localhost:9300")
+                .withAuth(auth).build();
+
+        BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
+                .withClientObjectFactory(bulkProcessorObjectFactory)
+                .withBatchSize(30000)
+                .withDeliveryInterval(1000)
+                .build();
+
+        Appender appender = ElasticsearchAppender.newBuilder()
+                .withName("elasticsearch")
+                .withBatchDelivery(asyncBatchDelivery)
+                .withIgnoreExceptions(false)
+                .build();
+
+        appender.start();
+
+        config.addAppender(appender);
+
+        AppenderRef ref = AppenderRef.createAppenderRef("elasticsearch", null, null);
+        AppenderRef[] refs = new AppenderRef[] {ref};
+
+        LoggerConfig loggerConfig = LoggerConfig.createLogger(false, Level.INFO, "org.apache.logging.log4j",
+                "true", refs, null, config, null );
+
+        loggerConfig.addAppender(appender, null, null);
+
+        config.addLogger("elasticsearch", loggerConfig);
+
+        ctx.updateLoggers();
+    }
+
+    private void indexLogs(Logger logger) throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(10);
 
@@ -72,6 +139,7 @@ public class SmokeTest {
                     try {
                         sleep(2);
                     } catch (InterruptedException e) {
+                        interrupted();
                         e.printStackTrace();
                     }
                 }
@@ -84,6 +152,6 @@ public class SmokeTest {
             System.out.println("Added " + counter + " messages");
         }
         sleep(10000);
-//        LogManager.shutdown();
     }
+
 }
