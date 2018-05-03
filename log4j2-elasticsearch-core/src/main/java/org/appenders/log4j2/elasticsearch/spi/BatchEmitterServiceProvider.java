@@ -68,14 +68,14 @@ public class BatchEmitterServiceProvider {
         Iterator<BatchEmitterFactory> it = loader.iterator();
         while (it.hasNext()) {
             BatchEmitterFactory factory = it.next();
-            LOG.info("BatchEmitterFactory class found {}", factory);
+            LOG.info("BatchEmitterFactory class found {}", factory.getClass().getName());
             if (factory.accepts(clientObjectFactory.getClass())) {
                 LOG.info("Using {} as BatchEmitterFactoryProvider", factory);
                 return factory.createInstance(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
             }
         }
 
-        throw new ConfigurationException(String.format("No compatible BatchEmitter implementations for %s found", clientObjectFactory.getClass()));
+        throw new ConfigurationException(String.format("No compatible BatchEmitter implementations for %s found", clientObjectFactory.getClass().getName()));
 
     }
 }

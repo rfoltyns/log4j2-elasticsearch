@@ -142,13 +142,13 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<BulkProcessorObjectFactory> {
 
         @PluginBuilderAttribute
-        @Required(message = "No serverUris provided for JestClientConfig")
+        @Required(message = "No serverUris provided for ElasticsearchBulkProcessor")
         private String serverUris;
 
         @Override
         public BulkProcessorObjectFactory build() {
             if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for JestClientConfig");
+                throw new ConfigurationException("No serverUris provided for ElasticsearchBulkProcessor");
             }
             return new BulkProcessorObjectFactory(Arrays.asList(serverUris.split(";")));
         }
