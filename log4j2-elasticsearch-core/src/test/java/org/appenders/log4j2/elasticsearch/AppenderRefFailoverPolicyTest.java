@@ -76,7 +76,7 @@ public class AppenderRefFailoverPolicyTest {
         failoverPolicy.deliver(failedMessage);
 
     }
-    private FailoverPolicy<String> createTestFailoverPolicy(String testAppenderRef, Configuration configuration) {
+    public static  FailoverPolicy<String> createTestFailoverPolicy(String testAppenderRef, Configuration configuration) {
         AppenderRefFailoverPolicy.Builder builder = AppenderRefFailoverPolicy.newBuilder();
         builder.withAppenderRef(AppenderRef.createAppenderRef(
                 testAppenderRef, Level.ALL, null));

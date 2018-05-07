@@ -34,6 +34,8 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import javax.lang.model.util.Types;
+
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.junit.Assert.assertEquals;
@@ -101,7 +103,28 @@ public class BatchDeliveryTest {
     }
 
     @Test
-    public void deliveryAddsBatchItemToBatchEmitter() throws Exception {
+    public void deprecatedApiDelegatesToNewApiWhenOldStyleIndexNameIsConfigured() {
+
+        // given
+        String deprecatedIndexName = "deprecated";
+
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withIndexName(deprecatedIndexName);
+
+        BatchDelivery<String> delivery = spy(batchDeliveryBuilder.build());
+
+        String testLog = "testLog";
+
+        // when
+        delivery.add(testLog);
+
+        // then
+        verify(delivery).add(eq(deprecatedIndexName), eq(testLog));
+
+    }
+
+    @Test
+    public void deliveryAddsBatchItemToBatchEmitter() {
 
         // given
         TestHttpObjectFactory objectFactory = createTestObjectFactoryBuilder().build();

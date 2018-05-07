@@ -137,8 +137,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         public AsyncBatchDelivery build() {
             if (indexName != null) {
                 LOG.warn("AsyncBatchDelivery.indexName attribute has been deprecated and will be removed in 1.3. " +
-                        "It will NOT be used in AsyncBatchDelivery.add(String indexName,  T logObject) calls. " +
-                        "Please use IndexName instead.");
+                        "It will NOT be used in direct AsyncBatchDelivery.add(String indexName,  T logObject) calls. " +
+                        "Please use IndexName element instead.");
             }
 
             if (clientObjectFactory == null) {

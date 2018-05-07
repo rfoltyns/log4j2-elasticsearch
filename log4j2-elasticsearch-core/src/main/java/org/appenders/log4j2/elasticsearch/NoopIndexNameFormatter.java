@@ -33,8 +33,12 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
-@Plugin(name = "IndexName", category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
+import static org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter.PLUGIN_NAME;
+
+@Plugin(name = PLUGIN_NAME, category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
 public class NoopIndexNameFormatter implements IndexNameFormatter {
+
+    static final String PLUGIN_NAME = "IndexName";
 
     private final String indexName;
 

@@ -31,19 +31,20 @@ import org.mockito.Mockito;
 
 public class TestBatchEmitterFactory extends BatchEmitterServiceProvider implements BatchEmitterFactory<BatchEmitter> {
 
-    private static BulkEmitter emitter;
+    private BulkEmitter spiedEmitter;
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {
-        return clientObjectFactoryClass.isAssignableFrom(TestHttpObjectFactory.class);
+        return TestHttpObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
     }
 
     @Override
     public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
-        if (emitter == null) {
-            emitter = Mockito.spy(new BulkEmitter(batchSize, deliveryInterval, clientObjectFactory.createBatchOperations()));
+        if (spiedEmitter == null) {
+            BulkEmitter emitter = new BulkEmitter(batchSize, deliveryInterval, clientObjectFactory.createBatchOperations());
             emitter.addListener(clientObjectFactory.createBatchListener(failoverPolicy));
+            spiedEmitter = Mockito.spy(emitter);
         }
-        return emitter;
+        return spiedEmitter;
     }
 }

@@ -30,15 +30,26 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Matchers;
 import org.mockito.Mockito;
+
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class BulkEmitterTest {
 
     public static final int LARGE_TEST_INTERVAL = 10000;
     public static final int TEST_BATCH_SIZE = 2;
     public static final String TEST_DATA = "dummyData";
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void emitsBatchWithGivenSize() {
@@ -84,12 +95,55 @@ public class BulkEmitterTest {
 
     }
 
+
+    // https://github.com/jacoco/jacoco/issues/245
+    @Test
+    public void notiifyListenerSynchronizedBlock() {
+
+        // given
+        int batchSize = 2;
+        BulkEmitter emitter = createTestBulkEmitter(batchSize, LARGE_TEST_INTERVAL, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = testBatch -> {
+            throw new RuntimeException("JAVAC.SYNC should be filtered out");
+        };
+        emitter.addListener(dummyObserver);
+        emitter.add(new Object());
+
+        expectedException.expect(RuntimeException.class);
+
+        // when
+        emitter.notifyListener();
+
+    }
+
+    // https://github.com/jacoco/jacoco/issues/245
+    @Test
+    public void addToBatchBuilderSynchronizedBlock() {
+
+        // given
+        int batchSize = 2;
+        TestBatchOperations throwingBatchOperations = spy(new TestBatchOperations());
+        BatchBuilder<TestBatch> throwingBatchBuilder = mock(BatchBuilder.class);
+        doThrow(new RuntimeException("JAVAC.SYNC should be filtered out")).when(throwingBatchBuilder).add(Matchers.any(String.class));
+        when(throwingBatchOperations.createBatchBuilder()).thenReturn(throwingBatchBuilder);
+
+        BulkEmitter emitter = createTestBulkEmitter(batchSize, LARGE_TEST_INTERVAL, throwingBatchOperations);
+        Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        expectedException.expect(RuntimeException.class);
+
+        // when
+        emitter.add(new Object());
+
+    }
+
     public static BulkEmitter createTestBulkEmitter(int batchSize, int interval, BatchOperations batchOperations) {
-        return Mockito.spy(new BulkEmitter(batchSize, interval, batchOperations));
+        return spy(new BulkEmitter(batchSize, interval, batchOperations));
     }
 
     private Function<TestBatch, Boolean> dummyObserver() {
-        return Mockito.spy(new DummyListener());
+        return spy(new DummyListener());
     }
 
     class DummyListener implements Function<TestBatch, Boolean> {
