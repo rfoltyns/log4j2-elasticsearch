@@ -51,7 +51,6 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private Function<BATCH_TYPE, Boolean> listener;
 
     private final ListenerLock listenerLock = new ListenerLock();
-    private final BuilderLock builderLock = new BuilderLock();
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
@@ -76,10 +75,9 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     @Override
     public void add(Object batchItem) {
-        // has to be synchronized until https://github.com/searchbox-io/Jest/issues/517 is resolved
-        synchronized (builderLock) {
-            builder.get().add(batchItem);
-        }
+
+        builder.get().add(batchItem);
+
         if (size.incrementAndGet() >= maxSize) {
             notifyListener();
         }
@@ -110,9 +108,4 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private class ListenerLock {
     }
 
-    /*
-     * Class used as monitor to increase lock visibility in profiling tools
-     */
-    private class BuilderLock {
-    }
 }
