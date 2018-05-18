@@ -26,6 +26,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Test;

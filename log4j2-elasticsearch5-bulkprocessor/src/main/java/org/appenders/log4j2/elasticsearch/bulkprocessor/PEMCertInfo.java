@@ -30,6 +30,7 @@ import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
 
 @Plugin(name = "PEM", category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)

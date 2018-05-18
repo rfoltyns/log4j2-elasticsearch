@@ -32,6 +32,9 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.appenders.log4j2.elasticsearch.Credentials;
 import org.elasticsearch.common.settings.Settings;
 
 @Plugin(name = XPackAuth.PLUGIN_NAME, category = Node.CATEGORY, elementType = Auth.ELEMENT_TYPE)

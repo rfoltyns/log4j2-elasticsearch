@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.bulkprocessor;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L

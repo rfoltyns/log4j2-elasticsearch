@@ -27,6 +27,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.junit.Assert;

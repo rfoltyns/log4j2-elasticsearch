@@ -26,6 +26,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.xpack.client.PreBuiltXPackTransportClient;

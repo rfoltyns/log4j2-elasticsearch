@@ -42,6 +42,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;

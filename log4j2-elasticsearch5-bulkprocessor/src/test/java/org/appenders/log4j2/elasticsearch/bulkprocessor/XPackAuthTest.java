@@ -27,6 +27,8 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.appenders.log4j2.elasticsearch.Credentials;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.Assert;
 import org.junit.Rule;

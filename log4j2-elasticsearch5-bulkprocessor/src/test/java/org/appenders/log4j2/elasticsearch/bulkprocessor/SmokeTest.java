@@ -37,6 +37,7 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -74,7 +75,6 @@ public class SmokeTest {
         indexLogs(logger);
     }
 
-
     private static void createLoggerProgramatically() {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
@@ -97,7 +97,8 @@ public class SmokeTest {
 
         BulkProcessorObjectFactory bulkProcessorObjectFactory = BulkProcessorObjectFactory.newBuilder()
                 .withServerUris("tcp://localhost:9300")
-                .withAuth(auth).build();
+                .withAuth(auth)
+                .build();
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(bulkProcessorObjectFactory)
@@ -105,9 +106,14 @@ public class SmokeTest {
                 .withDeliveryInterval(1000)
                 .build();
 
+        NoopIndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
+                .withIndexName("log4j2_test_es5")
+                .build();
+
         Appender appender = ElasticsearchAppender.newBuilder()
                 .withName("elasticsearch")
                 .withBatchDelivery(asyncBatchDelivery)
+                .withIndexNameFormatter(indexNameFormatter)
                 .withIgnoreExceptions(false)
                 .build();
 

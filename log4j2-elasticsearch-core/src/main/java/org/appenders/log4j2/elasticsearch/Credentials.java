@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.bulkprocessor;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
@@ -26,10 +26,10 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
-public interface Auth<T> {
+public interface Credentials<T> {
 
-    String ELEMENT_TYPE = "auth";
+    String ELEMENT_TYPE = "credentials";
 
-    void configure(T settings);
+    void applyTo(T clientSettings);
 
 }
