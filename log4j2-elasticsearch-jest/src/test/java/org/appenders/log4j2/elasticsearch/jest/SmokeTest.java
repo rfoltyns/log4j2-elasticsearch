@@ -36,8 +36,12 @@ import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
+import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -61,7 +65,7 @@ public class SmokeTest {
     public void programmaticConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-        createLoggerProgramatically();
+        createLoggerProgrammatically();
 
         Logger logger = LogManager.getLogger("elasticsearch");
         indexLogs(logger);
@@ -76,12 +80,29 @@ public class SmokeTest {
         indexLogs(logger);
     }
 
-    private static void createLoggerProgramatically() {
+    private static void createLoggerProgrammatically() {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
 
+        CertInfo certInfo = PEMCertInfo.newBuilder()
+                .withKeyPath(System.getProperty("certInfo.keyPath"))
+                .withClientCertPath(System.getProperty("certInfo.clientCertPath"))
+                .withCaPath(System.getProperty("certInfo.caPath"))
+                .build();
+
+        Credentials credentials = PlainCredentials.newBuilder()
+                .withUsername("admin")
+                .withPassword("changeme")
+                .build();
+
+        Auth auth = XPackAuth.newBuilder()
+                .withCertInfo(certInfo)
+                .withCredentials(credentials)
+                .build();
+
         JestHttpObjectFactory jestHttpObjectFactory = JestHttpObjectFactory.newBuilder()
-                .withServerUris("http://localhost:9200")
+                .withServerUris("https://localhost:9200")
+                .withAuth(auth)
                 .build();
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
@@ -90,7 +111,7 @@ public class SmokeTest {
                 .withDeliveryInterval(1000)
                 .build();
 
-        NoopIndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
+        IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
                 .withIndexName("log4j2_test_jest")
                 .build();
 

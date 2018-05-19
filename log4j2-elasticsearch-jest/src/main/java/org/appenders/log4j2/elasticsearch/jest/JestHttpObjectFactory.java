@@ -39,6 +39,7 @@ import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
 import io.searchbox.client.JestClient;
@@ -49,6 +50,7 @@ import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.JestBatchIntrospector;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
@@ -65,16 +67,18 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final int maxTotalConnections;
     private final int defaultMaxTotalConnectionsPerRoute;
     private final boolean discoveryEnabled;
+    private final Auth<HttpClientConfig.Builder> auth;
 
     private JestClient client;
 
-    protected JestHttpObjectFactory(Collection<String> serverUris, int connTimeout, int readTimeout, int maxTotalConnections, int defaultMaxTotalConnectionPerRoute, boolean discoveryEnabled) {
+    protected JestHttpObjectFactory(Collection<String> serverUris, int connTimeout, int readTimeout, int maxTotalConnections, int defaultMaxTotalConnectionPerRoute, boolean discoveryEnabled, Auth<HttpClientConfig.Builder> auth) {
         this.serverUris = serverUris;
         this.connTimeout = connTimeout;
         this.readTimeout = readTimeout;
         this.maxTotalConnections = maxTotalConnections;
         this.defaultMaxTotalConnectionsPerRoute = defaultMaxTotalConnectionPerRoute;
         this.discoveryEnabled = discoveryEnabled;
+        this.auth = auth;
     }
 
     @Override
@@ -87,13 +91,17 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         if (client == null) {
             JestClientFactory factory = new JestClientFactory();
 
-            HttpClientConfig.Builder builder = new HttpClientConfig.Builder(serverUris);
-            builder.maxTotalConnection(maxTotalConnections);
-            builder.defaultMaxTotalConnectionPerRoute(defaultMaxTotalConnectionsPerRoute);
-            builder.connTimeout(connTimeout);
-            builder.readTimeout(readTimeout);
-            builder.discoveryEnabled(discoveryEnabled);
-            builder.multiThreaded(true);
+            HttpClientConfig.Builder builder = new HttpClientConfig.Builder(serverUris)
+                    .maxTotalConnection(maxTotalConnections)
+                    .defaultMaxTotalConnectionPerRoute(defaultMaxTotalConnectionsPerRoute)
+                    .connTimeout(connTimeout)
+                    .readTimeout(readTimeout)
+                    .discoveryEnabled(discoveryEnabled)
+                    .multiThreaded(true);
+
+            if (this.auth != null) {
+                auth.configure(builder);
+            }
 
             factory.setHttpClientConfig(builder.build());
 
@@ -193,12 +201,15 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         @PluginBuilderAttribute
         private boolean discoveryEnabled;
 
+        @PluginElement("auth")
+        private Auth auth;
+
         @Override
         public JestHttpObjectFactory build() {
             if (serverUris == null) {
                 throw new ConfigurationException("No serverUris provided for JestClientConfig");
             }
-            return new JestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled);
+            return new JestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled, auth);
         }
 
         public Builder withServerUris(String serverUris) {
@@ -206,26 +217,35 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             return this;
         }
 
-        public void withMaxTotalConnection(int maxTotalConnection) {
+        public Builder withMaxTotalConnection(int maxTotalConnection) {
             this.maxTotalConnection = maxTotalConnection;
+            return this;
         }
 
-        public void withDefaultMaxTotalConnectionPerRoute(int defaultMaxTotalConnectionPerRoute) {
+        public Builder withDefaultMaxTotalConnectionPerRoute(int defaultMaxTotalConnectionPerRoute) {
             this.defaultMaxTotalConnectionPerRoute = defaultMaxTotalConnectionPerRoute;
+            return this;
         }
 
-        public void withConnTimeout(int connTimeout) {
+        public Builder withConnTimeout(int connTimeout) {
             this.connTimeout = connTimeout;
+            return this;
         }
 
-        public void withReadTimeout(int readTimeout) {
+        public Builder withReadTimeout(int readTimeout) {
             this.readTimeout = readTimeout;
+            return this;
         }
 
-        public void withDiscoveryEnabled(boolean discoveryEnabled) {
+        public Builder withDiscoveryEnabled(boolean discoveryEnabled) {
             this.discoveryEnabled = discoveryEnabled;
+            return this;
         }
 
+        public Builder withAuth(Auth auth) {
+            this.auth = auth;
+            return this;
+        }
     }
 
 }

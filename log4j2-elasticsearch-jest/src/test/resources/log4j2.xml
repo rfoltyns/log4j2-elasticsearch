@@ -35,14 +35,21 @@
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
                 <IndexTemplate name="test_template_jest" path="classpath:indexTemplate.json" />
-                <JestHttp serverUris="http://localhost:9200"
+                <JestHttp serverUris="https://localhost:9200"
                     connTimeout="500"
                     readTimeout="5000"
                     maxTotalConnection="40"
-                    defaultMaxTotalConnectionPerRoute="4" />
-                    <!--<AppenderRefFailoverPolicy>
-                        <AppenderRef ref="CONSOLE" />
-                    </AppenderRefFailoverPolicy>-->
+                    defaultMaxTotalConnectionPerRoute="4">
+                    <XPackAuth>
+                        <PlainCredentials username="admin" password="changeme" />
+                        <PEM keyPath="${sys:certInfo.keyPath}"
+                             clientCertPath="${sys:certInfo.clientCertPath}"
+                             caPath="${sys:certInfo.caPath}" />
+                    </XPackAuth>
+                </JestHttp>
+                <!--<AppenderRefFailoverPolicy>
+                    <AppenderRef ref="CONSOLE" />
+                </AppenderRefFailoverPolicy>-->
             </AsyncBatchDelivery>
         </Elasticsearch>
         <Async name="asyncLogger">
