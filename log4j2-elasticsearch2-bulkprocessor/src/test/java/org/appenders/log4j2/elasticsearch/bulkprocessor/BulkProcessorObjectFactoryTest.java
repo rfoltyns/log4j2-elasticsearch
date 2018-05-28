@@ -57,7 +57,9 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.LocalTransportAddress;
 import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -66,9 +68,23 @@ public class BulkProcessorObjectFactoryTest {
 
     public static final String TEST_SERVER_URIS = "http://localhost:9300";
 
+    private static EmbeddedElasticsearchServer embeddedServer;
+
+    @BeforeClass
+    public static void setup() {
+        embeddedServer = new EmbeddedElasticsearchServer("data");
+    }
+
+    @AfterClass
+    public static void teardown() throws IOException {
+        embeddedServer.shutdown();
+        embeddedServer.deleteStorage();
+    }
+
     public static Builder createTestObjectFactoryBuilder() {
         Builder builder = BulkProcessorObjectFactory.newBuilder();
         builder.withServerUris(TEST_SERVER_URIS);
+        builder.withAuth(ShieldAuthTest.createTestBuilder().build());
         return builder;
     }
 
@@ -99,6 +115,58 @@ public class BulkProcessorObjectFactoryTest {
 
         // then
         assertNotEquals(serverUrisList.size(), config.getServerList().size());
+
+    }
+
+    @Test
+    public void secureTransportIsSetupByDefaultWhenAuthIsConfigured() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        ShieldAuth auth = ShieldAuthTest.createTestBuilder().build();
+        builder.withAuth(auth);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        ClientProvider clientProvider = factory.getClientProvider();
+
+        // then
+        Assert.assertTrue(clientProvider instanceof SecureClientProvider);
+
+    }
+
+    @Test
+    public void insecureTransportIsSetupByDefaultWhenAuthIsNotConfigured() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withAuth(null);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        ClientProvider clientProvider = factory.getClientProvider();
+
+        // then
+        Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+
+    }
+
+    @Test
+    public void minimalSetupUsesClientProviderByDefault() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withAuth(null);
+
+        BulkProcessorObjectFactory factory = spy(builder.build());
+
+        // when
+        factory.createClient();
+
+        // then
+        verify(factory).getClientProvider();
 
     }
 
@@ -205,4 +273,56 @@ public class BulkProcessorObjectFactoryTest {
         return spy(new IndexRequest().source(payload));
     }
 
+    /**
+     * A simple embeddable Elasticsearch server. This is great for integration testing and also
+     * stand alone tests.
+     *
+     * Starts up a single ElasticSearch node and client.
+     *
+     * Credits to Jon
+     * (https://stackoverflow.com/questions/34141388/how-do-i-unit-test-mock-elasticsearch)
+     */
+    public static class EmbeddedElasticsearchServer {
+
+        private Client client;
+        private Node node;
+        private String storagePath;
+        private File tempFile;
+
+        public EmbeddedElasticsearchServer(String storagePath) {
+            this.storagePath = storagePath;
+            try {
+                tempFile = File.createTempFile("elasticsearch", "test");
+                this.storagePath = tempFile.getParent();
+                tempFile.deleteOnExit();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            Settings.Builder elasticsearchSettings = Settings.builder()
+                    .put("http.enabled", "false")
+                    .put("path.data", this.storagePath)
+                    .put("path.home", System.getProperty("user.dir"))
+                    .put("transport.type", "local");
+
+            node = new Node(elasticsearchSettings.build());
+            client = node.client();
+        }
+
+        public Client getClient() {
+            return client;
+        }
+
+        public void shutdown() {
+            node.close();
+        }
+
+        public void deleteStorage() {
+            File storage = new File(storagePath);
+            if (storage.exists()) {
+                storage.delete();
+            }
+        }
+
+    }
 }
