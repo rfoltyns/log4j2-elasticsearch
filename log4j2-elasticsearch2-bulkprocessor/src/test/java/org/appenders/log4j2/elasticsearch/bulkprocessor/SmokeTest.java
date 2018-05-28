@@ -61,7 +61,7 @@ public class SmokeTest {
     public void programmaticConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-        createLoggerProgramatically();
+        createLoggerProgrammatically();
 
         Logger logger = LogManager.getLogger("elasticsearch");
         indexLogs(logger);
@@ -76,7 +76,7 @@ public class SmokeTest {
         indexLogs(logger);
     }
 
-    private static void createLoggerProgramatically() {
+    private static void createLoggerProgrammatically() {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
 

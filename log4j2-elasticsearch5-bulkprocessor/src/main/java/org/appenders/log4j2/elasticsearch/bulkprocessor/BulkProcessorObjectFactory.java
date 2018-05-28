@@ -45,6 +45,7 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
@@ -63,13 +64,13 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
 
     private final Collection<String> serverUris;
     private final UriParser uriParser = new UriParser();
-    private final ClientProvider clientProvider;
+    private final Auth auth;
 
     private TransportClient client;
 
     protected BulkProcessorObjectFactory(Collection<String> serverUris, Auth auth) {
         this.serverUris = serverUris;
-        this.clientProvider = auth == null ? new InsecureTransportClientProvider() : new SecureClientProvider(auth);
+        this.auth = auth;
     }
 
     @Override
@@ -96,8 +97,8 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     }
 
     // visible for testing
-    ClientProvider getClientProvider() {
-        return clientProvider;
+    ClientProvider<TransportClient> getClientProvider() {
+        return auth == null ? new InsecureTransportClientProvider() : new SecureClientProvider(auth);
     }
 
     @Override
@@ -171,7 +172,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         }
     }
 
-    static class InsecureTransportClientProvider implements ClientProvider {
+    static class InsecureTransportClientProvider implements ClientProvider<TransportClient> {
 
         @Override
         public TransportClient createClient() {

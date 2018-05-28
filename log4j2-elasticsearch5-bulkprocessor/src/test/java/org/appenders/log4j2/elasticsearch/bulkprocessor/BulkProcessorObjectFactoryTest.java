@@ -45,6 +45,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory.Builder;
@@ -170,6 +171,23 @@ public class BulkProcessorObjectFactoryTest {
 
         // then
         Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+
+    }
+
+    @Test
+    public void minimalSetupUsesClientProviderByDefault() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withAuth(null);
+
+        BulkProcessorObjectFactory factory = spy(builder.build());
+
+        // when
+        factory.createClient();
+
+        // then
+        verify(factory).getClientProvider();
 
     }
 

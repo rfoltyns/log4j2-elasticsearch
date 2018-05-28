@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.bulkprocessor;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
@@ -26,10 +26,8 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
-import org.elasticsearch.client.transport.TransportClient;
+public interface ClientProvider<T> {
 
-public interface ClientProvider {
-
-    TransportClient createClient();
+    T createClient();
 
 }

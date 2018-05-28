@@ -47,6 +47,7 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
@@ -136,14 +137,15 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         }
     }
 
+    ClientProvider<TransportClient> getClientProvider() {
+        return auth == null ? new InsecureTransportClientProvider() : new SecureClientProvider(auth);
+    }
+
     @PluginBuilderFactory
     public static Builder newBuilder() {
         return new Builder();
     }
 
-    ClientProvider getClientProvider() {
-        return auth == null ? new InsecureTransportClientProvider() : new SecureClientProvider(auth);
-    }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<BulkProcessorObjectFactory> {
 

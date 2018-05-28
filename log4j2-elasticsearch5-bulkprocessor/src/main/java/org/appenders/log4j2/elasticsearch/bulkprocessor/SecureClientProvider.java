@@ -27,11 +27,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.xpack.client.PreBuiltXPackTransportClient;
 
-public class SecureClientProvider implements ClientProvider {
+public class SecureClientProvider implements ClientProvider<TransportClient> {
 
     private final Auth<Settings.Builder> auth;
 

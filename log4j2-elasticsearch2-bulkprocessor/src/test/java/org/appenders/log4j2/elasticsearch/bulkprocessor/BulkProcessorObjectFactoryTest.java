@@ -31,7 +31,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -45,6 +44,7 @@ import java.util.function.Function;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory.Builder;
@@ -76,7 +76,7 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @AfterClass
-    public static void teardown() throws IOException {
+    public static void teardown() {
         embeddedServer.shutdown();
         embeddedServer.deleteStorage();
     }
@@ -129,7 +129,7 @@ public class BulkProcessorObjectFactoryTest {
         BulkProcessorObjectFactory factory = builder.build();
 
         // when
-        ClientProvider clientProvider = factory.getClientProvider();
+        ClientProvider<TransportClient> clientProvider = factory.getClientProvider();
 
         // then
         Assert.assertTrue(clientProvider instanceof SecureClientProvider);
