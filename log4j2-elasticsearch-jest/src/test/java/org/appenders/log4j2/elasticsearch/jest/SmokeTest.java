@@ -84,10 +84,17 @@ public class SmokeTest {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
 
-        CertInfo certInfo = PEMCertInfo.newBuilder()
-                .withKeyPath(System.getProperty("certInfo.keyPath"))
-                .withClientCertPath(System.getProperty("certInfo.clientCertPath"))
-                .withCaPath(System.getProperty("certInfo.caPath"))
+//        CertInfo certInfo = PEMCertInfo.newBuilder()
+//                .withKeyPath(System.getProperty("certInfo.keyPath"))
+//                .withClientCertPath(System.getProperty("certInfo.clientCertPath"))
+//                .withCaPath(System.getProperty("certInfo.caPath"))
+//                .build();
+
+        CertInfo certInfo = JKSCertInfo.newBuilder()
+                .withKeystorePath(System.getProperty("jksCertInfo.keystorePath"))
+                .withKeystorePassword(System.getProperty("jksCertInfo.keystorePassword"))
+                .withTruststorePath(System.getProperty("jksCertInfo.truststorePath"))
+                .withTruststorePassword(System.getProperty("jksCertInfo.truststorePassword"))
                 .build();
 
         Credentials credentials = PlainCredentials.newBuilder()

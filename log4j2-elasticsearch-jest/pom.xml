@@ -121,6 +121,10 @@
                         <certInfo.keyPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.key</certInfo.keyPath>
                         <certInfo.clientCertPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.crt</certInfo.clientCertPath>
                         <certInfo.caPath>${project.build.testOutputDirectory}/certificate-bundle/ca/ca.crt</certInfo.caPath>
+                        <jksCertInfo.keystorePath>${project.build.testOutputDirectory}/jks/node01.jks</jksCertInfo.keystorePath>
+                        <jksCertInfo.keystorePassword>password</jksCertInfo.keystorePassword>
+                        <jksCertInfo.truststorePath>${project.build.testOutputDirectory}/jks/truststore.jks</jksCertInfo.truststorePath>
+                        <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
