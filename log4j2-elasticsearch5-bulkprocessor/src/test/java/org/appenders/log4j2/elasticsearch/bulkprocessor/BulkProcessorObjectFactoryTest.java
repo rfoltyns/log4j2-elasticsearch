@@ -27,26 +27,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.function.Function;
-
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory.Builder;
 import org.elasticsearch.action.ActionRequest;
@@ -63,25 +49,35 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class BulkProcessorObjectFactoryTest {
 
     public static final String TEST_SERVER_URIS = "http://localhost:9300";
-    private static EmbeddedElasticsearchServer embeddedServer;
 
-    @BeforeClass
-    public static void setup() {
-        embeddedServer = new EmbeddedElasticsearchServer("data");
-    }
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
-    @AfterClass
-    public static void teardown() throws IOException {
-        embeddedServer.shutdown();
-        embeddedServer.deleteStorage();
-    }
 
     public static Builder createTestObjectFactoryBuilder() {
         Builder builder = BulkProcessorObjectFactory.newBuilder();
@@ -137,6 +133,23 @@ public class BulkProcessorObjectFactoryTest {
         // then
         verify(factory, times(1)).getClientProvider();
         assertEquals(client1, client2);
+
+    }
+
+    @Test
+    public void throwsIfUnknownHostWasProvided() {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+
+        builder.withServerUris("http://unknowntesthost:8080");
+        BulkProcessorObjectFactory factory = builder.build();
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("unknowntesthost");
+
+        // when
+        factory.createClient();
 
     }
 
@@ -287,64 +300,42 @@ public class BulkProcessorObjectFactoryTest {
         assertEquals(payload1, new BulkRequestIntrospector().items(captor.getValue()).iterator().next());
     }
 
+    @Test
+    public void throwsOnExecuteTemplateFailure() {
+
+        //given
+        BulkProcessorObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
+
+        String expectedMessage = "test-exception";
+
+        when(factory.getClientProvider()).thenAnswer((Answer) invocation -> {
+            throw new IOException(expectedMessage);
+        });
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage(expectedMessage);
+
+        // when
+        factory.execute(mock(IndexTemplate.class));
+
+    }
+
+    @Test
+    public void defaultBatchListenerDoesntThrow() {
+
+        // given
+        BulkProcessorObjectFactory factory = createTestObjectFactoryBuilder().build();
+        Function<BulkRequest, Boolean> batchListener = factory.createBatchListener(failedPayload -> {
+            throw new ConfigurationException("test exception");
+        });
+
+        // when
+        batchListener.apply(null);
+
+    }
+
     private ActionRequest createTestRequest(String payload) {
         return spy(new IndexRequest().source(payload, XContentType.CBOR));
     }
 
-    /**
-     * A simple embeddable Elasticsearch server. This is great for integration testing and also
-     * stand alone tests.
-     *
-     * Starts up a single ElasticSearch node and client.
-     *
-     * Credits to Jon
-     * (https://stackoverflow.com/questions/34141388/how-do-i-unit-test-mock-elasticsearch)
-     */
-    public static class EmbeddedElasticsearchServer {
-
-        private Client client;
-        private Node node;
-        private String storagePath;
-        private File tempFile;
-
-        public EmbeddedElasticsearchServer(String storagePath) {
-            this.storagePath = storagePath;
-            try {
-                tempFile = File.createTempFile("elasticsearch", "test");
-                this.storagePath = tempFile.getParent();
-                tempFile.deleteOnExit();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            Settings.Builder elasticsearchSettings = Settings.builder()
-                    .put("http.enabled", "false")
-                    .put("path.data", this.storagePath)
-                    .put("path.home", System.getProperty("user.dir"))
-                    .put("transport.type", "local");
-
-            node = new Node(elasticsearchSettings.build());
-            client = node.client();
-        }
-
-        public Client getClient() {
-            return client;
-        }
-
-        public void shutdown() {
-            try {
-                node.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public void deleteStorage() throws IOException {
-            File storage = new File(storagePath);
-            if (storage.exists()) {
-                storage.delete();
-            }
-        }
-
-    }
 }

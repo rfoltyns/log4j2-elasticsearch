@@ -2,7 +2,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 /*-
  * #%L
- * log4j-elasticsearch
+ * log4j2-elasticsearch
  * %%
  * Copyright (C) 2017 Rafal Foltynski
  * %%
@@ -12,10 +12,10 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -27,27 +27,29 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
+import org.junit.Test;
+import org.mockito.Mockito;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
 
-// just a facade until I find something more convenient..
-public class UriParser {
+public class SecureClientProviderTest {
 
-    public String getHost(String s) {
-        try {
-            return new URI(s).getHost();
-        } catch (URISyntaxException e) {
-            throw new ConfigurationException(e);
-        }
+    @Test
+    public void providedAuthIsUsedToCustomizeClient() {
+
+        // given
+        Auth auth = mock(Auth.class);
+        ClientProvider clientProvider = new SecureClientProvider(auth);
+
+        // when
+        clientProvider.createClient();
+
+        // then
+        Mockito.verify(auth).configure(any());
     }
 
-    public int getPort(String serverUri) {
-        try {
-            return new URI(serverUri).getPort();
-        } catch (URISyntaxException e) {
-            throw new ConfigurationException(e);
-        }
-    }
 }
+

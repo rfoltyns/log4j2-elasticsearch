@@ -58,9 +58,8 @@ public class BulkProcessorFactoryTest {
         Assert.assertTrue(result);
     }
 
-
     @Test
-    public void acceptsClientObjectFactoriesExtendingBulkProcessorFactory() {
+    public void acceptsExtendingClientObjectFactories() {
 
         // given
         BulkProcessorFactory emitterFactory = new BulkProcessorFactory();

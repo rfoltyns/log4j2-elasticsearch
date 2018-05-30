@@ -26,12 +26,16 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
-
-import org.appenders.log4j2.elasticsearch.bulkprocessor.UriParser;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class UriParserTest {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void parserReturnsHostGivenHttpUrl() {
@@ -87,6 +91,33 @@ public class UriParserTest {
 
         // then
         Assert.assertEquals(8080, parsedPort);
+    }
+
+    @Test
+    public void getHostThrowsOnInvalidUri() {
+
+        // given
+        String url = "${";
+        UriParser uriParser = new UriParser();
+
+        expectedException.expect(ConfigurationException.class);
+
+        // when
+        uriParser.getHost(url);
+    }
+
+    @Test
+    public void getPortThrowsOnInvalidUri() {
+
+        // given
+        String url = "%s";
+        UriParser uriParser = new UriParser();
+
+        expectedException.expect(ConfigurationException.class);
+
+        // when
+        uriParser.getPort(url);
+
     }
 
 }
