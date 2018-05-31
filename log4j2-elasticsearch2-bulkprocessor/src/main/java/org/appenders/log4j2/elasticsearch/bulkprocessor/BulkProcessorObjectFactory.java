@@ -133,7 +133,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
                             .source(indexTemplate.getSource())
             );
         } catch (Exception e) {
-            LOG.error("Unable to add index template", e);
+            throw new ConfigurationException(e);
         }
     }
 

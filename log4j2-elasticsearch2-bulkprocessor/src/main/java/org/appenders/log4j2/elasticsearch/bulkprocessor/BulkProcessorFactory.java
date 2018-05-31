@@ -27,10 +27,10 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-import org.appenders.log4j2.elasticsearch.*;
-import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorDelegate;
-import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory;
+import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
+import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -43,7 +43,7 @@ public class BulkProcessorFactory implements BatchEmitterFactory {
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {
-        return clientObjectFactoryClass.isAssignableFrom(BulkProcessorObjectFactory.class);
+        return BulkProcessorObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
     }
 
     @Override
@@ -51,27 +51,37 @@ public class BulkProcessorFactory implements BatchEmitterFactory {
 
         Function<BulkRequest, Boolean> failureHandler = clientObjectFactory.createFailureHandler(failoverPolicy);
 
-        BulkProcessor.Listener listener = new BulkProcessor.Listener() {
-            @Override
-            public void beforeBulk(long executionId, BulkRequest request) {
-            }
-
-            @Override
-            public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
-                if (response.hasFailures()) {
-                    failureHandler.apply(request);
-                }
-            }
-
-            @Override
-            public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
-                failureHandler.apply(request);
-            }
-        };
+        BulkProcessor.Listener listener = new BulkExecutionListener(failureHandler);
 
         BulkProcessor.Builder builder = BulkProcessor.builder((Client) clientObjectFactory.createClient(), listener)
                 .setBulkActions(batchSize)
                 .setFlushInterval(TimeValue.timeValueMillis(deliveryInterval));
         return new BulkProcessorDelegate(builder.build());
+    }
+
+    class BulkExecutionListener implements BulkProcessor.Listener {
+
+        private Function<BulkRequest, Boolean> failureHandler;
+
+        BulkExecutionListener(Function<BulkRequest, Boolean> failureHandler) {
+            this.failureHandler = failureHandler;
+        }
+
+        @Override
+        public void beforeBulk(long executionId, BulkRequest request) {
+        }
+
+        @Override
+        public void afterBulk(long executionId, BulkRequest request, BulkResponse response) {
+            if (response.hasFailures()) {
+                failureHandler.apply(request);
+            }
+
+        }
+
+        @Override
+        public void afterBulk(long executionId, BulkRequest request, Throwable failure) {
+            failureHandler.apply(request);
+        }
     }
 }
