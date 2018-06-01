@@ -2,6 +2,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 /*-
  * #%L
+ * log4j2-elasticsearch
  * %%
  * Copyright (C) 2017 Rafal Foltynski
  * %%
@@ -11,10 +12,10 @@ package org.appenders.log4j2.elasticsearch.jest;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,23 +27,32 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
-import org.appenders.log4j2.elasticsearch.BulkEmitter;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import io.searchbox.core.Bulk;
+import io.searchbox.core.Index;
+import io.searchbox.core.JestBatchIntrospector;
+import org.appenders.log4j2.elasticsearch.BatchBuilder;
+import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class BulkEmitterFactory implements BatchEmitterFactory<BulkEmitter> {
+public class JestBulkOperationsTest {
 
-    @Override
-    public boolean accepts(Class clientObjectFactoryClass) {
-        return JestHttpObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
-    }
+    @Test
+    public void bulkContainsAddedItem() {
+        // given
+        BatchOperations<Bulk> bulkOperations = JestHttpObjectFactoryTest.createTestObjectFactoryBuilder().build().createBatchOperations();
+        BatchBuilder<Bulk> batchBuilder = bulkOperations.createBatchBuilder();
 
-    @Override
-    public BulkEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
-        BulkEmitter bulkEmitter = new BulkEmitter(batchSize, deliveryInterval, clientObjectFactory.createBatchOperations());
-        bulkEmitter.addListener(clientObjectFactory.createBatchListener(failoverPolicy));
-        return bulkEmitter;
+        String testPayload = "{ \"testfield\": \"testvalue\" }";
+        Index item = (Index) bulkOperations.createBatchItem("testIndex", testPayload);
+
+        // when
+        batchBuilder.add(item);
+        Bulk bulk = batchBuilder.build();
+
+        // then
+        JestBatchIntrospector introspector = new JestBatchIntrospector();
+        Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
     }
 
 }

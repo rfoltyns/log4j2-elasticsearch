@@ -35,8 +35,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+
 import static org.mockito.Matchers.notNull;
 import static org.appenders.log4j2.elasticsearch.jest.XPackAuthTest.createDefaultClientConfigBuilder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -130,6 +137,33 @@ public class PEMCertInfoTest {
                 .withCaPath(null)
                 .build();
 
+    }
+
+    @Test
+    public void builderThrowsIfKeyIsInvalid() throws IOException {
+
+        // given
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage(PEMCertInfo.configExceptionMessage);
+
+        File invalidKey = createInvalidKey();
+
+        PEMCertInfo testCertInfo = createTestCertInfoBuilder()
+                .withKeyPath(invalidKey.getAbsolutePath())
+                .build();
+
+        // when
+        testCertInfo.applyTo(mock(HttpClientConfig.Builder.class));
+
+    }
+
+    private File createInvalidKey() throws IOException {
+        File tempFile = File.createTempFile("log4j2-elasticsaarch", "certinfo-test");
+        tempFile.deleteOnExit();
+        FileOutputStream fileOutputStream = new FileOutputStream(tempFile);
+        fileOutputStream.write("cert-test".getBytes());
+        fileOutputStream.close();
+        return  tempFile;
     }
 
 }

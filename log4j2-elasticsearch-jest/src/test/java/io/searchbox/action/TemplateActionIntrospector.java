@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.jest;
+package io.searchbox.action;
 
 /*-
  * #%L
@@ -11,10 +11,10 @@ package org.appenders.log4j2.elasticsearch.jest;
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -26,23 +26,12 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
-import org.appenders.log4j2.elasticsearch.BulkEmitter;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import io.searchbox.indices.template.TemplateAction;
 
-public class BulkEmitterFactory implements BatchEmitterFactory<BulkEmitter> {
+public class TemplateActionIntrospector {
 
-    @Override
-    public boolean accepts(Class clientObjectFactoryClass) {
-        return JestHttpObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
-    }
-
-    @Override
-    public BulkEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
-        BulkEmitter bulkEmitter = new BulkEmitter(batchSize, deliveryInterval, clientObjectFactory.createBatchOperations());
-        bulkEmitter.addListener(clientObjectFactory.createBatchListener(failoverPolicy));
-        return bulkEmitter;
+    public String getPayload(TemplateAction templateAction) {
+        return (String) templateAction.payload;
     }
 
 }

@@ -27,36 +27,37 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 
+import io.searchbox.client.JestClient;
+import io.searchbox.client.JestResult;
+import io.searchbox.client.JestResultHandler;
+import io.searchbox.core.Bulk;
+import io.searchbox.core.Index;
+import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
+import org.junit.Assert;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+import org.powermock.api.mockito.PowerMockito;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.function.Function;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.function.Function;
-
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
-import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
-import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
-
-import io.searchbox.client.JestClient;
-import io.searchbox.client.JestResult;
-import io.searchbox.client.JestResultHandler;
-import io.searchbox.core.Bulk;
-import io.searchbox.core.Index;
 
 public class JestHttpObjectFactoryTest {
 
@@ -100,7 +101,22 @@ public class JestHttpObjectFactoryTest {
         serverUrisList.add("test");
 
         // then
-        assertNotEquals(serverUrisList.size(), config.getServerList().size());
+        assertNotEquals(serverUrisList, config.getServerList());
+
+    }
+
+    @Test
+    public void clientIsInitializedOnlyOnce() {
+
+        // given
+        JestHttpObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
+
+        // when
+        JestClient client1 = factory.createClient();
+        JestClient client2 = factory.createClient();
+
+        // then
+        assertEquals(client1, client2);
 
     }
 
@@ -130,6 +146,23 @@ public class JestHttpObjectFactoryTest {
         assertEquals(TEST_DISCOVERY_ENABLED,
                 PowerMockito.field(config.getClass(), "discoveryEnabled").get(config));
 
+    }
+
+    @Test
+    public void authIsAppliedIfCOnfigured() {
+
+        // given
+        Auth auth = mock(Auth.class);
+
+        JestHttpObjectFactory factory = createTestObjectFactoryBuilder()
+                .withAuth(auth)
+                .build();
+
+        // when
+        factory.createClient();
+
+        //then
+        verify(auth).configure(any());
     }
 
     @Test

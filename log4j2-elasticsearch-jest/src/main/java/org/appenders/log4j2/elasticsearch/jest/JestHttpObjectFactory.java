@@ -53,6 +53,7 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 
@@ -89,7 +90,6 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     @Override
     public JestClient createClient() {
         if (client == null) {
-            JestClientFactory factory = new JestClientFactory();
 
             HttpClientConfig.Builder builder = new HttpClientConfig.Builder(serverUris)
                     .maxTotalConnection(maxTotalConnections)
@@ -103,9 +103,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 auth.configure(builder);
             }
 
-            factory.setHttpClientConfig(builder.build());
-
-            client = factory.getObject();
+            client = getClientProvider(builder).createClient();
         }
         return client;
     }
@@ -153,10 +151,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         try {
             JestResult result = createClient().execute(templateAction);
             if (!result.isSucceeded()) {
-                LOG.error("Unable to add index template. " + result.getErrorMessage());
+                throw new ConfigurationException("IndexTemplate not added: " + result.getErrorMessage());
             }
         } catch (IOException e) {
-            LOG.error("Unable to add index template", e);
+            throw new ConfigurationException("IndexTemplate not added: " + e.getMessage());
         }
     }
 
@@ -178,6 +176,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     @PluginBuilderFactory
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    // visible for testing
+    ClientProvider<JestClient> getClientProvider(HttpClientConfig.Builder clientConfigBuilder) {
+        return new JestClientProvider(clientConfigBuilder);
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<JestHttpObjectFactory> {
@@ -248,4 +251,20 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         }
     }
 
+    class JestClientProvider implements ClientProvider<JestClient> {
+
+        private final HttpClientConfig.Builder clientConfigBuilder;
+
+        public JestClientProvider(HttpClientConfig.Builder clientConfigBuilder) {
+            this.clientConfigBuilder = clientConfigBuilder;
+        }
+
+        @Override
+        public JestClient createClient() {
+            JestClientFactory jestClientFactory = new JestClientFactory();
+            jestClientFactory.setHttpClientConfig(clientConfigBuilder.build());
+            return jestClientFactory.getObject();
+        }
+
+    }
 }
