@@ -28,6 +28,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginAliases;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.CertInfo;
@@ -38,15 +39,18 @@ public class PEMCertInfo implements CertInfo<Settings.Builder> {
 
     static final String XPACK_SECURITY_TRANSPORT_SSL_ENABLED = "xpack.security.transport.ssl.enabled";
     static final String XPACK_SSL_KEY = "xpack.ssl.key";
+    static final String XPACK_SSL_KEY_PASSPHRASE = "xpack.ssl.key_passphrase";
     static final String XPACK_SSL_CERTIFICATE = "xpack.ssl.certificate";
     static final String XPACK_SSL_CERTIFICATE_AUTHORITIES = "xpack.ssl.certificate_authorities";
 
     private final String keyPath;
+    private final String keyPassphrase;
     private final String clientCertPath;
     private final String caPath;
 
-    protected PEMCertInfo(String keyPath, String clientCertPath, String caPath) {
+    protected PEMCertInfo(String keyPath, String keyPassphrase, String clientCertPath, String caPath) {
         this.keyPath = keyPath;
+        this.keyPassphrase = keyPassphrase;
         this.clientCertPath = clientCertPath;
         this.caPath = caPath;
     }
@@ -58,6 +62,10 @@ public class PEMCertInfo implements CertInfo<Settings.Builder> {
 
         if (keyPath != null) {
             clientConfigBuilder.put(XPACK_SSL_KEY, keyPath);
+        }
+
+        if (keyPassphrase != null) {
+            clientConfigBuilder.put(XPACK_SSL_KEY_PASSPHRASE, keyPassphrase);
         }
 
         if (clientCertPath != null) {
@@ -86,9 +94,13 @@ public class PEMCertInfo implements CertInfo<Settings.Builder> {
         @PluginBuilderAttribute
         private String caPath;
 
+        @PluginBuilderAttribute
+        @PluginAliases({"keyPassword"})
+        private String keyPassphrase;
+
         @Override
         public PEMCertInfo build() {
-            return new PEMCertInfo(keyPath, clientCertPath, caPath);
+            return new PEMCertInfo(keyPath, keyPassphrase, clientCertPath, caPath);
         }
 
         public Builder withKeyPath(String keyPath) {
@@ -106,6 +118,10 @@ public class PEMCertInfo implements CertInfo<Settings.Builder> {
             return this;
         }
 
+        public Builder withKeyPassphrase(String keyPassphrase) {
+            this.keyPassphrase = keyPassphrase;
+            return this;
+        }
     }
 
 }

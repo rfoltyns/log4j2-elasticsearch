@@ -40,9 +40,10 @@
                 <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300">
                     <XPackAuth>
                         <PlainCredentials username="admin" password="changeme" />
-                        <PEM keyPath="${sys:certInfo.keyPath}"
-                             clientCertPath="${sys:certInfo.clientCertPath}"
-                             caPath="${sys:certInfo.caPath}" />
+                        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
+                             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                             caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
                 </ElasticsearchBulkProcessor>
                 <NoopFailoverPolicy />

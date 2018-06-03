@@ -36,6 +36,7 @@ public class PEMCertInfoTest {
     public static final String TEST_KEY_PATH = "testKeyPath";
     public static final String TEST_CLIENT_CERT_PATH = "testClientCertPath";
     public static final String TEST_CA_PATH = "testCaPath";
+    public static final String TEST_KEY_PASSPHRASE = "testKeyPassphrase";
 
     public static PEMCertInfo.Builder createTestCertInfoBuilder() {
         return PEMCertInfo.newBuilder()
@@ -80,6 +81,7 @@ public class PEMCertInfoTest {
         // given
         PEMCertInfo certInfo = createTestCertInfoBuilder()
                 .withKeyPath(TEST_KEY_PATH)
+                .withKeyPassphrase(TEST_KEY_PASSPHRASE)
                 .withClientCertPath(TEST_CLIENT_CERT_PATH)
                 .withCaPath(TEST_CA_PATH)
                 .build();
@@ -91,6 +93,7 @@ public class PEMCertInfoTest {
 
         // then
         Assert.assertEquals(TEST_KEY_PATH, settings.get(PEMCertInfo.XPACK_SSL_KEY));
+        Assert.assertEquals(TEST_KEY_PASSPHRASE, settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
         Assert.assertEquals(TEST_CLIENT_CERT_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE));
         Assert.assertEquals(TEST_CA_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
     }
@@ -131,7 +134,6 @@ public class PEMCertInfoTest {
 
     }
 
-
     @Test
     public void caPathIsNotAppliedIfNotConfigured() {
 
@@ -147,6 +149,24 @@ public class PEMCertInfoTest {
 
         // then
         Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
+
+    }
+
+    @Test
+    public void keyPasswordIsNotAppliedIfNotConfigured() {
+
+        // given
+        PEMCertInfo certInfo = PEMCertInfo.newBuilder()
+                .withKeyPassphrase(null)
+                .build();
+
+        Settings.Builder settings = Settings.builder();
+
+        // when
+        certInfo.applyTo(settings);
+
+        // then
+        Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
 
     }
 }

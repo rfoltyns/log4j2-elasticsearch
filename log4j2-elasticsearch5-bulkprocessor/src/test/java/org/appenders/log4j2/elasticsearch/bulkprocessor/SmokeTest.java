@@ -80,9 +80,10 @@ public class SmokeTest {
         final Configuration config = ctx.getConfiguration();
 
         PEMCertInfo certInfo = PEMCertInfo.newBuilder()
-                .withKeyPath(System.getProperty("certInfo.keyPath"))
-                .withClientCertPath(System.getProperty("certInfo.clientCertPath"))
-                .withCaPath(System.getProperty("certInfo.caPath"))
+                .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
+                .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
+                .withClientCertPath(System.getProperty("pemCertInfo.clientCertPath"))
+                .withCaPath(System.getProperty("pemCertInfo.caPath"))
                 .build();
 
         PlainCredentials credentials = PlainCredentials.newBuilder()

@@ -97,9 +97,10 @@
                 <version>2.21.0</version>
                 <configuration>
                     <systemPropertyVariables>
-                        <certInfo.keyPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.key</certInfo.keyPath>
-                        <certInfo.clientCertPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.crt</certInfo.clientCertPath>
-                        <certInfo.caPath>${project.build.testOutputDirectory}/certificate-bundle/ca/ca.crt</certInfo.caPath>
+                        <pemCertInfo.keyPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.pass.key</pemCertInfo.keyPath>
+                        <pemCertInfo.keyPassphrase>changeme</pemCertInfo.keyPassphrase>
+                        <pemCertInfo.clientCertPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.crt</pemCertInfo.clientCertPath>
+                        <pemCertInfo.caPath>${project.build.testOutputDirectory}/certificate-bundle/ca/ca.crt</pemCertInfo.caPath>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
