@@ -33,6 +33,7 @@ import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginAliases;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
@@ -56,13 +57,15 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
     static final String PLUGIN_NAME = "PEM";
 
     private final String keyPath;
+    private final String keyPassphrase;
     private final String clientCertPath;
     private final String caPath;
 
     static final String configExceptionMessage = "Failed to apply SSL/TLS settings";
 
-    protected PEMCertInfo(String keyPath, String clientCertPath, String caPath) {
+    protected PEMCertInfo(String keyPath, String keyPassphrase, String clientCertPath, String caPath) {
         this.keyPath = keyPath;
+        this.keyPassphrase = keyPassphrase;
         this.clientCertPath = clientCertPath;
         this.caPath = caPath;
     }
@@ -79,11 +82,9 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
                 FileInputStream key = new FileInputStream(new File(keyPath));
                 FileInputStream certificateAuthoritiies = new FileInputStream(new File(caPath))
         ) {
-            // TODO: add support for passwords
-            KeyStore keyStore = PemReader.loadKeyStore(clientCert, key, Optional.ofNullable(null));
+            KeyStore keyStore = PemReader.loadKeyStore(clientCert, key, Optional.ofNullable(keyPassphrase));
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            // TODO: add support for passwords
-            keyManagerFactory.init(keyStore, "".toCharArray());
+            keyManagerFactory.init(keyStore, keyPassphrase.toCharArray());
 
             KeyStore trustStore = PemReader.loadTrustStore(certificateAuthoritiies);
 
@@ -122,6 +123,10 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
         @Required(message = "No caPath provided for " + PLUGIN_NAME)
         private String caPath;
 
+        @PluginBuilderAttribute
+        @PluginAliases({"keyPassword"})
+        private String keyPassphrase;
+
         @Override
         public PEMCertInfo build() {
             if (keyPath == null) {
@@ -133,7 +138,7 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
             if (caPath == null) {
                 throw new ConfigurationException("No caPath provided for " + PLUGIN_NAME);
             }
-            return new PEMCertInfo(keyPath, clientCertPath, caPath);
+            return new PEMCertInfo(keyPath, keyPassphrase, clientCertPath, caPath);
         }
 
         public Builder withKeyPath(String keyPath) {
@@ -151,6 +156,10 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
             return this;
         }
 
+        public Builder withKeyPassphrase(String keyPassphrase) {
+            this.keyPassphrase = keyPassphrase;
+            return this;
+        }
     }
 
 }

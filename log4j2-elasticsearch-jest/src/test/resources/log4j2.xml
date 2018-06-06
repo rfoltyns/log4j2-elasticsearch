@@ -42,13 +42,14 @@
                     defaultMaxTotalConnectionPerRoute="4">
                     <XPackAuth>
                         <PlainCredentials username="admin" password="changeme" />
-                        <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
-                             keystorePassword="${sys:jksCertInfo.keystorePassword}"
-                             truststorePath="${sys:jksCertInfo.truststorePath}"
-                             truststorePassword="${sys:jksCertInfo.truststorePassword}" />
-                        <!--<PEM keyPath="${sys:certInfo.keyPath}"-->
-                             <!--clientCertPath="${sys:certInfo.clientCertPath}"-->
-                             <!--caPath="${sys:certInfo.caPath}" />-->
+                        <!--<JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->
+                             <!--keystorePassword="${sys:jksCertInfo.keystorePassword}"-->
+                             <!--truststorePath="${sys:jksCertInfo.truststorePath}"-->
+                             <!--truststorePassword="${sys:jksCertInfo.truststorePassword}" />-->
+                        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
+                             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                             caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
                 </JestHttp>
                 <!--<AppenderRefFailoverPolicy>

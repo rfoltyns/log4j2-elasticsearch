@@ -3,8 +3,8 @@ package org.appenders.log4j2.elasticsearch.thirdparty;
 /*
  * Copyright 2014 The Netty Project
  *
- * Modifications (rfoltyns): File parameters changed to FileInputStream to make use of AutoCloseable in try clauses
- *
+ * Modification (rfoltyns): File parameters changed to FileInputStream to make use of AutoCloseable in try clauses
+ * Modification (rfoltyns): readPrivateKey replaced with bcpkix based impl
  * The Netty Project licenses this file to you under the Apache License,
  * version 2.0 (the "License"); you may not use this file except in compliance
  * with the License. You may obtain a copy of the License at:
@@ -21,11 +21,8 @@ package org.appenders.log4j2.elasticsearch.thirdparty;
  *
  */
 
-import javax.crypto.Cipher;
-import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
+import org.appenders.log4j2.elasticsearch.tls.KeyReader;
+
 import javax.security.auth.x500.X500Principal;
 
 import java.io.ByteArrayInputStream;
@@ -37,7 +34,6 @@ import java.nio.CharBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -54,7 +50,6 @@ import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static javax.crypto.Cipher.DECRYPT_MODE;
 
 public final class PemReader
 {
@@ -62,12 +57,6 @@ public final class PemReader
             "-+BEGIN\\s+.*CERTIFICATE[^-]*-+(?:\\s|\\r|\\n)+" + // Header
                     "([a-z0-9+/=\\r\\n]+)" +                    // Base64 text
                     "-+END\\s+.*CERTIFICATE[^-]*-+",            // Footer
-            CASE_INSENSITIVE);
-
-    private static final Pattern KEY_PATTERN = Pattern.compile(
-            "-+BEGIN\\s+.*PRIVATE\\s+KEY[^-]*-+(?:\\s|\\r|\\n)+" + // Header
-                    "([a-z0-9+/=\\r\\n]+)" +                       // Base64 text
-                    "-+END\\s+.*PRIVATE\\s+KEY[^-]*-+",            // Footer
             CASE_INSENSITIVE);
 
     private PemReader() {}
@@ -89,7 +78,7 @@ public final class PemReader
     public static KeyStore loadKeyStore(FileInputStream certificateChainFis, FileInputStream privateKeyFis, Optional<String> keyPassword)
             throws IOException, GeneralSecurityException
     {
-        PKCS8EncodedKeySpec encodedKeySpec = readPrivateKey(privateKeyFis, keyPassword);
+        PKCS8EncodedKeySpec encodedKeySpec = new KeyReader().readPrivateKey(privateKeyFis, keyPassword);
         PrivateKey key;
         try {
             KeyFactory keyFactory = KeyFactory.getInstance("RSA");
@@ -128,31 +117,6 @@ public final class PemReader
         }
 
         return certificates;
-    }
-
-    private static PKCS8EncodedKeySpec readPrivateKey(FileInputStream fis, Optional<String> keyPassword)
-            throws IOException, GeneralSecurityException
-    {
-        String content = readFile(fis);
-
-        Matcher matcher = KEY_PATTERN.matcher(content);
-        if (!matcher.find()) {
-            throw new KeyStoreException("found no private key: " + fis);
-        }
-        byte[] encodedKey = base64Decode(matcher.group(1));
-
-        if (!keyPassword.isPresent()) {
-            return new PKCS8EncodedKeySpec(encodedKey);
-        }
-
-        EncryptedPrivateKeyInfo encryptedPrivateKeyInfo = new EncryptedPrivateKeyInfo(encodedKey);
-        SecretKeyFactory keyFactory = SecretKeyFactory.getInstance(encryptedPrivateKeyInfo.getAlgName());
-        SecretKey secretKey = keyFactory.generateSecret(new PBEKeySpec(keyPassword.get().toCharArray()));
-
-        Cipher cipher = Cipher.getInstance(encryptedPrivateKeyInfo.getAlgName());
-        cipher.init(DECRYPT_MODE, secretKey, encryptedPrivateKeyInfo.getAlgParameters());
-
-        return encryptedPrivateKeyInfo.getKeySpec(cipher);
     }
 
     private static byte[] base64Decode(String base64)

@@ -49,16 +49,19 @@ import static org.mockito.Mockito.verify;
 
 public class PEMCertInfoTest {
 
-    public static final String TEST_KEY_PATH = System.getProperty("certInfo.keyPath");
-    public static final String TEST_CLIENT_CERT_PATH = System.getProperty("certInfo.clientCertPath");
-    public static final String TEST_CA_PATH = System.getProperty("certInfo.caPath");
+    public static final String TEST_KEY_PATH = System.getProperty("pemCertInfo.keyPath");
+    public static final String TEST_KEY_PATH_WITH_PASSPHRASE = System.getProperty("pemCertInfo.keyPathWithPassphrase");
+    public static final String TEST_CLIENT_CERT_PATH = System.getProperty("pemCertInfo.clientCertPath");
+    public static final String TEST_CA_PATH = System.getProperty("pemCertInfo.caPath");
+    public static final String TEST_KEY_PASSPHRASE = System.getProperty("pemCertInfo.keyPassphrase");
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     public static PEMCertInfo.Builder createTestCertInfoBuilder() {
         return PEMCertInfo.newBuilder()
-                .withKeyPath(TEST_KEY_PATH)
+                .withKeyPath(TEST_KEY_PATH_WITH_PASSPHRASE)
+                .withKeyPassphrase(TEST_KEY_PASSPHRASE)
                 .withClientCertPath(TEST_CLIENT_CERT_PATH)
                 .withCaPath(TEST_CA_PATH);
     }
@@ -83,6 +86,7 @@ public class PEMCertInfoTest {
         // given
         PEMCertInfo certInfo = createTestCertInfoBuilder()
                 .withKeyPath(TEST_KEY_PATH)
+                .withKeyPassphrase(TEST_KEY_PASSPHRASE)
                 .withClientCertPath(TEST_CLIENT_CERT_PATH)
                 .withCaPath(TEST_CA_PATH)
                 .build();
@@ -140,17 +144,16 @@ public class PEMCertInfoTest {
     }
 
     @Test
-    public void builderThrowsIfKeyIsInvalid() throws IOException {
+    public void builderThrowsIfCantReadKey() {
 
         // given
+        PEMCertInfo testCertInfo = createTestCertInfoBuilder()
+                .withKeyPath(TEST_KEY_PATH_WITH_PASSPHRASE)
+                .withKeyPassphrase("")
+                .build();
+
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage(PEMCertInfo.configExceptionMessage);
-
-        File invalidKey = createInvalidKey();
-
-        PEMCertInfo testCertInfo = createTestCertInfoBuilder()
-                .withKeyPath(invalidKey.getAbsolutePath())
-                .build();
 
         // when
         testCertInfo.applyTo(mock(HttpClientConfig.Builder.class));
