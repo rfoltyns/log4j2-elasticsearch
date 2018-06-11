@@ -1,115 +1,55 @@
-# log4j2-elaticsearch overview
+# log4j2-elasticsearch overview
 
-This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch cluster.
+This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
 Project consists of:
-* `log4j-elasticsearch-core` module - skeleton provider for conrete implementations
-* `log4j-elasticsearch-*` modules - concrete implementations using different clients (e.g.: Jest, BulkProcessor)
+* `log4j-elasticsearch-core` - skeleton provider for conrete implementations
+* `log4j-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x and 6.x clusters
+* `log4j-elasticsearch2-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/java-docs-bulk-processor.html) compatible with 2.x clusters
+* `log4j-elasticsearch5-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/java-docs-bulk-processor.html) compatible with 5.x and 6.x clusters
 
-### Maven
+## Features
 
-##### Released to [Sonatype OSS repos](https://oss.sonatype.org/content/repositories/releases/org/appenders/log4j/)
-Visit submodules' documentation or [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for XML snippets.
+* Asynchronous log delivery
+* Batch size and flush interval configuration
+* Failover (redirect failed batch to alternative target)
+* JSON message format ([user-provided]() or default)
+* (since 1.1) Index rollover (hourly, daily, etc.)
+* (1.1) Index template configuration
+* (1.2) Basic Authentication (XPack Security and Shield support)
+* (1.2) HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
 
-### Example
+## Usage
 
+1. Add this snippet to your `pom.xml` file:
+```xml
+<dependency>
+    <groupId>org.appenders.log4j</groupId>
+    <artifactId>log4j2-elasticsearch-jest</artifactId>
+    <version>1.1.1</version>
+</dependency>
+```
+(ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below)
+
+2. Add this snippet to `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
-        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" />
+        <IndexName indexName="log4j2" />
         <AsyncBatchDelivery>
             <JestHttp serverUris="http://localhost:9200" />
         </AsyncBatchDelivery>
     </Elasticsearch>
 </Appenders>
 ```
+or [configure programatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
 
-## Configurability
-
-### Delivery frequency
-Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
-* `deliveryInterval` - millis between deliveries
-* `batchSize` - maximum (rough) number of logs in one batch
-
-Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
-
-`deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
-
-### Index name
-Since 1.1, index name can be defined using `IndexName` tag:
-
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <IndexName indexName="log4j2" />
-        ...
-    </Elasticsearch>
-</Appenders>
-```
-
-### Index rollover
-Since 1.1, rolling index can be defined using `RollingIndexName` tag:
-
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <!-- zone is optional. OS timezone is used by default -->
-        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" />
-        ...
-    </Elasticsearch>
-</Appenders>
-```
-
-`pattern` accepts any valid date pattern with years down to millis (although rolling daily or weekly should be sufficient for most use cases)
-`IndexName` and `RollingIndexName` are mutually exclusive. Only one per appender should be defined, otherwise they'll override each other.
-
-### Index template
-Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be created during appender startup. Template can be loaded from specified file or defined directly in the XML config:
-
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <IndexTemplate name="template1" path="<absolute_path_or_classpath>" />
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
-```
-or
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <IndexTemplate name="template1" >
-            {
-                // your index template in JSON format
-            }
-            </IndexTemplate>
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
-```
-
-NOTE: Be aware that template parsing errors on cluster side DO NOT prevent plugin from loading - error is logged on client side and startup continues.
-
-### Message output
-There are at least three ways to generate output
-* (default) JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
-* `messageOnly="true"` can be configured set to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation
-* custom `org.apache.logging.log4j.core.layout.AbstractStringLayout` can be provided to appender config to use any other serialization mechanism
-
-### Failover
-Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
+3. log.info("Hello, World!");
 
 ## Dependencies
 
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
 Please visit [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for an overview of provided and compile dependencies
+
+## Released to [Sonatype OSS repos](https://oss.sonatype.org/content/repositories/releases/org/appenders/log4j/)
+Visit submodules' documentation or [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for XML snippets.

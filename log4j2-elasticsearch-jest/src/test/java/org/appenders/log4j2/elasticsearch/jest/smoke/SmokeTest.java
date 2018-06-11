@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.jest;
+package org.appenders.log4j2.elasticsearch.jest.smoke;
 
 /*-
  * #%L
@@ -43,6 +43,10 @@ import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
+import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
+import org.appenders.log4j2.elasticsearch.jest.PlainCredentials;
+import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -56,6 +60,10 @@ import static java.lang.Thread.sleep;
 @Ignore
 public class SmokeTest {
 
+    protected String defaultLoggerName = "elasticsearch";
+
+    private final AtomicInteger msgIndex = new AtomicInteger();
+
     @BeforeClass
     public static void beforeClass() {
         System.setProperty("log4j.configurationFile", "log4j2.xml");
@@ -65,10 +73,10 @@ public class SmokeTest {
     public void programmaticConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-        createLoggerProgrammatically();
+        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false));
 
-        Logger logger = LogManager.getLogger("elasticsearch");
-        indexLogs(logger);
+        Logger logger = LogManager.getLogger(defaultLoggerName);
+        generateLogs(logger, 1000000, 100);
     }
 
     @Test
@@ -76,14 +84,35 @@ public class SmokeTest {
 
         System.setProperty("log4j.configurationFile", "log4j2.xml");
 
-        Logger logger = LogManager.getLogger("elasticsearch");
-        indexLogs(logger);
+        Logger logger = LogManager.getLogger(defaultLoggerName);
+        generateLogs(logger, 1000000, 100);
     }
 
-    private static void createLoggerProgrammatically() {
+    static void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder) {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
 
+
+        Appender appender = appenderBuilder.build();
+
+        appender.start();
+
+        config.addAppender(appender);
+
+        AppenderRef ref = AppenderRef.createAppenderRef("elasticsearch", null, null);
+        AppenderRef[] refs = new AppenderRef[] {ref};
+
+        LoggerConfig loggerConfig = LoggerConfig.createLogger(false, Level.INFO, "org.apache.logging.log4j",
+                "true", refs, null, config, null );
+
+        loggerConfig.addAppender(appender, null, null);
+
+        config.addLogger("elasticsearch", loggerConfig);
+
+        ctx.updateLoggers();
+    }
+
+    static ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly) {
         CertInfo certInfo = PEMCertInfo.newBuilder()
                 .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
                 .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
@@ -123,37 +152,21 @@ public class SmokeTest {
                 .withIndexName("log4j2_test_jest")
                 .build();
 
-        Appender appender = ElasticsearchAppender.newBuilder()
+        return ElasticsearchAppender.newBuilder()
                 .withName("elasticsearch")
+                .withMessageOnly(messageOnly)
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)
-                .withIgnoreExceptions(false)
-                .build();
-
-        appender.start();
-
-        config.addAppender(appender);
-
-        AppenderRef ref = AppenderRef.createAppenderRef("elasticsearch", null, null);
-        AppenderRef[] refs = new AppenderRef[] {ref};
-
-        LoggerConfig loggerConfig = LoggerConfig.createLogger(false, Level.INFO, "org.apache.logging.log4j",
-                "true", refs, null, config, null );
-
-        loggerConfig.addAppender(appender, null, null);
-
-        config.addLogger("elasticsearch", loggerConfig);
-
-        ctx.updateLoggers();
+                .withIgnoreExceptions(false);
     }
 
-    private void indexLogs(Logger logger) throws InterruptedException {
+    protected void generateLogs(Logger logger, int numberOfLogs, int numberOfProducers) throws InterruptedException {
         AtomicInteger counter = new AtomicInteger();
         CountDownLatch latch = new CountDownLatch(10);
 
-        for (int thIndex = 0; thIndex < 100; thIndex++) {
+        for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
             new Thread(() -> {
-                for (int msgIndex = 0; msgIndex < 10000; msgIndex++) {
+                for (;msgIndex.getAndIncrement() < numberOfLogs;) {
                     logger.info("Message " + counter.incrementAndGet());
                     try {
                         sleep(2);

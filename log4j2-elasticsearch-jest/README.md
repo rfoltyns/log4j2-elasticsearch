@@ -1,7 +1,7 @@
 # log4j2-elasticsearch-jest
 This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
-### Maven
+## Maven
 
 To use it, add this XML snippet to your `pom.xml` file:
 ```xml
@@ -12,7 +12,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 </dependency>
 ```
 
-### Example
+## Appender configuration
 
 Add this snippet to `log4j2.xml` configuration:
 ```xml
@@ -26,11 +26,9 @@ Add this snippet to `log4j2.xml` configuration:
 </Appenders>
 ```
 
-or configure directly via Java API.
+or [configure programmatcally](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java).
 
-##### It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.
-
-## Configurability
+It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.
 
 ### Delivery frequency
 Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
@@ -40,6 +38,15 @@ Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
 Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
 
 `deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
+
+### Message output
+There are at least three ways to generate output
+* (default) JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
+* `messageOnly="true"` can be configured set to make use of [user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation
+* custom `org.apache.logging.log4j.core.layout.AbstractStringLayout` can be provided to appender config to use any other serialization mechanism
+
+### Failover
+Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
 
 ### Index name
 Since 1.1, index name can be defined using `IndexName` tag:
@@ -104,21 +111,58 @@ or
 </Appenders>
 ```
 
-NOTE: Be aware that template parsing errors on cluster side DO NOT prevent plugin from loading - error is logged on client side and startup continues.
+### HTTP
+By default, Jest uses Apache HTTP client. Basic configuration parameters were exposed via `JestHttp` tag.
 
-### Message output
-There are at least three ways to generate output
-* (default) JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
-* `messageOnly="true"` can be configured set to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation
-* custom `org.apache.logging.log4j.core.layout.AbstractStringLayout` can be provided to appender config to use any other serialization mechanism
+### HTTPS
+Since 1.2, HTTPS can be configured using `XPackAuth` tag:
 
-### Failover
-Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
+#### PEM cert config
+```
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <XPackAuth>
+                <PlainCredentials username="admin" password="changeme" />
+                <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                     keyPassphrase="${sys:pemCertInfo.keyPassphrase}" <!-- optional -->
+                     clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                     caPath="${sys:pemCertInfo.caPath}" />
+            </XPackAuth>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
 
-### HTTP parameters
-Jest uses Apache HTTP client. Basic configuration parameters were exposed via `JestHttp` appender config element.
+#### JKS cert config
+```
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <XPackAuth>
+                <PlainCredentials username="admin" password="changeme" />
+                <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
+                     keystorePassword="${sys:jksCertInfo.keystorePassword}" <!-- optional -->
+                     truststorePath="${sys:jksCertInfo.truststorePath}"
+                     truststorePassword="${sys:jksCertInfo.truststorePassword}" /> <!-- optional -->
+            </XPackAuth>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
 
 ## Dependencies
 
-Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+Be aware that following jars have to be provided by user for this library to work in default mode:
+* Jackson FasterXML: `com.fasterxml.jackson.core:jackson-core,jackson-databind,jackson-annotations`
+* Log4j2: `org.apache.logging.log4j:log4-api,log4j-core`
+* Disruptor (if using `AsyncAppender`): `com.lmax:distuptor`
+* Bouncy Castle (if using `XPackAuth`): `org.bouncycastle:bcprov-jdk15on,bcpkix-jdk15on`
+
 See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch-jest/latest) for a list of dependencies.
