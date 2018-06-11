@@ -38,15 +38,15 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Credentials;
 
-@Plugin(name = PlainCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = Credentials.ELEMENT_TYPE)
-public final class PlainCredentials implements Credentials<HttpClientConfig.Builder> {
+@Plugin(name = BasicCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = Credentials.ELEMENT_TYPE)
+public final class BasicCredentials implements Credentials<HttpClientConfig.Builder> {
 
-    static final String PLUGIN_NAME = "PlainCredentials";
+    static final String PLUGIN_NAME = "BasicCredentials";
 
     private final String username;
     private final String password;
 
-    protected PlainCredentials(String username, String password) {
+    protected BasicCredentials(String username, String password) {
         this.username = username;
         this.password = password;
     }
@@ -65,29 +65,29 @@ public final class PlainCredentials implements Credentials<HttpClientConfig.Buil
     }
 
     @PluginBuilderFactory
-    public static PlainCredentials.Builder newBuilder() {
-        return new PlainCredentials.Builder();
+    public static BasicCredentials.Builder newBuilder() {
+        return new BasicCredentials.Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<PlainCredentials> {
+    public static class Builder implements org.apache.logging.log4j.core.util.Builder<BasicCredentials> {
 
         @PluginBuilderAttribute
-        @Required(message = "No username provided for " + PlainCredentials.PLUGIN_NAME)
+        @Required(message = "No username provided for " + BasicCredentials.PLUGIN_NAME)
         private String username;
 
         @PluginBuilderAttribute
-        @Required(message = "No password provided for " + PlainCredentials.PLUGIN_NAME)
+        @Required(message = "No password provided for " + BasicCredentials.PLUGIN_NAME)
         private String password;
 
         @Override
-        public PlainCredentials build() {
+        public BasicCredentials build() {
             if (username == null) {
-                throw new ConfigurationException("No username provided for " + PlainCredentials.PLUGIN_NAME);
+                throw new ConfigurationException("No username provided for " + BasicCredentials.PLUGIN_NAME);
             }
             if (password == null) {
-                throw new ConfigurationException("No password provided for " + PlainCredentials.PLUGIN_NAME);
+                throw new ConfigurationException("No password provided for " + BasicCredentials.PLUGIN_NAME);
             }
-            return new PlainCredentials(username, password);
+            return new BasicCredentials(username, password);
         }
 
         public Builder withUsername(String username) {

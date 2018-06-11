@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class PlainCredentialsTest {
+public class BasicCredentialsTest {
 
     private static final String TEST_USER = "test_user";
     private static final String TEST_PASSWORD = "changeme";
@@ -43,8 +43,8 @@ public class PlainCredentialsTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    public static PlainCredentials.Builder createTestBuilder() {
-        return PlainCredentials.newBuilder()
+    public static BasicCredentials.Builder createTestBuilder() {
+        return BasicCredentials.newBuilder()
                 .withUsername(TEST_USER)
                 .withPassword(TEST_PASSWORD);
     }
@@ -53,10 +53,10 @@ public class PlainCredentialsTest {
     public void minimalBuilderTest() {
 
         // given
-        PlainCredentials.Builder builder = createTestBuilder();
+        BasicCredentials.Builder builder = createTestBuilder();
 
         // when
-        PlainCredentials certInfo = builder.build();
+        BasicCredentials certInfo = builder.build();
 
         // then
         Assert.assertNotNull(certInfo);
@@ -68,7 +68,7 @@ public class PlainCredentialsTest {
     public void throwsWhenBothParamsAreNull() {
 
         // given
-        PlainCredentials.Builder builder = createTestBuilder()
+        BasicCredentials.Builder builder = createTestBuilder()
                 .withUsername(null)
                 .withPassword(null);
 
@@ -87,7 +87,7 @@ public class PlainCredentialsTest {
     public void throwsWhenUsernameIsNull() {
 
         // given
-        PlainCredentials.Builder builder = createTestBuilder()
+        BasicCredentials.Builder builder = createTestBuilder()
                 .withUsername(null);
 
         expectedException.expect(ConfigurationException.class);
@@ -102,7 +102,7 @@ public class PlainCredentialsTest {
     public void throwsWhenPasswordIsNull() {
 
         // given
-        PlainCredentials.Builder builder = createTestBuilder()
+        BasicCredentials.Builder builder = createTestBuilder()
                 .withPassword(null);
 
         expectedException.expect(ConfigurationException.class);
@@ -118,7 +118,7 @@ public class PlainCredentialsTest {
     public void objectIsConfiguredWhenAllParamsAreSet() {
 
         // given
-        PlainCredentials plainCredentials = createTestBuilder()
+        BasicCredentials BasicCredentials = createTestBuilder()
                 .withUsername(TEST_USER)
                 .withPassword(TEST_PASSWORD)
                 .build();
@@ -126,10 +126,10 @@ public class PlainCredentialsTest {
         Settings.Builder settings = Settings.builder();
 
         // when
-        plainCredentials.applyTo(settings);
+        BasicCredentials.applyTo(settings);
 
         // then
-        Assert.assertEquals(TEST_USER + ":" + TEST_PASSWORD, settings.get(PlainCredentials.XPACK_SECURITY_USER));
+        Assert.assertEquals(TEST_USER + ":" + TEST_PASSWORD, settings.get(BasicCredentials.SHIELD_SECURITY_USER));
 
     }
 }

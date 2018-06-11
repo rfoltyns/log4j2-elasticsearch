@@ -124,7 +124,7 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
         ...
         <AsyncBatchDelivery>
             <XPackAuth>
-                <PlainCredentials username="admin" password="changeme" />
+                <BasicCredentials username="admin" password="changeme" />
                 <PEM keyPath="${sys:pemCertInfo.keyPath}"
                      keyPassphrase="${sys:pemCertInfo.keyPassphrase}" <!-- optional -->
                      clientCertPath="${sys:pemCertInfo.clientCertPath}"
@@ -144,7 +144,7 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
         ...
         <AsyncBatchDelivery>
             <XPackAuth>
-                <PlainCredentials username="admin" password="changeme" />
+                <BasicCredentials username="admin" password="changeme" />
                 <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
                      keystorePassword="${sys:jksCertInfo.keystorePassword}" <!-- optional -->
                      truststorePath="${sys:jksCertInfo.truststorePath}"

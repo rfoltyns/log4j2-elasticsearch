@@ -39,7 +39,7 @@
                 <IndexTemplate name="test_template_es5" path="classpath:indexTemplate.json" />
                 <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300">
                     <XPackAuth>
-                        <PlainCredentials username="admin" password="changeme" />
+                        <BasicCredentials username="admin" password="changeme" />
                         <PEM keyPath="${sys:pemCertInfo.keyPath}"
                              keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
                              clientCertPath="${sys:pemCertInfo.clientCertPath}"

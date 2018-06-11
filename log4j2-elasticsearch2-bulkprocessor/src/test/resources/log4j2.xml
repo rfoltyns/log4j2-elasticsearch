@@ -36,7 +36,7 @@
                 <IndexTemplate name="test_template_es2" path="classpath:indexTemplate.json" />
                 <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300">
                     <ShieldAuth>
-                        <PlainCredentials username="admin" password="changeme" />
+                        <BasicCredentials username="admin" password="changeme" />
                         <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
                              keystorePassword="${sys:jksCertInfo.keystorePassword}"
                              truststorePath="${sys:jksCertInfo.truststorePath}"

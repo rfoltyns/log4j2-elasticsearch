@@ -45,7 +45,7 @@ import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
-import org.appenders.log4j2.elasticsearch.jest.PlainCredentials;
+import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -127,7 +127,7 @@ public class SmokeTest {
 //                .withTruststorePassword(System.getProperty("jksCertInfo.truststorePassword"))
 //                .build();
 
-        Credentials credentials = PlainCredentials.newBuilder()
+        Credentials credentials = BasicCredentials.newBuilder()
                 .withUsername("admin")
                 .withPassword("changeme")
                 .build();

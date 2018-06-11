@@ -51,7 +51,7 @@ public class ShieldAuthTest {
 
     public static ShieldAuth.Builder createTestBuilder() {
         return ShieldAuth.newBuilder()
-                .withCredentials(PlainCredentialsTest.createTestBuilder().build())
+                .withCredentials(BasicCredentialsTest.createTestBuilder().build())
                 .withCertInfo(JKSCertInfoTest.createTestCertInfoBuilder().build());
     }
 

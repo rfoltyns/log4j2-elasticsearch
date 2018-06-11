@@ -51,7 +51,7 @@ public class XPackAuthTest {
 
     public static XPackAuth.Builder createTestBuilder() {
         return XPackAuth.newBuilder()
-                .withCredentials(PlainCredentialsTest.createTestBuilder().build())
+                .withCredentials(BasicCredentialsTest.createTestBuilder().build())
                 .withCertInfo(PEMCertInfoTest.createTestCertInfoBuilder().build());
     }
 

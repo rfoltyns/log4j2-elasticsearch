@@ -87,7 +87,7 @@ public class SmokeTest {
                 .withTruststorePassword(System.getProperty("jksCertInfo.truststorePassword"))
                 .build();
 
-        PlainCredentials credentials = PlainCredentials.newBuilder()
+        BasicCredentials credentials = BasicCredentials.newBuilder()
                 .withUsername("admin")
                 .withPassword("changeme")
                 .build();

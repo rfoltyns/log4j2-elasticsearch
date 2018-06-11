@@ -41,7 +41,7 @@
                     maxTotalConnection="40"
                     defaultMaxTotalConnectionPerRoute="4">
                     <XPackAuth>
-                        <PlainCredentials username="admin" password="changeme" />
+                        <BasicCredentials username="admin" password="changeme" />
                         <!--<JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->
                              <!--keystorePassword="${sys:jksCertInfo.keystorePassword}"-->
                              <!--truststorePath="${sys:jksCertInfo.truststorePath}"-->

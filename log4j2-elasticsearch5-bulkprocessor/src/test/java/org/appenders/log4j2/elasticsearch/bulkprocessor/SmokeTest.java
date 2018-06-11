@@ -86,7 +86,7 @@ public class SmokeTest {
                 .withCaPath(System.getProperty("pemCertInfo.caPath"))
                 .build();
 
-        PlainCredentials credentials = PlainCredentials.newBuilder()
+        BasicCredentials credentials = BasicCredentials.newBuilder()
                 .withUsername("admin")
                 .withPassword("changeme")
                 .build();
