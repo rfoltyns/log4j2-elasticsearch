@@ -1,5 +1,5 @@
 # log4j2-elasticsearch-jest
-This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch cluster. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
+This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch 2.x, 5.x and 6.x clusters. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
 
 ## Maven
 
@@ -52,27 +52,23 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 Since 1.1, index name can be defined using `IndexName` tag:
 
 ```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <IndexName indexName="log4j2" />
-        ...
-    </Elasticsearch>
-</Appenders>
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <IndexName indexName="log4j2" />
+    ...
+</Elasticsearch>
 ```
 
 ### Index rollover
 Since 1.1, rolling index can be defined using `RollingIndexName` tag:
 
 ```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <!-- zone is optional. OS timezone is used by default -->
-        <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" />
-        ...
-    </Elasticsearch>
-</Appenders>
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <!-- zone is optional. OS timezone is used by default -->
+    <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" />
+    ...
+</Elasticsearch>
 ```
 
 `pattern` accepts any valid date pattern with years down to millis (although rolling daily or weekly should be sufficient for most use cases)
@@ -82,80 +78,63 @@ Since 1.1, rolling index can be defined using `RollingIndexName` tag:
 Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be created during appender startup. Template can be loaded from specified file or defined directly in the XML config:
 
 ```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <IndexTemplate name="template1" path="<absolute_path_or_classpath>" />
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
+<AsyncBatchDelivery>
+    <IndexTemplate name="template1" path="<absolute_path_or_classpath>" />
+    ...
+</AsyncBatchDelivery>
 ```
 or
 ```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <IndexTemplate name="template1" >
-            {
-                // your index template in JSON format
-            }
-            </IndexTemplate>
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
+<AsyncBatchDelivery>
+    <IndexTemplate name="template1" >
+    {
+        // your index template in JSON format
+    }
+    </IndexTemplate>
+    ...
+</AsyncBatchDelivery>
 ```
 
 ### HTTP
 By default, Jest uses Apache HTTP client. Basic configuration parameters were exposed via `JestHttp` tag.
 
-### HTTPS
+### SSL/TLS
 Since 1.2, HTTPS can be configured using `XPackAuth` tag:
 
 #### PEM cert config
-```
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <XPackAuth>
-                <BasicCredentials username="admin" password="changeme" />
-                <PEM keyPath="${sys:pemCertInfo.keyPath}"
-                     keyPassphrase="${sys:pemCertInfo.keyPassphrase}" <!-- optional -->
-                     clientCertPath="${sys:pemCertInfo.clientCertPath}"
-                     caPath="${sys:pemCertInfo.caPath}" />
-            </XPackAuth>
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
+```xml
+<JestHttp serverUris="https://localhost:9200" >
+    <XPackAuth>
+        <BasicCredentials username="admin" password="changeme" />
+        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+             keyPassphrase="${sys:pemCertInfo.keyPassphrase}" <!-- optional -->
+             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+             caPath="${sys:pemCertInfo.caPath}" />
+    </XPackAuth>
+</JestHttp>
 ```
 
 #### JKS cert config
+```xml
+<JestHttp serverUris="https://localhost:9200" >
+    <XPackAuth>
+        <BasicCredentials username="admin" password="changeme" />
+        <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
+             keystorePassword="${sys:jksCertInfo.keystorePassword}" <!-- optional -->
+             truststorePath="${sys:jksCertInfo.truststorePath}"
+             truststorePassword="${sys:jksCertInfo.truststorePassword}" /> <!-- optional -->
+    </XPackAuth>
+</JestHttp>
 ```
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        ...
-        <AsyncBatchDelivery>
-            <XPackAuth>
-                <BasicCredentials username="admin" password="changeme" />
-                <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
-                     keystorePassword="${sys:jksCertInfo.keystorePassword}" <!-- optional -->
-                     truststorePath="${sys:jksCertInfo.truststorePath}"
-                     truststorePassword="${sys:jksCertInfo.truststorePassword}" /> <!-- optional -->
-            </XPackAuth>
-            ...
-        </AsyncBatchDelivery>
-        ...
-    </Elasticsearch>
-</Appenders>
-```
+
+### Compatibility matrix
+
+Feature/Version | 2.x | 5.x | 6.x
+------------ | ------------- | ------------- | -------------
+IndexTemplate | Yes | Yes | Yes
+BasicCredentials | Yes | Yes | Yes
+JKS | Yes | Not tested | Not tested
+PEM | Not tested | Yes | Yes
 
 ## Dependencies
 
