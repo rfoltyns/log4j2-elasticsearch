@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.bulkprocessor;
+package org.appenders.log4j2.elasticsearch.bulkprocessor.smoke;
 
 /*-
  * #%L
@@ -38,6 +38,10 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.PEMCertInfo;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
