@@ -13,7 +13,7 @@ Project consists of:
 * Asynchronous log delivery
 * Batch size and flush interval configuration
 * Failover (redirect failed batch to alternative target)
-* JSON message format ([user-provided]() or default)
+* JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) or default)
 * (since 1.1) Index rollover (hourly, daily, etc.)
 * (1.1) Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
@@ -42,7 +42,7 @@ Project consists of:
     </Elasticsearch>
 </Appenders>
 ```
-or [configure programatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
+or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
 
 3. log.info("Hello, World!");
 
