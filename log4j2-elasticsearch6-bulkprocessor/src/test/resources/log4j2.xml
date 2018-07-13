@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  #%L
+  log4j2-elasticsearch
+  %%
+  Copyright (C) 2017 Rafal Foltynski
+  %%
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+  
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+  #L%
+  -->
+
+<Configuration status="DEBUG">
+
+    <Appenders>
+
+        <Console name="CONSOLE" level="DEBUG" />
+
+        <Elasticsearch name="elasticsearchAsyncBatch">
+            <JsonLayout compact="true" />
+            <IndexName indexName="log4j2_test_es6" />
+            <AsyncBatchDelivery batchSize="10000"
+                               deliveryInterval="1000" >
+                <IndexTemplate name="test_template_es6" path="classpath:indexTemplate.json" />
+                <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300">
+                    <XPackAuth>
+                        <BasicCredentials username="admin" password="changeme" />
+                        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
+                             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                             caPath="${sys:pemCertInfo.caPath}" />
+                    </XPackAuth>
+                </ElasticsearchBulkProcessor>
+                <NoopFailoverPolicy />
+            </AsyncBatchDelivery>
+        </Elasticsearch>
+        <Async name="asyncLogger">
+            <AppenderRef ref="elasticsearchAsyncBatch" />
+        </Async>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="org.elasticsearch.xpack.ssl.SSLService">
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
+        <Logger name="org.elasticsearch.client.transport.TransportClientNodesService">
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
+        <AsyncLogger name="elasticsearch" level="info" additivity="false">
+            <AppenderRef ref="asyncLogger" />
+        </AsyncLogger>
+        <Root level="info" />
+    </Loggers>
+
+</Configuration>
