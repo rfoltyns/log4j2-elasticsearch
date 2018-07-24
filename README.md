@@ -26,7 +26,7 @@ Project consists of:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.1.1</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 (ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below)
