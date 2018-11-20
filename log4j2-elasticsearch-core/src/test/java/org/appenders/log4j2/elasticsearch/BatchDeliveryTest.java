@@ -85,40 +85,6 @@ public class BatchDeliveryTest {
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void deprecatedDeliveryFailsWhenIndexNameIsNull() {
-
-        // given
-        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
-        batchDeliveryBuilder.withIndexName(null);
-        BatchDelivery<String> delivery = batchDeliveryBuilder.build();
-
-        // when
-        delivery.add("testLog");
-
-    }
-
-    @Test
-    public void deprecatedApiDelegatesToNewApiWhenOldStyleIndexNameIsConfigured() {
-
-        // given
-        String deprecatedIndexName = "deprecated";
-
-        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
-        batchDeliveryBuilder.withIndexName(deprecatedIndexName);
-
-        BatchDelivery<String> delivery = spy(batchDeliveryBuilder.build());
-
-        String testLog = "testLog";
-
-        // when
-        delivery.add(testLog);
-
-        // then
-        verify(delivery).add(eq(deprecatedIndexName), eq(testLog));
-
-    }
-
     @Test
     public void deliveryAddsBatchItemToBatchEmitter() {
 
@@ -131,7 +97,7 @@ public class BatchDeliveryTest {
         BatchEmitter emitter = batchEmitterFactory.createInstance(TEST_BATCH_SIZE, TEST_DELIVERY_INTERVAL, objectFactory, new NoopFailoverPolicy());
 
         AsyncBatchDelivery.Builder builder = createTestBatchDeliveryBuilder();
-        TestAsyncBatchDelivery testAsyncBatchDelivery = spy(new TestAsyncBatchDelivery(TEST_INDEX_NAME,
+        TestAsyncBatchDelivery testAsyncBatchDelivery = spy(new TestAsyncBatchDelivery(
                 TEST_BATCH_SIZE,
                 TEST_DELIVERY_INTERVAL,
                 objectFactory,
@@ -163,7 +129,7 @@ public class BatchDeliveryTest {
         TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
         IndexTemplate testIndexTemplate = spy(new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH));
 
-        new TestAsyncBatchDelivery(TEST_INDEX_NAME,
+        new TestAsyncBatchDelivery(
                 TEST_BATCH_SIZE,
                 TEST_DELIVERY_INTERVAL,
                 objectFactory,
@@ -178,8 +144,8 @@ public class BatchDeliveryTest {
 
         public static BatchEmitterServiceProvider mockedProvider;
 
-        public TestAsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
-            super(indexName, batchSize, deliveryInterval, objectFactory, failoverPolicy, indexTemplate);
+        public TestAsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
+            super(batchSize, deliveryInterval, objectFactory, failoverPolicy, indexTemplate);
         }
 
         @Override

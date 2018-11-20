@@ -31,14 +31,6 @@ public interface BatchDelivery<T> {
     String ELEMENT_TYPE = "batchDelivery";
 
     /**
-     * @deprecated  As of release 1.3, replaced by {@link org.appenders.log4j2.elasticsearch.BatchDelivery#add(String, Object) add(String, T) } method
-     *
-     * @param log item to process
-     */
-    @Deprecated
-    void add(T log);
-
-    /**
      * @param indexName delivery target
      * @param log item to process
      */

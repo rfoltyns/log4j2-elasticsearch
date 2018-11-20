@@ -41,12 +41,10 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     private static final Logger LOG = StatusLogger.getLogger();
 
-    private final String indexName;
     private final BatchOperations batchOperations;
     private final BatchEmitter batchEmitter;
 
-    public AsyncBatchDelivery(String indexName, int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
-        this.indexName = indexName;
+    public AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
         this.batchOperations = objectFactory.createBatchOperations();
         this.batchEmitter = createBatchEmitterServiceProvider()
                 .createInstance(
@@ -57,21 +55,6 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         if (indexTemplate != null) {
             objectFactory.execute(indexTemplate);
         }
-    }
-
-    /**
-     * Transforms given items to client-specific model and adds them to provided {@link BatchEmitter}
-     *
-     * @param log batch item source
-     *
-     * @deprecated will use configured indexName for backwards compatibility
-     */
-    @Override
-    public void add(String log) {
-        if (indexName == null) {
-            throw new ConfigurationException("No indexName provided for AsyncBatchDelivery");
-        }
-        add(this.indexName, log);
     }
 
     /**
@@ -110,9 +93,6 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
          */
         public static final FailoverPolicy DEFAULT_FAILOVER_POLICY = new NoopFailoverPolicy();
 
-        @PluginBuilderAttribute
-        private String indexName;
-
         @PluginElement("elasticsearchClientFactory")
         @Required(message = "No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
         private ClientObjectFactory clientObjectFactory;
@@ -131,28 +111,10 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
         @Override
         public AsyncBatchDelivery build() {
-            if (indexName != null) {
-                LOG.warn("AsyncBatchDelivery.indexName attribute has been deprecated and will be removed in 1.3. " +
-                        "It will NOT be used in direct AsyncBatchDelivery.add(String indexName,  T logObject) calls. " +
-                        "Please use IndexName element instead.");
-            }
-
             if (clientObjectFactory == null) {
                 throw new ConfigurationException("No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
             }
-            return new AsyncBatchDelivery(indexName, batchSize, deliveryInterval, clientObjectFactory, failoverPolicy, indexTemplate);
-        }
-
-        /**
-         * @deprecated  As of release 1.3, replaced by {@link IndexNameFormatter}
-         *
-         * @param indexName target index name
-         * @return this
-         */
-        @Deprecated
-        public Builder withIndexName(String indexName) {
-            this.indexName = indexName;
-            return this;
+            return new AsyncBatchDelivery(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy, indexTemplate);
         }
 
         public Builder withClientObjectFactory(ClientObjectFactory clientObjectFactory) {
