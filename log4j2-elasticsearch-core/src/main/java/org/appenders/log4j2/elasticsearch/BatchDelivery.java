@@ -36,4 +36,10 @@ public interface BatchDelivery<T> {
      */
     void add(String indexName,  T log);
 
+    /**
+     * @param indexName delivery target
+     * @param log item source to process
+     */
+    void add(String indexName,  ItemSource log);
+
 }

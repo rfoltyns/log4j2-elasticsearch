@@ -205,10 +205,16 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         @Override
         public JestHttpObjectFactory build() {
+
+            validate();
+
+            return new JestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled, auth);
+        }
+
+        protected void validate() {
             if (serverUris == null) {
                 throw new ConfigurationException("No serverUris provided for JestClientConfig");
             }
-            return new JestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled, auth);
         }
 
         public Builder withServerUris(String serverUris) {

@@ -72,6 +72,7 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
 
     /**
      * Updates target with index template
+     * @param indexTemplate index template request
      */
     void execute(IndexTemplate indexTemplate);
 

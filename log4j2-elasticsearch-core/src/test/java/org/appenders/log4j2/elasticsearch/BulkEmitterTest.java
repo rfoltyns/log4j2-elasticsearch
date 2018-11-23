@@ -151,10 +151,14 @@ public class BulkEmitterTest {
 
     public static class TestBatchOperations implements BatchOperations {
 
-
         @Override
         public Object createBatchItem(String indexName, Object source) {
             return new TestBatchItem(source);
+        }
+
+        @Override
+        public Object createBatchItem(String indexName, ItemSource source) {
+            return new TestBatchItem(source.getSource());
         }
 
         @Override

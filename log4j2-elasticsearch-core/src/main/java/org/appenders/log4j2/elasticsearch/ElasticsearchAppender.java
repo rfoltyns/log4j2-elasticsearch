@@ -32,6 +32,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 
@@ -41,7 +42,7 @@ import org.apache.logging.log4j.core.layout.JsonLayout;
  * Formatted message may be produced by
  * <ul>
  * <li> (default) {@code org.apache.logging.log4j.core.layout.JsonLayout.toSerializable(LogEvent)}
- * <li> provided {@code org.apache.logging.log4j.core.layout.AbstractStringLayout.toSerializable(LogEvent)}
+ * <li> provided {@code org.apache.logging.log4j.core.layout.AbstractLayout.toSerializable(LogEvent)}
  * <li> or {@code org.apache.logging.log4j.message.Message.getFormattedMessage()} (see {@link ElasticsearchAppender.Builder#withMessageOnly(boolean)}
  * messageOnly})
  * </ul>
@@ -51,21 +52,24 @@ public class ElasticsearchAppender extends AbstractAppender {
 
     public static final String PLUGIN_NAME = "Elasticsearch";
 
-    private BatchDelivery<String> batchDelivery;
-    private boolean messageOnly;
     private IndexNameFormatter indexNameFormatter;
+    private final ItemAppender<LogEvent> itemAppender;
 
-    protected ElasticsearchAppender(String name, Filter filter, AbstractStringLayout layout,
+    protected ElasticsearchAppender(String name, Filter filter, AbstractLayout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
         super(name, filter, layout, ignoreExceptions);
-        this.messageOnly = messageOnly;
-        this.batchDelivery = batchDelivery;
         this.indexNameFormatter = indexNameFormatter;
+        this.itemAppender = createItemAppenderFactory().createInstance(messageOnly, layout, batchDelivery);
+    }
+
+    /* extension point */
+    protected ItemAppenderFactory createItemAppenderFactory() {
+        return new ItemAppenderFactory();
     }
 
     public void append(LogEvent event) {
         String formattedIndexName = indexNameFormatter.format(event);
-        batchDelivery.add(formattedIndexName, messageOnly ? event.getMessage().getFormattedMessage() : (String) getLayout().toSerializable(event));
+        itemAppender.append(formattedIndexName, event);
     }
 
     @PluginBuilderFactory
@@ -88,7 +92,7 @@ public class ElasticsearchAppender extends AbstractAppender {
         private Filter filter;
 
         @PluginElement("layout")
-        private AbstractStringLayout layout;
+        private AbstractLayout layout;
 
         @PluginBuilderAttribute
         private boolean ignoreExceptions;
@@ -133,8 +137,9 @@ public class ElasticsearchAppender extends AbstractAppender {
          * Default: {@code org.apache.logging.log4j.core.layout.JsonLayout}
          *
          * @param layout layout to be used
+         * @return Builder this
          */
-        public Builder withLayout(AbstractStringLayout layout) {
+        public Builder withLayout(AbstractLayout layout) {
             this.layout = layout;
             return this;
         }
@@ -145,6 +150,7 @@ public class ElasticsearchAppender extends AbstractAppender {
          * Default: false
          *
          * @param ignoreExceptions whether to suppress exceptions or not
+         * @return Builder this
          */
         public Builder withIgnoreExceptions(boolean ignoreExceptions) {
             this.ignoreExceptions = ignoreExceptions;
@@ -160,7 +166,8 @@ public class ElasticsearchAppender extends AbstractAppender {
          * Default: false
          *
          * @param messageOnly If true, formatted message will be produced by {@link org.apache.logging.log4j.message.Message#getFormattedMessage}.
-         *                    Otherwise, configured {@link AbstractStringLayout} will be used.
+         *                    Otherwise, configured {@link AbstractStringLayout} will be used
+         * @return Builder this
          */
         public Builder withMessageOnly(boolean messageOnly) {
             this.messageOnly = messageOnly;

@@ -20,14 +20,27 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import java.io.Serializable;
 
 /**
- * Provides an interface over client-specific batch item implementations
+ * Batch item wrapper. Allows to add complex objects to {@link BatchDelivery}
  *
- * @param <T> type of introspected batch item
+ * @param <T> underlying batch item type
  */
-public interface BatchItemIntrospector<T> {
+public interface ItemSource<T> extends Serializable {
 
-    Object getPayload(T introspected);
+    /**
+     * @return wrapped batch item
+     */
+    T getSource();
+
+    /**
+     * Lifecycle
+     *
+     * MUST be invoked after batch is completed. Allows to clean up underlying item.
+     */
+    default void release() {
+        // noop
+    }
 
 }

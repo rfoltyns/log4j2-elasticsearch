@@ -38,7 +38,7 @@ public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
     private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector = new JestActionIntrospector();
 
     @Override
-    public List<String> items(Bulk introspected) {
+    public List<Object> items(Bulk introspected) {
         return introspected.bulkableActions
             .stream()
             .map(item -> itemIntrospector().getPayload((AbstractDocumentTargetedAction<DocumentResult>) item))

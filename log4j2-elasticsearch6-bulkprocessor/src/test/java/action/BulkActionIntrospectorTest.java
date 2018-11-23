@@ -40,7 +40,7 @@ public class BulkActionIntrospectorTest {
         IndexRequest action = new IndexRequest().source(testPayload, XContentType.CBOR);
 
         // when
-        String payload = introspector.getPayload(action);
+        String payload = (String) introspector.getPayload(action);
 
         // then
         Assert.assertEquals(testPayload, payload);

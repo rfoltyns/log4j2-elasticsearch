@@ -41,7 +41,7 @@ public class JestActionIntrospectorTest {
         AbstractDocumentTargetedAction<DocumentResult> action = new Index.Builder(testPayload).build();
 
         // when
-        String payload = introspector.getPayload(action);
+        String payload = (String) introspector.getPayload(action);
 
         // then
         Assert.assertEquals(testPayload, payload);

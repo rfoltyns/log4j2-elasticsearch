@@ -67,6 +67,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         this.batchEmitter.add(batchOperations.createBatchItem(indexName, log));
     }
 
+    @Override
+    public void add(String indexName, ItemSource source) {
+        this.batchEmitter.add(batchOperations.createBatchItem(indexName, source));
+    }
+
     protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
         return new BatchEmitterServiceProvider();
     }
@@ -141,6 +146,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             this.indexTemplate = indexTemplate;
             return this;
         }
+
     }
 
 }

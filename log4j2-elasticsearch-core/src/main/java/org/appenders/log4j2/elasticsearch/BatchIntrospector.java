@@ -34,6 +34,6 @@ public interface BatchIntrospector<T> {
      * @param introspected client-specific object that holds batch items
      * @return collection of batch items
      */
-    Collection<String> items(T introspected);
+    Collection<Object> items(T introspected);
 
 }

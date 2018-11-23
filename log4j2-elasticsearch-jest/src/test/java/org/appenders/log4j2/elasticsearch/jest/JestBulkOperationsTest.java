@@ -27,13 +27,18 @@ import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class JestBulkOperationsTest {
 
     @Test
-    public void bulkContainsAddedItem() {
+    public void bulkContainsAddedStringItem() {
+
         // given
         BatchOperations<Bulk> bulkOperations = JestHttpObjectFactoryTest.createTestObjectFactoryBuilder().build().createBatchOperations();
         BatchBuilder<Bulk> batchBuilder = bulkOperations.createBatchBuilder();
@@ -48,6 +53,29 @@ public class JestBulkOperationsTest {
         // then
         JestBatchIntrospector introspector = new JestBatchIntrospector();
         Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
+
+    }
+
+    @Test
+    public void bulkContainsAddedSourceItem() {
+
+        // given
+        BatchOperations<Bulk> bulkOperations = JestHttpObjectFactoryTest.createTestObjectFactoryBuilder().build().createBatchOperations();
+        BatchBuilder<Bulk> batchBuilder = bulkOperations.createBatchBuilder();
+
+        String testPayload = "{ \"testfield\": \"testvalue\" }";
+        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        batchBuilder.add(item);
+        Bulk bulk = batchBuilder.build();
+
+        // then
+        verify(itemSource).getSource();
+        JestBatchIntrospector introspector = new JestBatchIntrospector();
+        Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
+
     }
 
 }

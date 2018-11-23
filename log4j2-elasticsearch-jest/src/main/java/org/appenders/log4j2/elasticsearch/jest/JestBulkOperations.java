@@ -27,6 +27,7 @@ import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.ItemSource;
 
 public class JestBulkOperations implements BatchOperations<Bulk> {
 
@@ -37,6 +38,14 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
     @Override
     public Object createBatchItem(String indexName, Object source) {
         return new Index.Builder(source)
+                .index(indexName)
+                .type(ACTION_TYPE)
+                .build();
+    }
+
+    @Override
+    public Object createBatchItem(String indexName, ItemSource source) {
+        return new Index.Builder(source.getSource())
                 .index(indexName)
                 .type(ACTION_TYPE)
                 .build();

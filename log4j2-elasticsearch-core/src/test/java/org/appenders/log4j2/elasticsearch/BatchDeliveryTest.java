@@ -26,11 +26,13 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery.Builder;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import javax.lang.model.util.Types;
+import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
@@ -41,9 +43,11 @@ public class BatchDeliveryTest {
 
     private static final int TEST_BATCH_SIZE = 100;
     private static final int TEST_DELIVERY_INTERVAL = 100;
-    private static final String TEST_INDEX_NAME = "test_index";
 
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     public static TestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
         TestHttpObjectFactory.Builder builder = TestHttpObjectFactory.newBuilder();
@@ -82,6 +86,56 @@ public class BatchDeliveryTest {
 
         // when
         batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void batchDeliveryAddObjectDelegatesToProvidedBatchOperationsObjectApi() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+
+        ClientObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
+        BatchOperations batchOperations = spy(clientObjectFactory.createBatchOperations());
+        when(clientObjectFactory.createBatchOperations()).thenReturn(batchOperations);
+
+        batchDeliveryBuilder.withClientObjectFactory(clientObjectFactory);
+
+        BatchDelivery batchDelivery = batchDeliveryBuilder.build();
+
+        String indexName = UUID.randomUUID().toString();
+        String logObject = UUID.randomUUID().toString();
+
+        // when
+        batchDelivery.add(indexName, logObject);
+
+        // then
+        verify(batchOperations).createBatchItem(eq(indexName), eq(logObject));
+
+    }
+
+    @Test
+    public void batchDeliveryAddItemSourceDelegatesToProvidedBatchOperationsItemSourceApi() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+
+        ClientObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
+        BatchOperations batchOperations = spy(clientObjectFactory.createBatchOperations());
+        when(clientObjectFactory.createBatchOperations()).thenReturn(batchOperations);
+
+        batchDeliveryBuilder.withClientObjectFactory(clientObjectFactory);
+
+        BatchDelivery batchDelivery = batchDeliveryBuilder.build();
+
+        String indexName = UUID.randomUUID().toString();
+        ItemSource itemSource = mock(ItemSource.class);
+
+        // when
+        batchDelivery.add(indexName, itemSource);
+
+        // then
+        verify(batchOperations).createBatchItem(eq(indexName), eq(itemSource));
 
     }
 

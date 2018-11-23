@@ -35,7 +35,7 @@ public class BulkRequestIntrospector implements BatchIntrospector<BulkRequest> {
     private BulkActionIntrospector itemIntrospector = new BulkActionIntrospector();
 
     @Override
-    public Collection<String> items(BulkRequest introspected) {
+    public Collection<Object> items(BulkRequest introspected) {
         return introspected.requests
                 .stream()
                 .map(item -> itemIntrospector().getPayload((IndexRequest) item))

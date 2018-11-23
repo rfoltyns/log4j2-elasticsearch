@@ -20,14 +20,21 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-
 /**
- * Provides an interface over client-specific batch item implementations
- *
- * @param <T> type of introspected batch item
+ * Simple {@link ItemSource} to wrap batch items serialized to {@link String}
+ * Doesn't require lifecycle handling
  */
-public interface BatchItemIntrospector<T> {
+public class StringItemSource implements ItemSource<String> {
 
-    Object getPayload(T introspected);
+    private final String source;
+
+    public StringItemSource(String source) {
+        this.source = source;
+    }
+
+    @Override
+    public String getSource() {
+        return source;
+    }
 
 }

@@ -1,4 +1,4 @@
-package action;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
@@ -20,29 +20,37 @@ package action;
  * #L%
  */
 
-
-
-import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
-import org.elasticsearch.action.index.BulkActionIntrospector;
-import org.elasticsearch.action.index.IndexRequest;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class BulkActionIntrospectorTest {
+public class StringItemSourceTest {
 
     @Test
-    public void intropectorCanAccessActionPayload() {
-
+    public void doesntChangeTheSource() {
         // given
-        BatchItemIntrospector<IndexRequest> introspector = new BulkActionIntrospector();
-        String testPayload = "testPayload";
-        IndexRequest action = new IndexRequest().source(testPayload);
+        String expected = "expectedSource";
 
         // when
-        Object payload = introspector.getPayload(action);
+        ItemSource<String> itemSource = new StringItemSource(expected);
+        String actualSource = itemSource.getSource();
 
         // then
-        Assert.assertEquals(testPayload, payload);
+        Assert.assertEquals(expected, actualSource);
+    }
+
+    @Test
+    public void releaseHasNoSideEffect() {
+
+        // given
+        String expected = "expectedSource";
+        ItemSource<String> itemSource = new StringItemSource(expected);
+
+        // when
+        itemSource.release();
+
+        // then
+        Assert.assertEquals(expected, itemSource.getSource());
+
     }
 
 }

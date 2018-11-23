@@ -30,6 +30,8 @@ public interface BatchOperations<BATCH_TYPE> {
 
     Object createBatchItem(String indexName, Object source);
 
+    Object createBatchItem(String indexName, ItemSource source);
+
     BatchBuilder<BATCH_TYPE> createBatchBuilder();
 
 }

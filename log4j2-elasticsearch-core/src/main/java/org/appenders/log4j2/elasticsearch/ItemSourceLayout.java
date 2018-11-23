@@ -20,14 +20,17 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.message.Message;
 
 /**
- * Provides an interface over client-specific batch item implementations
- *
- * @param <T> type of introspected batch item
+ * Provides a way to serialize {@code org.apache.logging.log4j.core.LogEvent} and
+ * {@code org.apache.logging.log4j.message.Message} using different mechanisms/serializers
  */
-public interface BatchItemIntrospector<T> {
+public interface ItemSourceLayout {
 
-    Object getPayload(T introspected);
+    ItemSource serialize(LogEvent event);
+
+    ItemSource serialize(Message message);
 
 }

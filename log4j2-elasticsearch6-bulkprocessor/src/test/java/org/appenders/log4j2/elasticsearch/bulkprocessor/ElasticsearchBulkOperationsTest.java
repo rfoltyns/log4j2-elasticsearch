@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.BulkActionIntrospector;
 import org.elasticsearch.action.index.IndexRequest;
@@ -52,7 +53,7 @@ public class ElasticsearchBulkOperationsTest {
     }
 
     @Test
-    public void createsBatchItemWithSource() {
+    public void createsBatchItemWithStringSource() {
 
         // given
         BatchOperations<BulkRequest> batchOperations = createDefaultTestBulkRequestBatchOperations();
@@ -62,6 +63,24 @@ public class ElasticsearchBulkOperationsTest {
 
         // when
         IndexRequest batchItem = (IndexRequest) batchOperations.createBatchItem("testIndex", expectedPayload);
+
+        // then
+        Assert.assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));
+        Assert.assertEquals("index", batchItem.opType().getLowercase());
+
+    }
+
+    @Test
+    public void createsBatchItemWithItemSource() {
+
+        // given
+        BatchOperations<BulkRequest> batchOperations = createDefaultTestBulkRequestBatchOperations();
+
+        String expectedPayload = "expectedPayload";
+        StringItemSource itemSource = spy(new StringItemSource(expectedPayload));
+
+        // when
+        IndexRequest batchItem = (IndexRequest) batchOperations.createBatchItem("testIndex", itemSource);
 
         // then
         Assert.assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));

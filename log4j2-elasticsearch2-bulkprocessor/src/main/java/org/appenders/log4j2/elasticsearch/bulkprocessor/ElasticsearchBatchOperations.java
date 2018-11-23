@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 
@@ -35,6 +36,13 @@ public class ElasticsearchBatchOperations implements BatchOperations<BulkRequest
         return new IndexRequest(indexName)
                 .type(ACTION_TYPE)
                 .source((String)source);
+    }
+
+    @Override
+    public Object createBatchItem(String indexName, ItemSource source) {
+        return new IndexRequest(indexName)
+                .type(ACTION_TYPE)
+                .source((String)source.getSource());
     }
 
     @Override
