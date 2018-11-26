@@ -37,6 +37,7 @@ Project consists of:
     <Elasticsearch name="elasticsearchAsyncBatch">
         <IndexName indexName="log4j2" />
         <AsyncBatchDelivery>
+            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
             <JestHttp serverUris="http://localhost:9200" />
         </AsyncBatchDelivery>
     </Elasticsearch>
@@ -44,8 +45,11 @@ Project consists of:
 ```
 or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
 
-3. log.info("Hello, World!");
-
+3. Start logging directly to Elasticsearch!
+```java
+Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
+log.info("Hello, World!");
+```
 ## Dependencies
 
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.

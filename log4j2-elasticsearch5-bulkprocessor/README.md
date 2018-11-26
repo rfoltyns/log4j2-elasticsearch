@@ -20,6 +20,7 @@ Add this snippet to `log4j2.xml` configuration:
     <Elasticsearch name="elasticsearchAsyncBatch">
         <IndexName indexName="log4j2" />
         <AsyncBatchDelivery>
+            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
             <ElasticsearchBulkProcessor serverUris="tcp://localhost:9300" />
         </AsyncBatchDelivery>
     </Elasticsearch>
