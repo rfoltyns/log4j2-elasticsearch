@@ -129,7 +129,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
             @Override
             public Boolean apply(Bulk bulk) {
-                introspector.items(bulk).forEach(failedItem -> failover.deliver(failedItem));
+                List<Object> items = introspector.items(bulk);
+                LOG.warn(String.format("Batch of %s items failed. Redirecting to %s", items.size(), failover.getClass().getName()));
+                items.forEach(failedItem -> failover.deliver(failedItem));
                 return true;
             }
 
@@ -159,11 +161,13 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             @Override
             public void completed(JestResult result) {
                 if (!result.isSucceeded()) {
+                    LOG.warn(result.getErrorMessage());
                     failureHandler.apply(bulk);
                 }
             }
             @Override
             public void failed(Exception ex) {
+                LOG.warn(ex.getMessage(), ex);
                 failureHandler.apply(bulk);
             }
         };
@@ -269,4 +273,5 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         }
 
     }
+
 }
