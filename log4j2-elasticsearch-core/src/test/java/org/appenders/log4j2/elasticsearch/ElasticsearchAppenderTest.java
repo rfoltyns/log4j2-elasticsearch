@@ -179,7 +179,7 @@ public class ElasticsearchAppenderTest {
         appender.append(logEvent);
 
         // then
-        verify(batchDelivery, times(1)).add(eq("formattedIndexName"), anyString());
+        verify(batchDelivery, times(1)).add(eq("formattedIndexName"), any(ItemSource.class));
     }
 
     private LogEvent createTestLogEvent() {

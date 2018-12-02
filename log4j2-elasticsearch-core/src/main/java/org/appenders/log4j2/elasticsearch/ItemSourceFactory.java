@@ -24,6 +24,8 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 
 public interface ItemSourceFactory {
 
+    String ELEMENT_TYPE = "itemSourceFactory";
+
     /**
      * Indicates whether {@link ItemSource} lifecycle has to be taken care of
      *

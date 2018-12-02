@@ -28,6 +28,11 @@
         <Elasticsearch name="elasticsearchAsyncBatch">
             <RollingIndexName indexName="log4j2_test_jest" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
+            <JacksonJsonLayout>
+                <!-- let's test LogEvent mixin override -->
+                <JacksonMixIn mixInClass="org.apache.logging.log4j.core.jackson.TestLogEventMixIn"
+                              targetClass="org.apache.logging.log4j.core.LogEvent"/>
+            </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
                 <IndexTemplate name="test_template_jest" path="classpath:indexTemplate.json" />
@@ -53,14 +58,14 @@
                 </AppenderRefFailoverPolicy>-->
             </AsyncBatchDelivery>
         </Elasticsearch>
-        <Async name="asyncLogger">
+        <Async name="asyncAppender">
             <AppenderRef ref="elasticsearchAsyncBatch" />
         </Async>
     </Appenders>
 
     <Loggers>
         <AsyncLogger name="elasticsearch" level="info" additivity="false">
-            <AppenderRef ref="asyncLogger" />
+            <AppenderRef ref="asyncAppender" />
         </AsyncLogger>
         <Root level="info" />
     </Loggers>

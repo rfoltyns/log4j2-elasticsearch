@@ -117,7 +117,7 @@ public class ElasticsearchAppender extends AbstractAppender {
             }
 
             if (layout == null) {
-                layout = JsonLayout.newBuilder().setCompact(true).build();
+                layout = JacksonJsonLayout.newBuilder().build();
             }
 
             return new ElasticsearchAppender(name, filter, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
