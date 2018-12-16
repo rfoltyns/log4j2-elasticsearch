@@ -24,9 +24,7 @@ package org.appenders.log4j2.elasticsearch;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,17 +39,13 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.ServiceLoader;
-import java.util.function.Function;
 
 import static org.appenders.log4j2.elasticsearch.AppenderRefFailoverPolicyTest.createTestFailoverPolicy;
 import static org.appenders.log4j2.elasticsearch.BatchDeliveryTest.createTestObjectFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.LARGE_TEST_INTERVAL;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.TEST_BATCH_SIZE;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
