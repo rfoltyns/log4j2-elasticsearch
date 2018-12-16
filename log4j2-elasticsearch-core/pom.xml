@@ -42,6 +42,12 @@
             <artifactId>jackson-module-afterburner</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <version>4.1.19.Final</version>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- TEST -->
         <dependency>
