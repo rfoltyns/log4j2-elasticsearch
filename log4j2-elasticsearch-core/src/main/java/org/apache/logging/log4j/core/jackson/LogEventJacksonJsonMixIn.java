@@ -125,5 +125,14 @@ public abstract class LogEventJacksonJsonMixIn implements LogEvent {
     @Override
     public abstract Instant getInstant();
 
+    @JsonIgnore
+    public abstract String getFormattedMessage();
+
+    @JsonIgnore
+    public abstract String getFormat();
+
+    @JsonIgnore
+    public abstract short getParameterCount();
+
 }
 
