@@ -3,7 +3,7 @@
   #%L
   log4j2-elasticsearch
   %%
-  Copyright (C) 2018 Rafal Foltynski
+  Copyright (C) 2017 Rafal Foltynski
   %%
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,10 +19,22 @@
   #L%
   -->
 
+<Configuration status="DEBUG">
 
-<Configuration status="INFO">
+    <Appenders>
+        <Console name="CONSOLE" level="DEBUG" />
+
+        <File name="fileAppender" fileName="${sys:logfile.path}">
+            <PatternLayout>
+                <Pattern>%d %p [%t] %m%n</Pattern>
+            </PatternLayout>
+        </File>
+    </Appenders>
 
     <Loggers>
+        <AsyncLogger name="file" level="info" additivity="false">
+            <AppenderRef ref="fileAppender" />
+        </AsyncLogger>
         <Root level="info" />
     </Loggers>
 

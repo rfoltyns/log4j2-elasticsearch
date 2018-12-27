@@ -23,9 +23,11 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
 
 
 
+import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.AppenderRef;
@@ -38,10 +40,14 @@ import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
-import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.jest.BufferedJestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
-import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -49,6 +55,7 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
@@ -56,9 +63,17 @@ import static java.lang.Thread.sleep;
 @Ignore
 public class SmokeTest {
 
+    public static final int BATCH_SIZE = 5000;
+    public static final int INITIAL_ITEM_POOL_SIZE = 10000;
+    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 512;
+    public static final int INITIAL_BATCH_POOL_SIZE = 2;
     protected String defaultLoggerName = "elasticsearch";
 
-    private final AtomicInteger msgIndex = new AtomicInteger();
+    private final AtomicInteger numberOfLogs = new AtomicInteger(10000000);
+    private final AtomicInteger counter = new AtomicInteger();
+
+    // TODO: expose via system property
+    private boolean secure = false;
 
     @BeforeClass
     public static void beforeClass() {
@@ -66,28 +81,64 @@ public class SmokeTest {
     }
 
     @Test
+    public void publicDocsExampleTest() throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
+        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, false, secure));
+ 
+        String loggerThatReferencesElasticsearchAppender = "elasticsearch";
+        Logger log = LogManager.getLogger(loggerThatReferencesElasticsearchAppender);
+        log.info("Hello, World!");
+        sleep(5000);
+    }
+
+    @Test
     public void programmaticConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false));
+        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, false, secure));
+
+        AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger(defaultLoggerName);
-        generateLogs(logger, 1000000, 100);
+        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
+    }
+
+    @Test
+    public void programmaticBufferedConfigTest() throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
+        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, true, secure));
+
+        AtomicInteger counter = new AtomicInteger();
+
+        Logger logger = LogManager.getLogger(defaultLoggerName);
+        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
+    }
+
+    @Test
+    public void fileOutputTest() throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2-file.xml");
+        AtomicInteger counter = new AtomicInteger();
+
+        Logger logger = LogManager.getLogger("file");
+        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
     }
 
     @Test
     public void xmlConfigTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2.xml");
+        AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger(defaultLoggerName);
-        generateLogs(logger, 1000000, 100);
+        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
     }
 
     static void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder) {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
-
 
         Appender appender = appenderBuilder.build();
 
@@ -108,7 +159,79 @@ public class SmokeTest {
         ctx.updateLoggers();
     }
 
-    static ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly) {
+    static ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
+
+        JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
+        if (buffered) {
+            jestHttpObjectFactoryBuilder = BufferedJestHttpObjectFactory.newBuilder();
+
+            int estimatedBatchSizeInBytes = BATCH_SIZE * INITIAL_ITEM_SIZE_IN_BYTES;
+
+            ((BufferedJestHttpObjectFactory.Builder)jestHttpObjectFactoryBuilder).withItemSourceFactory(
+                    PooledItemSourceFactory.newBuilder()
+                            .withPoolName("batchPool")
+                            .withInitialPoolSize(INITIAL_BATCH_POOL_SIZE)
+                            .withItemSizeInBytes(estimatedBatchSizeInBytes)
+                            .withMonitored(true)
+                            .withMonitorTaskInterval(10000)
+                            .build()
+            );
+        } else {
+            jestHttpObjectFactoryBuilder = JestHttpObjectFactory.newBuilder();
+        }
+
+        jestHttpObjectFactoryBuilder.withConnTimeout(1000)
+                .withReadTimeout(10000)
+                .withDefaultMaxTotalConnectionPerRoute(4)
+                .withMaxTotalConnection(4);
+
+        if (secured) {
+            jestHttpObjectFactoryBuilder.withServerUris("https://localhost:9200")
+                    .withAuth(getAuth());
+        } else {
+            jestHttpObjectFactoryBuilder.withServerUris("http://localhost:9200");
+        }
+
+        IndexTemplate indexTemplate = new IndexTemplate.Builder()
+                .withName("log4j2_test_jest")
+                .withPath("classpath:indexTemplate.json")
+                .build();
+
+        BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
+                .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
+                .withBatchSize(BATCH_SIZE)
+                .withDeliveryInterval(1000)
+                .withIndexTemplate(indexTemplate)
+                .build();
+
+        IndexNameFormatter indexNameFormatter = RollingIndexNameFormatter.newBuilder()
+                .withIndexName("log4j2_test_jest")
+                .withPattern("yyyy-MM-dd-HH")
+                .build();
+
+
+        JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder();
+        if (buffered) {
+            PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
+                    .withPoolName("itemPool")
+                    .withInitialPoolSize(INITIAL_ITEM_POOL_SIZE)
+                    .withItemSizeInBytes(INITIAL_ITEM_SIZE_IN_BYTES)
+                    .withMonitored(true)
+                    .withMonitorTaskInterval(10000)
+                    .build();
+            layoutBuilder.withItemSourceFactory(sourceFactoryConfig).build();
+        }
+
+        return ElasticsearchAppender.newBuilder()
+                .withName("elasticsearch")
+                .withMessageOnly(messageOnly)
+                .withBatchDelivery(asyncBatchDelivery)
+                .withIndexNameFormatter(indexNameFormatter)
+                .withLayout(layoutBuilder.build())
+                .withIgnoreExceptions(false);
+    }
+
+    private static Auth<HttpClientConfig.Builder> getAuth() {
         CertInfo certInfo = PEMCertInfo.newBuilder()
                 .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
                 .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
@@ -128,44 +251,22 @@ public class SmokeTest {
                 .withPassword("changeme")
                 .build();
 
-        Auth auth = XPackAuth.newBuilder()
+        return XPackAuth.newBuilder()
                 .withCertInfo(certInfo)
                 .withCredentials(credentials)
                 .build();
-
-        JestHttpObjectFactory jestHttpObjectFactory = JestHttpObjectFactory.newBuilder()
-                .withServerUris("https://localhost:9200")
-                .withAuth(auth)
-                .build();
-
-        BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
-                .withClientObjectFactory(jestHttpObjectFactory)
-                .withBatchSize(30000)
-                .withDeliveryInterval(1000)
-                .build();
-
-        IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2_test_jest")
-                .build();
-
-        return ElasticsearchAppender.newBuilder()
-                .withName("elasticsearch")
-                .withMessageOnly(messageOnly)
-                .withBatchDelivery(asyncBatchDelivery)
-                .withIndexNameFormatter(indexNameFormatter)
-                .withIgnoreExceptions(false);
     }
 
-    protected void generateLogs(Logger logger, int numberOfLogs, int numberOfProducers) throws InterruptedException {
-        AtomicInteger counter = new AtomicInteger();
+    <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(10);
 
         for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
             new Thread(() -> {
-                for (;msgIndex.getAndIncrement() < numberOfLogs;) {
-                    logger.info("Message " + counter.incrementAndGet());
+                for (;numberOfLogs.getAndDecrement() > 0;) {
+                    logger.info(marker, logSupplier.get());
+                    counter.incrementAndGet();
                     try {
-                        sleep(2);
+                        sleep(10);
                     } catch (InterruptedException e) {
                         interrupted();
                     }
@@ -174,11 +275,11 @@ public class SmokeTest {
             }).start();
         }
 
-        do {
+        while (latch.getCount() != 0) {
             sleep(1000);
-            System.out.println("Added " + counter + " messages");
-        } while (latch.getCount() != 0);
-        sleep(60000);
-//        LogManager.shutdown();
+            System.out.println("Added " + counter.get() + " messages");
+        }
+        System.out.println("Done");
+        sleep(100000000);
     }
 }

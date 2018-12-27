@@ -187,25 +187,25 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         @PluginBuilderAttribute
         @Required(message = "No serverUris provided for JestClientConfig")
-        private String serverUris;
+        protected String serverUris;
 
         @PluginBuilderAttribute
-        private int connTimeout = -1;
+        protected int connTimeout = -1;
 
         @PluginBuilderAttribute
-        private int readTimeout = -1;
+        protected int readTimeout = -1;
 
         @PluginBuilderAttribute
-        private int maxTotalConnection = 40;
+        protected int maxTotalConnection = 40;
 
         @PluginBuilderAttribute
-        private int defaultMaxTotalConnectionPerRoute = 4;
+        protected int defaultMaxTotalConnectionPerRoute = 4;
 
         @PluginBuilderAttribute
-        private boolean discoveryEnabled;
+        protected boolean discoveryEnabled;
 
         @PluginElement("auth")
-        private Auth auth;
+        protected Auth auth;
 
         @Override
         public JestHttpObjectFactory build() {

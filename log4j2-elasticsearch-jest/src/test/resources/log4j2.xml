@@ -21,7 +21,7 @@
 
 
 
-<Configuration status="WARN">
+<Configuration status="INFO">
 
     <Appenders>
         <Console name="CONSOLE" />
@@ -32,15 +32,23 @@
                 <!-- let's test LogEvent mixin override -->
                 <JacksonMixIn mixInClass="org.apache.logging.log4j.core.jackson.TestLogEventMixIn"
                               targetClass="org.apache.logging.log4j.core.LogEvent"/>
+                <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="512" initialPoolSize="2000"
+                                         monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                    <UnlimitedResizePolicy resizeFactor="0.6" />
+                </PooledItemSourceFactory>
             </JacksonJsonLayout>
-            <AsyncBatchDelivery batchSize="10000"
+            <AsyncBatchDelivery batchSize="5000"
                                deliveryInterval="3000" >
                 <IndexTemplate name="test_template_jest" path="classpath:indexTemplate.json" />
-                <JestHttp serverUris="https://localhost:9200"
+                <JestBufferedHttp serverUris="https://localhost:9200"
                     connTimeout="500"
-                    readTimeout="5000"
-                    maxTotalConnection="40"
+                    readTimeout="10000"
+                    maxTotalConnection="4"
                     defaultMaxTotalConnectionPerRoute="4">
+                    <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="2500000" initialPoolSize="3"
+                                             monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                        <UnlimitedResizePolicy resizeFactor="0.70" />
+                    </PooledItemSourceFactory>
                     <XPackAuth>
                         <BasicCredentials username="admin" password="changeme" />
                         <!--<JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->
@@ -52,7 +60,7 @@
                              clientCertPath="${sys:pemCertInfo.clientCertPath}"
                              caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
-                </JestHttp>
+                </JestBufferedHttp>
                 <!--<AppenderRefFailoverPolicy>
                     <AppenderRef ref="CONSOLE" />
                 </AppenderRefFailoverPolicy>-->
