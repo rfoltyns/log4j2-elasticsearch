@@ -23,9 +23,8 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.AbstractLifeCycle;
-import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -179,7 +178,7 @@ public class PooledItemSourceFactory extends AbstractLifeCycle implements ItemSo
         ItemSourcePool configuredBufferedItemSourcePool() {
             return new BufferedItemSourcePool(
                     poolName,
-                    new PooledByteBufAllocator(),
+                    new UnpooledByteBufAllocator(false, false, false),
                     resizePolicy,
                     resizeTimeout,
                     monitored,

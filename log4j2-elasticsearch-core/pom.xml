@@ -45,7 +45,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.19.Final</version>
+            <version>4.1.32.Final</version>
             <scope>provided</scope>
         </dependency>
 

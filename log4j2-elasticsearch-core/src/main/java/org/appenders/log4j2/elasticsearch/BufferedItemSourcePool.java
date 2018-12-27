@@ -21,9 +21,9 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocatorMetric;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocatorMetric;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
 
@@ -58,7 +58,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     ScheduledExecutorService executor;
 
     private final String poolName;
-    private final PooledByteBufAllocator byteBufAllocator;
+    private final UnpooledByteBufAllocator byteBufAllocator;
     private final ConcurrentLinkedQueue<ItemSource<ByteBuf>> objectPool = new ConcurrentLinkedQueue<>();
     private final int estimatedSourceSize;
 
@@ -70,9 +70,9 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     private final int initialPoolSize;
     private final AtomicInteger totalPoolSize;
 
-    BufferedItemSourcePool(String poolName, PooledByteBufAllocator pooledByteBufAllocator, ResizePolicy resizePolicy, long resizeTimeout, boolean monitored, long monitorTaskInterval, int initialPoolSize, int itemSizeInBytes) {
+    BufferedItemSourcePool(String poolName, UnpooledByteBufAllocator byteBufAllocator, ResizePolicy resizePolicy, long resizeTimeout, boolean monitored, long monitorTaskInterval, int initialPoolSize, int itemSizeInBytes) {
         this.poolName = poolName;
-        this.byteBufAllocator = pooledByteBufAllocator;
+        this.byteBufAllocator = byteBufAllocator;
         this.resizePolicy = resizePolicy;
         this.resizeTimeout = resizeTimeout;
         this.initialPoolSize = initialPoolSize;
@@ -140,7 +140,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     @Override
     public final void incrementPoolSize() {
 
-        ByteBuf buffer = new CompositeByteBuf(byteBufAllocator, false, 1).capacity(estimatedSourceSize);
+        CompositeByteBuf buffer = new CompositeByteBuf(byteBufAllocator, false, 2).capacity(estimatedSourceSize);
 
         objectPool.add(new BufferedItemSource(buffer, bufferedItemSource -> {
             bufferedItemSource.getSource().clear();
@@ -280,10 +280,10 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
     static class MetricPrinter extends Thread {
 
-        private final Consumer<PooledByteBufAllocatorMetric> printer;
-        private final PooledByteBufAllocatorMetric allocatorMetric;
+        private final Consumer<ByteBufAllocatorMetric> printer;
+        private final ByteBufAllocatorMetric allocatorMetric;
 
-        MetricPrinter(String threadName, PooledByteBufAllocatorMetric allocatorMetric, PoolMetrics poolMetrics) {
+        MetricPrinter(String threadName, ByteBufAllocatorMetric allocatorMetric, PoolMetrics poolMetrics) {
             super(threadName);
             this.allocatorMetric = allocatorMetric;
             this.printer = metric -> LOGGER.info(poolMetrics.formattedMetrics(allocatorMetric));
@@ -302,7 +302,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
             return formattedMetrics(null);
         }
 
-        public String formattedMetrics(PooledByteBufAllocatorMetric allocatorMetric) {
+        public String formattedMetrics(ByteBufAllocatorMetric allocatorMetric) {
 
             int capacity = allocatorMetric != null ? 384: 96; // roughly with or without allocator metrics
 

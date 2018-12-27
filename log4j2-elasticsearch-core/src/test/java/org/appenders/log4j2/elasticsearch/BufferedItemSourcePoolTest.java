@@ -21,11 +21,8 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.TestPooledByteBufAllocatorMetric;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,10 +45,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -68,7 +63,7 @@ public class BufferedItemSourcePoolTest {
         System.setProperty("io.netty.allocator.maxOrder", "2");
     }
 
-    public static PooledByteBufAllocator pooledByteBufAllocator = new PooledByteBufAllocator();
+    public static UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -79,7 +74,7 @@ public class BufferedItemSourcePoolTest {
         // when
         BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 false,
@@ -298,7 +293,7 @@ public class BufferedItemSourcePoolTest {
 
         BufferedItemSourcePool pool = new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 0,
                 false,
@@ -324,7 +319,7 @@ public class BufferedItemSourcePoolTest {
 
         BufferedItemSourcePool pool = new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 0,
                 false,
@@ -348,7 +343,7 @@ public class BufferedItemSourcePoolTest {
 
         BufferedItemSourcePool pool = new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 0,
                 false,
@@ -374,7 +369,7 @@ public class BufferedItemSourcePoolTest {
 
         BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 100,
                 false,
@@ -438,7 +433,7 @@ public class BufferedItemSourcePoolTest {
         int resizeTimeout = 1000;
         BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 resizeTimeout,
                 false,
@@ -478,7 +473,7 @@ public class BufferedItemSourcePoolTest {
             thread.start();
         }
 
-        Thread.sleep(100);
+        Thread.sleep(500);
         start.countDown();
         Thread.sleep(100);
         threads.forEach(thread -> thread.interrupt());
@@ -501,7 +496,7 @@ public class BufferedItemSourcePoolTest {
     public static BufferedItemSourcePool createDefaultTestBufferedItemSourcePool(int initialSize, boolean monitored) {
         return new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 UnlimitedResizePolicy.newBuilder().build(),
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 monitored,
@@ -514,7 +509,7 @@ public class BufferedItemSourcePoolTest {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().build();
         return new BufferedItemSourcePool(
                 DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledByteBufAllocator,
+                byteBufAllocator,
                 resizePolicy,
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 monitored,

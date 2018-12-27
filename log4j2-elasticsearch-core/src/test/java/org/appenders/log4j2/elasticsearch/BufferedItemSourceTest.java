@@ -24,7 +24,7 @@ import io.netty.buffer.CompositeByteBuf;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.pooledByteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.byteBufAllocator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -89,8 +89,8 @@ public class BufferedItemSourceTest {
 
     }
 
-    private CompositeByteBuf createDefaultTestByteBuf() {
-        return new CompositeByteBuf(pooledByteBufAllocator, false, 1);
+    public static CompositeByteBuf createDefaultTestByteBuf() {
+        return new CompositeByteBuf(byteBufAllocator, false, 2);
     }
 
 }

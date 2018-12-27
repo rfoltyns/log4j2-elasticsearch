@@ -23,8 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.Assert;
@@ -42,7 +41,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.pooledByteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.BufferedItemSourceTest.createDefaultTestByteBuf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.any;
@@ -58,7 +57,7 @@ import static org.mockito.Mockito.when;
 public class PooledItemSourceFactoryTest {
 
     static {
-        System.setProperty("io.netty.allocator.maxOrder", "7");
+        System.setProperty("io.netty.allocator.maxOrder", "2");
     }
 
     private static final int DEFAULT_TEST_POOL_SIZE = 10;
@@ -222,7 +221,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        CompositeByteBuf byteBuf = new CompositeByteBuf(pooledByteBufAllocator, false, 1);
+        ByteBuf byteBuf = createDefaultTestByteBuf();
         ItemSource<ByteBuf> bufferedItemSource = new BufferedItemSource(byteBuf, source -> {});
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
@@ -242,7 +241,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        CompositeByteBuf byteBuf = new CompositeByteBuf(pooledByteBufAllocator, false, 1);
+        ByteBuf byteBuf = createDefaultTestByteBuf();
         ItemSource<ByteBuf> bufferedItemSource = new BufferedItemSource(byteBuf, source -> {});
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
@@ -265,7 +264,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        CompositeByteBuf byteBuf = new CompositeByteBuf(pooledByteBufAllocator, false, 1);
+        ByteBuf byteBuf = createDefaultTestByteBuf();
         ItemSource<ByteBuf> bufferedItemSource = spy(new BufferedItemSource(byteBuf, source -> {}));
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
@@ -299,7 +298,7 @@ public class PooledItemSourceFactoryTest {
         boolean monitored = true;
         long monitorTaskInterval = new Random().nextInt();
         long resizeTimeout = new Random().nextInt(1000) + 100;
-        int initialPoolSize = new Random().nextInt(100);
+        int initialPoolSize = new Random().nextInt(100) + 1;
         int itemSizeInBytes = new Random().nextInt(1024) + 1024;
         String poolName = UUID.randomUUID().toString();
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
@@ -322,7 +321,7 @@ public class PooledItemSourceFactoryTest {
         // then
         PowerMockito.verifyNew(BufferedItemSourcePool.class).withArguments(
                 eq(poolName),
-                any(PooledByteBufAllocator.class),
+                any(UnpooledByteBufAllocator.class),
                 eq(resizePolicy),
                 eq(resizeTimeout),
                 eq(monitored),

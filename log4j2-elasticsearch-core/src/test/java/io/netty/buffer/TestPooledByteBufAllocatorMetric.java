@@ -22,13 +22,13 @@ package io.netty.buffer;
 
 public class TestPooledByteBufAllocatorMetric {
 
-    private PooledByteBufAllocatorMetric delegate;
+    private ByteBufAllocatorMetric delegate;
 
     public TestPooledByteBufAllocatorMetric() {
         this.delegate = new PooledByteBufAllocatorMetric(new PooledByteBufAllocator());
     }
 
-    public PooledByteBufAllocatorMetric getDelegate() {
+    public ByteBufAllocatorMetric getDelegate() {
         return delegate;
     }
 
