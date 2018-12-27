@@ -21,9 +21,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
-import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.index.IndexRequest;
 
