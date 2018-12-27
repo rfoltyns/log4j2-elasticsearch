@@ -21,6 +21,21 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.filter.ThresholdFilter;
+import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
+import org.apache.logging.log4j.core.layout.AbstractLayout;
+import org.apache.logging.log4j.core.layout.AbstractStringLayout;
+import org.apache.logging.log4j.core.layout.JsonLayout;
+import org.apache.logging.log4j.message.SimpleMessage;
+import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.powermock.api.mockito.PowerMockito;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
@@ -31,22 +46,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.Filter;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.filter.ThresholdFilter;
-import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
-import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.core.layout.AbstractStringLayout;
-import org.apache.logging.log4j.core.layout.JsonLayout;
-import org.apache.logging.log4j.message.Message;
-import org.apache.logging.log4j.message.SimpleMessage;
-import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.powermock.api.mockito.PowerMockito;
 
 
 public class ElasticsearchAppenderTest {

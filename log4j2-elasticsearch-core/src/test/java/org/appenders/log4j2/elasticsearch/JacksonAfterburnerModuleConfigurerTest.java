@@ -2,10 +2,8 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import org.appenders.log4j2.elasticsearch.JacksonAfterburnerModuleConfigurer;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;

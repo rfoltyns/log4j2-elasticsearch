@@ -21,14 +21,15 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-
-import java.util.*;
-import java.util.function.Function;
-
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.function.Function;
 
 public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, BulkEmitterTest.TestBatch> {
 

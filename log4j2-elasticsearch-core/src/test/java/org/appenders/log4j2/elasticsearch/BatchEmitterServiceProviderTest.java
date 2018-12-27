@@ -24,7 +24,6 @@ package org.appenders.log4j2.elasticsearch;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;

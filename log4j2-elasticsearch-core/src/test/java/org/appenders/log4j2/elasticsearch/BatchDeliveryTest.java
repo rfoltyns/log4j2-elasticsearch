@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery.Builder;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
@@ -37,7 +36,12 @@ import java.util.UUID;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class BatchDeliveryTest {
 

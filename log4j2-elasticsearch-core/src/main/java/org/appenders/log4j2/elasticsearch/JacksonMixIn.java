@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;

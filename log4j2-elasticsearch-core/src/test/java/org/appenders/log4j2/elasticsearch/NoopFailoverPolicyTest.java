@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertNotNull;
 
 public class NoopFailoverPolicyTest {

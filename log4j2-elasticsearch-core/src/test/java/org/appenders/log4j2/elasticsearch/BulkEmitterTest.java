@@ -21,10 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Function;
-
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +28,10 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
+
+import java.util.Collection;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
