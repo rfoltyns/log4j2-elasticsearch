@@ -20,22 +20,8 @@ package org.appenders.log4j2.elasticsearch.jest;
  * #L%
  */
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
-import java.util.List;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonDeserialize(using = BulkResultDeserializer.class)
 public abstract class BufferedBulkResultMixIn {
-
-    @JsonCreator
-    BufferedBulkResultMixIn(
-            @JsonProperty("took") int took,
-            @JsonProperty("errors") boolean errors,
-            @JsonProperty("error") BulkError error,
-            @JsonProperty("status") int status,
-            @JsonProperty("items") List<BulkResultItem> items
-    ) {}
-
 }
