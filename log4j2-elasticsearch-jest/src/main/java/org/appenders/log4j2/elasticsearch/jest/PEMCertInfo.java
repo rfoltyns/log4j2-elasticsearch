@@ -33,8 +33,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.appenders.log4j2.elasticsearch.thirdparty.PemReader;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;

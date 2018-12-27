@@ -21,11 +21,11 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.junit.Test;
 import org.mockito.Mockito;
+
 import static org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactoryTest.createTestObjectFactoryBuilder;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;

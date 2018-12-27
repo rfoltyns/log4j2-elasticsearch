@@ -21,14 +21,11 @@ package io.searchbox.action;
  */
 
 
-
-
+import io.searchbox.core.DocumentResult;
+import io.searchbox.core.Index;
 import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 import org.junit.Assert;
 import org.junit.Test;
-
-import io.searchbox.core.DocumentResult;
-import io.searchbox.core.Index;
 
 public class JestActionIntrospectorTest {
 

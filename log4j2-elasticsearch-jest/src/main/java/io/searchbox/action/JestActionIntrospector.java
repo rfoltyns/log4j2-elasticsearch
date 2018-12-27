@@ -21,9 +21,8 @@ package io.searchbox.action;
  */
 
 
-import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
-
 import io.searchbox.core.DocumentResult;
+import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 
 /**
  * Accesses {@link AbstractDocumentTargetedAction} non-private members.

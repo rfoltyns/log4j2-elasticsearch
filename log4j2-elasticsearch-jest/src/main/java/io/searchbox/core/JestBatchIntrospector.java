@@ -21,14 +21,13 @@ package io.searchbox.core;
  */
 
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+import io.searchbox.action.AbstractDocumentTargetedAction;
+import io.searchbox.action.JestActionIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 
-import io.searchbox.action.AbstractDocumentTargetedAction;
-import io.searchbox.action.JestActionIntrospector;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Accesses {@link Bulk} non-private members

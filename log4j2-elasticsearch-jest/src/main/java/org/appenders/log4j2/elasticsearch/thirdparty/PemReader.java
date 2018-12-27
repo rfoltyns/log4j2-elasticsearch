@@ -24,7 +24,6 @@ package org.appenders.log4j2.elasticsearch.thirdparty;
 import org.appenders.log4j2.elasticsearch.tls.KeyReader;
 
 import javax.security.auth.x500.X500Principal;
-
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;

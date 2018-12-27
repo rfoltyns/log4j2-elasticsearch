@@ -21,12 +21,9 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.searchbox.action.TemplateActionIntrospector;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
-import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.indices.template.TemplateAction;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.ClientProvider;

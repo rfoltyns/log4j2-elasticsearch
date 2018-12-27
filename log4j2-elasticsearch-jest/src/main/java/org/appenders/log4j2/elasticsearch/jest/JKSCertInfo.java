@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-import io.searchbox.client.config.ClientConfig;
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -32,7 +31,6 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.appenders.log4j2.elasticsearch.thirdparty.PemReader;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
