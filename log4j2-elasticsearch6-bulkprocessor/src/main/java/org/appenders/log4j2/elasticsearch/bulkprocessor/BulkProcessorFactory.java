@@ -21,9 +21,10 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-
-import org.appenders.log4j2.elasticsearch.*;
+import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
+import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
