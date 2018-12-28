@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.impl.ExtendedStackTraceElement;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
+import org.apache.logging.log4j.message.Message;
 
 public class ExtendedLog4j2JsonModule extends SimpleModule {
 
@@ -38,6 +39,8 @@ public class ExtendedLog4j2JsonModule extends SimpleModule {
         context.setMixInAnnotations(Level.class, LevelMixIn.class);
         context.setMixInAnnotations(ExtendedStackTraceElement.class, ExtendedStackTraceElementMixIn.class);
         context.setMixInAnnotations(ThrowableProxy.class, ThrowableProxyMixIn.class);
+
+        context.setMixInAnnotations(Message.class, MessageJacksonJsonMixIn.class);
 
         // https://github.com/rfoltyns/log4j2-elasticsearch/issues/9, timeMillis can't be ignored
         context.setMixInAnnotations(LogEvent.class, LogEventJacksonJsonMixIn.class);

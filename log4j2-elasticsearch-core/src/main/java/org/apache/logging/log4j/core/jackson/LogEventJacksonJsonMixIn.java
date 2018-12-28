@@ -44,6 +44,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonPropertyOrder({ "timeMillis", "loggerName", "level", "marker", "message", "thrown", "threadName"})
+@JsonSerialize(as = LogEvent.class)
 public abstract class LogEventJacksonJsonMixIn implements LogEvent {
 
     private static final long serialVersionUID = 1L;
