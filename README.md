@@ -19,7 +19,7 @@ Project consists of:
 * (1.1) Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
 * (1.2) HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
-* (1.3 - Q4 2018) Buffer object pool (memory allocation reduced by ~80%)
+* (1.3) Buffer object pool (memory allocation reduced by ~80%)
 * (1.3) Buffered Jest HTTP client
 * (1.3) Fully configurable JSON output using [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java)
 * (1.4 - Q1 2019) Reliable, file-based failover/retry
@@ -31,7 +31,7 @@ Project consists of:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 (ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below)
