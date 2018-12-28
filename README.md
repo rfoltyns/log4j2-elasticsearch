@@ -14,13 +14,14 @@ Project consists of:
 * Asynchronous log delivery
 * Batch size and flush interval configuration
 * Failover (redirect failed batch to alternative target)
-* JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) or default)
+* JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java), [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java) by default since 1.3 or Log4j2 JsonLayout)
 * (since 1.1) Index rollover (hourly, daily, etc.)
 * (1.1) Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
 * (1.2) HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
 * (1.3 - Q4 2018) Buffer object pool (memory allocation reduced by ~80%)
 * (1.3) Buffered Jest HTTP client
+* (1.3) Fully configurable JSON output using [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java)
 * (1.4 - Q1 2019) Reliable, file-based failover/retry
 
 ## Usage
