@@ -2,4 +2,6 @@ language: java
 dist: trusty
 jdk:
   - openjdk8
-script: mvn clean test -B
+script: mvn clean package site jacoco:report -B
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
