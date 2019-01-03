@@ -1,5 +1,10 @@
 # log4j2-elasticsearch overview
 
+[![Build Status](https://travis-ci.org/dwyl/learn-travis.svg?branch=master)](https://travis-ci.org/rfoltyns/log4j2-elasticsearch)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.appenders.log4j/parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.appenders.log4j/parent)
+[![codecov](https://codecov.io/gh/rfoltyns/log4j2-elasticsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/rfoltyns/log4j2-elasticsearch)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
+
 This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
 Project consists of:
