@@ -1,5 +1,5 @@
 # log4j2-elasticsearch-jest
-This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch 2.x, 5.x and 6.x clusters. By default, FasterXML is used generate output via `org.apache.logging.log4j.core.layout.JsonLayout`.
+This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch 2.x, 5.x and 6.x clusters. By default, FasterXML is used generate output via [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java).
 
 ## Maven
 
@@ -8,18 +8,30 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
 ## Appender configuration
+
+Add one of following config elements to your `logj2.xml`:
+* [`jestHttp`](#http)
+* [`jestBufferedHttp`](#buffered-http)
+
+or [configure programatically](#programmatic-config).
+
+It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.
+
+### HTTP
+
+`JestHttp` - Jest HTTP client using Apache HC.
 
 Add this snippet to `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
         <IndexName indexName="log4j2" />
-        <AsyncBatchDelivery>
+        <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
             <JestHttp serverUris="http://localhost:9200" />
         </AsyncBatchDelivery>
@@ -27,77 +39,60 @@ Add this snippet to `log4j2.xml` configuration:
 </Appenders>
 ```
 
-or [configure programmatcally](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java).
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+serverUris | Attribute | yes | None | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes. 
+connTimeout | Attribute | no | -1 | Number of milliseconds before ConnectException is thrown while attempting to connect.
+readTimeout | Attribute | no | -1 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
+maxTotalConnection | Attribute | no | 40 | Number of connections available.
+defaultMaxTotalConnectionPerRoute | Attribute | no | 4 | Number of connections available per Apache CPool.
+discoveryEnabled | Attribute | no | false | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes.
 
-It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.
+### Buffered HTTP
+
+`JestBufferedHttp` - extension of `JestHttp`. Uses [org.appenders.log4j2.elasticsearch.BufferedBulk](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/BufferedBulk.java) and [org.appenders.log4j2.elasticsearch.BufferedIndex](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/BufferedIndex.java) to replace Jest default (de)serialization and utilize [pooled buffers](../log4j2-elasticsearch-core#object-pooling) to reduce memory allocation.
+[PooledItemSourceFactory](../log4j2-elasticsearch-core#object-pooling) MUST be configured in order for this client to work.
+
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+All `JestHttp` properties | - | - | - | -
+itemSourceFactory | Element | yes | None | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.
+
+Example:
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        <IndexName indexName="log4j2" />
+        <JacksonJsonLayout>
+            <PooledItemSourceFactory itemSizeInBytes="1024" initialPoolSize="4000" />
+        </JacksonJsonLayout>
+        <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
+            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
+            <JestBufferedHttp serverUris="http://localhost:9200">
+                <PooledItemSourceFactory itemSizeInBytes="1024000" initialPoolSize="4" />
+            </JestBufferedHttp>
+        </AsyncBatchDelivery>
+    </Elasticsearch>
+</Appenders>
+```
+
+### Programmatic config
+See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java).
 
 ### Delivery frequency
-Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
-* `deliveryInterval` - millis between deliveries
-* `batchSize` - maximum (rough) number of logs in one batch
-
-Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
-
-`deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
+See [delivery frequency](../log4j2-elasticsearch-core#delivery-frequency)
 
 ### Message output
-There are at least three ways to generate output
-* (default) JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
-* `messageOnly="true"` can be configured set to make use of [user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation
-* custom `org.apache.logging.log4j.core.layout.AbstractStringLayout` can be provided to appender config to use any other serialization mechanism
+See [available output configuration methods](../log4j2-elasticsearch-core#message-output)
 
 ### Failover
-Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
+See [failover options](../log4j2-elasticsearch-core#failover)
 
 ### Index name
-Since 1.1, index name can be defined using `IndexName` tag:
-
-```xml
-<Elasticsearch name="elasticsearchAsyncBatch">
-    ...
-    <IndexName indexName="log4j2" />
-    ...
-</Elasticsearch>
-```
-
-### Index rollover
-Since 1.1, rolling index can be defined using `RollingIndexName` tag:
-
-```xml
-<Elasticsearch name="elasticsearchAsyncBatch">
-    ...
-    <!-- zone is optional. OS timezone is used by default -->
-    <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" />
-    ...
-</Elasticsearch>
-```
-
-`pattern` accepts any valid date pattern with years down to millis (although rolling daily or weekly should be sufficient for most use cases)
-`IndexName` and `RollingIndexName` are mutually exclusive. Only one per appender should be defined, otherwise they'll override each other.
+See [index name](../log4j2-elasticsearch-core#index-name) or [index rollover](../log4j2-elasticsearch-core#index-rollover)
 
 ### Index template
-Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be created during appender startup. Template can be loaded from specified file or defined directly in the XML config:
-
-```xml
-<AsyncBatchDelivery>
-    <IndexTemplate name="template1" path="<absolute_path_or_classpath>" />
-    ...
-</AsyncBatchDelivery>
-```
-or
-```xml
-<AsyncBatchDelivery>
-    <IndexTemplate name="template1" >
-    {
-        // your index template in JSON format
-    }
-    </IndexTemplate>
-    ...
-</AsyncBatchDelivery>
-```
-
-### HTTP
-By default, Jest uses Apache HTTP client. Basic configuration parameters were exposed via `JestHttp` tag.
+See [index template docs](../log4j2-elasticsearch-core#index-template)
 
 ### SSL/TLS
 Since 1.2, HTTPS can be configured using `XPackAuth` tag:
@@ -141,6 +136,7 @@ PEM | Not tested | Yes | Yes
 
 Be aware that following jars have to be provided by user for this library to work in default mode:
 * Jackson FasterXML: `com.fasterxml.jackson.core:jackson-core,jackson-databind,jackson-annotations`
+* Jackson FasterXML Afterburner module if `JacksonJsonLayout:afterburner=true`: `com.fasterxml.jackson.module:jackson-module-afterburner`
 * Log4j2: `org.apache.logging.log4j:log4-api,log4j-core`
 * Disruptor (if using `AsyncAppender`): `com.lmax:distuptor`
 * Bouncy Castle (if using `XPackAuth`): `org.bouncycastle:bcprov-jdk15on,bcpkix-jdk15on`
