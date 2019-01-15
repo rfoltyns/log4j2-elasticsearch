@@ -174,41 +174,55 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     private ItemSource<ByteBuf> removeInternal(int depth) throws PoolResourceException {
+
         try {
+
+            if (objectPool.isEmpty()) {
+                tryResize(depth);
+            }
+
             return objectPool.remove();
+
         } catch (NoSuchElementException e) {
-
-            // NOTE: let's prevent stack overflow when pool resizing is not sufficient and thread gets stuck doing recursive calls, either:
-            // * application is in bad shape already or
-            // * initialPoolSize is insufficient and/or ResizePolicy is not configured properly
-            if (depth > MAX_RESIZE_INTERNAL_STACK_DEPTH) {
-                // this will not get anywhere.. throwing to resurface
-                throw new PoolResourceException(
-                        String.format("ResizePolicy is ineffective. Pool %s has to be reconfigured to handle current load.",
-                                poolName));
-            }
-
-            // let's allow only one thread to get in
-            if (resizing.compareAndSet(false, true)) {
-                this.countDownLatch.set(new CountDownLatch(1));
-                tryResize(result -> {
-                    this.countDownLatch.get().countDown();
-                    resizing.set(false);
-                });
-            }
-
-            try {
-                countDownLatch.get().await(resizeTimeout, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e1) {
-                throw new IllegalStateException("Thread interrupted while waiting for resizing to complete");
-            }
-
-            // let's get recursive to handle case when resize is smaller than number of threads arriving at the latch
-            return removeInternal(++depth);
+            tryResize(depth);
         }
+
+        // let's go recursive to handle case when resize is smaller than number of threads arriving at the latch
+        return removeInternal(++depth);
     }
 
-    private void tryResize(Consumer<Boolean> callback) throws PoolResourceException {
+    private boolean tryResize(int depth) throws PoolResourceException {
+
+        // NOTE: let's prevent stack overflow when pool resizing is not sufficient and thread gets stuck doing recursive calls, either:
+        // * application is in bad shape already or
+        // * initialPoolSize is insufficient and/or ResizePolicy is not configured properly
+        if (depth > MAX_RESIZE_INTERNAL_STACK_DEPTH) {
+            // this will not get anywhere.. throwing to resurface
+            throw new PoolResourceException(
+                    String.format("ResizePolicy is ineffective. Pool %s has to be reconfigured to handle current load.",
+                            poolName));
+        }
+
+        // let's allow only one thread to get in
+        if (resizing.compareAndSet(false, true)) {
+            this.countDownLatch.set(new CountDownLatch(1));
+            return resize(result -> {
+                this.countDownLatch.get().countDown();
+                resizing.set(false);
+            });
+        }
+
+        try {
+            countDownLatch.get().await(resizeTimeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e1) {
+            throw new IllegalStateException("Thread interrupted while waiting for resizing to complete");
+        }
+
+        return false;
+
+    }
+
+    private boolean resize(Consumer<Boolean> callback) throws PoolResourceException {
 
         boolean resized = false;
 
@@ -218,6 +232,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
             resized = resizePolicy.increase(this);
             if (!resized) {
+                // TODO: remove when limited resize policy is ready
                 // throw to resurface issues
                 throw new PoolResourceException(String.format("Unable to resize. Creation of %s was unsuccessful",
                         ItemSource.class.getSimpleName()));
@@ -226,6 +241,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
             callback.accept(resized);
         }
 
+        return resized;
     }
 
     @Override
