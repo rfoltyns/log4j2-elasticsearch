@@ -35,6 +35,11 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 @RunWith(MockitoJUnitRunner.class)
 public class XPackAuthTest {
 
@@ -84,7 +89,7 @@ public class XPackAuthTest {
         xPackAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(credentials).applyTo(builderArgumentCaptor.capture());
+        verify(credentials).applyTo(builderArgumentCaptor.capture());
         Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
@@ -120,24 +125,27 @@ public class XPackAuthTest {
         xPackAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(certInfo).applyTo(builderArgumentCaptor.capture());
+        verify(certInfo).applyTo(builderArgumentCaptor.capture());
         Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
     @Test
-    public void throwsIfCertInfoNotConfigured() {
+    public void doesntApplyCertInfoIfNotConfigured() {
 
         // given
-        XPackAuth.Builder builder = createTestBuilder()
-                .withCertInfo(null);
+        XPackAuth auth = createTestBuilder()
+                .withCertInfo(null)
+                .build();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("certInfo");
+        HttpClientConfig.Builder settingsBuilder = spy(createDefaultClientConfigBuilder());
 
         // when
-        builder.build();
+        auth.configure(settingsBuilder);
 
+        // then
+        verify(settingsBuilder, never()).sslSocketFactory(any());
+        verify(settingsBuilder, never()).httpsIOSessionStrategy(any());
     }
 
 }

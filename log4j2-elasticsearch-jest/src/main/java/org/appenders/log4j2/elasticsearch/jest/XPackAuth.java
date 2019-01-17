@@ -47,8 +47,13 @@ public class XPackAuth implements Auth<HttpClientConfig.Builder> {
 
     @Override
     public void configure(HttpClientConfig.Builder builder) {
+
         credentials.applyTo(builder);
-        certInfo.applyTo(builder);
+
+        if (certInfo != null) {
+            certInfo.applyTo(builder);
+        }
+
     }
 
     @PluginBuilderFactory
@@ -63,18 +68,17 @@ public class XPackAuth implements Auth<HttpClientConfig.Builder> {
         private Credentials credentials;
 
         @PluginElement("certInfo")
-        @Required(message = "No certInfo provided for " + XPackAuth.PLUGIN_NAME)
         private CertInfo certInfo;
 
         @Override
         public XPackAuth build() {
+
             if (credentials == null) {
                 throw new ConfigurationException("No credentials provided for " + XPackAuth.PLUGIN_NAME);
             }
-            if (certInfo == null) {
-                throw new ConfigurationException("No certInfo provided for " + XPackAuth.PLUGIN_NAME);
-            }
+
             return new XPackAuth(credentials, certInfo);
+
         }
 
         public Builder withCredentials(Credentials credentials) {
