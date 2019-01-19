@@ -18,6 +18,7 @@ Add one of following config elements to your `logj2.xml`:
 * [`jestHttp`](#http)
 * [`jestBufferedHttp`](#buffered-http)
 
+or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2-buffered-example.properties)
 or [configure programatically](#programmatic-config).
 
 It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.xml) example.

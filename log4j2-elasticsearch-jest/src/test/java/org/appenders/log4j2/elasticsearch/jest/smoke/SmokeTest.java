@@ -136,6 +136,17 @@ public class SmokeTest {
         indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
     }
 
+
+    @Test
+    public void propertiesConfigTest() throws InterruptedException {
+
+        System.setProperty("log4j.configurationFile", "log4j2-buffered-example.properties");
+        AtomicInteger counter = new AtomicInteger();
+
+        Logger logger = LogManager.getLogger("elasticsearch");
+        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
+    }
+
     static void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder) {
         final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
         final Configuration config = ctx.getConfiguration();
