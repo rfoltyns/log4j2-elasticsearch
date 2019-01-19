@@ -53,6 +53,9 @@ Project consists of:
     </Elasticsearch>
 </Appenders>
 ```
+
+or log4j2.properties (see [example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2-buffered-example.properties))
+
 or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
 
 3. Start logging directly to Elasticsearch!
