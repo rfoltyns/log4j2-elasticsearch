@@ -30,6 +30,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -127,6 +128,15 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
             );
         } catch (Exception e) {
             throw new ConfigurationException(e);
+        }
+    }
+
+    @Override
+    public void addOperation(Operation operation) {
+        try {
+            operation.execute();
+        } catch (Exception e) {
+            LOG.error("Operation failed: {}", e.getMessage());
         }
     }
 

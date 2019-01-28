@@ -39,6 +39,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -51,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 @Plugin(name = "JestHttp", category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
@@ -65,6 +67,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final int defaultMaxTotalConnectionsPerRoute;
     private final boolean discoveryEnabled;
     private final Auth<HttpClientConfig.Builder> auth;
+
+    private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
     private JestClient client;
 
@@ -109,12 +113,21 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         return new Function<Bulk, Boolean>() {
 
             private Function<Bulk, Boolean> failureHandler = createFailureHandler(failoverPolicy);
-            private JestClient client = createClient();
 
             @Override
             public Boolean apply(Bulk bulk) {
+
+                while (!operations.isEmpty()) {
+                    try {
+                        operations.remove().execute();
+                    } catch (Exception e) {
+                        // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
+                        LOG.error("Deferred operation failed: {}", e.getMessage());
+                    }
+                }
+
                 JestResultHandler<JestResult> jestResultHandler = createResultHandler(bulk, failureHandler);
-                client.executeAsync(bulk, jestResultHandler);
+                createClient().executeAsync(bulk, jestResultHandler);
                 return true;
             }
 
@@ -154,6 +167,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         } catch (IOException e) {
             throw new ConfigurationException("IndexTemplate not added: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void addOperation(Operation operation) {
+        operations.add(operation);
     }
 
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {

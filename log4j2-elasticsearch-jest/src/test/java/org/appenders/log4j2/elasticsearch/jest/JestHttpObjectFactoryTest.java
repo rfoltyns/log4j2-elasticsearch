@@ -31,6 +31,7 @@ import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -39,6 +40,7 @@ import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
@@ -210,6 +212,75 @@ public class JestHttpObjectFactoryTest {
         verify(mockedJestClient, times(1)).executeAsync((Bulk) captor.capture(), Mockito.any());
 
         assertEquals(bulk, captor.getValue());
+    }
+
+    @Test
+    public void batchListenerExecutesOperationsIfOperationsAvailable() throws Exception {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        ClientObjectFactory<JestClient, Bulk> config = spy(builder.build());
+
+        JestClient mockedJestClient = mock(JestClient.class);
+        when(config.createClient()).thenReturn(mockedJestClient);
+
+        FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
+        Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
+
+        Operation operation = spy(new Operation() {
+            @Override
+            public void execute() {
+            }
+        });
+
+        config.addOperation(operation);
+
+        String payload1 = "test1";
+        String payload2 = "test2";
+        Bulk bulk = createTestBatch(payload1, payload2);
+
+        // when
+        listener.apply(bulk);
+
+        // then
+        verify(operation).execute();
+
+    }
+
+    @Test
+    public void batchListenerOperationExceptionIsNotPropagated() throws Exception {
+
+        // given
+        Builder builder = createTestObjectFactoryBuilder();
+        ClientObjectFactory<JestClient, Bulk> config = spy(builder.build());
+
+        JestClient mockedJestClient = mock(JestClient.class);
+        when(config.createClient()).thenReturn(mockedJestClient);
+
+        FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
+        Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
+
+        AtomicInteger callCount = new AtomicInteger();
+        Operation operation = spy(new Operation() {
+            @Override
+            public void execute() throws Exception {
+                callCount.incrementAndGet();
+                throw new Exception("test exception");
+            }
+        });
+
+        config.addOperation(operation);
+
+        String payload1 = "test1";
+        String payload2 = "test2";
+        Bulk bulk = createTestBatch(payload1, payload2);
+
+        // when
+        listener.apply(bulk);
+
+        // then
+        assertEquals(1, callCount.get());
+
     }
 
     @Test

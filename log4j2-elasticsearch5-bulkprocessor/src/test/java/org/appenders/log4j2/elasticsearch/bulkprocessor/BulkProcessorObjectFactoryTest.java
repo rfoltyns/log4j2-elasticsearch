@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -320,6 +321,43 @@ public class BulkProcessorObjectFactoryTest {
 
         // when
         batchListener.apply(null);
+
+    }
+
+    @Test
+    public void addAdminOperationExecutesImediately() throws Exception {
+
+        // given
+        BulkProcessorObjectFactory factory = createTestObjectFactoryBuilder().build();
+
+        Operation operation = mock(Operation.class);
+
+        // when
+        factory.addOperation(operation);
+
+        // then
+        verify(operation).execute();
+
+    }
+
+    @Test
+    public void addAdminOperationExceptinsAreNotRethrown() throws Exception {
+
+        // given
+        BulkProcessorObjectFactory factory = createTestObjectFactoryBuilder().build();
+
+        Operation operation = spy(new Operation() {
+            @Override
+            public void execute() throws Exception {
+                throw new Exception("test exception");
+            }
+        });
+
+        // when
+        factory.addOperation(operation);
+
+        // then
+        verify(operation).execute();
 
     }
 

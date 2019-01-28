@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -28,6 +29,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -53,6 +56,8 @@ import java.util.function.Function;
 
 @Plugin(name = BulkProcessorObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BulkProcessorObjectFactory implements ClientObjectFactory<TransportClient, BulkRequest> {
+
+    private static Logger LOG = StatusLogger.getLogger();
 
     static final String PLUGIN_NAME = "ElasticsearchBulkProcessor";
 
@@ -130,6 +135,15 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
             );
         } catch (Exception e) {
             throw new ConfigurationException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void addOperation(Operation operation) {
+        try {
+            operation.execute();
+        } catch (Exception e) {
+            LOG.error("Operation failed: {}", e.getMessage());
         }
     }
 

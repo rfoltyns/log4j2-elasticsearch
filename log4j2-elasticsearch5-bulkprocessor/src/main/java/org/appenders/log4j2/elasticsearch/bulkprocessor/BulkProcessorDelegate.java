@@ -28,6 +28,8 @@ import org.elasticsearch.action.index.IndexRequest;
 
 public class BulkProcessorDelegate implements BatchEmitter {
 
+    private State state = State.STOPPED;
+
     private final BulkProcessor bulkProcessor;
 
     public BulkProcessorDelegate(BulkProcessor bulkProcessor) {
@@ -37,6 +39,28 @@ public class BulkProcessorDelegate implements BatchEmitter {
     @Override
     public void add(Object batchItem) {
         bulkProcessor.add((IndexRequest) batchItem);
+    }
+
+    @Override
+    public void start() {
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        bulkProcessor.flush();
+        bulkProcessor.close();
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }
