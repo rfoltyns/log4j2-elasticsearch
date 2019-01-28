@@ -26,7 +26,7 @@ package org.appenders.log4j2.elasticsearch;
  *
  * @param <T> type of accepted items
  */
-public interface BatchDelivery<T> {
+public interface BatchDelivery<T> extends LifeCycle {
 
     String ELEMENT_TYPE = "batchDelivery";
 

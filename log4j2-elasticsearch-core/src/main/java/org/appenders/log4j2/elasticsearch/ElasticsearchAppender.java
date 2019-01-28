@@ -35,6 +35,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 
+
 /**
  * Plugin class responsible for delivery of incoming {@link LogEvent}(s) to {@link BatchDelivery} implementation.
  * <p>
@@ -51,8 +52,8 @@ public class ElasticsearchAppender extends AbstractAppender {
 
     public static final String PLUGIN_NAME = "Elasticsearch";
 
-    private IndexNameFormatter indexNameFormatter;
-    private final ItemAppender<LogEvent> itemAppender;
+    private final IndexNameFormatter indexNameFormatter;
+    private final ItemAppender itemAppender;
 
     protected ElasticsearchAppender(String name, Filter filter, AbstractLayout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
@@ -69,6 +70,18 @@ public class ElasticsearchAppender extends AbstractAppender {
     public void append(LogEvent event) {
         String formattedIndexName = indexNameFormatter.format(event);
         itemAppender.append(formattedIndexName, event);
+    }
+
+    @Override
+    public void start() {
+        itemAppender.start();
+        super.start();
+    }
+
+    @Override
+    public void stop() {
+        itemAppender.stop();
+        super.stop();
     }
 
     @PluginBuilderFactory

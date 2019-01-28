@@ -27,7 +27,7 @@ import org.mockito.Mockito;
 
 public class TestBatchEmitterFactory extends BatchEmitterServiceProvider implements BatchEmitterFactory<BatchEmitter> {
 
-    private BulkEmitter spiedEmitter;
+    private BatchEmitter spiedEmitter;
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {

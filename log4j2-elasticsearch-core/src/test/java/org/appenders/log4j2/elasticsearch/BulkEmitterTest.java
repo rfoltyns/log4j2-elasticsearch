@@ -33,6 +33,8 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -132,6 +134,47 @@ public class BulkEmitterTest {
         // when
         emitter.add(new Object());
 
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private BulkEmitter createLifeCycleTestObject() {
+        return createTestBulkEmitter(TEST_BATCH_SIZE, LARGE_TEST_INTERVAL, new TestBatchOperations());
     }
 
     public static BulkEmitter createTestBulkEmitter(int batchSize, int interval, BatchOperations batchOperations) {

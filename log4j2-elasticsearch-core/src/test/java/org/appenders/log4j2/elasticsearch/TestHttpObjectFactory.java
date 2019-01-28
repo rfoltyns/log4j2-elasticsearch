@@ -93,6 +93,14 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
     public void execute(IndexTemplate indexTemplate) {
     }
 
+    @Override
+    public void addOperation(Operation operation) {
+        try {
+            operation.execute();
+        } catch (Exception e) {
+        }
+    }
+
     protected TestResultHandler<Object> createResultHandler(BulkEmitterTest.TestBatch bulk, Function<BulkEmitterTest.TestBatch, Boolean> failureHandler) {
         return new TestResultHandler<Object>() {
         };

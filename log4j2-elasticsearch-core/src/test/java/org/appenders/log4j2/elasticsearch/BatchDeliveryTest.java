@@ -29,15 +29,18 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -150,20 +153,20 @@ public class BatchDeliveryTest {
         TestHttpObjectFactory objectFactory = createTestObjectFactoryBuilder().build();
 
         TestBatchEmitterFactory batchEmitterFactory = spy(new TestBatchEmitterFactory());
-        TestAsyncBatchDelivery.mockedProvider = batchEmitterFactory;
 
         BatchEmitter emitter = batchEmitterFactory.createInstance(TEST_BATCH_SIZE, TEST_DELIVERY_INTERVAL, objectFactory, new NoopFailoverPolicy());
 
-        AsyncBatchDelivery.Builder builder = createTestBatchDeliveryBuilder();
-        TestAsyncBatchDelivery testAsyncBatchDelivery = spy(new TestAsyncBatchDelivery(
+        TestAsyncBatchDelivery delivery = spy(new TestAsyncBatchDelivery(
                 TEST_BATCH_SIZE,
                 TEST_DELIVERY_INTERVAL,
                 objectFactory,
                 new NoopFailoverPolicy(),
-                null));
-        Mockito.when(builder.build()).thenReturn(testAsyncBatchDelivery);
-
-        AsyncBatchDelivery delivery = builder.build();
+                null) {
+            @Override
+            protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
+                return batchEmitterFactory;
+            }
+        });
 
         String testMessage = "test message";
 
@@ -178,29 +181,124 @@ public class BatchDeliveryTest {
     }
 
     @Test
-    public void batchDeliveryExecutesIndexTemplateDuringStartupWhenIndexTemplatesNotNull() {
+    public void lifecycleStartSetsUpIndexTemplateExecutionIfIndexTemplateIsConfigured() {
 
         // given
-        TestBatchEmitterFactory batchEmitterFactory = spy(new TestBatchEmitterFactory());
-        TestAsyncBatchDelivery.mockedProvider = batchEmitterFactory;
-
         TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
-        IndexTemplate testIndexTemplate = spy(new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH));
 
-        new TestAsyncBatchDelivery(
-                TEST_BATCH_SIZE,
-                TEST_DELIVERY_INTERVAL,
-                objectFactory,
-                new NoopFailoverPolicy(),
-                testIndexTemplate);
+        IndexTemplate indexTemplate = mock(IndexTemplate.class);
+
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(objectFactory)
+                .withIndexTemplate(indexTemplate)
+                .build();
+
+        // when
+        batchDelivery.start();
 
         // then
-        Mockito.verify(objectFactory, times(1)).execute(eq(testIndexTemplate));
+        verify(objectFactory).addOperation(any());
+
+        
+
     }
 
-    private static class TestAsyncBatchDelivery extends AsyncBatchDelivery {
+    @Test
+    public void lifecycleStartDoesntSetUpIndexTemplateExecutionIfIndexTemplateIsNotConfigured() {
 
-        public static BatchEmitterServiceProvider mockedProvider;
+        // given
+        TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(objectFactory)
+                .withIndexTemplate(null)
+                .build();
+
+        // when
+        batchDelivery.start();
+
+        // then
+        verify(objectFactory, never()).addOperation(any());
+
+    }
+
+    @Test
+    public void lifecycleStartStartsBatchEmitter() {
+
+        // given
+        BatchEmitter batchEmitter = mock(BatchEmitter.class);
+
+        BatchEmitterServiceProvider batchEmitterFactory = new TestBatchEmitterFactory() {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return batchEmitter;
+            }
+        };
+
+        TestAsyncBatchDelivery batchDelivery = spy(new TestAsyncBatchDelivery(
+                TEST_BATCH_SIZE,
+                TEST_DELIVERY_INTERVAL,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy(),
+                null) {
+            @Override
+            protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
+                return batchEmitterFactory;
+            }
+        });
+
+        // when
+        batchDelivery.start();
+
+        // then
+        verify(batchEmitter).start();
+
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createTestBatchDeliveryBuilder().build();
+    }
+
+    static class TestAsyncBatchDelivery extends AsyncBatchDelivery {
+
+        private BatchEmitterServiceProvider mockedProvider;
 
         public TestAsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
             super(batchSize, deliveryInterval, objectFactory, failoverPolicy, indexTemplate);

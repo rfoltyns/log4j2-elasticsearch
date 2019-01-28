@@ -73,7 +73,17 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
     /**
      * Updates target with index template
      * @param indexTemplate index template request
+     * @deprecated will be replaced by {@link #addOperation(Operation)} in future releases
      */
+    @Deprecated
     void execute(IndexTemplate indexTemplate);
+
+    /**
+     * Allows to add operation to be executed before next batch. Exact time of the execution depends on implementation of this factory.
+     *
+     * NOTE: {@code default} added for backwards compatibility. {@code default} will be removed future releases
+     * @param operation operation to be executed
+     */
+    default void addOperation(Operation operation) {}
 
 }

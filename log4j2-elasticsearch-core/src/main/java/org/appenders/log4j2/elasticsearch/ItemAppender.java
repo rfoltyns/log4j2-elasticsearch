@@ -25,7 +25,7 @@ package org.appenders.log4j2.elasticsearch;
  *
  * @param <T> log source type
  */
-public interface ItemAppender<T> {
+public interface ItemAppender<T> extends LifeCycle {
 
     void append(String formattedIndexName, T source);
 

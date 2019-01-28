@@ -41,8 +41,13 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     private static final Logger LOG = StatusLogger.getLogger();
 
+    private volatile State state = State.STOPPED;
+
     private final BatchOperations batchOperations;
     private final BatchEmitter batchEmitter;
+
+    private final IndexTemplate indexTemplate;
+    private final ClientObjectFactory<Object, Object> objectFactory;
 
     public AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
         this.batchOperations = objectFactory.createBatchOperations();
@@ -52,9 +57,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                         deliveryInterval,
                         objectFactory,
                         failoverPolicy);
-        if (indexTemplate != null) {
-            objectFactory.execute(indexTemplate);
-        }
+        this.indexTemplate = indexTemplate;
+        this.objectFactory = objectFactory;
     }
 
     /**
@@ -147,6 +151,35 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             return this;
         }
 
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        if (indexTemplate != null) {
+            objectFactory.addOperation(() -> objectFactory.execute(indexTemplate));
+        }
+        batchEmitter.start();
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        batchEmitter.stop();
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

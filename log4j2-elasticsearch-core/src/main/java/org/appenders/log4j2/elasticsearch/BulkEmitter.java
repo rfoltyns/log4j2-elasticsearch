@@ -35,6 +35,8 @@ import java.util.function.Function;
  */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
+    private volatile State state = State.STOPPED;
+
     private final AtomicInteger size = new AtomicInteger();
 
     private final int maxSize;
@@ -96,6 +98,30 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
      */
     public void addListener(Function<BATCH_TYPE, Boolean> onReadyListener) {
         this.listener = onReadyListener;
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
     /*

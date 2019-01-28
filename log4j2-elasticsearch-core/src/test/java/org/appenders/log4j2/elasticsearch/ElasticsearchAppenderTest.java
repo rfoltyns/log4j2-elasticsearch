@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
@@ -37,12 +38,15 @@ import org.mockito.ArgumentCaptor;
 import org.powermock.api.mockito.PowerMockito;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -51,8 +55,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 public class ElasticsearchAppenderTest {
 
     private static final String TEST_APPENDER_NAME = "testAppender";
-
-    private static ItemAppenderFactory mockItemAppenderFactory;
 
     @Test
     public void builderReturnsNonNullObject() {
@@ -114,15 +116,7 @@ public class ElasticsearchAppenderTest {
         when(itemAppenderFactory.createInstance(anyBoolean(), any(AbstractLayout.class), any(BatchDelivery.class)))
                 .thenReturn(itemAppender);
 
-        ElasticsearchAppender appender = new TestElasticsearchAppender(
-                "testAppender",
-                null,
-                JsonLayout.newBuilder().build(),
-                false,
-                mock(BatchDelivery.class),
-                false,
-                mock(IndexNameFormatter.class)
-        );
+        ElasticsearchAppender appender = createTestElasticsearchAppender(itemAppenderFactory);
 
         LogEvent logEvent = mock(LogEvent.class);
 
@@ -132,6 +126,27 @@ public class ElasticsearchAppenderTest {
         // then
         verify(itemAppender, times(1)).append(anyString(), eq(logEvent));
 
+    }
+
+    private TestElasticsearchAppender createTestElasticsearchAppender() {
+        return createTestElasticsearchAppender(mockedItemAppenderFactory());
+    }
+
+    private TestElasticsearchAppender createTestElasticsearchAppender(ItemAppenderFactory mockItemAppenderFactory) {
+        return new TestElasticsearchAppender(
+                    "testAppender",
+                    null,
+                    JsonLayout.newBuilder().build(),
+                    false,
+                    mock(BatchDelivery.class),
+                    false,
+                    mock(IndexNameFormatter.class)
+            ) {
+            @Override
+            protected ItemAppenderFactory createItemAppenderFactory() {
+                return mockItemAppenderFactory;
+            }
+        };
     }
 
     @Test
@@ -181,6 +196,94 @@ public class ElasticsearchAppenderTest {
         verify(batchDelivery, times(1)).add(eq("formattedIndexName"), any(ItemSource.class));
     }
 
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertFalse(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertFalse(lifeCycle.isStarted());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    @Test
+    public void lifecycleStartStartsItemAppender() {
+
+        // given
+        ItemSourceAppender mockItemAppender = mock(ItemSourceAppender.class);
+
+        ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
+            @Override
+            public ItemSourceAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+                return mockItemAppender;
+            }
+        };
+
+        TestElasticsearchAppender appender = createTestElasticsearchAppender(itemAppenderFactory);
+
+        // when
+        appender.start();
+
+        // then
+        verify(mockItemAppender).start();
+
+
+    }
+
+    @Test
+    public void lifecycleStopStopsItemAppender() {
+
+        // given
+        ItemSourceAppender mockItemAppender = mock(ItemSourceAppender.class);
+
+        ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
+            @Override
+            public ItemSourceAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+                return mockItemAppender;
+            }
+        };
+
+        TestElasticsearchAppender appender = createTestElasticsearchAppender(itemAppenderFactory);
+
+        // when
+        appender.stop();
+
+        // then
+        verify(mockItemAppender).stop();
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createTestElasticsearchAppenderBuilder().build();
+    }
+
     private LogEvent createTestLogEvent() {
         return DefaultLogEventFactory.getInstance().createEvent("testLogger",
                 null,
@@ -220,10 +323,7 @@ public class ElasticsearchAppenderTest {
     }
 
     private static ItemAppenderFactory mockedItemAppenderFactory() {
-        if (mockItemAppenderFactory == null) {
-            mockItemAppenderFactory = mock(ItemAppenderFactory.class);
-        }
-        return mockItemAppenderFactory;
+        return mock(ItemAppenderFactory.class);
     }
 
 }

@@ -27,7 +27,7 @@ package org.appenders.log4j2.elasticsearch;
  *
  * @param <T> type of accepted batch item
  */
-public interface BatchEmitter<T> {
+public interface BatchEmitter<T> extends LifeCycle {
 
     /**
      * @param batchItem batch item to be processed

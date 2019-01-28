@@ -29,6 +29,8 @@ import java.util.function.Function;
  */
 public class ItemSourceAppender implements ItemAppender<LogEvent> {
 
+    private volatile State state = State.STOPPED;
+
     private final BatchDelivery batchDelivery;
     private final Function<LogEvent, ItemSource> serializer;
 
@@ -46,6 +48,30 @@ public class ItemSourceAppender implements ItemAppender<LogEvent> {
     @Override
     public final void append(String formattedIndexName, LogEvent event) {
         batchDelivery.add(formattedIndexName, serializer.apply(event));
+    }
+
+    @Override
+    public void start() {
+        batchDelivery.start();
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        if (batchDelivery.isStarted()) {
+            batchDelivery.stop();
+        }
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }
