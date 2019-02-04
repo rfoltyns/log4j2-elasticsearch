@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 import io.searchbox.client.JestClient;
-import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.client.config.HttpClientConfig;
@@ -65,19 +64,70 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final int readTimeout;
     private final int maxTotalConnections;
     private final int defaultMaxTotalConnectionsPerRoute;
+    private final int ioThreadCount;
     private final boolean discoveryEnabled;
-    private final Auth<HttpClientConfig.Builder> auth;
+    private final Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
     private JestClient client;
 
-    protected JestHttpObjectFactory(Collection<String> serverUris, int connTimeout, int readTimeout, int maxTotalConnections, int defaultMaxTotalConnectionPerRoute, boolean discoveryEnabled, Auth<HttpClientConfig.Builder> auth) {
+    /**
+     * This constructor is deprecated and will be removed in 1.5.
+     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth)} instead.
+     *
+     * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
+     * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
+     * @param readTimeout Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes
+     * @param maxTotalConnections Number of connections available
+     * @param defaultMaxTotalConnectionPerRoute Number of connections available per Apache CPool
+     * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
+     * @param auth Security configuration
+     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth)} instead.
+     *
+     */
+    @Deprecated
+    protected JestHttpObjectFactory(Collection<String> serverUris,
+                                    int connTimeout,
+                                    int readTimeout,
+                                    int maxTotalConnections,
+                                    int defaultMaxTotalConnectionPerRoute,
+                                    boolean discoveryEnabled,
+                                    Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth) {
+        this(serverUris,
+                connTimeout,
+                readTimeout,
+                maxTotalConnections,
+                defaultMaxTotalConnectionPerRoute,
+                Runtime.getRuntime().availableProcessors(),
+                discoveryEnabled,
+                auth);
+    }
+
+    /**
+     * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
+     * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
+     * @param readTimeout Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes
+     * @param maxTotalConnections Number of connections available
+     * @param defaultMaxTotalConnectionPerRoute Number of connections available per Apache CPool
+     * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
+     * @param ioThreadCount number of 'I/O Dispatcher' threads started by Apache HC `IOReactor`
+     * @param auth Security configuration
+     */
+    protected JestHttpObjectFactory(Collection<String> serverUris,
+                                    int connTimeout,
+                                    int readTimeout,
+                                    int maxTotalConnections,
+                                    int defaultMaxTotalConnectionPerRoute,
+                                    int ioThreadCount,
+                                    boolean discoveryEnabled,
+                                    Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth) {
         this.serverUris = serverUris;
         this.connTimeout = connTimeout;
         this.readTimeout = readTimeout;
         this.maxTotalConnections = maxTotalConnections;
         this.defaultMaxTotalConnectionsPerRoute = defaultMaxTotalConnectionPerRoute;
+        this.ioThreadCount = ioThreadCount;
         this.discoveryEnabled = discoveryEnabled;
         this.auth = auth;
     }
@@ -103,7 +153,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 auth.configure(builder);
             }
 
-            client = getClientProvider(builder).createClient();
+            WrappedHttpClientConfig.Builder wrappedHttpClientConfigBuilder =
+                    new WrappedHttpClientConfig.Builder(builder.build())
+                            .ioThreadCount(ioThreadCount);
+
+            client = getClientProvider(wrappedHttpClientConfigBuilder).createClient();
         }
         return client;
     }
@@ -197,7 +251,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     }
 
     // visible for testing
-    ClientProvider<JestClient> getClientProvider(HttpClientConfig.Builder clientConfigBuilder) {
+    ClientProvider<JestClient> getClientProvider(WrappedHttpClientConfig.Builder clientConfigBuilder) {
         return new JestClientProvider(clientConfigBuilder);
     }
 
@@ -220,6 +274,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         protected int defaultMaxTotalConnectionPerRoute = 4;
 
         @PluginBuilderAttribute
+        protected int ioThreadCount = Runtime.getRuntime().availableProcessors();
+
+        @PluginBuilderAttribute
         protected boolean discoveryEnabled;
 
         @PluginElement("auth")
@@ -230,7 +287,16 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
             validate();
 
-            return new JestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled, auth);
+            return new JestHttpObjectFactory(
+                    Arrays.asList(serverUris.split(";")),
+                    connTimeout,
+                    readTimeout,
+                    maxTotalConnection,
+                    defaultMaxTotalConnectionPerRoute,
+                    ioThreadCount,
+                    discoveryEnabled,
+                    auth
+            );
         }
 
         protected void validate() {
@@ -264,6 +330,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             return this;
         }
 
+        public Builder withIoThreadCount(int ioThreadCount) {
+            this.ioThreadCount = ioThreadCount;
+            return this;
+        }
+
         public Builder withDiscoveryEnabled(boolean discoveryEnabled) {
             this.discoveryEnabled = discoveryEnabled;
             return this;
@@ -275,18 +346,20 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         }
     }
 
+    /**
+     * Consider this class <i>private</i>.
+     */
     class JestClientProvider implements ClientProvider<JestClient> {
 
-        private final HttpClientConfig.Builder clientConfigBuilder;
+        private final WrappedHttpClientConfig.Builder clientConfigBuilder;
 
-        public JestClientProvider(HttpClientConfig.Builder clientConfigBuilder) {
+        public JestClientProvider(WrappedHttpClientConfig.Builder clientConfigBuilder) {
             this.clientConfigBuilder = clientConfigBuilder;
         }
 
         @Override
         public JestClient createClient() {
-            JestClientFactory jestClientFactory = new JestClientFactory();
-            jestClientFactory.setHttpClientConfig(clientConfigBuilder.build());
+            ExtendedJestClientFactory jestClientFactory = new ExtendedJestClientFactory(clientConfigBuilder.build());
             return jestClientFactory.getObject();
         }
 

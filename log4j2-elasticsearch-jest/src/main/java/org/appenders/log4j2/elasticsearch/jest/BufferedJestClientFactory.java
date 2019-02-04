@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import io.searchbox.client.JestClient;
-import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.client.config.discovery.NodeChecker;
 import io.searchbox.client.config.idle.HttpReapableConnectionManager;
@@ -39,14 +38,24 @@ import org.apache.logging.log4j.status.StatusLogger;
 /**
  * Creates configured {@link BufferedJestHttpClient}
  */
-public class BufferedJestClientFactory extends JestClientFactory {
+public class BufferedJestClientFactory extends ExtendedJestClientFactory {
 
     private static final Logger LOG = StatusLogger.getLogger();
 
-    private final HttpClientConfig httpClientConfig;
+    /**
+     * This constructor is deprecated, it will be removed in 1.5,
+     * use {@link #BufferedJestClientFactory(WrappedHttpClientConfig)} instead
+     *
+     * @param httpClientConfig {@link io.searchbox.client.config.HttpClientConfig}
+     * @deprecated As of 1.5, this constructor will be removed
+     */
+    @Deprecated
+    public BufferedJestClientFactory(io.searchbox.client.config.HttpClientConfig httpClientConfig) {
+        super(new WrappedHttpClientConfig.Builder(httpClientConfig).build());
+    }
 
-    public BufferedJestClientFactory(HttpClientConfig.Builder builder) {
-        this.httpClientConfig = builder.build();
+    public BufferedJestClientFactory(WrappedHttpClientConfig wrappedHttpClientConfig) {
+        super(wrappedHttpClientConfig);
     }
 
     @Override
@@ -55,6 +64,7 @@ public class BufferedJestClientFactory extends JestClientFactory {
         // no other way than copying almost whole super.getObject() ..
         BufferedJestHttpClient client = createDefaultClient();
 
+        HttpClientConfig httpClientConfig = wrappedHttpClientConfig.getHttpClientConfig();
         client.setServers(httpClientConfig.getServerList());
 
         final HttpClientConnectionManager connectionManager = getConnectionManager();
@@ -90,14 +100,15 @@ public class BufferedJestClientFactory extends JestClientFactory {
     IdleConnectionReaper createConnectionReaper(JestHttpClient client, HttpClientConnectionManager connectionManager, NHttpClientConnectionManager asyncConnectionManager) {
         LOG.info("Idle connection reaping enabled...");
 
-        IdleConnectionReaper reaper = new IdleConnectionReaper(httpClientConfig, new HttpReapableConnectionManager(connectionManager, asyncConnectionManager));
+        IdleConnectionReaper reaper = new IdleConnectionReaper(wrappedHttpClientConfig.getHttpClientConfig(),
+                new HttpReapableConnectionManager(connectionManager, asyncConnectionManager));
         client.setIdleConnectionReaper(reaper);
         reaper.startAsync();
         reaper.awaitRunning();
         return reaper;
     }
 
-    protected NodeChecker createNodeChecker(JestHttpClient client, HttpClientConfig httpClientConfig) {
+    protected NodeChecker createNodeChecker(JestHttpClient client, io.searchbox.client.config.HttpClientConfig httpClientConfig) {
         LOG.info("Node Discovery enabled...");
         NodeChecker nodeChecker = new NodeChecker(client, httpClientConfig);
         client.setNodeChecker(nodeChecker);
@@ -110,9 +121,9 @@ public class BufferedJestClientFactory extends JestClientFactory {
         return HttpClients.custom()
                         .setConnectionManager(connectionManager)
                         .setDefaultRequestConfig(getRequestConfig())
-                        .setProxyAuthenticationStrategy(httpClientConfig.getProxyAuthenticationStrategy())
+                        .setProxyAuthenticationStrategy(wrappedHttpClientConfig.getHttpClientConfig().getProxyAuthenticationStrategy())
                         .setRoutePlanner(getRoutePlanner())
-                        .setDefaultCredentialsProvider(httpClientConfig.getCredentialsProvider())
+                        .setDefaultCredentialsProvider(wrappedHttpClientConfig.getHttpClientConfig().getCredentialsProvider())
         .build();
     }
 
@@ -120,9 +131,9 @@ public class BufferedJestClientFactory extends JestClientFactory {
         return HttpAsyncClients.custom()
                         .setConnectionManager(connectionManager)
                         .setDefaultRequestConfig(getRequestConfig())
-                        .setProxyAuthenticationStrategy(httpClientConfig.getProxyAuthenticationStrategy())
+                        .setProxyAuthenticationStrategy(wrappedHttpClientConfig.getHttpClientConfig().getProxyAuthenticationStrategy())
                         .setRoutePlanner(getRoutePlanner())
-                        .setDefaultCredentialsProvider(httpClientConfig.getCredentialsProvider())
+                        .setDefaultCredentialsProvider(wrappedHttpClientConfig.getHttpClientConfig().getCredentialsProvider())
         .build();
     }
 

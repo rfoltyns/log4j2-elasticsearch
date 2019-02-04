@@ -164,8 +164,8 @@ public class BufferedJestClientFactoryTest {
     }
 
     private BufferedJestClientFactory createDefaultTestBufferedJestClientFactory(HttpClientConfig.Builder httpClientconfigBuilder) {
-        BufferedJestClientFactory factory = new BufferedJestClientFactory(httpClientconfigBuilder);
-        factory.setHttpClientConfig(httpClientconfigBuilder.build());
+        BufferedJestClientFactory factory = new BufferedJestClientFactory(httpClientconfigBuilder.build());
+//        factory.setHttpClientConfig(httpClientconfigBuilder.build());
         return factory;
     }
 

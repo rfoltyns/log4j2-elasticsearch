@@ -39,6 +39,7 @@ import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -63,6 +64,7 @@ public class JestHttpObjectFactoryTest {
     private static final int TEST_MAX_TOTAL_CONNECTIONS = 11;
     private static final int TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE = 22;
     private static final boolean TEST_DISCOVERY_ENABLED = true;
+    private static final int TEST_IO_THREAD_COUNT = 4;
 
     public static Builder createTestObjectFactoryBuilder() {
         Builder builder = JestHttpObjectFactory.newBuilder();
@@ -125,26 +127,47 @@ public class JestHttpObjectFactoryTest {
         builder.withMaxTotalConnection(TEST_MAX_TOTAL_CONNECTIONS);
         builder.withDefaultMaxTotalConnectionPerRoute(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE);
         builder.withDiscoveryEnabled(TEST_DISCOVERY_ENABLED);
+        builder.withIoThreadCount(TEST_IO_THREAD_COUNT);
 
         // when
-        ClientObjectFactory<JestClient, Bulk> config = builder.build();
+        ClientObjectFactory<JestClient, Bulk> httpObjectFactory = builder.build();
 
         // then
         assertEquals(TEST_CONNECTION_TIMEOUT,
-                org.powermock.api.mockito.PowerMockito.field(config.getClass(), "connTimeout").get(config));
+                org.powermock.api.mockito.PowerMockito.field(httpObjectFactory.getClass(), "connTimeout").get(httpObjectFactory));
         assertEquals(TEST_READ_TIMEOUT,
-                PowerMockito.field(config.getClass(), "readTimeout").get(config));
+                PowerMockito.field(httpObjectFactory.getClass(), "readTimeout").get(httpObjectFactory));
         assertEquals(TEST_MAX_TOTAL_CONNECTIONS,
-                PowerMockito.field(config.getClass(), "maxTotalConnections").get(config));
+                PowerMockito.field(httpObjectFactory.getClass(), "maxTotalConnections").get(httpObjectFactory));
         assertEquals(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE,
-                PowerMockito.field(config.getClass(), "defaultMaxTotalConnectionsPerRoute").get(config));
+                PowerMockito.field(httpObjectFactory.getClass(), "defaultMaxTotalConnectionsPerRoute").get(httpObjectFactory));
         assertEquals(TEST_DISCOVERY_ENABLED,
-                PowerMockito.field(config.getClass(), "discoveryEnabled").get(config));
+                PowerMockito.field(httpObjectFactory.getClass(), "discoveryEnabled").get(httpObjectFactory));
+        assertEquals(TEST_IO_THREAD_COUNT,
+                PowerMockito.field(httpObjectFactory.getClass(), "ioThreadCount").get(httpObjectFactory));
 
     }
 
     @Test
-    public void authIsAppliedIfCOnfigured() {
+    public void deprecatedConstructorInitializesIoThreadCount() throws IllegalAccessException {
+
+        // when
+        JestHttpObjectFactory httpObjectFactory = new JestHttpObjectFactory(Arrays.asList(TEST_SERVER_URIS.split(";")),
+                TEST_CONNECTION_TIMEOUT,
+                TEST_READ_TIMEOUT,
+                TEST_MAX_TOTAL_CONNECTIONS,
+                TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE,
+                TEST_DISCOVERY_ENABLED,
+                null);
+
+        // then
+        assertEquals(Runtime.getRuntime().availableProcessors() ,
+                PowerMockito.field(httpObjectFactory.getClass(), "ioThreadCount").get(httpObjectFactory));
+
+    }
+
+    @Test
+    public void authIsAppliedIfConfigured() {
 
         // given
         Auth auth = mock(Auth.class);

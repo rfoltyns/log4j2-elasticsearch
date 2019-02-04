@@ -48,6 +48,7 @@ readTimeout | Attribute | no | -1 | Number of milliseconds before SocketTimeoutE
 maxTotalConnection | Attribute | no | 40 | Number of connections available.
 defaultMaxTotalConnectionPerRoute | Attribute | no | 4 | Number of connections available per Apache CPool.
 discoveryEnabled | Attribute | no | false | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes.
+ioThreadCount | Attribute | no | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`
 
 ### Buffered HTTP
 

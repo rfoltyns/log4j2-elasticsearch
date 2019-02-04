@@ -25,7 +25,6 @@ import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
-import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
@@ -56,6 +55,21 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     private final PooledItemSourceFactory itemSourceFactoryConfig;
 
+    /**
+     * This constructor is deprecated and will be removed in 1.5.
+     *
+     * @param serverUris
+     * @param connTimeout
+     * @param readTimeout
+     * @param maxTotalConnections
+     * @param defaultMaxTotalConnectionPerRoute
+     * @param discoveryEnabled
+     * @param bufferedSourceFactory
+     * @param auth
+     *
+     * @deprecated As of 1.5, this constructor will be removed. Use {@link Builder} instead
+     */
+    @Deprecated
     protected BufferedJestHttpObjectFactory(
             Collection<String> serverUris,
             int connTimeout,
@@ -64,7 +78,31 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             int defaultMaxTotalConnectionPerRoute,
             boolean discoveryEnabled,
             PooledItemSourceFactory bufferedSourceFactory,
-            Auth<HttpClientConfig.Builder> auth
+            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth
+    ) {
+        this(
+                serverUris,
+                connTimeout,
+                readTimeout,
+                maxTotalConnections,
+                defaultMaxTotalConnectionPerRoute,
+                Runtime.getRuntime().availableProcessors(),
+                discoveryEnabled,
+                bufferedSourceFactory,
+                auth
+        );
+    }
+
+    private BufferedJestHttpObjectFactory(
+            Collection<String> serverUris,
+            int connTimeout,
+            int readTimeout,
+            int maxTotalConnections,
+            int defaultMaxTotalConnectionPerRoute,
+            int ioThreadCount,
+            boolean discoveryEnabled,
+            PooledItemSourceFactory bufferedSourceFactory,
+            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth
     ) {
         super(
                 serverUris,
@@ -72,6 +110,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 readTimeout,
                 maxTotalConnections,
                 defaultMaxTotalConnectionPerRoute,
+                ioThreadCount,
                 discoveryEnabled,
                 auth
         );
@@ -126,12 +165,12 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     }
 
     // visible for testing
-    ClientProvider<JestClient> getClientProvider(HttpClientConfig.Builder clientConfigBuilder) {
+    ClientProvider<JestClient> getClientProvider(WrappedHttpClientConfig.Builder clientConfigBuilder) {
         return new JestClientProvider(clientConfigBuilder) {
             @Override
             public JestClient createClient() {
-                JestClientFactory jestClientFactory = new BufferedJestClientFactory(clientConfigBuilder);
-                jestClientFactory.setHttpClientConfig(clientConfigBuilder.build());
+                WrappedHttpClientConfig wrappedHttpClientConfig = clientConfigBuilder.build();
+                JestClientFactory jestClientFactory = new BufferedJestClientFactory(wrappedHttpClientConfig);
                 return jestClientFactory.getObject();
             }
         };
@@ -140,7 +179,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     public static class Builder extends JestHttpObjectFactory.Builder {
 
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
-        private PooledItemSourceFactory pooledItemSourceFactory;
+        protected PooledItemSourceFactory pooledItemSourceFactory;
 
         @Override
         public BufferedJestHttpObjectFactory build() {
@@ -153,6 +192,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                     readTimeout,
                     maxTotalConnection,
                     defaultMaxTotalConnectionPerRoute,
+                    ioThreadCount,
                     discoveryEnabled,
                     pooledItemSourceFactory,
                     auth);

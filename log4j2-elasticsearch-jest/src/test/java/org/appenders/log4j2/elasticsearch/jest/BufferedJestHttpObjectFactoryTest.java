@@ -45,6 +45,7 @@ import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -73,6 +74,7 @@ public class BufferedJestHttpObjectFactoryTest {
     private static final int TEST_MAX_TOTAL_CONNECTIONS = 11;
     private static final int TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE = 22;
     private static final boolean TEST_DISCOVERY_ENABLED = true;
+    private static final int TEST_IO_THREAD_COUNT = 4;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -169,11 +171,12 @@ public class BufferedJestHttpObjectFactoryTest {
 
         // given
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
-        builder.withConnTimeout(TEST_CONNECTION_TIMEOUT);
-        builder.withReadTimeout(TEST_READ_TIMEOUT);
-        builder.withMaxTotalConnection(TEST_MAX_TOTAL_CONNECTIONS);
-        builder.withDefaultMaxTotalConnectionPerRoute(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE);
-        builder.withDiscoveryEnabled(TEST_DISCOVERY_ENABLED);
+        builder.withConnTimeout(TEST_CONNECTION_TIMEOUT)
+                .withReadTimeout(TEST_READ_TIMEOUT)
+                .withMaxTotalConnection(TEST_MAX_TOTAL_CONNECTIONS)
+                .withDefaultMaxTotalConnectionPerRoute(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE)
+                .withDiscoveryEnabled(TEST_DISCOVERY_ENABLED)
+                .withIoThreadCount(TEST_IO_THREAD_COUNT);
 
         // when
         ClientObjectFactory<JestClient, Bulk> config = builder.build();
@@ -189,6 +192,8 @@ public class BufferedJestHttpObjectFactoryTest {
                 PowerMockito.field(config.getClass(), "defaultMaxTotalConnectionsPerRoute").get(config));
         assertEquals(TEST_DISCOVERY_ENABLED,
                 PowerMockito.field(config.getClass(), "discoveryEnabled").get(config));
+        assertEquals(TEST_IO_THREAD_COUNT,
+                PowerMockito.field(config.getClass(), "ioThreadCount").get(config));
 
     }
 
@@ -338,6 +343,33 @@ public class BufferedJestHttpObjectFactoryTest {
         verify((BufferedBulk)bulk, times(1)).completed();
 
         assertEquals(bulk, captor.getValue());
+
+    }
+
+    @Test
+    public void deprecatedConstructorSetsDefaultIoThreadCount() throws IllegalAccessException {
+
+        // given
+        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest
+                .createDefaultTestSourceFactoryConfig()
+                .build();
+
+        // when
+        BufferedJestHttpObjectFactory factory = new BufferedJestHttpObjectFactory(
+                Arrays.asList(TEST_SERVER_URIS.split(";")),
+                TEST_CONNECTION_TIMEOUT,
+                TEST_READ_TIMEOUT,
+                TEST_MAX_TOTAL_CONNECTIONS,
+                TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE,
+                TEST_DISCOVERY_ENABLED,
+                bufferedSourceFactory,
+                null
+        );
+
+        // then
+        assertEquals(Runtime.getRuntime().availableProcessors(),
+                PowerMockito.field(factory.getClass(), "ioThreadCount").get(factory));
+
     }
 
     private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {

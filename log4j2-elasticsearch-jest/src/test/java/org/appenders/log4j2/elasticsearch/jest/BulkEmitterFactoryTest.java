@@ -54,7 +54,7 @@ public class BulkEmitterFactoryTest {
         BatchEmitterFactory emitterFactory = new BulkEmitterFactory();
 
         // when
-        boolean result = emitterFactory.accepts(ExtendedBulkProcessorObjectFactory.class);
+        boolean result = emitterFactory.accepts(TestBulkProcessorObjectFactory.class);
 
         // then
         assertTrue(result);
@@ -91,8 +91,8 @@ public class BulkEmitterFactoryTest {
 
     }
 
-    public static class ExtendedBulkProcessorObjectFactory extends JestHttpObjectFactory {
-        protected ExtendedBulkProcessorObjectFactory() {
+    public static class TestBulkProcessorObjectFactory extends JestHttpObjectFactory {
+        protected TestBulkProcessorObjectFactory() {
             super(null, 0, 0, 0, 0, false, null);
         }
     }
