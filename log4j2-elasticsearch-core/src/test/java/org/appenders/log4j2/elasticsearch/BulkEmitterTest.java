@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,14 +31,29 @@ import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BulkEmitterTest {
@@ -50,7 +66,132 @@ public class BulkEmitterTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void emitsBatchWithGivenSize() {
+    public void interruptedExceptionIsHandled() throws InterruptedException {
+
+        // given
+        int slackTime = 10000;
+        Function listener = spy(new Function<Collection, Boolean>() {
+            @Override
+            public Boolean apply(Collection collection) {
+                try {
+                    Thread.currentThread().sleep(slackTime);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+                return true;
+            }
+        });
+
+        BulkEmitter<Collection> emitter = new BulkEmitter<>(1, 10000, new BatchOperations<Collection>() {
+            @Override
+            public Object createBatchItem(String indexName, Object source) {
+                return source;
+            }
+
+            @Override
+            public Object createBatchItem(String indexName, ItemSource source) {
+                return source;
+            }
+
+            @Override
+            public BatchBuilder<Collection> createBatchBuilder() {
+                return createTestBatchBuilder();
+            }
+
+        });
+
+        emitter.addListener(listener);
+
+        Thread t1 = new Thread(() -> emitter.add(0));
+        Thread t2 = new Thread(() -> emitter.add(1));
+
+        // when
+        t1.start();
+        Thread.currentThread().sleep(100);
+        t2.start();
+        Thread.currentThread().sleep(100);
+        t2.interrupt();
+
+        // then
+        verify(listener, times(1)).apply(any());
+
+    }
+
+    @Test
+    public void threadsAwaitingAtLatchAreEventuallyReleased() {
+
+        // given
+        int slackTime = 100;
+        Function listener = spy(new Function<Collection, Boolean>() {
+            @Override
+            public Boolean apply(Collection collection) {
+                try {
+                    Thread.currentThread().sleep(slackTime);
+                } catch (InterruptedException e) {
+                    Assert.fail();
+                }
+                return true;
+            }
+        });
+
+        BulkEmitter<Collection> emitter = new BulkEmitter<>(1, 10000, new BatchOperations<Collection>() {
+            @Override
+            public Object createBatchItem(String indexName, Object source) {
+                return source;
+            }
+
+            @Override
+            public Object createBatchItem(String indexName, ItemSource source) {
+                return source;
+            }
+
+            @Override
+            public BatchBuilder<Collection> createBatchBuilder() {
+                return createTestBatchBuilder();
+            }
+
+        });
+
+        emitter.addListener(listener);
+
+        Thread t1 = new Thread(() -> emitter.add(0));
+        Thread t2 = new Thread(() -> emitter.add(1));
+
+        // when
+        t1.start();
+        long start = System.currentTimeMillis();
+        t2.run();
+        long end = System.currentTimeMillis();
+
+        // then
+        verify(listener, times(1)).apply(any());
+        System.out.println(end - start);
+        assertTrue(end - start >= slackTime);
+
+    }
+
+    private BatchBuilder<Collection> createTestBatchBuilder() {
+        return new BatchBuilder<Collection>() {
+            Collection items = new ConcurrentLinkedQueue();
+
+            @Override
+            public void add(Object item) {
+                items.add(item);
+            }
+            @Override
+            public Collection build() {
+                Iterator iterator = items.iterator();
+                while (iterator.hasNext()) {
+                    iterator.next();
+                }
+                return items;
+            }
+
+        };
+    }
+
+    @Test
+    public void notifiesOnBatchWithGivenSize() {
 
         // given
         int batchSize = 3;
@@ -70,7 +211,7 @@ public class BulkEmitterTest {
     }
 
     @Test
-    public void emitsOnEveryCompletedBatch() {
+    public void notifiesOnEveryCompletedBatch() throws InterruptedException {
 
         // given
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, LARGE_TEST_INTERVAL, new TestBatchOperations());
@@ -82,6 +223,7 @@ public class BulkEmitterTest {
         // when
         for (int ii = 0; ii < TEST_BATCH_SIZE * expectedNumberOfBatches ; ii++) {
             emitter.add(new TestBatchItem(TEST_DATA));
+            Thread.sleep(100);
         }
 
         // then
@@ -93,46 +235,57 @@ public class BulkEmitterTest {
 
     }
 
-
-    // https://github.com/jacoco/jacoco/issues/245
     @Test
-    public void notiifyListenerSynchronizedBlock() {
+    public void listenerIsNotNotifiedWhenThereNoItemsToBatch() {
 
         // given
-        int batchSize = 2;
-        BulkEmitter emitter = createTestBulkEmitter(batchSize, LARGE_TEST_INTERVAL, new TestBatchOperations());
-        Function<TestBatch, Boolean> dummyObserver = testBatch -> {
-            throw new RuntimeException("JAVAC.SYNC should be filtered out");
-        };
+        BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, LARGE_TEST_INTERVAL, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = dummyObserver();
         emitter.addListener(dummyObserver);
-        emitter.add(new Object());
-
-        expectedException.expect(RuntimeException.class);
 
         // when
         emitter.notifyListener();
 
+        // then
+        verify(dummyObserver, never()).apply(any());
+
     }
 
-    // https://github.com/jacoco/jacoco/issues/245
     @Test
-    public void addToBatchBuilderSynchronizedBlock() {
+    public void listenerIsNotifiedByScheduledTask() throws InterruptedException {
 
         // given
-        int batchSize = 2;
-        TestBatchOperations throwingBatchOperations = spy(new TestBatchOperations());
-        BatchBuilder<TestBatch> throwingBatchBuilder = mock(BatchBuilder.class);
-        doThrow(new RuntimeException("JAVAC.SYNC should be filtered out")).when(throwingBatchBuilder).add(Matchers.any(String.class));
-        when(throwingBatchOperations.createBatchBuilder()).thenReturn(throwingBatchBuilder);
-
-        BulkEmitter emitter = createTestBulkEmitter(batchSize, LARGE_TEST_INTERVAL, throwingBatchOperations);
+        BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 1000, new TestBatchOperations());
         Function<TestBatch, Boolean> dummyObserver = dummyObserver();
         emitter.addListener(dummyObserver);
 
-        expectedException.expect(RuntimeException.class);
+        assertTrue(TEST_BATCH_SIZE > 1);
 
         // when
         emitter.add(new Object());
+        Thread.currentThread().sleep(2000);
+
+        // then
+        verify(dummyObserver).apply(any());
+
+    }
+
+    @Test
+    public void listenerIsNotifiedonLifecycleStop() {
+
+        // given
+        BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 1000, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        assertTrue(TEST_BATCH_SIZE > 1);
+
+        // when
+        emitter.add(new Object());
+        emitter.stop();
+
+        // then
+        verify(dummyObserver).apply(any());
 
     }
 
@@ -178,7 +331,8 @@ public class BulkEmitterTest {
     }
 
     public static BulkEmitter createTestBulkEmitter(int batchSize, int interval, BatchOperations batchOperations) {
-        return spy(new BulkEmitter(batchSize, interval, batchOperations));
+        BulkEmitter bulkEmitter = new BulkEmitter(batchSize, interval, batchOperations);
+        return bulkEmitter;
     }
 
     private Function<TestBatch, Boolean> dummyObserver() {

@@ -21,8 +21,14 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.apache.logging.log4j.status.StatusLogger;
+
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -35,50 +41,83 @@ import java.util.function.Function;
  */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
+    protected static StatusLogger LOG = StatusLogger.getLogger();
+
     private volatile State state = State.STOPPED;
 
     private final AtomicInteger size = new AtomicInteger();
+    private final ConcurrentLinkedQueue<Object> items = new ConcurrentLinkedQueue<>();
+
+    private final AtomicBoolean notifying = new AtomicBoolean();
+    private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));
 
     private final int maxSize;
-    private final int interval;
     private final BatchOperations<BATCH_TYPE> batchOperations;
-
-    private final AtomicReference<BatchBuilder<BATCH_TYPE>> builder;
-
-    private final Timer scheduler = new Timer();
     private Function<BATCH_TYPE, Boolean> listener;
 
-    private final ListenerLock listenerLock = new ListenerLock();
+    private final Timer scheduler = new Timer();
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
-        this.interval = intervalInMillis;
         this.batchOperations = batchOperations;
-        this.builder = new AtomicReference<>(batchOperations.createBatchBuilder());
-        this.scheduler.scheduleAtFixedRate(createNotificationTask(), 0, interval);
+        this.scheduler.scheduleAtFixedRate(createNotificationTask(), 1000, intervalInMillis);
     }
 
     /**
      * Delivers current batch to the listener if at least one item is waiting for delivery, no-op otherwise.
      */
     public final void notifyListener() {
-        synchronized (listenerLock) {
-            if (size.get() == 0) {
+
+        if (notifying.compareAndSet(false, true)) {
+
+            // reset
+            size.set(0);
+
+            // get the size ONCE - size() gets costly when dealing with large linked queues
+            int actualSize = items.size();
+
+            if (actualSize == 0) {
+                // scheduled notifications may have nothing to do
+                notifying.set(false);
                 return;
             }
-            this.size.set(0);
-            listener.apply(builder.getAndSet(batchOperations.createBatchBuilder()).build());
+
+            // create actual batch; there's a potential to leave some items undelivered
+            // but they will be delivered eventually (on next trigger)
+            BatchBuilder<BATCH_TYPE> batch = batchOperations.createBatchBuilder();
+            for (int ii = 0; ii < actualSize; ii++) {
+                batch.add(items.remove());
+            }
+            listener.apply(batch.build());
+
+            // release other threads
+            latchHolder.getAndSet(new CountDownLatch(1)).countDown();
+
+            // switch back the gate condition
+            notifying.set(false);
+        } else {
+            try {
+                // wait until notification is completed;
+                // unless there's a huge chunk of work to do on apply(batch), it should exit after a couple of millis
+                latchHolder.get().await(1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                LOG.error("Interrupted while waiting for notification completion");
+                Thread.currentThread().interrupt();
+            }
         }
+
     }
 
     @Override
     public void add(Object batchItem) {
 
-        builder.get().add(batchItem);
+        items.add(batchItem);
 
         if (size.incrementAndGet() >= maxSize) {
             notifyListener();
         }
+
+
     }
 
     private TimerTask createNotificationTask() {
@@ -111,7 +150,12 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     @Override
     public void stop() {
+
+        notifyListener();
+        scheduler.cancel();
+
         state = State.STOPPED;
+
     }
 
     @Override
@@ -122,12 +166,6 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     @Override
     public boolean isStopped() {
         return state == State.STOPPED;
-    }
-
-    /*
-     * Class used as monitor to increase lock visibility in profiling tools
-     */
-    private class ListenerLock {
     }
 
 }
