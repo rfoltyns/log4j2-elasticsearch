@@ -33,8 +33,6 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
 
     private static String ACTION_TYPE = "index";
 
-    private final BuilderLock builderLock = new BuilderLock();
-
     @Override
     public Object createBatchItem(String indexName, Object source) {
         return new Index.Builder(source)
@@ -55,15 +53,13 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
     public BatchBuilder<Bulk> createBatchBuilder() {
         return new BatchBuilder<Bulk>() {
 
-            private final Bulk.Builder builder = new Bulk.Builder();
+            private final Bulk.Builder builder = new ExtendedBulk.Builder();
 
             @Override
             public void add(Object item) {
-                // has to be synchronized until https://github.com/searchbox-io/Jest/issues/517 is resolved
-                synchronized (builderLock) {
-                    builder.addAction((BulkableAction) item);
-                }
+                builder.addAction((BulkableAction) item);
             }
+
             @Override
             public Bulk build() {
                 return builder.build();
@@ -71,9 +67,4 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
         };
     }
 
-    /*
-     * Class used as monitor to increase lock visibility in profiling tools
-     */
-    private class BuilderLock {
-    }
 }
