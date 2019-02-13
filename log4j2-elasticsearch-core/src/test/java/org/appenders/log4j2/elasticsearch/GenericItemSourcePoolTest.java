@@ -332,33 +332,6 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void throwsWhenResizePolicyDoesNotResize() {
-
-        // given
-        ResizePolicy resizePolicy = mock(ResizePolicy.class);
-        when(resizePolicy.canResize(any())).thenReturn(true);
-        when(resizePolicy.increase(any())).thenReturn(false);
-
-        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
-        GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
-                DEFAULT_TEST_ITEM_POOL_NAME,
-                pooledObjectOps,
-                resizePolicy,
-                0,
-                false,
-                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0
-        ));
-
-        // when
-        final PoolResourceException exception = assertThrows(PoolResourceException.class, pool::getPooled);
-
-        // then
-        assertThat(exception.getMessage(), containsString("Unable to resize. Creation of ItemSource was unsuccessful"));
-
-    }
-
-    @Test
     public void removeReturnFalseInsteadOfThrowingAfterUnderlyingPoolResourceException ()  {
 
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
