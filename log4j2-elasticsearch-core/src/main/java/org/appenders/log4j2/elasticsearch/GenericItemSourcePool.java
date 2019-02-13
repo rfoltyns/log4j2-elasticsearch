@@ -47,7 +47,6 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
 public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
-    private static final String RESIZE_FAILED = String.format("Unable to resize. Creation of %s was unsuccessful", ItemSource.class.getSimpleName());
     public static final String THREAD_NAME_FORMAT = "%s-%s";
 
     private volatile State state = State.STOPPED;
@@ -287,13 +286,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         // let's allow only one thread to get in
         if (resizing.compareAndSet(false, true)) {
             this.countDownLatch.set(new CountDownLatch(1));
-            final boolean resized = resize(unlatchAndResetResizing);
-            if (!resized) {
-                // TODO: remove when limited resize policy is ready
-                // throw to resurface issues
-                throw new PoolResourceException(RESIZE_FAILED);
-            }
-            return true;
+            return resize(unlatchAndResetResizing);
         }
 
         try {

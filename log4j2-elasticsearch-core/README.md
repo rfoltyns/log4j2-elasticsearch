@@ -608,7 +608,7 @@ Shrinking is triggered every 10 seconds (not configurable ATM). Shrink size is c
 ```
 shrinkSize = resizeFactor * number of elements managed by the pool (available + used)
 
-if (shrinkSize > number of availlable elements) {
+if (shrinkSize > number of available elements) {
     return and don't resize
 }
 
@@ -632,6 +632,55 @@ Example above will create 10000 pooled elements at startup. Then, if pool runs o
 
 ##### Considerations
 `UnlimitedResizePolicy` doesn't have any memory constraints and can lead to OOM and log loss if cluster can't index logs on time. Heavy load testing is encouraged before release.
+
+##### LimitedResizePolicy
+This resize strategy will resize given pool until pool's current size is equal to `maxSize`.
+`resizeFactor` can be configured to adjust expansion and shrink size.
+
+Expansion is triggered when pool runs out of available elements. Expansion size is calculated using following algorithm:
+
+(pseudo-code)
+```
+expansionSize = initial pool size * resizeFactor
+if (expansionSize == 0) {
+    throw exception, resize policy misconfigured
+}
+if (expansionSize + currentSize > maxSize) {
+    expansionSize = maxSize - currentSize
+}
+increase pool size by expansionSize
+```
+
+Shrinking is triggered every 10 seconds (not configurable ATM). Shrink size is calculated using following algorithm:
+
+(pseudo-code)
+```
+shrinkSize = resizeFactor * number of elements managed by the pool (available + used)
+
+if (shrinkSize > number of available elements) {
+    return and don't resize
+}
+
+if (shrinkSize < initial pool size) {
+    shrinkSize = number of available elements - initial pool size // initial pool size is the minimum number of managed elements
+}
+
+decrease pool size by shrinkSize
+```
+
+`resizeFactor` is set to 0.5 by default.
+
+Example:
+```xml
+<PooledItemSourceFactory itemSizeInBytes="1024" initialPoolSize="10000">
+    <LimitedResizePolicy resizeFactor="0.2" maxSize="20000"/>
+</PooledItemSourceFactory>
+```
+
+Example above will create 10000 pooled elements at startup. Then, if pool runs out of elements later and attempt to get element is made, 2000 pooled elements will be created. It will be shrinked to 10000 eventually if number of available elements will stay above 20% of total number of managed elements, in this example (10k + 2k) * 0.2 = 2.4k after 1 expansion.
+
+##### Considerations
+`LimitedResizePolicy` will cause log loss if `maxSize` limit is hit (pool will NOT be resized anymore) and there are no more elements available. Exception will be thrown. Heavy load testing is encouraged before release.
 
 ## Pluggable JCTools
 

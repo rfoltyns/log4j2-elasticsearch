@@ -172,7 +172,7 @@ public class PoolingAsyncResponseConsumerTest {
         final IOException exception = assertThrows(IOException.class, () -> consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json")));
 
         // then
-        assertThat(exception.getMessage(), containsString("Unable to resize. Creation of ItemSource was unsuccessful"));
+        assertThat(exception.getMessage(), containsString("ResizePolicy is ineffective. Pool testPool has to be reconfigured to handle current load."));
 
     }
 
