@@ -26,9 +26,7 @@
         <Console name="CONSOLE" />
     </Appenders>
     <Loggers>
-        <Root level="info">
-            <AppenderRef ref="asyncLogger" />
-        </Root>
+        <Root level="info" />
     </Loggers>
 
 </Configuration>
