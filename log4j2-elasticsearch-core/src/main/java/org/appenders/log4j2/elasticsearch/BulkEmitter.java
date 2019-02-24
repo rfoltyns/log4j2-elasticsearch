@@ -52,15 +52,17 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));
 
     private final int maxSize;
+    private final int deliveryInterval;
     private final BatchOperations<BATCH_TYPE> batchOperations;
-    private Function<BATCH_TYPE, Boolean> listener;
+    private final Timer scheduler;
 
-    private final Timer scheduler = new Timer();
+    private Function<BATCH_TYPE, Boolean> listener;
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
+        this.deliveryInterval = intervalInMillis;
         this.batchOperations = batchOperations;
-        this.scheduler.scheduleAtFixedRate(createNotificationTask(), 1000, intervalInMillis);
+        this.scheduler = new Timer("BatchNotifier");
     }
 
     /**
@@ -145,16 +147,22 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     @Override
     public void start() {
+        this.scheduler.scheduleAtFixedRate(createNotificationTask(), 1000, deliveryInterval);
         state = State.STARTED;
     }
 
     @Override
     public void stop() {
 
+        LOG.debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
+
         notifyListener();
         scheduler.cancel();
+        scheduler.purge();
 
         state = State.STOPPED;
+
+        LOG.debug("{} stopped", getClass().getSimpleName());
 
     }
 

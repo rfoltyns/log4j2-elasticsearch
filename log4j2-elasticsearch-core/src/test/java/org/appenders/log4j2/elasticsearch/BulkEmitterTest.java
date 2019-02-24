@@ -258,6 +258,7 @@ public class BulkEmitterTest {
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 1000, new TestBatchOperations());
         Function<TestBatch, Boolean> dummyObserver = dummyObserver();
         emitter.addListener(dummyObserver);
+        emitter.start();
 
         assertTrue(TEST_BATCH_SIZE > 1);
 
@@ -271,7 +272,7 @@ public class BulkEmitterTest {
     }
 
     @Test
-    public void listenerIsNotifiedonLifecycleStop() {
+    public void listenerIsNotifiedOnLifecycleStop() {
 
         // given
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 1000, new TestBatchOperations());
@@ -286,6 +287,28 @@ public class BulkEmitterTest {
 
         // then
         verify(dummyObserver).apply(any());
+
+    }
+
+    @Test
+    public void listenerIsNotNotifiedAfterLifecycleStopCauseSchedulerIsCancelled() throws InterruptedException {
+
+        // given
+        assertTrue(TEST_BATCH_SIZE > 1);
+
+        BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 10, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        // when
+        emitter.add(new Object());
+        int invocations = Mockito.mockingDetails(dummyObserver).getInvocations().size();
+        emitter.stop();
+        Thread.sleep(50);
+
+        // then
+        // stop() notifies explicitly, hence +1
+        verify(dummyObserver, times(invocations + 1)).apply(any());
 
     }
 
