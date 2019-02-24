@@ -62,7 +62,7 @@ public class StringAppender implements ItemAppender<LogEvent> {
 
     @Override
     public void stop() {
-        if (batchDelivery.isStarted()) {
+        if (!batchDelivery.isStopped()) {
             batchDelivery.stop();
         }
         state = State.STOPPED;

@@ -54,8 +54,9 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
     // TODO: make configurable via system property
     private static final int MAX_RESIZE_INTERNAL_STACK_DEPTH = 50;
+    public static final String THREAD_NAME_FORMAT = "%s-%s";
 
-    ScheduledExecutorService executor;
+    private volatile State state = State.STOPPED;
 
     private final String poolName;
     private final UnpooledByteBufAllocator byteBufAllocator;
@@ -69,6 +70,12 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
     private final int initialPoolSize;
     private final AtomicInteger totalPoolSize;
+    private final boolean monitored;
+    private final long monitorTaskInterval;
+
+    private final AtomicInteger thIndex = new AtomicInteger();
+
+    ScheduledExecutorService executor;
 
     BufferedItemSourcePool(String poolName, UnpooledByteBufAllocator byteBufAllocator, ResizePolicy resizePolicy, long resizeTimeout, boolean monitored, long monitorTaskInterval, int initialPoolSize, int itemSizeInBytes) {
         this.poolName = poolName;
@@ -78,16 +85,8 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
         this.initialPoolSize = initialPoolSize;
         this.totalPoolSize = new AtomicInteger();
         this.estimatedSourceSize = itemSizeInBytes;
-        this.executor = createExecutor();
-
-        incrementPoolSize(initialPoolSize);
-
-        startRecyclerTask();
-
-        if (monitored) {
-            startMonitorTask(monitorTaskInterval);
-        }
-
+        this.monitored = monitored;
+        this.monitorTaskInterval = monitorTaskInterval;
     }
 
     private void startRecyclerTask() {
@@ -100,7 +99,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
      * @param monitorTaskInterval interval between two snapshots
      */
     void startMonitorTask(long monitorTaskInterval) {
-        executor.scheduleAtFixedRate(new MetricPrinter(getName(), byteBufAllocator.metric(), this.new PoolMetrics()),
+        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", byteBufAllocator.metric(), this.new PoolMetrics()),
                 1000L,
                 monitorTaskInterval,
                 TimeUnit.MILLISECONDS
@@ -109,7 +108,12 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     ScheduledExecutorService createExecutor() {
-        return Executors.newSingleThreadScheduledExecutor();
+        return createExecutor(poolName);
+    }
+
+    ScheduledExecutorService createExecutor(String threadName) {
+        return Executors.newScheduledThreadPool(2,
+                r -> new Thread(r, String.format(THREAD_NAME_FORMAT, threadName, thIndex.incrementAndGet())));
     }
 
     /**
@@ -139,15 +143,24 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
      */
     @Override
     public final void incrementPoolSize() {
-
-        CompositeByteBuf buffer = new CompositeByteBuf(byteBufAllocator, false, 2).capacity(estimatedSourceSize);
-
-        objectPool.add(new BufferedItemSource(buffer, bufferedItemSource -> {
-            bufferedItemSource.getSource().clear();
-            objectPool.add(bufferedItemSource);
-        }));
-
+        objectPool.add(createBufferedItemSource());
         totalPoolSize.getAndIncrement();
+    }
+
+    BufferedItemSource createBufferedItemSource() {
+        CompositeByteBuf buffer = new CompositeByteBuf(byteBufAllocator, false, 2).capacity(estimatedSourceSize);
+        return new BufferedItemSource(buffer, releaseCallback());
+    }
+
+    private ReleaseCallback releaseCallback() {
+        return bufferedItemSource -> {
+            bufferedItemSource.getSource().clear();
+            if (!isStarted()) {
+                bufferedItemSource.getSource().release();
+                return;
+            }
+            objectPool.add(bufferedItemSource);
+        };
     }
 
     /**
@@ -271,10 +284,18 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     @Override
+    // TODO: add shutdown(timeout)
     public void shutdown() {
+
+        LOGGER.debug("{} shutting down. Releasing buffers..", poolName);
         objectPool.forEach(pooled -> pooled.getSource().release());
         objectPool.clear();
+
+        LOGGER.debug("{} stopping internal threads..", poolName);
         executor.shutdown();
+
+        LOGGER.debug("{} shutdown complete", poolName);
+
     }
 
     static class Recycler extends Thread {
@@ -335,6 +356,49 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
             return sb.append('}').toString();
         }
 
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+
+        if (!isStarted()) {
+            incrementPoolSize(initialPoolSize);
+
+            this.executor = createExecutor(poolName);
+            startRecyclerTask();
+            if (monitored) {
+                startMonitorTask(monitorTaskInterval);
+            }
+
+            state = State.STARTED;
+
+        }
+
+    }
+
+    @Override
+    public void stop() {
+
+        if (!isStopped()) {
+            // let's change state immediately to allow to release properly
+            state = State.STOPPED;
+            shutdown();
+        }
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

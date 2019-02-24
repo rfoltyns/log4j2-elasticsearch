@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-public interface ItemSourceFactory {
+public interface ItemSourceFactory extends LifeCycle {
 
     String ELEMENT_TYPE = "itemSourceFactory";
 

@@ -69,31 +69,13 @@ public class BufferedItemSourcePoolTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void poolCreatesScheduledExecutor() {
-
-        // when
-        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
-                DEFAULT_TEST_ITEM_POOL_NAME,
-                byteBufAllocator,
-                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
-                DEFAULT_TEST_RESIZE_TIMEOUT,
-                false,
-                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                1,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES));
-
-        // then
-        assertNotNull(pool.executor);
-
-    }
-
-    @Test
     public void poolShutdownShutsDownExecutor() {
 
         // given
         final ScheduledExecutorService mockedExecutor = mock(ScheduledExecutorService.class);
 
         BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(true, mockedExecutor);
+        pool.start();
 
         // when
         pool.shutdown();
@@ -104,28 +86,14 @@ public class BufferedItemSourcePoolTest {
     }
 
     @Test
-    public void poolExecutorSchedulesRecyclerThread() throws InterruptedException {
-
-        // given
-        final ScheduledExecutorService spiedExecutor = spy(ScheduledExecutorService.class);
-
-        // when
-        createDefaultTestBufferedItemSourcePool(false, spiedExecutor);
-
-        // then
-        ArgumentCaptor<BufferedItemSourcePool.Recycler> runnableCaptor = ArgumentCaptor.forClass(BufferedItemSourcePool.Recycler.class);
-        verify(spiedExecutor).scheduleAtFixedRate(runnableCaptor.capture(), anyLong(), eq(10000L), any(TimeUnit.class));
-
-    }
-
-    @Test
     public void monitoredPoolExecutorSchedulesMetricPrinterThread() {
 
         // given
         final ScheduledExecutorService spiedExecutor = spy(ScheduledExecutorService.class);
+        BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(true, spiedExecutor);
 
         // when
-        createDefaultTestBufferedItemSourcePool(true, spiedExecutor);
+        pool.start();
 
         // then
         ArgumentCaptor<BufferedItemSourcePool.Recycler> runnableCaptor = ArgumentCaptor.forClass(BufferedItemSourcePool.Recycler.class);
@@ -138,7 +106,8 @@ public class BufferedItemSourcePoolTest {
         // given
         final ScheduledExecutorService mockedExecutor = mock(ScheduledExecutorService.class);
 
-        BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(false, mockedExecutor);
+        BufferedItemSourcePool pool = started(createDefaultTestBufferedItemSourcePool(false, mockedExecutor));
+
         pool.incrementPoolSize();
         assertEquals(DEFAULT_TEST_INITIAL_POOL_SIZE + 1, pool.getAvailableSize());
 
@@ -148,6 +117,11 @@ public class BufferedItemSourcePoolTest {
         // then
         assertEquals(0, pool.getAvailableSize());
 
+    }
+
+    private BufferedItemSourcePool started(BufferedItemSourcePool managed) {
+        managed.start();
+        return managed;
     }
 
     @Test
@@ -184,6 +158,8 @@ public class BufferedItemSourcePoolTest {
 
         // given
         BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(true);
+        pool.start();
+
         BufferedItemSourcePool.PoolMetrics metrics = pool.new PoolMetrics();
 
         // when
@@ -205,6 +181,8 @@ public class BufferedItemSourcePoolTest {
 
         // given
         BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(true);
+        pool.start();
+
         BufferedItemSourcePool.PoolMetrics metrics = pool.new PoolMetrics();
 
         TestPooledByteBufAllocatorMetric allocatorMetrics = new TestPooledByteBufAllocatorMetric();
@@ -269,6 +247,8 @@ public class BufferedItemSourcePoolTest {
 
         // given
         BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(false);
+        pool.start();
+
         assertEquals(DEFAULT_TEST_INITIAL_POOL_SIZE, pool.getAvailableSize());
 
         pool.incrementPoolSize();
@@ -282,6 +262,44 @@ public class BufferedItemSourcePoolTest {
         // then
         assertEquals(DEFAULT_TEST_INITIAL_POOL_SIZE + 1, pool.getAvailableSize());
 
+    }
+
+    @Test
+    public void defaultReleaseCallbackDoesntReturnToPoolIfPoolIsStopped() throws PoolResourceException {
+
+        // given
+        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                byteBufAllocator,
+                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                false,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                1,
+                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
+            @Override
+            BufferedItemSource createBufferedItemSource() {
+                return spy(super.createBufferedItemSource());
+            }
+        });
+
+        pool.start();
+
+        assertTrue(pool.isStarted());
+        assertTrue(pool.getAvailableSize() > 0);
+
+        ItemSource<ByteBuf> pooled = pool.getPooled();
+        ByteBuf byteBuf = spy(pooled.getSource());
+        when(pooled.getSource()).thenReturn(byteBuf);
+
+        pool.stop();
+
+        // when
+        pooled.release();
+
+        // then
+        assertEquals(0, pool.getAvailableSize());
+        verify(byteBuf).release();
     }
 
     @Test
@@ -336,7 +354,7 @@ public class BufferedItemSourcePoolTest {
     }
 
     @Test
-    public void removeReturnFalseInsteadOofThrowingAfterUnderlyingPoolResourceException ()  {
+    public void removeReturnFalseInsteadOfThrowingAfterUnderlyingPoolResourceException ()  {
 
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
         when(resizePolicy.increase(any())).thenThrow(PoolResourceException.class);
@@ -485,6 +503,193 @@ public class BufferedItemSourcePoolTest {
 
     }
 
+    @Test
+    public void lifecycleStartCreatesScheduledExecutor() {
+
+        // given
+        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                byteBufAllocator,
+                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                false,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                1,
+                DEFAULT_TEST_ITEM_SIZE_IN_BYTES));
+
+        // when
+        pool.start();
+
+        // then
+        assertNotNull(pool.executor);
+
+    }
+
+    @Test
+    public void lifecycleStartSchedulesRecyclerThread() {
+
+        // given
+        final ScheduledExecutorService spiedExecutor = spy(ScheduledExecutorService.class);
+        BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(false, spiedExecutor);
+
+        // when
+        pool.start();
+        pool.start();
+
+        // then
+        ArgumentCaptor<BufferedItemSourcePool.Recycler> runnableCaptor = ArgumentCaptor.forClass(BufferedItemSourcePool.Recycler.class);
+        verify(spiedExecutor).scheduleAtFixedRate(runnableCaptor.capture(), anyLong(), eq(10000L), any(TimeUnit.class));
+        assertEquals(DEFAULT_TEST_ITEM_POOL_NAME + "-Recycler", runnableCaptor.getValue().getName());
+
+    }
+
+    @Test
+    public void lifecycleStartSchedulesMonitorThread() {
+
+        // given
+        final ScheduledExecutorService spiedExecutor = spy(ScheduledExecutorService.class);
+        BufferedItemSourcePool pool = createDefaultTestBufferedItemSourcePool(true, spiedExecutor);
+
+        // when
+        pool.start();
+        pool.start();
+
+        // then
+        ArgumentCaptor<BufferedItemSourcePool.MetricPrinter> runnableCaptor = ArgumentCaptor.forClass(BufferedItemSourcePool.MetricPrinter.class);
+        verify(spiedExecutor).scheduleAtFixedRate(runnableCaptor.capture(), anyLong(), eq(DEFAULT_TEST_MONITOR_TASK_INTERVAL), any(TimeUnit.class));
+        assertEquals(DEFAULT_TEST_ITEM_POOL_NAME + "-MetricPrinter", runnableCaptor.getValue().getName());
+
+    }
+
+    @Test
+    public void lifecycleStopShutsDownPoolOnlyOnce() {
+
+        // given
+        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                byteBufAllocator,
+                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                false,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                1,
+                DEFAULT_TEST_ITEM_SIZE_IN_BYTES));
+
+        pool.start();
+
+        // when
+        pool.stop();
+        pool.stop();
+
+        // then
+        verify(pool).shutdown();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsReturningBuffersBackOnRelease() throws PoolResourceException {
+
+        // given
+        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                byteBufAllocator,
+                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                false,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                1,
+                DEFAULT_TEST_ITEM_SIZE_IN_BYTES));
+
+        pool.start();
+
+        ItemSource itemSource = pool.getPooled();
+
+        pool.stop();
+
+        assertEquals(0, pool.getAvailableSize());
+
+        // when
+        itemSource.release();
+
+        // then
+        assertEquals(0, pool.getAvailableSize());
+
+    }
+
+    @Test
+    public void lifecycleStopCausesReturnedBuffersRelease() throws PoolResourceException {
+
+        // given
+        BufferedItemSourcePool pool = spy(new BufferedItemSourcePool(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                byteBufAllocator,
+                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                false,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                1,
+                DEFAULT_TEST_ITEM_SIZE_IN_BYTES));
+
+        pool.start();
+
+        ItemSource<ByteBuf> itemSource = spy(pool.getPooled());
+
+        ByteBuf byteBuf = mock(ByteBuf.class);
+        when(itemSource.getSource()).thenReturn(byteBuf);
+
+        pool.stop();
+
+        assertEquals(0, pool.getAvailableSize());
+
+        // when
+        itemSource.release();
+
+        // then
+        verify(byteBuf).release();
+
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createDefaultTestBufferedItemSourcePool(false);
+    }
+
     public BufferedItemSourcePool createDefaultTestBufferedItemSourcePool(boolean isMonitored) {
         return createDefaultTestBufferedItemSourcePool(DEFAULT_TEST_INITIAL_POOL_SIZE, isMonitored);
     }
@@ -520,6 +725,11 @@ public class BufferedItemSourcePoolTest {
             @Override
             ScheduledExecutorService createExecutor() {
                 return mockedExecutor;
+            }
+
+            @Override
+            ScheduledExecutorService createExecutor(String threadName) {
+                return createExecutor();
             }
         };
     }

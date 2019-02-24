@@ -1,12 +1,11 @@
 package org.appenders.log4j2.elasticsearch;
 
-
 import org.junit.Test;
 
+import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -83,19 +82,20 @@ public class StringAppenderTest {
     }
 
     @Test
-    public void lifecycleStopDoesntStopBatchDeliveryIfNotStarted() {
+    public void lifecycleStopStopsBatchDeliveryOnlyOnce() {
 
         // given
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
-        when(batchDelivery.isStarted()).thenReturn(false);
+        when(batchDelivery.isStopped()).thenAnswer(falseOnlyOnce());
 
         ItemAppender itemAppender = new StringAppender(batchDelivery, logEvent -> null);
 
         // when
         itemAppender.stop();
+        itemAppender.stop();
 
         // then
-        verify(batchDelivery, never()).stop();
+        verify(batchDelivery).stop();
 
     }
 

@@ -153,6 +153,7 @@ public class UnlimitedResizePolicyTest {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
         ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        pool.start();
         pool.incrementPoolSize(additionalSize);
 
         // when
@@ -176,6 +177,7 @@ public class UnlimitedResizePolicyTest {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
         ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        pool.start();
         pool.incrementPoolSize(additionalSize);
 
         // when only 5 used
@@ -209,6 +211,7 @@ public class UnlimitedResizePolicyTest {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
         ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        pool.start();
         pool.incrementPoolSize(additionalSize);
 
         // when 50 used

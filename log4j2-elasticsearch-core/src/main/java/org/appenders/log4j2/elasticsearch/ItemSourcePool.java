@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 /**
  * Implementation of this interface SHOULD provide {@link ItemSource} pooling capabilities
  */
-public interface ItemSourcePool<T> {
+public interface ItemSourcePool<T> extends LifeCycle {
 
     /**
      * Creates pooled {@link ItemSource} instances

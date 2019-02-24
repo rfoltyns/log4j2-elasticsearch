@@ -45,9 +45,11 @@ import java.util.List;
  * Allows to customize serialization of incoming events
  */
 @Plugin(name = JacksonJsonLayout.PLUGIN_NAME, category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
-public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements ItemSourceLayout {
+public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements ItemSourceLayout, LifeCycle {
 
     public static final String PLUGIN_NAME = "JacksonJsonLayout";
+
+    private volatile State state = State.STOPPED;
 
     private final ObjectWriter objectWriter;
     private final ItemSourceFactory itemSourceFactory;
@@ -168,4 +170,36 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
             return this;
         }
     }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        itemSourceFactory.start();
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+
+        if (!itemSourceFactory.isStopped()) {
+            itemSourceFactory.stop();
+        }
+
+        state = State.STOPPED;
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
+    }
+
 }

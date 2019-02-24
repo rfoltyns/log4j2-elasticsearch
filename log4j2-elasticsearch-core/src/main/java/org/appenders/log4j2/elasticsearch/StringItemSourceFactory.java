@@ -35,6 +35,8 @@ public class StringItemSourceFactory implements ItemSourceFactory {
 
     private static final Logger LOGGER = StatusLogger.getLogger();
 
+    private volatile State state = State.STOPPED;
+
     StringItemSourceFactory() {
         // prefer builder
     }
@@ -78,6 +80,31 @@ public class StringItemSourceFactory implements ItemSourceFactory {
             return new StringItemSourceFactory();
         }
 
+    }
+
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

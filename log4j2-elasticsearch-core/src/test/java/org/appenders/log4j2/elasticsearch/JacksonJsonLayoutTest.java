@@ -30,6 +30,7 @@ import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.core.jackson.ExtendedLog4j2JsonModule;
 import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
 import org.apache.logging.log4j.message.Message;
+import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -39,7 +40,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
@@ -209,6 +212,66 @@ public class JacksonJsonLayoutTest {
         // then
         verify(itemSourceFactory).create(eq(logEvent), any(ObjectWriter.class));
 
+    }
+
+    @Test
+    public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
+
+        // given
+        ItemSourceFactory itemSourceFactory = mock(ItemSourceFactory.class);
+        when(itemSourceFactory.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
+
+        JacksonJsonLayout layout = JacksonJsonLayout.newBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .build();
+
+        // when
+        layout.stop();
+        layout.stop();
+
+        // then
+        verify(itemSourceFactory).stop();
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return JacksonJsonLayout.newBuilder().build();
     }
 
     public static class LayoutTestItemSourceFactory extends StringItemSourceFactory {

@@ -35,6 +35,12 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * Plugin class responsible for delivery of incoming {@link LogEvent}(s) to {@link BatchDelivery} implementation.
@@ -70,18 +76,6 @@ public class ElasticsearchAppender extends AbstractAppender {
     public void append(LogEvent event) {
         String formattedIndexName = indexNameFormatter.format(event);
         itemAppender.append(formattedIndexName, event);
-    }
-
-    @Override
-    public void start() {
-        itemAppender.start();
-        super.start();
-    }
-
-    @Override
-    public void stop() {
-        itemAppender.stop();
-        super.stop();
     }
 
     @PluginBuilderFactory
@@ -191,4 +185,66 @@ public class ElasticsearchAppender extends AbstractAppender {
             return this;
         }
     }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        lifecycleStart();
+        super.start();
+    }
+
+    @Override
+    public void stop() {
+
+        LOGGER.debug("Stopping {}", getClass().getSimpleName());
+
+        // stopping Log4j2 LifeCycle first to prevent incoming log events and simplify shutdown process
+        super.stop();
+        lifecycleStop();
+
+        LOGGER.debug("{} stopped", getClass().getSimpleName());
+
+    }
+
+    @Override
+    public boolean stop(long timeout, TimeUnit timeUnit) {
+
+        LOGGER.debug("Stopping {} with timeout {} {}", getClass().getSimpleName(), timeout, timeUnit.toString());
+
+        // stopping Log4j2 LifeCycle first to prevent incoming log events and simplify shutdown process
+        boolean stopped = super.stop(timeout, timeUnit);
+        lifecycleStop();
+
+        LOGGER.debug("{} stopped", getClass().getSimpleName());
+
+        return stopped;
+
+    }
+
+    private void lifecycleStart() {
+
+        itemAppender.start();
+
+        if (getLayout() instanceof LifeCycle) {
+            ((LifeCycle)getLayout()).start();
+        }
+
+    }
+
+    private void lifecycleStop() {
+
+        if (!itemAppender.isStopped()) {
+            itemAppender.stop();
+        }
+
+        if (getLayout() instanceof LifeCycle
+                && !((LifeCycle)getLayout()).isStopped()) {
+            ((LifeCycle)getLayout()).stop();
+        }
+
+    }
+
 }

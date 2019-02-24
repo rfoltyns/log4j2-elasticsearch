@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,11 +40,12 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import static org.appenders.log4j2.elasticsearch.BufferedItemSourceTest.createDefaultTestByteBuf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -58,6 +60,7 @@ public class PooledItemSourceFactoryTest {
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "2");
+        System.setProperty("log4j2.disable.jmx", "true");
     }
 
     private static final int DEFAULT_TEST_POOL_SIZE = 10;
@@ -333,7 +336,29 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void lifecycleStopShutsDownPool() {
+    public void lifecycleStopShutsDownPoolOnlyOnce() {
+
+        // given
+        ItemSourcePool pool = mock(ItemSourcePool.class);
+        when(pool.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
+
+        PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
+        when(sourceFactoryConfig.configuredBufferedItemSourcePool()).thenReturn(pool);
+
+        PooledItemSourceFactory factory = sourceFactoryConfig.build();
+        factory.start();
+
+        // when
+        factory.stop();
+        factory.stop();
+
+        // then
+        verify(pool).stop();
+
+    }
+
+    @Test
+    public void lifecycleStartStartsPoolOnlyOnce() {
 
         // given
         ItemSourcePool pool = mock(ItemSourcePool.class);
@@ -341,14 +366,58 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
         when(sourceFactoryConfig.configuredBufferedItemSourcePool()).thenReturn(pool);
 
+        when(pool.isStarted()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
+
         PooledItemSourceFactory factory = sourceFactoryConfig.build();
 
         // when
-        factory.stop(1000, TimeUnit.MILLISECONDS);
+        factory.start();
+        factory.start();
 
         // then
-        verify(pool).shutdown();
+        verify(pool).start();
 
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createDefaultTestSourceFactoryConfig().build();
     }
 
 }

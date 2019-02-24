@@ -31,8 +31,10 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -62,7 +64,7 @@ public class StringItemSourceFactoryTest {
     public void createEmptySourceThrows() {
 
         // given
-        StringItemSourceFactory factory = StringItemSourceFactory.newBuilder().build();
+        StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
 
         expectedException.expect(UnsupportedOperationException.class);
 
@@ -75,7 +77,7 @@ public class StringItemSourceFactoryTest {
     public void createWritesItemSource() throws IOException {
 
         // given
-        StringItemSourceFactory factory = StringItemSourceFactory.newBuilder().build();
+        StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
 
         LogEvent logEvent = mock(LogEvent.class);
         ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
@@ -93,7 +95,7 @@ public class StringItemSourceFactoryTest {
     public void createFailureIsHandled() throws IOException {
 
         // given
-        StringItemSourceFactory factory = StringItemSourceFactory.newBuilder().build();
+        StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
 
         LogEvent logEvent = mock(LogEvent.class);
         ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
@@ -122,5 +124,49 @@ public class StringItemSourceFactoryTest {
 
     }
 
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createDefaultTestStringItemSourceFactory();
+    }
+
+    private StringItemSourceFactory createDefaultTestStringItemSourceFactory() {
+        return StringItemSourceFactory.newBuilder().build();
+    }
 
 }

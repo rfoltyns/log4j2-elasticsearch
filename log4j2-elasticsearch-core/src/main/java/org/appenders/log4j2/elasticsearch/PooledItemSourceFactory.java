@@ -24,26 +24,29 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.apache.logging.log4j.core.AbstractLifeCycle;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
+import org.apache.logging.log4j.status.StatusLogger;
 
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Uses underlying {@link BufferedItemSourcePool} to get {@link BufferedItemSource} instances.
  */
 @Plugin(name = PooledItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
-public class PooledItemSourceFactory extends AbstractLifeCycle implements ItemSourceFactory {
+public class PooledItemSourceFactory implements ItemSourceFactory {
 
     public static final String PLUGIN_NAME = "PooledItemSourceFactory";
+
+    protected static final Logger LOGGER = StatusLogger.getLogger();
+
+    private volatile State state = State.STOPPED;
 
     final ItemSourcePool bufferedItemSourcePool;
 
@@ -99,12 +102,6 @@ public class PooledItemSourceFactory extends AbstractLifeCycle implements ItemSo
         }
     }
 
-    @Override
-    public boolean stop(long timeout, TimeUnit timeUnit) {
-        bufferedItemSourcePool.shutdown();
-        return super.stop(timeout, timeUnit);
-    }
-
     @PluginBuilderFactory
     public static PooledItemSourceFactory.Builder newBuilder() {
         return new PooledItemSourceFactory.Builder();
@@ -147,7 +144,7 @@ public class PooledItemSourceFactory extends AbstractLifeCycle implements ItemSo
             }
 
             if (poolName == null) {
-                poolName = UUID.randomUUID().toString();
+                poolName = ItemSourcePool.class.getSimpleName();
             }
 
             if (resizePolicy == null) {
@@ -256,6 +253,36 @@ public class PooledItemSourceFactory extends AbstractLifeCycle implements ItemSo
             return this;
         }
 
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        if (!bufferedItemSourcePool.isStarted()) {
+            bufferedItemSourcePool.start();
+        }
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        if (!bufferedItemSourcePool.isStopped()) {
+            bufferedItemSourcePool.stop();
+        }
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }
