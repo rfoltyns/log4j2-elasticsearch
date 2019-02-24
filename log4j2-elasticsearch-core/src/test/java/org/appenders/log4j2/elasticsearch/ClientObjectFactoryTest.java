@@ -42,6 +42,7 @@ public class ClientObjectFactoryTest {
             public void execute(IndexTemplate indexTemplate) {
 
             }
+
         };
 
         // when

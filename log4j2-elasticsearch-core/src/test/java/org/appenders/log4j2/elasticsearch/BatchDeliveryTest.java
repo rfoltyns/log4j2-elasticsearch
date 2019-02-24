@@ -34,6 +34,7 @@ import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
+import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -252,6 +253,80 @@ public class BatchDeliveryTest {
 
         // then
         verify(batchEmitter).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsBatchEmitterOnlyOnce() {
+
+        // given
+        BatchEmitter batchEmitter = mock(BatchEmitter.class);
+        when(batchEmitter.isStopped()).thenAnswer(falseOnlyOnce());
+
+        BatchEmitterServiceProvider batchEmitterFactory = new TestBatchEmitterFactory() {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return batchEmitter;
+            }
+        };
+        TestAsyncBatchDelivery batchDelivery = spy(new TestAsyncBatchDelivery(
+                TEST_BATCH_SIZE,
+                TEST_DELIVERY_INTERVAL,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy(),
+                null) {
+            @Override
+            protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
+                return batchEmitterFactory;
+            }
+        });
+
+        // when
+        batchDelivery.stop();
+        batchDelivery.stop();
+
+        // then
+        verify(batchEmitter).stop();
+
+    }
+
+    @Test
+    public void lifecycleStartStartsObjectFactoryOnlyOnce() {
+
+        // given
+        TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+        when(objectFactory.isStarted()).thenAnswer(falseOnlyOnce());
+
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(objectFactory)
+                .build();
+
+        // when
+        batchDelivery.start();
+        batchDelivery.start();
+
+        // then
+        verify(objectFactory).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsObjectFactoryOnlyOnce() {
+
+        // given
+        TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+        when(objectFactory.isStopped()).thenAnswer(falseOnlyOnce());
+
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(objectFactory)
+                .build();
+
+        // when
+        batchDelivery.stop();
+        batchDelivery.stop();
+
+        // then
+        verify(objectFactory).stop();
 
     }
 

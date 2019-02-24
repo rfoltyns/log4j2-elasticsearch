@@ -159,17 +159,37 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     @Override
     public void start() {
+
+        if (!objectFactory.isStarted()) {
+            objectFactory.start();
+        }
+
         if (indexTemplate != null) {
             objectFactory.addOperation(() -> objectFactory.execute(indexTemplate));
         }
+
         batchEmitter.start();
+
         state = State.STARTED;
     }
 
     @Override
     public void stop() {
-        batchEmitter.stop();
+
+        LOG.debug("Stopping {}", getClass().getSimpleName());
+
+        if (!batchEmitter.isStopped()){
+            batchEmitter.stop();
+        }
+
+        if (!objectFactory.isStopped()) {
+            objectFactory.stop();
+        }
+
         state = State.STOPPED;
+
+        LOG.debug("{} stopped", getClass().getSimpleName());
+
     }
 
     @Override

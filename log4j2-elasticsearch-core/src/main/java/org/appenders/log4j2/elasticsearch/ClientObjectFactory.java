@@ -37,7 +37,7 @@ import java.util.function.Function;
  * @param <CLIENT_TYPE> type of client object produced by this factory
  * @param <BATCH_TYPE> type of batch objects handled by the client
  */
-public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
+public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle {
 
     String ELEMENT_TYPE = "objectFactory";
 
@@ -85,5 +85,24 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> {
      * @param operation operation to be executed
      */
     default void addOperation(Operation operation) {}
+
+    /*
+     * LIFECYCLE
+     *
+     * {@code default} added for backwards compatibility. {@code default} will be removed future releases
+     *
+     */
+
+    @Override
+    default void start() {}
+
+    @Override
+    default void stop() {}
+
+    @Override
+    default boolean isStarted() { return false; }
+
+    @Override
+    default boolean isStopped() { return true; }
 
 }
