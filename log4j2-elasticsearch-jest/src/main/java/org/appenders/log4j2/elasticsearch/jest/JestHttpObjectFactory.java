@@ -59,6 +59,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     private static Logger LOG = StatusLogger.getLogger();
 
+    private volatile State state = State.STOPPED;
+
     private final Collection<String> serverUris;
     private final int connTimeout;
     private final int readTimeout;
@@ -365,4 +367,37 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     }
 
+    @Override
+    public void start() {
+        // DON'T START THE CLIENT HERE! client started in scope of JestHttpClient
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+
+        if (isStopped()) {
+            return;
+        }
+
+        LOG.debug("Stopping {}", getClass().getSimpleName());
+
+        if (client != null) {
+            client.shutdownClient();
+        }
+        state = State.STOPPED;
+
+        LOG.debug("{} stopped", getClass().getSimpleName());
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
+    }
 }

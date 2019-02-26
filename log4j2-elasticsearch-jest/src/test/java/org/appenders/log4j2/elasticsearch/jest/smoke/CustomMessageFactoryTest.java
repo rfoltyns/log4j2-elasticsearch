@@ -44,10 +44,14 @@ public class CustomMessageFactoryTest extends SmokeTest {
     @Test
     public void messageFactoryTest() {
 
+        System.setProperty("log4j2.enable.threadlocals", "true");
+        System.setProperty("log4j2.enable.direct.encoders", "true");
+        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
+
         createLoggerProgrammatically(createElasticsearchAppenderBuilder(true, false, false));
 
         ObjectMapper objectMapper = configuredMapper();
-        Logger logger = LogManager.getLogger(defaultLoggerName,
+        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME,
                 new SerializedMessageFactory(objectMapper));
 
         logger.info(new LogObject("Hello, World!"));

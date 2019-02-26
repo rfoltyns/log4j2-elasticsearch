@@ -53,7 +53,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     private static Logger LOG = StatusLogger.getLogger();
 
-    private final PooledItemSourceFactory itemSourceFactoryConfig;
+    private volatile State state = State.STOPPED;
+
+    private final PooledItemSourceFactory itemSourceFactory;
 
     /**
      * This constructor is deprecated and will be removed in 1.5.
@@ -114,7 +116,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 discoveryEnabled,
                 auth
         );
-        this.itemSourceFactoryConfig = bufferedSourceFactory;
+        this.itemSourceFactory = bufferedSourceFactory;
     }
 
     @Override
@@ -132,7 +134,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
-        return new BufferedBulkOperations(itemSourceFactoryConfig);
+        return new BufferedBulkOperations(itemSourceFactory);
     }
 
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {
@@ -211,6 +213,38 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             this.pooledItemSourceFactory = pooledItemSourceFactory;
             return this;
         }
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Override
+    public void start() {
+        super.start();
+        if (!itemSourceFactory.isStarted()) {
+            itemSourceFactory.start();
+        }
+        state = State.STARTED;
+    }
+
+    @Override
+    public void stop() {
+        super.stop();
+        if (!itemSourceFactory.isStopped()) {
+            itemSourceFactory.stop();
+        }
+        state = State.STOPPED;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

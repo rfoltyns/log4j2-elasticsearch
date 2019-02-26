@@ -28,11 +28,15 @@ import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
+import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -44,11 +48,15 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static org.appenders.log4j2.elasticsearch.BatchDeliveryTest.createTestBatchDeliveryBuilder;
+import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -379,6 +387,94 @@ public class JestHttpObjectFactoryTest {
         verify(failoverHandler, times(1)).apply(captor.capture());
 
         assertEquals(bulk, captor.getValue());
+    }
+
+    // JestClient is started on first execution outside of LifeCycle scope
+    // verify that no interactions took place
+    @Test
+    public void lifecycleStartDoesntStartClient() {
+
+        // given
+        JestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+        when(objectFactory.isStarted()).thenAnswer(falseOnlyOnce());
+
+        JestClient client = mock(JestClient.class);
+        when(objectFactory.createClient()).thenReturn(client);
+
+        // when
+        objectFactory.start();
+        objectFactory.start();
+
+        // then
+        assertEquals(0, mockingDetails(client).getInvocations().size());
+
+    }
+
+    @Test
+    public void lifecycleStopStopsClientOnlyOnce() {
+
+        // given
+        JestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
+
+        JestClient client = mock(JestClient.class);
+        ClientProvider<JestClient> clientProvider = () -> client;
+        when(objectFactory.getClientProvider(any())).thenReturn(clientProvider);
+
+        objectFactory.start();
+
+        objectFactory.createClient();
+
+        int expectedInteractions = mockingDetails(client).getInvocations().size();
+
+        // when
+        objectFactory.stop();
+        objectFactory.stop();
+
+        // then
+        verify(client).shutdownClient();
+        assertEquals(expectedInteractions + 1, mockingDetails(client).getInvocations().size());
+
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createTestObjectFactoryBuilder().build();
     }
 
     private Bulk createTestBatch(String... payloads) {
