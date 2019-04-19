@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.powermock.api.mockito.PowerMockito;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -121,6 +122,7 @@ public class ElasticsearchAppenderTest {
         ElasticsearchAppender appender = createTestElasticsearchAppender(itemAppenderFactory);
 
         LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(System.currentTimeMillis());
 
         // when
         appender.append(logEvent);
@@ -364,6 +366,9 @@ public class ElasticsearchAppenderTest {
     }
 
     private TestElasticsearchAppender createTestElasticsearchAppender(ItemAppenderFactory mockItemAppenderFactory, AbstractLayout layout) {
+        IndexNameFormatter indexNameFormatter = mock(IndexNameFormatter.class);
+        when(indexNameFormatter.format(any())).thenReturn(UUID.randomUUID().toString());
+
         return new TestElasticsearchAppender(
                 "testAppender",
                 null,
@@ -371,7 +376,7 @@ public class ElasticsearchAppenderTest {
                 false,
                 mock(BatchDelivery.class),
                 false,
-                mock(IndexNameFormatter.class)
+                indexNameFormatter
         ) {
             @Override
             protected ItemAppenderFactory createItemAppenderFactory() {
