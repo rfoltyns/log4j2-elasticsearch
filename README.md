@@ -27,7 +27,7 @@ Project consists of:
 * (1.3) [Buffer object pool](log4j2-elasticsearch-core#object-pooling) (memory allocation reduced by ~80%)
 * (1.3) Buffered Jest HTTP client
 * (1.3) Fully configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
-* (1.4 - Q1 2019) Reliable, file-based failover/retry
+* (1.4 - H2 2019) Reliable, file-based failover/retry
 
 ## Usage
 
