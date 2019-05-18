@@ -33,8 +33,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.status.StatusLogger;
 
-import java.io.DataOutput;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Uses underlying {@link BufferedItemSourcePool} to get {@link BufferedItemSource} instances.
@@ -82,7 +82,8 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         }
 
         try {
-            objectWriter.writeValue((DataOutput)new ByteBufOutputStream(pooled.getSource()), source);
+            OutputStream byteBufOutputStream = new ByteBufOutputStream(pooled.getSource());
+            objectWriter.writeValue(byteBufOutputStream, source);
             return pooled;
         } catch (IOException e) {
             pooled.release();

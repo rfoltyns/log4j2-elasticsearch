@@ -38,6 +38,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Random;
 import java.util.UUID;
 
@@ -257,7 +258,7 @@ public class PooledItemSourceFactoryTest {
         pooledItemSourceFactory.create(logEvent, objectWriter);
 
         // then
-        verify(objectWriter).writeValue(any(DataOutput.class), eq(logEvent));
+        verify(objectWriter).writeValue(any(OutputStream.class), eq(logEvent));
 
     }
 
@@ -276,7 +277,7 @@ public class PooledItemSourceFactoryTest {
         LogEvent logEvent = mock(LogEvent.class);
         ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
 
-        doThrow(new IOException("test exception")).when(objectWriter).writeValue(any(DataOutput.class), eq(logEvent));
+        doThrow(new IOException("test exception")).when(objectWriter).writeValue(any(OutputStream.class), eq(logEvent));
 
         ItemSource<ByteBuf> result = null;
         Exception caught = null;
