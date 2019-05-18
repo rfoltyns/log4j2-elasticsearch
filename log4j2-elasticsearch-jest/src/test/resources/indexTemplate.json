@@ -23,22 +23,12 @@
       },
       "properties": {
         "loggerName": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "ignore_above": 256,
-              "type": "keyword"
-            }
-          }
+          "type": "keyword",
+          "index": false
         },
         "message": {
-          "type": "text",
-          "fields": {
-            "keyword": {
-              "ignore_above": 256,
-              "type": "keyword"
-            }
-          }
+          "type": "keyword",
+          "index": false
         },
         "timeMillis": {
           "type": "date",
