@@ -28,9 +28,9 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -69,9 +69,17 @@ public class BufferedBulk extends Bulk {
 
         ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(bulkSource.getSource());
 
+        // in current impl with no IDs, it's possible to reduce serialization by reusing first action
+        BulkableAction sameAction = getSameItem(actions);
+        byte[] actionTemplate = sameAction != null ? objectWriter.writeValueAsBytes(sameAction) : null;
+
         for (BulkableAction action : actions) {
 
-            objectWriter.writeValue((DataOutput) byteBufOutputStream, action);
+            if (actionTemplate == null) {
+                objectWriter.writeValue((OutputStream) byteBufOutputStream, action);
+            } else {
+                byteBufOutputStream.write(actionTemplate);
+            }
             byteBufOutputStream.writeByte(LINE_SEPARATOR);
 
             ByteBuf source = ((BufferedIndex)action).getSource().getSource();
@@ -79,7 +87,32 @@ public class BufferedBulk extends Bulk {
             byteBufOutputStream.writeByte(LINE_SEPARATOR);
 
         }
+
         return bulkSource.getSource();
+    }
+
+    /**
+     * Checks if all actions in given collection are equal
+     * ({@link BulkableAction#getIndex()} and {@link BulkableAction#getType()} are the same for all elements)
+     *
+     * @param bulkableActions collection of actions to be checked
+     * @return {@link BulkableAction} first action in given collection if all actions are equal, null otherwise
+     */
+    private BulkableAction getSameItem(Collection<BulkableAction> bulkableActions) {
+
+        BulkableAction current = null;
+        for (BulkableAction bulkableAction : bulkableActions) {
+            if (current == null) {
+                current = bulkableAction;
+                continue;
+            }
+            // fail fast and serialize each item
+            // no need to check type for org.appenders.log4j2.elasticsearch.jest.BufferedIndex
+            if (!current.getIndex().equals(bulkableAction.getIndex())) {
+                return null;
+            }
+        }
+        return current;
     }
 
     /**

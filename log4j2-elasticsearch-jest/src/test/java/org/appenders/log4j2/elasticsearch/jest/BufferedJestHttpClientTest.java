@@ -455,7 +455,9 @@ public class BufferedJestHttpClientTest {
         builder.withObjectReader(createDefaultTestObjectReader());
 
         for (ItemSource<ByteBuf> payload : payloads) {
-            builder.addAction(spy(new BufferedIndex.Builder(payload)).build());
+            builder.addAction(spy(new BufferedIndex.Builder(payload))
+                    .index(UUID.randomUUID().toString())
+                    .build());
         }
         return spy(builder.build());
     }

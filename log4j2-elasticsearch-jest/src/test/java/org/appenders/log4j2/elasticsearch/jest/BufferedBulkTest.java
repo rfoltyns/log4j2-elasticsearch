@@ -24,27 +24,36 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.searchbox.action.BulkableAction;
 import org.appenders.log4j2.elasticsearch.BufferedItemSource;
+import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.BufferedItemSourceTest.createDefaultTestByteBuf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class BufferedBulkTest {
@@ -145,12 +154,85 @@ public class BufferedBulkTest {
         assertEquals(expectedSize, builder.actions.size());
     }
 
-    private BufferedBulk.Builder createDefaultTestMockedBuilder() {
-        BufferedBulk.Builder builder = new BufferedBulk.Builder();
-        builder.withObjectReader(mock(ObjectReader.class));
-        builder.withObjectWriter(mock(ObjectWriter.class));
-        builder.withBuffer(mock(BufferedItemSource.class));
-        return builder;
+    @Test
+    public void canSerializeUniqueItemsSeparately() throws IOException {
+
+        // given
+        ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
+
+        CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
+        ItemSource<ByteBuf> source1 = new BufferedItemSource(byteBuf1, source -> {});
+        String index1 = UUID.randomUUID().toString();
+        BulkableAction action1 = new BufferedIndex.Builder(source1)
+                .index(index1)
+                .build();
+
+        CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
+        ItemSource<ByteBuf> source2 = new BufferedItemSource(byteBuf2, source -> {});
+        String index2 = UUID.randomUUID().toString();
+        BulkableAction action2 = new BufferedIndex.Builder(source2)
+                .index(index2)
+                .build();
+
+        BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
+                .withObjectWriter(writer)
+                .withObjectReader(mock(ObjectReader.class))
+                .withBuffer(new BufferedItemSource(createDefaultTestByteBuf(), source -> {}))
+                .addAction(action1)
+                .addAction(action2)
+                .build();
+
+        // when
+        bulk.serializeRequest();
+
+        // then
+        ArgumentCaptor<BufferedIndex> captor = ArgumentCaptor.forClass(BufferedIndex.class);
+        verify(writer, times(2)).writeValue((OutputStream)any(), captor.capture());
+        List<BufferedIndex> allValues = captor.getAllValues();
+        assertEquals(2, allValues.size());
+        assertEquals(index1, allValues.get(0).getIndex());
+        assertEquals(index2, allValues.get(1).getIndex());
+
+    }
+
+    @Test
+    public void canSerializeOnceIfAllItemsAreTheSame() throws IOException {
+
+        // given
+        ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
+
+        CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
+        ItemSource<ByteBuf> source1 = new BufferedItemSource(byteBuf1, source -> {});
+        String index = UUID.randomUUID().toString();
+        BulkableAction action1 = new BufferedIndex.Builder(source1)
+                .index(index)
+                .build();
+
+        CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
+        ItemSource<ByteBuf> source2 = new BufferedItemSource(byteBuf2, source -> {});
+        BulkableAction action2 = new BufferedIndex.Builder(source2)
+                .index(index)
+                .build();
+
+        BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
+                .withObjectWriter(writer)
+                .withObjectReader(mock(ObjectReader.class))
+                .withBuffer(new BufferedItemSource(createDefaultTestByteBuf(), source -> {}))
+                .addAction(action1)
+                .addAction(action2)
+                .build();
+
+        // when
+        bulk.serializeRequest();
+
+        // then
+        ArgumentCaptor<BufferedIndex> captor = ArgumentCaptor.forClass(BufferedIndex.class);
+        verify(writer, times(1)).writeValueAsBytes(captor.capture());
+
+        List<BufferedIndex> allValues = captor.getAllValues();
+        assertEquals(1, allValues.size());
+        assertEquals(index, allValues.get(0).getIndex());
+
     }
 
     @Test
@@ -318,6 +400,14 @@ public class BufferedBulkTest {
         // then
         verify(bufferedIndex).release();
 
+     }
+
+    private BufferedBulk.Builder createDefaultTestMockedBuilder() {
+        BufferedBulk.Builder builder = new BufferedBulk.Builder();
+        builder.withObjectReader(mock(ObjectReader.class));
+        builder.withObjectWriter(mock(ObjectWriter.class));
+        builder.withBuffer(mock(BufferedItemSource.class));
+        return builder;
     }
 
     private BulkError createTestBulkError() {
