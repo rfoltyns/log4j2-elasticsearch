@@ -91,6 +91,10 @@ public class BufferedBulk extends Bulk {
         return bulkSource.getSource();
     }
 
+    public String getURI() {
+        return "/_bulk";
+    }
+
     /**
      * Checks if all actions in given collection are equal
      * ({@link BulkableAction#getIndex()} and {@link BulkableAction#getType()} are the same for all elements)
