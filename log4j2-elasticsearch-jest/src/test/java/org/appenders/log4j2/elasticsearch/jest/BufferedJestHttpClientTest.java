@@ -26,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
+import io.searchbox.client.config.ElasticsearchVersion;
 import io.searchbox.core.Bulk;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
@@ -104,14 +105,14 @@ public class BufferedJestHttpClientTest {
     public void prepareRequestCreatesRequestUsingUriProvidedByAction() throws IOException {
 
         // given
-        Bulk bulk = createDefaultTestBufferedBulk();
+        BufferedBulk bulk = createDefaultTestBufferedBulk();
 
         String expectedUriPart = UUID.randomUUID().toString();
         when(bulk.getURI()).thenReturn(expectedUriPart);
 
         // when
         BufferedJestHttpClient client = createDefaultTestHttpClient();
-        HttpUriRequest request = client.prepareRequest((BufferedBulk) bulk);
+        HttpUriRequest request = client.prepareRequest(bulk);
 
         // then
         assertTrue(request.getRequestLine().getUri().contains(expectedUriPart));
