@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
@@ -32,6 +31,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -82,7 +82,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         }
 
         try {
-            OutputStream byteBufOutputStream = new ByteBufOutputStream(pooled.getSource());
+            OutputStream byteBufOutputStream = new ReusableByteBufOutputStream(pooled.getSource());
             objectWriter.writeValue(byteBufOutputStream, source);
             return pooled;
         } catch (IOException e) {
