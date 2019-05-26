@@ -26,8 +26,6 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.util.CharsetUtil;
 
 import java.io.DataOutput;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 
 /**

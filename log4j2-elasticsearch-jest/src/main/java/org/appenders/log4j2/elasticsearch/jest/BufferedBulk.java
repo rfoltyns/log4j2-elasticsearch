@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
+import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -67,7 +67,7 @@ public class BufferedBulk extends Bulk {
      */
     public ByteBuf serializeRequest() throws IOException {
 
-        ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(bulkSource.getSource());
+        ReusableByteBufOutputStream byteBufOutputStream = new ReusableByteBufOutputStream(bulkSource.getSource());
 
         // in current impl with no IDs, it's possible to reduce serialization by reusing first action
         BulkableAction sameAction = getSameItem(actions);
