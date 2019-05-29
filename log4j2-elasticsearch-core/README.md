@@ -23,7 +23,7 @@ Main parts of the skeleton are:
 ### ItemSource API
 Since 1.3, `org.appenders.log4j2.elasticsearch.ItemSource` and a set of related interfaces are available.
 
-The main goal was to introduce an envelope with API to process and manage underlying payloads. A good example is `org.appenders.log4j2.elasticsearch.BufferedItemSource` - poolable payload container backed by Netty buffer.
+The main goal was to introduce an envelope with API to process and manage underlying payloads. A good example is `org.appenders.log4j2.elasticsearch.ByteBufItemSource` - poolable payload container backed by Netty buffer.
 
 Main parts of default implementation are:
 * `ItemSource` - envelope for payloads; [StringItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/StringItemSource.java) is used by default
@@ -127,7 +127,7 @@ Since 1.3, [org.appenders.log4j2.elasticsearch.JacksonJsonLayout](https://github
 Default set of mixins limits LogEvent output by shrinking serialized properties list to a 'reasonable minimum'.
 Customization of all aspects of LogEvent and Message output are allowed using `JacksonMixIn` elements (see: [JacksonMixInAnnotations docs](https://github.com/FasterXML/jackson-docs/wiki/JacksonMixInAnnotations)) elements.
 
-Furthermore, [ItemSource API](#itemsource-api) allows to use pooled [BufferedItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/BufferedItemSource.java) payloads. Pooling is optional.
+Furthermore, [ItemSource API](#itemsource-api) allows to use pooled [ByteByfItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ByteBufItemSource.java) payloads. Pooling is optional.
 
 Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
@@ -175,9 +175,9 @@ See [custom MessageFactory example](https://github.com/rfoltyns/log4j2-elasticse
 Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
 
 ### Object pooling
-Since 1.3, `PooledItemSourceFactory` can be configured, providing `io.netty.buffer.ByteBuf`-backed `BufferedItemSource` instances for serialized batch items and batch requests.
+Since 1.3, `PooledItemSourceFactory` can be configured, providing `io.netty.buffer.ByteBuf`-backed `ByteBufItemSource` instances for serialized batch items and batch requests.
 
-Internally, [org.appenders.log4j2.elasticsearch.BufferedItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/BufferedItemSourcePool.java) is used as default pool implementation.
+Internally, [org.appenders.log4j2.elasticsearch.GenericItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/GenericItemSourcePool.java) is used as default pool implementation.
 Pool is resizable. It adjusts it's size automatically depending on current load and configured `ResizePolicy`.
 
 Item and batch pools have to be configured separately. Currently, if item buffers are pooled, batch buffers MUST be pooled as well (see example below).

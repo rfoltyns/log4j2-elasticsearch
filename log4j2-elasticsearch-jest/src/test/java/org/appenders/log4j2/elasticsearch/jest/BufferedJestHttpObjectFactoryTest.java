@@ -30,7 +30,7 @@ import io.searchbox.core.Bulk;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
-import org.appenders.log4j2.elasticsearch.BufferedItemSource;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
@@ -51,7 +51,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
 import static org.junit.Assert.assertEquals;
@@ -381,7 +381,7 @@ public class BufferedJestHttpObjectFactoryTest {
     private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
         ByteBuf buffer = byteBufAllocator.buffer(16);
         buffer.writeBytes(payload.getBytes());
-        return new BufferedItemSource(buffer, source -> {
+        return new ByteBufItemSource(buffer, source -> {
             // noop
         });
     }
@@ -523,7 +523,7 @@ public class BufferedJestHttpObjectFactoryTest {
 
     private Bulk createTestBatch(ItemSource<ByteBuf>... payloads) {
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
-        builder.withBuffer(new BufferedItemSource(byteBufAllocator.buffer(32), source -> {}));
+        builder.withBuffer(new ByteBufItemSource(byteBufAllocator.buffer(32), source -> {}));
         builder.withObjectWriter(mock(ObjectWriter.class));
         builder.withObjectReader(mock(ObjectReader.class));
 

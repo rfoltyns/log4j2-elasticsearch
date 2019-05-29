@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocatorMetric;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.status.StatusLogger;
 
@@ -37,17 +33,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * <p>Resizable pool of {@link BufferedItemSource} elements.
+ * <p>Resizable pool of {@link ItemSource<T>} elements.
  * <p>Automatically expands when it runs out of elements. Expansion size depends on {@link ResizePolicy} configuration.
  * <p>Automatically recycles unused elements. Recycle size depends on {@link ResizePolicy} configuration.
  * <p>Pooled elements can be added explicitly with {@link #incrementPoolSize(int)} and/or {@link #incrementPoolSize()} methods.
- * <p>Pooled elements can be recycled explicitly with {@link #remove()}.
+ * <p>Pooled elements can be purged explicitly with {@link #remove()}.
  * <p>{@link #shutdown()} MUST be called to cleanup underlying resources.
  * <p>NOTE: Consider this class <i>private</i>. Design may change before the code is stabilized.
  */
-class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
+public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     protected static final Logger LOGGER = StatusLogger.getLogger();
 
@@ -58,10 +55,11 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
     private volatile State state = State.STOPPED;
 
+    private final ConcurrentLinkedQueue<ItemSource<T>> objectPool = new ConcurrentLinkedQueue<>();
+
     private final String poolName;
-    private final UnpooledByteBufAllocator byteBufAllocator;
-    private final ConcurrentLinkedQueue<ItemSource<ByteBuf>> objectPool = new ConcurrentLinkedQueue<>();
-    private final int estimatedSourceSize;
+    private final PooledObjectOps<T> pooledObjectOps;
+    private final PooledItemSourceReleaseCallback releaseCallback = new PooledItemSourceReleaseCallback();
 
     private final ResizePolicy resizePolicy;
     private final long resizeTimeout;
@@ -69,24 +67,32 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     private final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
 
     private final int initialPoolSize;
-    private final AtomicInteger totalPoolSize;
+    private final AtomicInteger totalPoolSize = new AtomicInteger();;
+
     private final boolean monitored;
     private final long monitorTaskInterval;
+    private final Supplier<String> additionalMetricsSupplier;
 
     private final AtomicInteger thIndex = new AtomicInteger();
 
     ScheduledExecutorService executor;
 
-    BufferedItemSourcePool(String poolName, UnpooledByteBufAllocator byteBufAllocator, ResizePolicy resizePolicy, long resizeTimeout, boolean monitored, long monitorTaskInterval, int initialPoolSize, int itemSizeInBytes) {
+    public GenericItemSourcePool(String poolName,
+                                 PooledObjectOps<T> pooledObjectOps,
+                                 ResizePolicy resizePolicy,
+                                 long resizeTimeout,
+                                 boolean monitored,
+                                 long monitorTaskInterval,
+                                 int initialPoolSize,
+                          Supplier<String> additionalMetricsSupplier) {
         this.poolName = poolName;
-        this.byteBufAllocator = byteBufAllocator;
+        this.pooledObjectOps = pooledObjectOps;
         this.resizePolicy = resizePolicy;
         this.resizeTimeout = resizeTimeout;
         this.initialPoolSize = initialPoolSize;
-        this.totalPoolSize = new AtomicInteger();
-        this.estimatedSourceSize = itemSizeInBytes;
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
+        this.additionalMetricsSupplier = additionalMetricsSupplier;
     }
 
     private void startRecyclerTask() {
@@ -97,9 +103,10 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
      * Schedules a task that prints pool statistics
      *
      * @param monitorTaskInterval interval between two snapshots
+     * @param additionalMetricsSupplier
      */
-    void startMonitorTask(long monitorTaskInterval) {
-        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", byteBufAllocator.metric(), this.new PoolMetrics()),
+    void startMonitorTask(long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
+        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", this.new PoolMetrics(), additionalMetricsSupplier),
                 1000L,
                 monitorTaskInterval,
                 TimeUnit.MILLISECONDS
@@ -117,7 +124,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     /**
-     * Creates pooled {@link BufferedItemSource} instances
+     * Creates pooled {@link ItemSource} instances
      *
      * @param delta number of elements to be pooled
      */
@@ -139,28 +146,12 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     /**
-     * Creates ONE pooled {@link BufferedItemSource}
+     * Creates ONE pooled {@link ItemSource}
      */
     @Override
     public final void incrementPoolSize() {
-        objectPool.add(createBufferedItemSource());
+        objectPool.add(pooledObjectOps.createItemSource(releaseCallback));
         totalPoolSize.getAndIncrement();
-    }
-
-    BufferedItemSource createBufferedItemSource() {
-        CompositeByteBuf buffer = new CompositeByteBuf(byteBufAllocator, false, 2).capacity(estimatedSourceSize);
-        return new BufferedItemSource(buffer, releaseCallback());
-    }
-
-    private ReleaseCallback releaseCallback() {
-        return bufferedItemSource -> {
-            bufferedItemSource.getSource().clear();
-            if (!isStarted()) {
-                bufferedItemSource.getSource().release();
-                return;
-            }
-            objectPool.add(bufferedItemSource);
-        };
     }
 
     /**
@@ -168,17 +159,18 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
      * If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements.
      *
      * @throws PoolResourceException if {@link ResizePolicy} was not sufficient or didn't create any new elements or thread calling this method was interrupted
-     * @return pooled {@link BufferedItemSource}
+     * @return pooled {@link ItemSource}
      */
     @Override
-    public ItemSource<ByteBuf> getPooled() throws PoolResourceException {
+    public final ItemSource<T> getPooled() throws PoolResourceException {
         return removeInternal(INITIAL_RESIZE_INTERNAL_STACK_DEPTH);
     }
 
     @Override
-    public boolean remove() {
+    public final boolean remove() {
         try {
-            removeInternal(MAX_RESIZE_INTERNAL_STACK_DEPTH).getSource().release();
+            ItemSource<T> pooled = removeInternal(MAX_RESIZE_INTERNAL_STACK_DEPTH);
+            pooledObjectOps.purge(pooled);
             totalPoolSize.getAndDecrement();
         } catch (PoolResourceException e) {
             return false;
@@ -186,7 +178,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
         return true;
     }
 
-    private ItemSource<ByteBuf> removeInternal(int depth) throws PoolResourceException {
+    private ItemSource<T> removeInternal(int depth) throws PoolResourceException {
 
         try {
 
@@ -244,6 +236,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
                     getName(), resizePolicy.getClass().getName());
 
             resized = resizePolicy.increase(this);
+//            return resized;
             if (!resized) {
                 // TODO: remove when limited resize policy is ready
                 // throw to resurface issues
@@ -258,12 +251,12 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     }
 
     @Override
-    public String getName() {
+    public final String getName() {
         return poolName;
     }
 
     @Override
-    public int getInitialSize() {
+    public final int getInitialSize() {
         return initialPoolSize;
     }
 
@@ -271,7 +264,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
      * @return Total number of elements managed by this pool
      */
     @Override
-    public int getTotalSize() {
+    public final int getTotalSize() {
         return totalPoolSize.get();
     }
 
@@ -288,7 +281,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
     public void shutdown() {
 
         LOGGER.debug("{} shutting down. Releasing buffers..", poolName);
-        objectPool.forEach(pooled -> pooled.getSource().release());
+        objectPool.forEach(pooled -> pooledObjectOps.purge(pooled));
         objectPool.clear();
 
         LOGGER.debug("{} stopping internal threads..", poolName);
@@ -298,12 +291,26 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
     }
 
+    class PooledItemSourceReleaseCallback implements ReleaseCallback<T> {
+
+        @Override
+        public void completed(ItemSource<T> itemSource) {
+            pooledObjectOps.reset(itemSource);
+            if (!isStarted()) {
+                pooledObjectOps.purge(itemSource);
+                return;
+            }
+            objectPool.add(itemSource);
+        }
+
+    }
+
     static class Recycler extends Thread {
 
-        private final BufferedItemSourcePool pool;
+        private final ItemSourcePool pool;
         private final ResizePolicy resizePolicy;
 
-        Recycler(BufferedItemSourcePool pool, ResizePolicy resizePolicy) {
+        Recycler(ItemSourcePool pool, ResizePolicy resizePolicy) {
             super(pool.getName() + "-Recycler");
             this.pool = pool;
             this.resizePolicy = resizePolicy;
@@ -317,18 +324,18 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
 
     static class MetricPrinter extends Thread {
 
-        private final Consumer<ByteBufAllocatorMetric> printer;
-        private final ByteBufAllocatorMetric allocatorMetric;
+        private final Supplier<String> additionalMetricsSupplier;
+        private final Consumer<String> printer;
 
-        MetricPrinter(String threadName, ByteBufAllocatorMetric allocatorMetric, PoolMetrics poolMetrics) {
+        MetricPrinter(String threadName, GenericItemSourcePool.PoolMetrics poolMetrics, Supplier<String> additionalMetricsSupplier) {
             super(threadName);
-            this.allocatorMetric = allocatorMetric;
-            this.printer = metric -> LOGGER.info(poolMetrics.formattedMetrics(allocatorMetric));
+            this.additionalMetricsSupplier = additionalMetricsSupplier;
+            this.printer = additionalMetrics -> LOGGER.info(poolMetrics.formattedMetrics(additionalMetrics));
         }
 
         @Override
         public void run() {
-            printer.accept(allocatorMetric);
+            printer.accept(additionalMetricsSupplier.get());
         }
     }
 
@@ -339,9 +346,9 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
             return formattedMetrics(null);
         }
 
-        public String formattedMetrics(ByteBufAllocatorMetric allocatorMetric) {
+        public String formattedMetrics(String additionalMetrics) {
 
-            int capacity = allocatorMetric != null ? 384: 96; // roughly with or without allocator metrics
+            int capacity = additionalMetrics != null ? 384: 96; // roughly with or without allocator metrics
 
             StringBuilder sb = new StringBuilder(capacity)
                     .append('{')
@@ -350,8 +357,8 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
                     .append(", totalPoolSize: ").append(getTotalSize())
                     .append(", availablePoolSize: ").append(getAvailableSize());
 
-            if (allocatorMetric != null) {
-                sb.append(", allocatorMetric: ").append(allocatorMetric);
+            if (additionalMetrics != null) {
+                sb.append(", additionalMetrics: ").append(additionalMetrics);
             }
             return sb.append('}').toString();
         }
@@ -371,7 +378,7 @@ class BufferedItemSourcePool implements ItemSourcePool<ByteBuf> {
             this.executor = createExecutor(poolName);
             startRecyclerTask();
             if (monitored) {
-                startMonitorTask(monitorTaskInterval);
+                startMonitorTask(monitorTaskInterval, additionalMetricsSupplier);
             }
 
             state = State.STARTED;

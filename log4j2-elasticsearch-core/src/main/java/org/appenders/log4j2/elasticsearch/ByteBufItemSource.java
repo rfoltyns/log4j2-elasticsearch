@@ -23,15 +23,15 @@ package org.appenders.log4j2.elasticsearch;
 import io.netty.buffer.ByteBuf;
 
 /**
- * {@code io.netty.buffer.ByteByf} backed {@link ItemSource}.
+ * {@code io.netty.buffer.ByteBuf} backed {@link ItemSource}.
  * When it's no longer needed, {@link #release()} MUST be called to release underlying resources.
  */
-public class BufferedItemSource implements ItemSource<ByteBuf> {
+public class ByteBufItemSource implements ItemSource<ByteBuf> {
 
-    private final ByteBuf source;
+    private ByteBuf source;
     private final ReleaseCallback releaseCallback;
 
-    public BufferedItemSource(ByteBuf source, ReleaseCallback releaseCallback) {
+    public ByteBufItemSource(ByteBuf source, ReleaseCallback releaseCallback) {
         this.source = source;
         this.releaseCallback = releaseCallback;
     }

@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;

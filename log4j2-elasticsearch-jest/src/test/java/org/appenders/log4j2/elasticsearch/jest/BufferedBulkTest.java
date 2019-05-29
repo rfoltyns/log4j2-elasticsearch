@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.searchbox.action.BulkableAction;
-import org.appenders.log4j2.elasticsearch.BufferedItemSource;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.junit.Assert;
@@ -35,7 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -46,7 +45,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -161,14 +160,14 @@ public class BufferedBulkTest {
         ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
 
         CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source1 = new BufferedItemSource(byteBuf1, source -> {});
+        ItemSource<ByteBuf> source1 = new ByteBufItemSource(byteBuf1, source -> {});
         String index1 = UUID.randomUUID().toString();
         BulkableAction action1 = new BufferedIndex.Builder(source1)
                 .index(index1)
                 .build();
 
         CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source2 = new BufferedItemSource(byteBuf2, source -> {});
+        ItemSource<ByteBuf> source2 = new ByteBufItemSource(byteBuf2, source -> {});
         String index2 = UUID.randomUUID().toString();
         BulkableAction action2 = new BufferedIndex.Builder(source2)
                 .index(index2)
@@ -177,7 +176,7 @@ public class BufferedBulkTest {
         BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
                 .withObjectWriter(writer)
                 .withObjectReader(mock(ObjectReader.class))
-                .withBuffer(new BufferedItemSource(createDefaultTestByteBuf(), source -> {}))
+                .withBuffer(new ByteBufItemSource(createDefaultTestByteBuf(), source -> {}))
                 .addAction(action1)
                 .addAction(action2)
                 .build();
@@ -202,14 +201,14 @@ public class BufferedBulkTest {
         ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
 
         CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source1 = new BufferedItemSource(byteBuf1, source -> {});
+        ItemSource<ByteBuf> source1 = new ByteBufItemSource(byteBuf1, source -> {});
         String index = UUID.randomUUID().toString();
         BulkableAction action1 = new BufferedIndex.Builder(source1)
                 .index(index)
                 .build();
 
         CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source2 = new BufferedItemSource(byteBuf2, source -> {});
+        ItemSource<ByteBuf> source2 = new ByteBufItemSource(byteBuf2, source -> {});
         BulkableAction action2 = new BufferedIndex.Builder(source2)
                 .index(index)
                 .build();
@@ -217,7 +216,7 @@ public class BufferedBulkTest {
         BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
                 .withObjectWriter(writer)
                 .withObjectReader(mock(ObjectReader.class))
-                .withBuffer(new BufferedItemSource(createDefaultTestByteBuf(), source -> {}))
+                .withBuffer(new ByteBufItemSource(createDefaultTestByteBuf(), source -> {}))
                 .addAction(action1)
                 .addAction(action2)
                 .build();
@@ -365,7 +364,7 @@ public class BufferedBulkTest {
         // given
         BufferedBulk.Builder builder = createDefaultTestMockedBuilder();
 
-        BufferedItemSource buffer = mock(BufferedItemSource.class);
+        ByteBufItemSource buffer = mock(ByteBufItemSource.class);
         builder.withBuffer(buffer);
 
         BufferedBulk bulk = builder.build();
@@ -384,13 +383,13 @@ public class BufferedBulkTest {
         // given
         BufferedBulk.Builder builder = createDefaultTestMockedBuilder();
 
-        BufferedItemSource buffer = mock(BufferedItemSource.class);
+        ByteBufItemSource buffer = mock(ByteBufItemSource.class);
         builder.withBuffer(buffer);
 
         BufferedBulk bulk = builder.build();
 
         List<BulkableAction> actions = new ArrayList<>();
-        BufferedIndex bufferedIndex = spy(new BufferedIndex.Builder(mock(BufferedItemSource.class)).build());
+        BufferedIndex bufferedIndex = spy(new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build());
         actions.add(bufferedIndex);
         builder.addAction(actions);
 
@@ -406,7 +405,7 @@ public class BufferedBulkTest {
         BufferedBulk.Builder builder = new BufferedBulk.Builder();
         builder.withObjectReader(mock(ObjectReader.class));
         builder.withObjectWriter(mock(ObjectWriter.class));
-        builder.withBuffer(mock(BufferedItemSource.class));
+        builder.withBuffer(mock(ByteBufItemSource.class));
         return builder;
     }
 

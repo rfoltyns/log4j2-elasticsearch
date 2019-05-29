@@ -35,7 +35,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.message.BasicStatusLine;
-import org.appenders.log4j2.elasticsearch.BufferedItemSource;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.junit.Assert;
@@ -53,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -138,11 +138,11 @@ public class BufferedJestHttpClientTest {
     public void prepareRequestCreatesRequestWithSerializedBulk() throws IOException {
 
         // given
-        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
 
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
-        BufferedItemSource buffer = new BufferedItemSource(byteBufAllocator.buffer(32), source -> { });
+        ByteBufItemSource buffer = new ByteBufItemSource(byteBufAllocator.buffer(32), source -> { });
         builder.withBuffer(buffer);
 
         Bulk bulk = createTestBatch(builder, payload1, payload2);
@@ -401,8 +401,8 @@ public class BufferedJestHttpClientTest {
     }
 
     private BufferedBulk createDefaultTestBufferedBulk() {
-        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
 
         return createTestBatch(payload1, payload2);
     }
@@ -425,17 +425,17 @@ public class BufferedJestHttpClientTest {
         return (BufferedJestHttpClient) testObjectFactoryBuilder.build().createClient();
     }
 
-    private ItemSource<ByteBuf> createDefaultTestBufferedItemSource(String payload) {
+    private ItemSource<ByteBuf> createDefaultTestItemSource(String payload) {
         ByteBuf buffer = byteBufAllocator.buffer(16);
         buffer.writeBytes(payload.getBytes());
-        return new BufferedItemSource(buffer, source -> {
+        return new ByteBufItemSource(buffer, source -> {
             // noop
         });
     }
 
     private BufferedBulk createTestBatch(ItemSource<ByteBuf>... payloads) {
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
-        builder.withBuffer(new BufferedItemSource(byteBufAllocator.buffer(32), source -> {}));
+        builder.withBuffer(new ByteBufItemSource(byteBufAllocator.buffer(32), source -> {}));
 
         builder.withObjectWriter(createDefaultTestObjectWriter());
         builder.withObjectReader(createDefaultTestObjectReader());

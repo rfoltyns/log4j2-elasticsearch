@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
@@ -32,19 +31,22 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
+import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.io.DataOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -62,6 +64,7 @@ public class PooledItemSourceFactoryTest {
     static {
         System.setProperty("io.netty.allocator.maxOrder", "2");
         System.setProperty("log4j2.disable.jmx", "true");
+        System.setProperty("log4j2.configurationFactory", "org.apache.logging.log4j.core.config.properties.PropertiesConfigurationFactory");
     }
 
     private static final int DEFAULT_TEST_POOL_SIZE = 10;
@@ -226,7 +229,7 @@ public class PooledItemSourceFactoryTest {
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
         ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = new BufferedItemSource(byteBuf, source -> {});
+        ItemSource<ByteBuf> bufferedItemSource = new ByteBufItemSource(byteBuf, source -> {});
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
@@ -246,7 +249,7 @@ public class PooledItemSourceFactoryTest {
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
         ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = new BufferedItemSource(byteBuf, source -> {});
+        ItemSource<ByteBuf> bufferedItemSource = new ByteBufItemSource(byteBuf, source -> {});
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
@@ -269,7 +272,7 @@ public class PooledItemSourceFactoryTest {
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
         ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = spy(new BufferedItemSource(byteBuf, source -> {}));
+        ItemSource<ByteBuf> bufferedItemSource = spy(new ByteBufItemSource(byteBuf, source -> {}));
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
@@ -316,23 +319,44 @@ public class PooledItemSourceFactoryTest {
                 .withItemSizeInBytes(itemSizeInBytes)
                 .withPoolName(poolName);
 
-        BufferedItemSourcePool pool = BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(DEFAULT_TEST_POOL_SIZE, monitored);
-        PowerMockito.whenNew(BufferedItemSourcePool.class).withAnyArguments().thenReturn(pool);
+        GenericItemSourcePool pool = GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(DEFAULT_TEST_POOL_SIZE, monitored);
+        PowerMockito.whenNew(GenericItemSourcePool.class).withAnyArguments().thenReturn(pool);
 
         // when
         builder.build();
 
         // then
-        PowerMockito.verifyNew(BufferedItemSourcePool.class).withArguments(
+        PowerMockito.verifyNew(GenericItemSourcePool.class).withArguments(
                 eq(poolName),
-                any(UnpooledByteBufAllocator.class),
+                any(PooledObjectOps.class),
                 eq(resizePolicy),
                 eq(resizeTimeout),
                 eq(monitored),
                 eq(monitorTaskInterval),
                 eq(initialPoolSize),
-                eq(itemSizeInBytes)
+                any(Supplier.class)
         );
+
+    }
+
+    @Test
+    public void builderProvidesMetricSupplier() {
+
+        // given
+        PooledItemSourceFactory.Builder builder = spy(createDefaultTestSourceFactoryConfig());
+
+        AtomicReference<Supplier> result = new AtomicReference<>();
+        when(builder.createMetricSupplier(any())).thenAnswer((Answer<Supplier>) invocationOnMock -> {
+            result.set((Supplier) invocationOnMock.callRealMethod());
+            return result.get();
+        });
+
+        // when
+        builder.build();
+
+        // then
+        verify(builder).createMetricSupplier(any());
+        assertNotNull(result.get().get());
 
     }
 
@@ -344,7 +368,7 @@ public class PooledItemSourceFactoryTest {
         when(pool.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
 
         PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
-        when(sourceFactoryConfig.configuredBufferedItemSourcePool()).thenReturn(pool);
+        when(sourceFactoryConfig.configuredItemSourcePool()).thenReturn(pool);
 
         PooledItemSourceFactory factory = sourceFactoryConfig.build();
         factory.start();
@@ -365,7 +389,7 @@ public class PooledItemSourceFactoryTest {
         ItemSourcePool pool = mock(ItemSourcePool.class);
 
         PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
-        when(sourceFactoryConfig.configuredBufferedItemSourcePool()).thenReturn(pool);
+        when(sourceFactoryConfig.configuredItemSourcePool()).thenReturn(pool);
 
         when(pool.isStarted()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
 

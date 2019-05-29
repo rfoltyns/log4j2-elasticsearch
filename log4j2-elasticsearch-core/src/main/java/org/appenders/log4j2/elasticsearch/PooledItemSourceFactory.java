@@ -35,9 +35,10 @@ import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.function.Supplier;
 
 /**
- * Uses underlying {@link BufferedItemSourcePool} to get {@link BufferedItemSource} instances.
+ * Uses underlying {@link ItemSourcePool} to get {@link ItemSource} instances.
  */
 @Plugin(name = PooledItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
 public class PooledItemSourceFactory implements ItemSourceFactory {
@@ -63,13 +64,13 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
     }
 
     /**
-     * Serializes given object to {@link BufferedItemSource} using given {@link ObjectWriter}
+     * Serializes given object to {@link ByteBufItemSource} using given {@link ObjectWriter}
      *
      * @param source item to serialize
      * @param objectWriter writer to be used to serialize given item
-     * @throws IllegalStateException if underlying pool cannot provide {@link BufferedItemSource}
+     * @throws IllegalStateException if underlying pool cannot provide {@link ByteBufItemSource}
      * @throws IllegalArgumentException if serialization failed
-     * @return {@link BufferedItemSource} with serialized event
+     * @return {@link ByteBufItemSource} with serialized event
      */
     @Override
     public ItemSource create(Object source, ObjectWriter objectWriter) {
@@ -92,7 +93,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
     }
 
     /**
-     * @return {@link BufferedItemSource} with no content
+     * @return {@link ByteBufItemSource} with no content
      */
     @Override
     public ItemSource createEmptySource() {
@@ -160,7 +161,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
                 this.resizePolicy = resizePolicy;
             }
 
-            return new PooledItemSourceFactory(configuredBufferedItemSourcePool());
+            return new PooledItemSourceFactory(configuredItemSourcePool());
 
         }
 
@@ -173,17 +174,28 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         }
 
         /* extension point */
-        ItemSourcePool configuredBufferedItemSourcePool() {
-            return new BufferedItemSourcePool(
+        ItemSourcePool configuredItemSourcePool() {
+
+            UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
+            ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
+                    byteBufAllocator,
+                    itemSizeInBytes);
+
+            return new GenericItemSourcePool<>(
                     poolName,
-                    new UnpooledByteBufAllocator(false, false, false),
+                    pooledObjectOps,
                     resizePolicy,
                     resizeTimeout,
                     monitored,
                     monitorTaskInterval,
                     initialPoolSize,
-                    itemSizeInBytes
+                    createMetricSupplier(byteBufAllocator)
             );
+        }
+
+        // visible for testing
+        Supplier<String> createMetricSupplier(UnpooledByteBufAllocator byteBufAllocator) {
+            return () -> byteBufAllocator.metric().toString();
         }
 
         /**

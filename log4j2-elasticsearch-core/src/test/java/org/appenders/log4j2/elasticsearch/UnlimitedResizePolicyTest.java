@@ -30,6 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -152,7 +153,7 @@ public class UnlimitedResizePolicyTest {
 
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
-        ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        ItemSourcePool pool = spy(GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(initialSize, true));
         pool.start();
         pool.incrementPoolSize(additionalSize);
 
@@ -176,7 +177,10 @@ public class UnlimitedResizePolicyTest {
 
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
-        ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        PooledObjectOps pooledObjectOps = mock(PooledObjectOps.class);
+        when(pooledObjectOps.createItemSource(any())).thenReturn(mock(ItemSource.class));
+
+        ItemSourcePool pool = spy(GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(initialSize, true, pooledObjectOps));
         pool.start();
         pool.incrementPoolSize(additionalSize);
 
@@ -195,7 +199,7 @@ public class UnlimitedResizePolicyTest {
         assertEquals(expectedResizedTotalSize, pool.getTotalSize());
 
         // additionalSize(60) - 5 in use
-        verify(pool, times(55)).remove();
+        verify(pooledObjectOps, times(55)).purge(any()); // remove is final, so verifying via internal calls
 
     }
 
@@ -210,7 +214,10 @@ public class UnlimitedResizePolicyTest {
 
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().withResizeFactor(resizeFactor).build();
 
-        ItemSourcePool pool = spy(BufferedItemSourcePoolTest.createDefaultTestBufferedItemSourcePool(initialSize, true));
+        PooledObjectOps pooledObjectOps = mock(PooledObjectOps.class);
+        when(pooledObjectOps.createItemSource(any())).thenReturn(mock(ItemSource.class));
+
+        ItemSourcePool pool = spy(GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(initialSize, true));
         pool.start();
         pool.incrementPoolSize(additionalSize);
 
@@ -228,7 +235,7 @@ public class UnlimitedResizePolicyTest {
         // initialSiz
         assertEquals(expectedResizedTotalSize, pool.getTotalSize());
 
-        verify(pool, times(0)).remove();
+        verify(pooledObjectOps, times(0)).purge(any()); // remove is final, so verifying via internal calls
 
     }
 }

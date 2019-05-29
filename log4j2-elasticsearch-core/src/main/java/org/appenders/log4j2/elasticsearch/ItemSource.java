@@ -37,7 +37,7 @@ public interface ItemSource<T> extends Serializable {
     /**
      * Lifecycle
      *
-     * MUST be invoked after batch is completed. Allows to clean up underlying item.
+     * MUST be invoked after batch is completed. Allows to clean up/return/release underlying item.
      */
     default void release() {
         // noop

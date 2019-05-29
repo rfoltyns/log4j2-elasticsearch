@@ -20,10 +20,9 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import io.netty.buffer.ByteBuf;
 
-public interface ReleaseCallback {
+public interface ReleaseCallback<T> {
 
-    void completed(ItemSource<ByteBuf> source);
+    void completed(ItemSource<T> source);
 
 }

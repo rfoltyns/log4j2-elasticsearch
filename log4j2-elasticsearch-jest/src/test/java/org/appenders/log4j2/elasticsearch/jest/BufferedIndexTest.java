@@ -20,7 +20,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.BufferedItemSource;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +51,7 @@ public class BufferedIndexTest {
     public void getDataIsUnsupported() {
 
         // given
-        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
+        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage("BufferedIndex cannot return Strings. Use getSource() instead");
@@ -65,7 +65,7 @@ public class BufferedIndexTest {
     public void createNewElasticSearchResultIsUnsupported() {
 
         // given
-        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
+        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage("BufferedIndex cannot handle String result. Use buffer-based API");
@@ -79,7 +79,7 @@ public class BufferedIndexTest {
     public void getBulkMethodNameReturnsStaticVariable() {
 
         // given
-        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
+        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
         // when
         String bullkMethodName = bufferedIndex.getBulkMethodName();
@@ -94,7 +94,7 @@ public class BufferedIndexTest {
     public void getRestMethodNameReturnsStaticVariable() {
 
         // given
-        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
+        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
         // when
         String restMethodName = bufferedIndex.getRestMethodName();

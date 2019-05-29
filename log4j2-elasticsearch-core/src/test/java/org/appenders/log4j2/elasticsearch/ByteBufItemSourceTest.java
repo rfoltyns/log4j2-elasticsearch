@@ -24,14 +24,14 @@ import io.netty.buffer.CompositeByteBuf;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.appenders.log4j2.elasticsearch.BufferedItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class BufferedItemSourceTest {
+public class ByteBufItemSourceTest {
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "7");
@@ -42,7 +42,7 @@ public class BufferedItemSourceTest {
 
         // given
         CompositeByteBuf expectedSource = createDefaultTestByteBuf();
-        ItemSource itemSource = new BufferedItemSource(expectedSource, mock(ReleaseCallback.class));
+        ItemSource itemSource = new ByteBufItemSource(expectedSource, mock(ReleaseCallback.class));
 
         // when
         Object actualSource = itemSource.getSource();
@@ -61,7 +61,7 @@ public class BufferedItemSourceTest {
         CompositeByteBuf byteBuf = createDefaultTestByteBuf();
 
         // then
-        ItemSource source = new BufferedItemSource(byteBuf, callback);
+        ItemSource source = new ByteBufItemSource(byteBuf, callback);
         source.release();
 
         // then
@@ -81,7 +81,7 @@ public class BufferedItemSourceTest {
         CompositeByteBuf byteBuf = spy(createDefaultTestByteBuf());
 
         // then
-        ItemSource source = new BufferedItemSource(byteBuf, callback);
+        ItemSource source = new ByteBufItemSource(byteBuf, callback);
         source.release();
 
         // then
