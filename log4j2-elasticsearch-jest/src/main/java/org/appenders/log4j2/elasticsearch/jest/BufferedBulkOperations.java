@@ -22,7 +22,9 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -33,6 +35,7 @@ import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
@@ -90,7 +93,7 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
      * @return {@code com.fasterxml.jackson.databind.ObjectWriter} to serialize {@link BufferedIndex} instances
      */
     protected ObjectWriter configuredWriter() {
-        return new ObjectMapper()
+        return new ExtendedObjectMapper(new JsonFactory())
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
                 .addMixIn(BufferedIndex.class, BulkableActionMixIn.class)
