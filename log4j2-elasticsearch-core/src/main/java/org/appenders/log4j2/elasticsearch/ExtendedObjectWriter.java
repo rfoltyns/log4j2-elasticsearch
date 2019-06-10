@@ -30,11 +30,13 @@ import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 /**
  * By default, {@code com.fasterxml.jackson.databind.ObjectWriter} instantiates {@code new com.fasterxml.jackson.databind.ser.DefaultSerializerProvider}
  * on each <i>write*</i> call.
- * This class introduces lazily initialized single {@code com.fasterxml.jackson.databind.ser.DefaultSerializerProvider}
+ * This class introduces lazily initialized, on-serializer-cache-size-change {@code com.fasterxml.jackson.databind.ser.DefaultSerializerProvider}
  * per {@link ExtendedObjectWriter} object
  * in order to reduce memory allocation when serializing using reused writer.
  */
 public class ExtendedObjectWriter extends ObjectWriter {
+
+    private volatile int lastCacheSize = 0;
 
     private DefaultSerializerProvider serializerProvider;
 
@@ -45,6 +47,10 @@ public class ExtendedObjectWriter extends ObjectWriter {
     @Override
     protected DefaultSerializerProvider _serializerProvider() {
         if (this.serializerProvider == null) {
+            serializerProvider = super._serializerProvider();
+        }
+        if (_serializerProvider.cachedSerializersCount() > lastCacheSize) {
+            lastCacheSize = _serializerProvider.cachedSerializersCount();
             serializerProvider = super._serializerProvider();
         }
         return serializerProvider;
