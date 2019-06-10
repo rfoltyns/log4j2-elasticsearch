@@ -39,12 +39,13 @@ import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -62,7 +63,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsSuccessfully() {
 
         // given
-        JacksonJsonLayout.Builder builder = JacksonJsonLayout.newBuilder();
+        JacksonJsonLayout.Builder builder = createDefaultTestBuilder();
 
         // when
         JacksonJsonLayout layout = builder.build();
@@ -76,7 +77,7 @@ public class JacksonJsonLayoutTest {
     public void contentTypeIsNotNull() {
 
         // given
-        JacksonJsonLayout layout = JacksonJsonLayout.newBuilder().build();
+        JacksonJsonLayout layout = createDefaultTestBuilder().build();
 
         // when
         String contentType = layout.getContentType();
@@ -89,7 +90,7 @@ public class JacksonJsonLayoutTest {
     public void throwsOnByteArrayCreationAttempt() {
 
         // given
-        JacksonJsonLayout layout = JacksonJsonLayout.newBuilder().build();
+        JacksonJsonLayout layout = createDefaultTestBuilder().build();
 
         expectedException.expect(UnsupportedOperationException.class);
 
@@ -102,7 +103,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsLayoutWithDefaultItemSourceFactoryIfNotConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         JacksonJsonLayout layout = builder.build();
 
         LogEvent logEvent = new Log4jLogEvent();
@@ -119,7 +120,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsLayoutWithProvidedItemSourceFactoryIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         builder.withItemSourceFactory(new LayoutTestItemSourceFactory());
 
         JacksonJsonLayout layout = builder.build();
@@ -138,7 +139,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsMapperWithAfterburnerIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         builder.withAfterburner(true);
 
         ObjectMapper objectMapper = Mockito.mock(ObjectMapper.class);
@@ -158,7 +159,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsMapperWithMixInsIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         builder.withMixins(JacksonMixInTest.createDefaultTestBuilder().build());
 
         ObjectMapper objectMapper = Mockito.mock(ObjectMapper.class);
@@ -178,10 +179,41 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
+    public void builderCreatesExtendedObjectWriter() {
+
+        // given
+        JacksonJsonLayout.Builder builder  = createDefaultTestBuilder();
+
+        // when
+        ObjectWriter writer = builder.createConfiguredWriter(new ArrayList<>());
+
+        // then
+        assertEquals(ExtendedObjectWriter.class, writer.getClass());
+    }
+
+    @Test
+    public void builderConfiguresExtendedObjectWriter() {
+
+        // given
+        JacksonJsonLayout.Builder builder  = spy(createDefaultTestBuilder());
+
+        // when
+        builder.build();
+
+        // then
+        verify(builder).createConfiguredWriter(any());
+
+    }
+
+    private JacksonJsonLayout.Builder createDefaultTestBuilder() {
+        return JacksonJsonLayout.newBuilder();
+    }
+
+    @Test
     public void messageSerializationDelegatesToItemSourceFactory() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         LayoutTestItemSourceFactory itemSourceFactory = spy(new LayoutTestItemSourceFactory());
         builder.withItemSourceFactory(itemSourceFactory);
 
@@ -202,7 +234,7 @@ public class JacksonJsonLayoutTest {
     public void logEventSerializationDelegatesToItemSourceFactory() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         LayoutTestItemSourceFactory itemSourceFactory = spy(new LayoutTestItemSourceFactory());
         builder.withItemSourceFactory(itemSourceFactory);
 
@@ -225,7 +257,7 @@ public class JacksonJsonLayoutTest {
         ItemSourceFactory itemSourceFactory = mock(ItemSourceFactory.class);
         when(itemSourceFactory.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
 
-        JacksonJsonLayout layout = JacksonJsonLayout.newBuilder()
+        JacksonJsonLayout layout = createDefaultTestBuilder()
                 .withItemSourceFactory(itemSourceFactory)
                 .build();
 
@@ -275,7 +307,7 @@ public class JacksonJsonLayoutTest {
     }
 
     private LifeCycle createLifeCycleTestObject() {
-        return JacksonJsonLayout.newBuilder().build();
+        return createDefaultTestBuilder().build();
     }
 
     public static class LayoutTestItemSourceFactory extends StringItemSourceFactory {

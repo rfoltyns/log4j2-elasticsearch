@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -133,7 +134,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         }
 
         protected ObjectMapper createDefaultObjectMapper() {
-            return new ObjectMapper()
+            return new ExtendedObjectMapper(new JsonFactory())
                     .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                     .configure(SerializationFeature.CLOSE_CLOSEABLE, false);
         }
