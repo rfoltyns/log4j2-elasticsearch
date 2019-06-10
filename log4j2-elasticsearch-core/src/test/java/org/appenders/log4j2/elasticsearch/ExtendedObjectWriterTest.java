@@ -23,17 +23,24 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 import io.netty.buffer.ByteBuf;
+import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
+import org.hamcrest.CoreMatchers;
+import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,7 +48,7 @@ import static org.mockito.Mockito.when;
 public class ExtendedObjectWriterTest {
 
     @Test
-    public void returnsSameInstanceOfDefaultSerializationProvider() throws IOException {
+    public void returnsSameSerProvWhenNoNewSerializersCached() throws IOException {
 
         // given
         int expectedCalls = new Random().nextInt(100) + 2;
@@ -60,6 +67,32 @@ public class ExtendedObjectWriterTest {
         }
 
          // then
+        Assert.assertThat(caught, CoreMatchers.everyItem(CoreMatchers.is(caught.get(0))));
+        verify(writer, Mockito.times(expectedCalls))._serializerProvider();
+
+    }
+
+    @Test
+    public void returnsNewSerProvNewWhenSerializersCached() throws IOException {
+
+        // given
+        int expectedCalls = new Random().nextInt(100) + 2;
+        List<DefaultSerializerProvider> caught = new ArrayList<>();
+        ExtendedObjectMapper mapper = new ExtendedObjectMapper(new JsonFactory());
+        ExtendedObjectWriter writer = spy((ExtendedObjectWriter)mapper._newWriter(mapper.getSerializationConfig(), mapper.getTypeFactory().constructType(Log4jLogEvent.class), null));
+        when(writer._serializerProvider()).thenAnswer((Answer<DefaultSerializerProvider>) invocationOnMock -> {
+            DefaultSerializerProvider result = (DefaultSerializerProvider) invocationOnMock.callRealMethod();
+            caught.add(result);
+            return result;
+        });
+
+        // when
+        for (int i = 0; i < expectedCalls; i++) {
+            writer.writeValue((OutputStream)new ReusableByteBufOutputStream(Mockito.mock(ByteBuf.class)), Log4jLogEvent.newBuilder().build());
+        }
+
+        // then
+        Assert.assertEquals(2, new HashSet<>(caught).size());
         verify(writer, Mockito.times(expectedCalls))._serializerProvider();
 
     }
