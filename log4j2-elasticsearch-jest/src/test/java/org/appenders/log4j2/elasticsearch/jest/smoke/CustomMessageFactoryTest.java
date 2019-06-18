@@ -48,7 +48,9 @@ public class CustomMessageFactoryTest extends SmokeTest {
         System.setProperty("log4j2.enable.direct.encoders", "true");
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
-        createLoggerProgrammatically(createElasticsearchAppenderBuilder(true, false, false));
+        createLoggerProgrammatically(
+                createElasticsearchAppenderBuilder(true, false, false),
+                config -> config.getAsyncLoggerConfigDelegate());
 
         ObjectMapper objectMapper = configuredMapper();
         Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME,

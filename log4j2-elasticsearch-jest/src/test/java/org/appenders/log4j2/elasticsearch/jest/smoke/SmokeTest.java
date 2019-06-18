@@ -21,20 +21,7 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
  */
 
 
-
-
 import io.searchbox.client.config.HttpClientConfig;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.async.AsyncLoggerConfig;
-import org.apache.logging.log4j.core.async.AsyncLoggerConfigDisruptor;
-import org.apache.logging.log4j.core.async.AsyncLoggerContext;
-import org.apache.logging.log4j.core.config.AppenderRef;
-import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
@@ -51,160 +38,26 @@ import org.appenders.log4j2.elasticsearch.jest.BufferedJestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
+import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
-import org.junit.Test;
-
-import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
-
-import static java.lang.Thread.interrupted;
-import static java.lang.Thread.sleep;
 
 @Ignore
-public class SmokeTest {
+public class SmokeTest extends SmokeTestBase {
 
     public static final int BATCH_SIZE = 5000;
-    public static final int INITIAL_ITEM_POOL_SIZE = 10000;
-    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 512;
-    public static final int INITIAL_BATCH_POOL_SIZE = 2;
-    public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
-    public static String DEFAULT_LOGGER_NAME = "elasticsearch";
-
-    private final AtomicInteger numberOfLogs = new AtomicInteger(10000);
-    private final AtomicInteger counter = new AtomicInteger();
-
-    // TODO: expose via system property
-    private boolean secure = false;
+    public static final int ADDITIONAL_BATCH_SIZE = (int) (BATCH_SIZE * 0.2); // prevent tiny batches by allowing notifier to
+    public static final int INITIAL_ITEM_POOL_SIZE = 20000;
+    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 1024;
+    public static final int INITIAL_BATCH_POOL_SIZE = 4;
 
     @BeforeClass
     public static void beforeClass() {
         System.setProperty("log4j.configurationFile", "log4j2.xml");
     }
 
-    @Test
-    public void publicDocsExampleTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-
-        System.setProperty("log4j2.enable.threadlocals", "true");
-        System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
-
-        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, false, secure));
- 
-        String loggerThatReferencesElasticsearchAppender = "elasticsearch";
-        Logger log = LogManager.getLogger(loggerThatReferencesElasticsearchAppender);
-        log.info("Hello, World!");
-        sleep(5000);
-    }
-
-    @Test
-    public void programmaticConfigTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-
-        System.setProperty("log4j2.enable.threadlocals", "true");
-        System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
-        System.setProperty("AsyncLogger.RingBufferSize", "16384");
-
-        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, false, secure));
-
-        AtomicInteger counter = new AtomicInteger();
-
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
-        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
-    }
-
-    @Test
-    public void programmaticBufferedConfigTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-
-        System.setProperty("log4j2.enable.threadlocals", "true");
-        System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
-        System.setProperty("AsyncLogger.RingBufferSize", "16384");
-
-        createLoggerProgrammatically(createElasticsearchAppenderBuilder(false, true, secure));
-
-        AtomicInteger counter = new AtomicInteger();
-
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
-        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
-    }
-
-    @Test
-    public void fileOutputTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-file.xml");
-        AtomicInteger counter = new AtomicInteger();
-
-        Logger logger = LogManager.getLogger("file");
-        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
-    }
-
-    @Test
-    public void xmlConfigTest() throws InterruptedException {
-
-        AtomicInteger counter = new AtomicInteger();
-
-        // let's test https://github.com/rfoltyns/log4j2-elasticsearch/issues/15
-        URI uri = URI.create("log4j2.xml");
-        LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getFactory().getContext(
-                LogManager.class.getName(),
-                SmokeTest.class.getClassLoader(),
-                null,
-                false,
-                uri,
-                null
-        );
-
-        context.setConfigLocation(uri);
-
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
-        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
-    }
-
-    @Test
-    public void propertiesConfigTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-buffered-example.properties");
-        AtomicInteger counter = new AtomicInteger();
-
-        Logger logger = LogManager.getLogger("elasticsearch");
-        indexLogs(logger, null, 100, () -> "Message " + counter.incrementAndGet());
-    }
-
-    static void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder) {
-
-        AsyncLoggerContext ctx = (AsyncLoggerContext) LoggerContext.getContext(false);
-
-        final Configuration config = ctx.getConfiguration();
-
-        Appender appender = appenderBuilder.build();
-        appender.start();
-
-        AppenderRef ref = AppenderRef.createAppenderRef(DEFAULT_APPENDER_NAME, Level.INFO, null);
-        AppenderRef[] refs = new AppenderRef[] {ref};
-
-        // set up disruptor forcefully
-        ((AsyncLoggerConfigDisruptor)config.getAsyncLoggerConfigDelegate()).start();
-
-        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, DEFAULT_LOGGER_NAME,
-                "false", refs, null, config, null );
-
-        loggerConfig.addAppender(appender, Level.INFO, null);
-
-        config.addAppender(appender);
-        config.addLogger(DEFAULT_LOGGER_NAME, loggerConfig);
-
-    }
-
-    static ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
+    @Override
+    public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
         JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
         if (buffered) {
@@ -227,8 +80,9 @@ public class SmokeTest {
 
         jestHttpObjectFactoryBuilder.withConnTimeout(1000)
                 .withReadTimeout(10000)
-                .withDefaultMaxTotalConnectionPerRoute(4)
-                .withMaxTotalConnection(4);
+                .withIoThreadCount(8)
+                .withDefaultMaxTotalConnectionPerRoute(8)
+                .withMaxTotalConnection(8);
 
         if (secured) {
             jestHttpObjectFactoryBuilder.withServerUris("https://localhost:9200")
@@ -244,7 +98,7 @@ public class SmokeTest {
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
-                .withBatchSize(BATCH_SIZE)
+                .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
                 .withDeliveryInterval(1000)
                 .withIndexTemplate(indexTemplate)
                 .build();
@@ -302,35 +156,4 @@ public class SmokeTest {
                 .build();
     }
 
-    <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
-        CountDownLatch latch = new CountDownLatch(numberOfProducers);
-
-        for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
-            new Thread(() -> {
-                for (;numberOfLogs.getAndDecrement() > 0;) {
-                    logger.info(marker, logSupplier.get());
-                    counter.incrementAndGet();
-                    try {
-                        sleep(20);
-                    } catch (InterruptedException e) {
-                        interrupted();
-                    }
-                }
-                latch.countDown();
-            }).start();
-        }
-
-        while (latch.getCount() != 0) {
-            sleep(1000);
-            System.out.println("Added " + counter.get() + " messages");
-        }
-
-        sleep(30000);
-
-        System.out.println("Shutting down");
-        LogManager.shutdown();
-
-        sleep(30000);
-
-    }
 }
