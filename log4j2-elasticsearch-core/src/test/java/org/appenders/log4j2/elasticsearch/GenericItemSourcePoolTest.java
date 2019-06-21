@@ -685,7 +685,7 @@ public class GenericItemSourcePoolTest {
         return createDefaultTestGenericItemSourcePool(false);
     }
 
-    public GenericItemSourcePool createDefaultTestGenericItemSourcePool(boolean isMonitored) {
+    public static GenericItemSourcePool createDefaultTestGenericItemSourcePool(boolean isMonitored) {
         return createDefaultTestGenericItemSourcePool(DEFAULT_TEST_INITIAL_POOL_SIZE, isMonitored);
     }
 
