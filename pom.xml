@@ -52,6 +52,7 @@
 
     <modules>
         <module>log4j2-elasticsearch-core</module>
+        <module>log4j2-elasticsearch-hc</module>
         <module>log4j2-elasticsearch-jest</module>
         <module>log4j2-elasticsearch2-bulkprocessor</module>
         <module>log4j2-elasticsearch5-bulkprocessor</module>
