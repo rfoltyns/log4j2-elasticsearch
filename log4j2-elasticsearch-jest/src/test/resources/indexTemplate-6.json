@@ -11,7 +11,8 @@
         {
           "strings": {
             "mapping": {
-              "type": "keyword"
+              "type": "keyword",
+              "index": false
             },
             "match_mapping_type": "string",
             "match": "*"
@@ -26,8 +27,12 @@
           "type": "keyword",
           "index": false
         },
-        "message": {
+        "level": {
           "type": "keyword",
+          "index": false
+        },
+        "message": {
+          "type": "text",
           "index": false
         },
         "timeMillis": {
