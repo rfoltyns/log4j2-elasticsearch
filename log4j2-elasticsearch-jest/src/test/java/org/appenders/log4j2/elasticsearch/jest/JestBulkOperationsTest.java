@@ -31,6 +31,8 @@ import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -75,6 +77,43 @@ public class JestBulkOperationsTest {
         verify(itemSource).getSource();
         JestBatchIntrospector introspector = new JestBatchIntrospector();
         Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
+
+    }
+
+    @Test
+    public void defaultJestBulkOperationsSetsDefaultMappingType() {
+
+        // given
+        BatchOperations<Bulk> bulkOperations = new JestBulkOperations();
+
+        String testPayload = "{ \"testfield\": \"testvalue\" }";
+        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        String type = item.getType();
+
+        // then
+        Assert.assertEquals("index", type);
+
+    }
+
+    @Test
+    public void mappingTypeCanBeSet() {
+
+        // given
+        String expectedMappingType = UUID.randomUUID().toString();
+        BatchOperations<Bulk> bulkOperations = new JestBulkOperations(expectedMappingType);
+
+        String testPayload = "{ \"testfield\": \"testvalue\" }";
+        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        String type = item.getType();
+
+        // then
+        Assert.assertEquals(expectedMappingType, type);
 
     }
 

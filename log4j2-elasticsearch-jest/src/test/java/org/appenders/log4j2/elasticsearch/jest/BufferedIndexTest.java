@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
 import static org.mockito.Mockito.mock;
 
 public class BufferedIndexTest {
@@ -76,7 +77,21 @@ public class BufferedIndexTest {
     }
 
     @Test
-    public void getBulkMethodNameReturnsStaticVariable() {
+    public void getReturnsDefaultIfNotSet() {
+
+        // given
+        BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
+
+        // when
+        String type = bufferedIndex.getType();
+
+        // then
+        Assert.assertNull(DEFAULT_MAPPING_TYPE, type);
+
+    }
+
+    @Test
+    public void getBulkMethodNameReturnsNull() {
 
         // given
         BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(BufferedItemSource.class)).build();
@@ -85,7 +100,7 @@ public class BufferedIndexTest {
         String bullkMethodName = bufferedIndex.getBulkMethodName();
 
         // then
-        Assert.assertEquals(BufferedIndex.BULK_METHOD_NAME, bullkMethodName);
+        Assert.assertNull(bullkMethodName);
 
     }
 

@@ -39,12 +39,15 @@ import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
+
+import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
 
 @Plugin(name = BufferedJestHttpObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
@@ -56,6 +59,8 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     private volatile State state = State.STOPPED;
 
     private final PooledItemSourceFactory itemSourceFactory;
+
+    private final JacksonMixIn[] mixIns;
 
     /**
      * This constructor is deprecated and will be removed in 1.5.
@@ -91,7 +96,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 Runtime.getRuntime().availableProcessors(),
                 discoveryEnabled,
                 bufferedSourceFactory,
-                auth
+                auth,
+                new JacksonMixIn[]{},
+                DEFAULT_MAPPING_TYPE
         );
     }
 
@@ -104,7 +111,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             int ioThreadCount,
             boolean discoveryEnabled,
             PooledItemSourceFactory bufferedSourceFactory,
-            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth
+            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth,
+            JacksonMixIn[] mixIns,
+            String mappingType
     ) {
         super(
                 serverUris,
@@ -114,9 +123,11 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 defaultMaxTotalConnectionPerRoute,
                 ioThreadCount,
                 discoveryEnabled,
-                auth
+                auth,
+                mappingType
         );
         this.itemSourceFactory = bufferedSourceFactory;
+        this.mixIns = mixIns;
     }
 
     @Override
@@ -134,7 +145,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
-        return new BufferedBulkOperations(itemSourceFactory);
+        return new BufferedBulkOperations(itemSourceFactory, mixIns, mappingType);
     }
 
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {
@@ -183,6 +194,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
         protected PooledItemSourceFactory pooledItemSourceFactory;
 
+        @PluginElement(JacksonMixIn.ELEMENT_TYPE)
+        private JacksonMixIn[] mixIns = new JacksonMixIn[0];
+
         @Override
         public BufferedJestHttpObjectFactory build() {
 
@@ -197,7 +211,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                     ioThreadCount,
                     discoveryEnabled,
                     pooledItemSourceFactory,
-                    auth);
+                    auth,
+                    mixIns,
+                    mappingType);
         }
 
         protected void validate() {
@@ -213,6 +229,12 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             this.pooledItemSourceFactory = pooledItemSourceFactory;
             return this;
         }
+
+        public Builder withMixIns(JacksonMixIn[] mixIns) {
+            this.mixIns = mixIns;
+            return this;
+        }
+
     }
 
     // ==========

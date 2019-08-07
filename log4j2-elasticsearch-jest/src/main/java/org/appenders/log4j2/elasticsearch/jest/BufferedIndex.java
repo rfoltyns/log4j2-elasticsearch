@@ -29,14 +29,12 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 
 public class BufferedIndex extends AbstractDocumentTargetedAction<DocumentResult> implements BulkableAction<DocumentResult> {
 
-    static final String BULK_METHOD_NAME = "index";
     static final String HTTP_METHOD_NAME = "POST";
 
     protected final ItemSource<ByteBuf> source;
 
     protected BufferedIndex(Builder builder) {
         super(builder);
-        this.typeName = BULK_METHOD_NAME;
         this.source = builder.source;
     }
 
@@ -61,7 +59,7 @@ public class BufferedIndex extends AbstractDocumentTargetedAction<DocumentResult
 
     @Override
     public final String getBulkMethodName() {
-        return BULK_METHOD_NAME;
+        return null;
     }
 
     public void release() {
@@ -73,7 +71,6 @@ public class BufferedIndex extends AbstractDocumentTargetedAction<DocumentResult
         private final ItemSource<ByteBuf> source;
 
         public Builder(ItemSource<ByteBuf> source) {
-            this.type(BULK_METHOD_NAME);
             this.source = source;
         }
 

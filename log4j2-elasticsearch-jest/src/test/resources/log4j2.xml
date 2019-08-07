@@ -36,12 +36,13 @@
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
-                <IndexTemplate name="test_template_jest" path="classpath:indexTemplate.json" />
+                <IndexTemplate name="test_template_jest" path="classpath:indexTemplate-7.json" />
                 <JestBufferedHttp serverUris="https://localhost:9200"
                     connTimeout="500"
                     readTimeout="30000"
                     maxTotalConnection="40"
-                    defaultMaxTotalConnectionPerRoute="8">
+                    defaultMaxTotalConnectionPerRoute="8"
+                    mappingType="_doc">
                     <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="5120000" initialPoolSize="3"
                                              monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
                         <UnlimitedResizePolicy resizeFactor="0.70" />

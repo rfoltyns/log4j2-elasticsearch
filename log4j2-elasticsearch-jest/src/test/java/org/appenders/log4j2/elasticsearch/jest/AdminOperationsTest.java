@@ -60,7 +60,7 @@ public class AdminOperationsTest {
         mockedJestResult(jestClient, true);
 
         IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
-                .withPath("classpath:indexTemplate.json")
+                .withPath("classpath:indexTemplate-6.json")
                 .withName("testName")
                 .build());
 
@@ -90,7 +90,7 @@ public class AdminOperationsTest {
         mockedJestResult(jestClient, false);
 
         IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
-                .withPath("classpath:indexTemplate.json")
+                .withPath("classpath:indexTemplate-6.json")
                 .withName("testName")
                 .build());
 
@@ -116,7 +116,7 @@ public class AdminOperationsTest {
         });
 
         IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
-                .withPath("classpath:indexTemplate.json")
+                .withPath("classpath:indexTemplate-6.json")
                 .withName("testName")
                 .build());
 
