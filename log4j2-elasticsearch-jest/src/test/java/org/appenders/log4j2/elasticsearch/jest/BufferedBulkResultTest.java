@@ -113,12 +113,10 @@ public class BufferedBulkResultTest {
     public void errorMessageContainsStatusIfAvailableAndNotSucceeded() {
 
         // given
-        String expectedMessage = UUID.randomUUID().toString();
-
         BufferedBulkResult result = createTestBufferedBulkResult(false, new BulkError());
 
         // when
-        String actualMessage = result.getErrorMessage(expectedMessage);
+        String actualMessage = result.getErrorMessage(DEFAULT_TEST_MESSAGE);
 
         // then
         assertTrue(actualMessage.contains("" + DEFAULT_TEST_STATUS));
@@ -129,12 +127,10 @@ public class BufferedBulkResultTest {
     public void errorMessageDoesNotContainStatusIfAvailableAndNotHigherThanZeroAndNotSucceeded() {
 
         // given
-        String expectedMessage = UUID.randomUUID().toString();
-
         BufferedBulkResult result = new BufferedBulkResult(0, false, new BulkError(), 0, null);
 
         // when
-        String actualMessage = result.getErrorMessage(expectedMessage);
+        String actualMessage = result.getErrorMessage(DEFAULT_TEST_MESSAGE);
 
         // then
         assertFalse(actualMessage.contains("" + DEFAULT_TEST_STATUS));
@@ -145,12 +141,10 @@ public class BufferedBulkResultTest {
     public void errorMessageDoesNotContainStatusIfHigherThanZeroAndSucceeded() {
 
         // given
-        String expectedMessage = UUID.randomUUID().toString();
-
         BufferedBulkResult result = new BufferedBulkResult(0, false, null, 1, null);
 
         // when
-        String actualMessage = result.getErrorMessage(expectedMessage);
+        String actualMessage = result.getErrorMessage(DEFAULT_TEST_MESSAGE);
 
         // then
         assertFalse(actualMessage.contains("" + DEFAULT_TEST_STATUS));
@@ -161,12 +155,10 @@ public class BufferedBulkResultTest {
     public void errorMessageDoesNotContainStatusIfStatusEqualsZeroAndSucceeded() {
 
         // given
-        String expectedMessage = UUID.randomUUID().toString();
-
         BufferedBulkResult result = new BufferedBulkResult(0, false, null, 0, null);;
 
         // when
-        String actualMessage = result.getErrorMessage(expectedMessage);
+        String actualMessage = result.getErrorMessage(DEFAULT_TEST_MESSAGE);
 
         // then
         assertFalse(actualMessage.contains("" + DEFAULT_TEST_STATUS));
