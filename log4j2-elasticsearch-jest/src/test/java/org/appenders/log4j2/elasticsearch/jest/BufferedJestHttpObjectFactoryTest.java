@@ -35,6 +35,7 @@ import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
@@ -49,6 +50,7 @@ import org.powermock.api.mockito.PowerMockito;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.function.Function;
 
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
@@ -69,6 +71,8 @@ import static org.mockito.Mockito.when;
 
 public class BufferedJestHttpObjectFactoryTest {
 
+
+
     static {
         System.setProperty("io.netty.allocator.maxOrder", "1");
     }
@@ -81,6 +85,8 @@ public class BufferedJestHttpObjectFactoryTest {
     private static final int TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE = 22;
     private static final boolean TEST_DISCOVERY_ENABLED = true;
     private static final int TEST_IO_THREAD_COUNT = 4;
+    private static final String TEST_MAPPING_TYPE = UUID.randomUUID().toString();
+    private static final JacksonMixIn[] TEST_MIXINS = new JacksonMixIn[4];
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -173,16 +179,19 @@ public class BufferedJestHttpObjectFactoryTest {
     }
 
     @Test
-    public void httpParamsArePassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
+    public void paramsArePassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
 
         // given
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
-        builder.withConnTimeout(TEST_CONNECTION_TIMEOUT)
+
+        builder.withMixIns(TEST_MIXINS)
+                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withMaxTotalConnection(TEST_MAX_TOTAL_CONNECTIONS)
                 .withDefaultMaxTotalConnectionPerRoute(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE)
                 .withDiscoveryEnabled(TEST_DISCOVERY_ENABLED)
-                .withIoThreadCount(TEST_IO_THREAD_COUNT);
+                .withIoThreadCount(TEST_IO_THREAD_COUNT)
+                .withMappingType(TEST_MAPPING_TYPE);
 
         // when
         ClientObjectFactory<JestClient, Bulk> config = builder.build();
@@ -200,6 +209,10 @@ public class BufferedJestHttpObjectFactoryTest {
                 PowerMockito.field(config.getClass(), "discoveryEnabled").get(config));
         assertEquals(TEST_IO_THREAD_COUNT,
                 PowerMockito.field(config.getClass(), "ioThreadCount").get(config));
+        assertEquals(TEST_MAPPING_TYPE,
+                PowerMockito.field(config.getClass(), "mappingType").get(config));
+        assertEquals(TEST_MIXINS,
+                PowerMockito.field(config.getClass(), "mixIns").get(config));
 
     }
 

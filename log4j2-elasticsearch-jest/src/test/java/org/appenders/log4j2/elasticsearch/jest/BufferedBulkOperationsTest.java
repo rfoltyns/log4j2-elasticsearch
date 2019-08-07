@@ -20,6 +20,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  * #L%
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -31,6 +32,7 @@ import org.apache.logging.log4j.message.ObjectMessage;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.junit.Assert;
@@ -42,8 +44,11 @@ import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 public class BufferedBulkOperationsTest {
@@ -66,6 +71,43 @@ public class BufferedBulkOperationsTest {
 
         // when
         bufferedBulkOperations.createBatchItem(indexName, source);
+
+    }
+
+    @Test
+    public void defaultBufferedBulkOperationsSetsDefaultMappingType() {
+
+        // given
+        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        BufferedBulkOperations bulkOperations = new BufferedBulkOperations(bufferedSourceFactory);
+
+        ItemSource itemSource = mock(ItemSource.class);
+        BufferedIndex item = (BufferedIndex) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        String type = item.getType();
+
+        // then
+        Assert.assertEquals(DEFAULT_MAPPING_TYPE, type);
+
+    }
+
+    @Test
+    public void mappingTypeCanBeSet() {
+
+        // given
+        String expectedMappingType = UUID.randomUUID().toString();
+        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        BufferedBulkOperations bulkOperations = new BufferedBulkOperations(bufferedSourceFactory, new JacksonMixIn[]{}, expectedMappingType);
+
+        ItemSource itemSource = mock(ItemSource.class);
+        BufferedIndex item = (BufferedIndex) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        String type = item.getType();
+
+        // then
+        Assert.assertEquals(expectedMappingType, type);
 
     }
 
@@ -157,10 +199,64 @@ public class BufferedBulkOperationsTest {
 
     }
 
+    @Test
+    public void writerCanBeCustomizedWithMixins() throws IOException {
+
+        // given
+        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+
+        BufferedBulkOperations bufferedBulkOperations = new BufferedBulkOperations(
+                bufferedSourceFactory,
+                new JacksonMixIn[]{
+                        new JacksonMixIn.Builder()
+                                .withTargetClass(BufferedIndex.class.getName())
+                                .withMixInClass(TestBulkableActionMixIn.class.getName())
+                                .build()
+                },
+                UUID.randomUUID().toString() // doesn't matter here..
+        );
+
+        JacksonJsonLayout layout = createDefaultTestJacksonJsonLayout(bufferedSourceFactory);
+
+        String expectedMessage = UUID.randomUUID().toString();
+        long timeMillis = System.currentTimeMillis();
+        Log4jLogEvent logEvent = Log4jLogEvent.newBuilder()
+                .setTimeMillis(timeMillis)
+                .setMessage(new ObjectMessage(expectedMessage)).build();
+
+        ItemSource itemSource = layout.toSerializable(logEvent);
+
+        String indexName = UUID.randomUUID().toString();
+        BufferedIndex bufferedIndex = (BufferedIndex) bufferedBulkOperations.createBatchItem(indexName, itemSource);
+
+        BatchBuilder<Bulk> batchBuilder = bufferedBulkOperations.createBatchBuilder();
+        batchBuilder.add(bufferedIndex);
+
+        // when
+        ByteBuf byteBuf = ((BufferedBulk)batchBuilder.build()).serializeRequest();
+
+        // then
+        Scanner scanner = new Scanner(new ByteBufInputStream(byteBuf));
+
+        TestIndex deserializedAction = new ObjectMapper()
+                .addMixIn(TestIndex.class, TestBulkableActionMixIn.class)
+                .readValue(scanner.nextLine(), TestIndex.class);
+        assertNull(deserializedAction.type);
+
+    }
+
     private JacksonJsonLayout createDefaultTestJacksonJsonLayout(PooledItemSourceFactory bufferedSourceFactory) {
         JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
         builder.withItemSourceFactory(bufferedSourceFactory);
         return builder.build();
+    }
+
+    abstract class TestBulkableActionMixIn extends BulkableActionMixIn {
+
+        // test condition
+        @JsonIgnore
+        abstract String getType();
+
     }
 
 }

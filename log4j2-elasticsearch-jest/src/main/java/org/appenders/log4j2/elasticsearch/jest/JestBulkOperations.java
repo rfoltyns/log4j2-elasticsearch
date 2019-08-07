@@ -31,13 +31,26 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 
 public class JestBulkOperations implements BatchOperations<Bulk> {
 
-    private static String ACTION_TYPE = "index";
+    public static final String DEFAULT_MAPPING_TYPE = "index";
+
+    /**
+     * By default, "index" until 1.4, then "_doc"
+     */
+    private final String mappingType;
+
+    public JestBulkOperations() {
+        this.mappingType = DEFAULT_MAPPING_TYPE;
+    }
+
+    public JestBulkOperations(String mappingType) {
+        this.mappingType = mappingType;
+    }
 
     @Override
     public Object createBatchItem(String indexName, Object source) {
         return new Index.Builder(source)
                 .index(indexName)
-                .type(ACTION_TYPE)
+                .type(mappingType)
                 .build();
     }
 
@@ -45,7 +58,7 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
     public Object createBatchItem(String indexName, ItemSource source) {
         return new Index.Builder(source.getSource())
                 .index(indexName)
-                .type(ACTION_TYPE)
+                .type(mappingType)
                 .build();
     }
 

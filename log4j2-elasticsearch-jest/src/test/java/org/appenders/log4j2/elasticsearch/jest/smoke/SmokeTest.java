@@ -82,7 +82,8 @@ public class SmokeTest extends SmokeTestBase {
                 .withReadTimeout(10000)
                 .withIoThreadCount(8)
                 .withDefaultMaxTotalConnectionPerRoute(8)
-                .withMaxTotalConnection(8);
+                .withMaxTotalConnection(8)
+                .withMappingType("_doc");
 
         if (secured) {
             jestHttpObjectFactoryBuilder.withServerUris("https://localhost:9200")
@@ -93,7 +94,7 @@ public class SmokeTest extends SmokeTestBase {
 
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
                 .withName("log4j2_test_jest")
-                .withPath("classpath:indexTemplate.json")
+                .withPath("classpath:indexTemplate-7.json")
                 .build();
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()

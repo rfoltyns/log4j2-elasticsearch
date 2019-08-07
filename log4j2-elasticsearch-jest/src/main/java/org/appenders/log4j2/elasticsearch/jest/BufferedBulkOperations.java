@@ -29,13 +29,13 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import io.netty.buffer.ByteBuf;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
 
@@ -44,13 +44,27 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
  */
 public class BufferedBulkOperations implements BatchOperations<Bulk> {
 
+    public static final String DEFAULT_MAPPING_TYPE = "index";
+
     private final PooledItemSourceFactory pooledItemSourceFactory;
+
+    /**
+     * By default, "index" until 1.4, then "_doc"
+     */
+    private final String mappingType;
+    private final JacksonMixIn[] mixIns;
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
 
-    // FIXME: design - writer and reader should be configurable here(?)
     public BufferedBulkOperations(PooledItemSourceFactory pooledItemSourceFactory) {
+        this(pooledItemSourceFactory, new JacksonMixIn[]{}, DEFAULT_MAPPING_TYPE);
+    }
+
+    // FIXME: design - writer and reader should be configurable here(?)
+    public BufferedBulkOperations(PooledItemSourceFactory pooledItemSourceFactory, JacksonMixIn[] mixIns, String mappingType) {
         this.pooledItemSourceFactory = pooledItemSourceFactory;
+        this.mappingType = mappingType;
+        this.mixIns = mixIns;
         this.objectWriter = configuredWriter();
         this.objectReader = configuredReader();
     }
@@ -62,8 +76,9 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
 
     @Override
     public Object createBatchItem(String indexName, ItemSource source) {
-        return new BufferedIndex.Builder((ItemSource<ByteBuf>) source)
+        return new BufferedIndex.Builder(source)
                 .index(indexName)
+                .type(mappingType)
                 .build();
     }
 
@@ -93,11 +108,17 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
      * @return {@code com.fasterxml.jackson.databind.ObjectWriter} to serialize {@link BufferedIndex} instances
      */
     protected ObjectWriter configuredWriter() {
-        return new ExtendedObjectMapper(new JsonFactory())
+
+        ObjectMapper objectMapper = new ExtendedObjectMapper(new JsonFactory())
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                .addMixIn(BufferedIndex.class, BulkableActionMixIn.class)
-                .writerFor(BufferedIndex.class);
+                .addMixIn(BufferedIndex.class, BulkableActionMixIn.class);
+
+        for (JacksonMixIn mixIn: mixIns) {
+            objectMapper.addMixIn(mixIn.getTargetClass(), mixIn.getMixInClass());
+        }
+
+        return objectMapper.writerFor(BufferedIndex.class);
     }
 
     /**

@@ -49,6 +49,7 @@ maxTotalConnection | Attribute | no | 40 | Number of connections available.
 defaultMaxTotalConnectionPerRoute | Attribute | no | 4 | Number of connections available per Apache CPool.
 discoveryEnabled | Attribute | no | false | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes.
 ioThreadCount | Attribute | no | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`
+mappingType | Attribute | no | `index` | Name of index mapping type to use in ES cluster. Use `_doc` for Elasticsearch 7.x.
 
 ### Buffered HTTP
 
@@ -127,12 +128,12 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
 
 ### Compatibility matrix
 
-Feature/Version | 2.x | 5.x | 6.x
------------- | ------------- | ------------- | -------------
-IndexTemplate | Yes | Yes | Yes
-BasicCredentials | Yes | Yes | Yes
-JKS | Yes | Not tested | Not tested
-PEM | Not tested | Yes | Yes
+Feature/Version | 2.x | 5.x | 6.x| 7.x
+------------ | ------------- | ------------- | -------------| -------------
+IndexTemplate | Yes | Yes | Yes| Yes
+BasicCredentials | Yes | Yes | Yes| Yes
+JKS | Yes | Not tested | Not tested| Not tested
+PEM | Not tested | Yes | Yes| Yes
 
 ## Dependencies
 

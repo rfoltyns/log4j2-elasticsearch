@@ -38,6 +38,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
@@ -54,6 +55,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
+import static org.appenders.log4j2.elasticsearch.jest.JestBulkOperations.DEFAULT_MAPPING_TYPE;
+
 @Plugin(name = "JestHttp", category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bulk> {
 
@@ -69,6 +72,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final int ioThreadCount;
     private final boolean discoveryEnabled;
     private final Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth;
+    protected final String mappingType;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
@@ -76,7 +80,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     /**
      * This constructor is deprecated and will be removed in 1.5.
-     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth)} instead.
+     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String)} instead.
      *
      * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
      * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
@@ -85,7 +89,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
      * @param defaultMaxTotalConnectionPerRoute Number of connections available per Apache CPool
      * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
      * @param auth Security configuration
-     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth)} instead.
+     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String)} instead.
      *
      */
     @Deprecated
@@ -103,7 +107,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 defaultMaxTotalConnectionPerRoute,
                 Runtime.getRuntime().availableProcessors(),
                 discoveryEnabled,
-                auth);
+                auth,
+                DEFAULT_MAPPING_TYPE);
     }
 
     /**
@@ -115,6 +120,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
      * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
      * @param ioThreadCount number of 'I/O Dispatcher' threads started by Apache HC `IOReactor`
      * @param auth Security configuration
+     * @param mappingType Elasticsearch mapping type name. MAY be set to '_doc' for Elasticsearch 7.x compatibility
+     *
      */
     protected JestHttpObjectFactory(Collection<String> serverUris,
                                     int connTimeout,
@@ -123,7 +130,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                                     int defaultMaxTotalConnectionPerRoute,
                                     int ioThreadCount,
                                     boolean discoveryEnabled,
-                                    Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth) {
+                                    Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth,
+                                    String mappingType) {
         this.serverUris = serverUris;
         this.connTimeout = connTimeout;
         this.readTimeout = readTimeout;
@@ -132,6 +140,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.ioThreadCount = ioThreadCount;
         this.discoveryEnabled = discoveryEnabled;
         this.auth = auth;
+        this.mappingType = mappingType;
     }
 
     @Override
@@ -209,7 +218,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
-        return new JestBulkOperations();
+        return new JestBulkOperations(mappingType);
     }
 
     @Override
@@ -284,6 +293,14 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         @PluginElement("auth")
         protected Auth auth;
 
+        /**
+         * Since 1.3.5, index mapping type can be specified to ensure compatibility with ES 7 clusters
+         *
+         * By default, "index" until 1.4, then "_doc"
+         */
+        @PluginBuilderAttribute
+        protected String mappingType = DEFAULT_MAPPING_TYPE;
+
         @Override
         public JestHttpObjectFactory build() {
 
@@ -297,13 +314,14 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                     defaultMaxTotalConnectionPerRoute,
                     ioThreadCount,
                     discoveryEnabled,
-                    auth
+                    auth,
+                    mappingType
             );
         }
 
         protected void validate() {
             if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for JestClientConfig");
+                throw new ConfigurationException("No serverUris provided for " + JestHttpObjectFactory.class.getName());
             }
         }
 
@@ -346,6 +364,12 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             this.auth = auth;
             return this;
         }
+
+        public Builder withMappingType(String mappingType) {
+            this.mappingType = mappingType;
+            return this;
+        }
+
     }
 
     /**
