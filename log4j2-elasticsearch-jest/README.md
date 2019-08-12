@@ -8,7 +8,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.3.3</version>
+    <version>1.3.5</version>
 </dependency>
 ```
 
@@ -34,7 +34,7 @@ Add this snippet to `log4j2.xml` configuration:
         <IndexName indexName="log4j2" />
         <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <JestHttp serverUris="http://localhost:9200" />
+            <JestHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>"/>
         </AsyncBatchDelivery>
     </Elasticsearch>
 </Appenders>
@@ -71,7 +71,7 @@ Example:
         </JacksonJsonLayout>
         <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <JestBufferedHttp serverUris="http://localhost:9200">
+            <JestBufferedHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>">
                 <PooledItemSourceFactory itemSizeInBytes="1024000" initialPoolSize="4" />
             </JestBufferedHttp>
         </AsyncBatchDelivery>
