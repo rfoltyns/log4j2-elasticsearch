@@ -24,6 +24,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 
+import java.util.function.Supplier;
+
 class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
 
     private final UnpooledByteBufAllocator byteBufAllocator;
@@ -48,6 +50,11 @@ class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
     @Override
     public boolean purge(ItemSource<ByteBuf> pooled) {
         return pooled.getSource().release();
+    }
+
+    @Override
+    public Supplier<String> createMetricsSupplier() {
+        return () -> byteBufAllocator.metric().toString();
     }
 
 }

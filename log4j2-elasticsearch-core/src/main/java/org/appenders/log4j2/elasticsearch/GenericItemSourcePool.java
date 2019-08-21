@@ -71,7 +71,6 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     private final boolean monitored;
     private final long monitorTaskInterval;
-    private final Supplier<String> additionalMetricsSupplier;
 
     private final AtomicInteger thIndex = new AtomicInteger();
 
@@ -83,8 +82,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                                  long resizeTimeout,
                                  boolean monitored,
                                  long monitorTaskInterval,
-                                 int initialPoolSize,
-                          Supplier<String> additionalMetricsSupplier) {
+                                 int initialPoolSize) {
         this.poolName = poolName;
         this.pooledObjectOps = pooledObjectOps;
         this.resizePolicy = resizePolicy;
@@ -92,7 +90,6 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         this.initialPoolSize = initialPoolSize;
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
-        this.additionalMetricsSupplier = additionalMetricsSupplier;
     }
 
     private void startRecyclerTask() {
@@ -378,7 +375,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
             this.executor = createExecutor(poolName);
             startRecyclerTask();
             if (monitored) {
-                startMonitorTask(monitorTaskInterval, additionalMetricsSupplier);
+                startMonitorTask(monitorTaskInterval, pooledObjectOps.createMetricsSupplier());
             }
 
             state = State.STARTED;

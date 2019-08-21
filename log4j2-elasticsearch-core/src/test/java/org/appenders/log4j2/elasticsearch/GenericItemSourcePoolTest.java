@@ -58,7 +58,6 @@ public class GenericItemSourcePoolTest {
     public static final int DEFAULT_TEST_ITEM_SIZE_IN_BYTES = 1024;
     public static final long DEFAULT_TEST_MONITOR_TASK_INTERVAL = 1000;
     public static final int DEFAULT_TEST_RESIZE_TIMEOUT = 100;
-    private static final String DEFAULT_ADDITIONAL_METRICS = "test-additionalMetrics";
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "2");
@@ -284,8 +283,7 @@ public class GenericItemSourcePoolTest {
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                1,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                1
                 ));
 
         pool.start();
@@ -325,8 +323,7 @@ public class GenericItemSourcePoolTest {
                 0,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                0
         ));
 
         expectedException.expect(PoolResourceException.class);
@@ -356,8 +353,7 @@ public class GenericItemSourcePoolTest {
                 0,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                0
         ));
 
         expectedException.expect(PoolResourceException.class);
@@ -387,8 +383,7 @@ public class GenericItemSourcePoolTest {
                 0,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                0
         ));
 
 
@@ -419,8 +414,7 @@ public class GenericItemSourcePoolTest {
                 100,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                0
         ));
 
         final AtomicInteger failedCounter = new AtomicInteger();
@@ -488,8 +482,7 @@ public class GenericItemSourcePoolTest {
                 resizeTimeout,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                0
         ));
 
 
@@ -713,8 +706,7 @@ public class GenericItemSourcePoolTest {
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 monitored,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                initialSize,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                initialSize
         );
     }
 
@@ -727,8 +719,7 @@ public class GenericItemSourcePoolTest {
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 monitored,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                initialSize,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                initialSize
         );
     }
 
@@ -745,8 +736,7 @@ public class GenericItemSourcePoolTest {
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 monitored,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                initialSize,
-                () -> DEFAULT_ADDITIONAL_METRICS
+                initialSize
         ) {
             @Override
             ScheduledExecutorService createExecutor() {

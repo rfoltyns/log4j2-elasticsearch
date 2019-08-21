@@ -188,14 +188,8 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
                     resizeTimeout,
                     monitored,
                     monitorTaskInterval,
-                    initialPoolSize,
-                    createMetricSupplier(byteBufAllocator)
+                    initialPoolSize
             );
-        }
-
-        // visible for testing
-        Supplier<String> createMetricSupplier(UnpooledByteBufAllocator byteBufAllocator) {
-            return () -> byteBufAllocator.metric().toString();
         }
 
         /**

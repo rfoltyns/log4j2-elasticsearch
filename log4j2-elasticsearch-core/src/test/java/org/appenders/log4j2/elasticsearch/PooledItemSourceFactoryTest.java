@@ -333,30 +333,8 @@ public class PooledItemSourceFactoryTest {
                 eq(resizeTimeout),
                 eq(monitored),
                 eq(monitorTaskInterval),
-                eq(initialPoolSize),
-                any(Supplier.class)
+                eq(initialPoolSize)
         );
-
-    }
-
-    @Test
-    public void builderProvidesMetricSupplier() {
-
-        // given
-        PooledItemSourceFactory.Builder builder = spy(createDefaultTestSourceFactoryConfig());
-
-        AtomicReference<Supplier> result = new AtomicReference<>();
-        when(builder.createMetricSupplier(any())).thenAnswer((Answer<Supplier>) invocationOnMock -> {
-            result.set((Supplier) invocationOnMock.callRealMethod());
-            return result.get();
-        });
-
-        // when
-        builder.build();
-
-        // then
-        verify(builder).createMetricSupplier(any());
-        assertNotNull(result.get().get());
 
     }
 
