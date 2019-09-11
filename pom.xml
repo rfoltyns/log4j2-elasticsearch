@@ -133,7 +133,53 @@
             <classifier>runtime</classifier>
         </dependency>
     </dependencies>
+
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco.version}</version>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.jacoco</groupId>
+                            <artifactId>org.jacoco.agent</artifactId>
+                            <version>${jacoco.version}</version>
+                            <classifier>runtime</classifier>
+                        </dependency>
+                    </dependencies>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/thirdparty/*</exclude>
+                            <exclude>**/*MixIn.*</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>jacoco-site</id>
+                            <phase>package</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>default-instrument</id>
+                            <goals>
+                                <goal>instrument</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>default-restore-instrumented-classes</id>
+                            <goals>
+                                <goal>restore-instrumented-classes</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -149,41 +195,6 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>org.jacoco.agent</artifactId>
-                        <version>${jacoco.version}</version>
-                        <classifier>runtime</classifier>
-                    </dependency>
-                </dependencies>
-                <configuration>
-                    <excludes>
-                        <exclude>**/thirdparty/*</exclude>
-                        <exclude>**/*MixIn.*</exclude>
-                    </excludes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>jacoco-site</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>default-instrument</id>
-                        <goals>
-                            <goal>instrument</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>default-restore-instrumented-classes</id>
-                        <goals>
-                            <goal>restore-instrumented-classes</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
