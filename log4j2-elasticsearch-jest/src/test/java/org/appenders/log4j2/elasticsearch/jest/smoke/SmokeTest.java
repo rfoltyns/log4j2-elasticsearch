@@ -45,10 +45,10 @@ import org.junit.Ignore;
 @Ignore
 public class SmokeTest extends SmokeTestBase {
 
-    public static final int BATCH_SIZE = 5000;
+    public static final int BATCH_SIZE = 10000;
     public static final int ADDITIONAL_BATCH_SIZE = (int) (BATCH_SIZE * 0.2); // prevent tiny batches by allowing notifier to
     public static final int INITIAL_ITEM_POOL_SIZE = 20000;
-    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 1024;
+    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 256;
     public static final int INITIAL_BATCH_POOL_SIZE = 4;
 
     @BeforeClass
