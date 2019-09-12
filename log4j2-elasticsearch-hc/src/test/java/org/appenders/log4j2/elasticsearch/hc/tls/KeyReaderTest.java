@@ -1,0 +1,69 @@
+package org.appenders.log4j2.elasticsearch.hc.tls;
+
+/*-
+ * #%L
+ * log4j2-elasticsearch
+ * %%
+ * Copyright (C) 2018 Rafal Foltynski
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+
+
+
+import org.appenders.log4j2.elasticsearch.hc.PEMCertInfoTest;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.Security;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Optional;
+
+public class KeyReaderTest {
+
+    @Test
+    public void canReadPrivateKeyWithNoPassword() throws IOException {
+
+        // given
+        KeyReader keyReader = new KeyReader();
+        FileInputStream pemPKey = new FileInputStream(PEMCertInfoTest.TEST_KEY_PATH);
+
+        // when
+        PKCS8EncodedKeySpec keySpec = keyReader.readPrivateKey(pemPKey, Optional.ofNullable(""));
+
+        // then
+        Assert.assertNotNull(keySpec);
+    }
+
+    @Test
+    public void canReadPrivateKeyWithPassword() throws IOException {
+
+        // given
+        Security.addProvider(new BouncyCastleProvider());
+
+        KeyReader keyReader = new KeyReader();
+        FileInputStream pemPKey = new FileInputStream(PEMCertInfoTest.TEST_KEY_PATH_WITH_PASSPHRASE);
+
+        // when
+        PKCS8EncodedKeySpec keySpec = keyReader.readPrivateKey(pemPKey,
+                Optional.ofNullable(PEMCertInfoTest.TEST_KEY_PASSPHRASE)
+        );
+
+        // then
+        Assert.assertNotNull(keySpec);
+    }
+}

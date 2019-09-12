@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="INFO">
+
+    <Appenders>
+        <Elasticsearch name="elasticsearchAsyncBatch">
+            <RollingIndexName indexName="log4j2_test" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
+            <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
+            <JacksonJsonLayout>
+                <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="512" initialPoolSize="10000"
+                                         monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                    <UnlimitedResizePolicy resizeFactor="0.6" />
+                </PooledItemSourceFactory>
+            </JacksonJsonLayout>
+            <AsyncBatchDelivery batchSize="10000"
+                               deliveryInterval="10000" >
+                <IndexTemplate name="test_template" path="classpath:indexTemplate.json" />
+                <HCHttp serverUris="http://localhost:9200"
+                              connTimeout="500"
+                              readTimeout="30000"
+                              maxTotalConnections="8">
+                    <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="5120000" initialPoolSize="3"
+                                             monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                        <UnlimitedResizePolicy resizeFactor="0.70" />
+                    </PooledItemSourceFactory>
+<!--                    <Security>-->
+<!--                        <BasicCredentials username="admin" password="changeme" useAuthToken="true"/>-->
+<!--                        &lt;!&ndash;<JKS keystorePath="${sys:jksCertInfo.keystorePath}"&ndash;&gt;-->
+<!--                             &lt;!&ndash;keystorePassword="${sys:jksCertInfo.keystorePassword}"&ndash;&gt;-->
+<!--                             &lt;!&ndash;truststorePath="${sys:jksCertInfo.truststorePath}"&ndash;&gt;-->
+<!--                             &lt;!&ndash;truststorePassword="${sys:jksCertInfo.truststorePassword}" />&ndash;&gt;-->
+<!--                        <PEM keyPath="${sys:pemCertInfo.keyPath}"-->
+<!--                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"-->
+<!--                             clientCertPath="${sys:pemCertInfo.clientCertPath}"-->
+<!--                             caPath="${sys:pemCertInfo.caPath}" />-->
+<!--                    </Security>-->
+                </HCHttp>
+                <!--<AppenderRefFailoverPolicy>
+                    <AppenderRef ref="CONSOLE" />
+                </AppenderRefFailoverPolicy>-->
+            </AsyncBatchDelivery>
+        </Elasticsearch>
+    </Appenders>
+
+    <Loggers>
+        <AsyncLogger name="elasticsearch" level="info" additivity="false">
+            <AppenderRef ref="elasticsearchAsyncBatch" />
+        </AsyncLogger>
+    </Loggers>
+
+</Configuration>
