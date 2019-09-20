@@ -265,7 +265,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         public static final int DEFAULT_RESPONSE_BUFFER_SIZE = 1024 * 1024;
 
         @PluginBuilderAttribute
-        @Required(message = "No serverUris provided for HttpClientBuilder")
+        @Required(message = "No serverUris provided for " + PLUGIN_NAME)
         protected String serverUris;
 
         @PluginBuilderAttribute
@@ -305,10 +305,10 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         protected void validate() {
             if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for HttpClientBuilder");
+                throw new ConfigurationException("No serverUris provided for " + PLUGIN_NAME);
             }
-            if (pooledResponseBuffers && pooledItemSourceFactory == null) {
-                throw new ConfigurationException("No PooledItemSourceFactory configured for HCHttp");
+            if (pooledItemSourceFactory == null) {
+                throw new ConfigurationException("No PooledItemSourceFactory provided for " + PLUGIN_NAME);
             }
         }
 

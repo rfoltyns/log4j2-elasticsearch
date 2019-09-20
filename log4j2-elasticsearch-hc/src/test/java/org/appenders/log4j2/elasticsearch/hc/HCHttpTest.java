@@ -107,7 +107,7 @@ public class HCHttpTest {
         builder.withItemSourceFactory(null);
 
         expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " configured");
+        expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " provided");
 
         // when
         builder.build();
