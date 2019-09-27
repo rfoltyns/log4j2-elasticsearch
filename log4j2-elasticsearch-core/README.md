@@ -112,7 +112,7 @@ or
 </Appenders>
 ```
 
-NOTE: Be aware that template parsing errors on cluster side DO NOT prevent plugin from loading - error is logged on client side and startup continues.
+NOTE: Be aware that template parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
 
 ### Message output
 
@@ -120,12 +120,11 @@ There are numerous ways to generate JSON output:
 
 #### JacksonJsonLayout
 
-(default)
-
-Since 1.3, [org.appenders.log4j2.elasticsearch.JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java) is the default implemetation of [ItemSourceLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ItemSourceLayout.java). It will serialize LogEvent using Jackson mapper configured with a set of default and (optional) user-provided mixins (see: [JacksonMixInAnnotations docs](https://github.com/FasterXML/jackson-docs/wiki/JacksonMixInAnnotations)). 
+Since 1.3, [org.appenders.log4j2.elasticsearch.JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java) - implemetation of [ItemSourceLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ItemSourceLayout.java) - can be specified to handle incoming LogEvent(s). It will serialize LogEvent(s) using Jackson mapper configured with a set of default and (optional) user-provided mixins (see: [JacksonMixInAnnotations docs](https://github.com/FasterXML/jackson-docs/wiki/JacksonMixInAnnotations)) and (since 1.4) [Virtual Properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/VirtualProperty.java).
 
 Default set of mixins limits LogEvent output by shrinking serialized properties list to a 'reasonable minimum'.
-Customization of all aspects of LogEvent and Message output are allowed using `JacksonMixIn` elements (see: [JacksonMixInAnnotations docs](https://github.com/FasterXML/jackson-docs/wiki/JacksonMixInAnnotations)) elements.
+Additional properties can be specified with [VirtualProperty](#virtual-properties) elements.
+Customizations of all aspects of LogEvent and Message output are allowed using `JacksonMixIn` elements (see: [JacksonMixInAnnotations docs](https://github.com/FasterXML/jackson-docs/wiki/JacksonMixInAnnotations)) elements.
 
 Furthermore, [ItemSource API](#itemsource-api) allows to use pooled [ByteByfItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ByteBufItemSource.java) payloads. Pooling is optional.
 
@@ -133,7 +132,8 @@ Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
 afterburner | Attribute | no | false | if `true`, `com.fasterxml.jackson.module:jackson-module-afterburner` will be used to optimize (de)serialization. Since this dependency is in `provided` scope by default, it MUST be declared explicitly.
 mixins | Element(s) | no | None | Array of `JacksonMixIn` elements. Can be used to override default serialization of LogEvent, Message and related objects
-itemSourceFactory | Element | no | `StringItemSourceFactory` | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available
+virtualProperties (since 1.4) | Element(s) | no | None | Array of `VirtualProperty` elements. Similar to `KeyValuePair`, can be used to define properties resolvable on the fly, not available in LogEvent(s).
+itemSourceFactory | Element | yes (since 1.4) | n/a | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available
 
 Default output:
 
@@ -147,6 +147,7 @@ Example:
         <PooledItemSourceFactory itemSizeInBytes="512" initialPoolSize="10000" />
         <JacksonMixIn mixInClass="foo.bar.CustomLogEventMixIn"
                       targetClass="org.apache.logging.log4j.core.LogEvent"/>
+        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"
     </JacksonJsonLayout>
     ...
 </Elasticsearch>
@@ -154,13 +155,25 @@ Example:
 
 Custom `org.appenders.log4j2.elasticsearch.ItemSourceLayout` can be provided to appender config to use any other serialization mechanism.
 
+##### Virtual Properties
+
+Since 1.4, `VirtualProperty` elements (`KeyValuePair` on steroids) can be appended to serialized objects.
+
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+name | Attribute | yes | n/a |
+value | Attribute | yes | n/a | Static value or contextual variable resolvable with <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>.
+dynamic | Attribute | no | false | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4jLookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4jLookup.java)). Otherwise, will be resolved only on startup.
+
+Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
+
 #### Log4j2 JsonLayout
-JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core. Custom `org.apache.logging.log4j.core.layout.AbstractLayout` can be provided to appender config to use any other serialization mechanism.
+`JsonLayout` will serialize LogEvent using Jackson mapper configured in log4j-core. Custom `org.apache.logging.log4j.core.layout.AbstractLayout` can be provided to appender config to use any other serialization mechanism.
 
 Output may vary across different Log4j2 versions (see: #9)
 
 #### Raw log message
-`messageOnly="true"` can be configured for all the layouts mentioned above to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation.
+`messageOnly="true"` can be configured for all layouts mentioned above to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation.
 
 Raw log message MUST:
  * be logged with Logger that uses `org.apache.logging.log4j.message.MessageFactory` that serializes logged object to a valid JSON output

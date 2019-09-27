@@ -29,6 +29,7 @@ package org.apache.logging.log4j.core.jackson;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.ThreadContext.ContextStack;
@@ -42,9 +43,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.appenders.log4j2.elasticsearch.VirtualPropertiesWriter;
+import org.appenders.log4j2.elasticsearch.VirtualProperty;
 
 @JsonPropertyOrder({ "timeMillis", "loggerName", "level", "marker", "message", "thrown", "threadName"})
 @JsonSerialize(as = LogEvent.class)
+@JsonAppend(props = {
+        @JsonAppend.Prop(
+                name = "virtualProperties", // irrelevant at runtime
+                type = VirtualProperty[].class, // irrelevant at runtime
+                value = VirtualPropertiesWriter.class
+        )
+})
 public abstract class LogEventJacksonJsonMixIn implements LogEvent {
 
     private static final long serialVersionUID = 1L;

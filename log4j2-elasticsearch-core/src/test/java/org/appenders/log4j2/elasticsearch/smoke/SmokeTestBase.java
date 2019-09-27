@@ -53,13 +53,13 @@ public abstract class SmokeTestBase {
     private final AtomicInteger localCounter = new AtomicInteger();
 
     // TODO: expose all via system properties
-    public static final int LIMIT_PER_SEC = 20000;
+    public static final int LIMIT_PER_SEC = 10000;
     public static final int INITIAL_SLEEP_PER_THREAD = 10;
     public static final int MILLIS_BEFORE_SHUTDOWN = 30000;
     public static final int MILLIS_AFTER_SHUTDOWN = 3000000;
     public static final int NUMBER_OF_PRODUCERS = 100;
     public static final int LOG_SIZE = 1;
-    private boolean secure = true;
+    private boolean secure = false;
     private final AtomicInteger numberOfLogs = new AtomicInteger(1000000);
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
@@ -77,7 +77,7 @@ public abstract class SmokeTestBase {
 
     public final void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
 
-        AsyncLoggerContext ctx = (AsyncLoggerContext) LoggerContext.getContext(false);
+        LoggerContext ctx = LoggerContext.getContext(false);
 
         final Configuration config = ctx.getConfiguration();
 

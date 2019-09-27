@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
 import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
@@ -34,7 +35,9 @@ import org.apache.logging.log4j.core.layout.JsonLayout;
 import org.apache.logging.log4j.message.SimpleMessage;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.powermock.api.mockito.PowerMockito;
 
@@ -59,6 +62,9 @@ public class ElasticsearchAppenderTest {
 
     private static final String TEST_APPENDER_NAME = "testAppender";
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Test
     public void builderReturnsNonNullObject() {
 
@@ -72,38 +78,44 @@ public class ElasticsearchAppenderTest {
         assertNotNull(appender);
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test
     public void builderFailsWhenAppenderNameIsNull() {
 
         // given
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withName(null);
 
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No name provided");
+
         // when
         builder.build();
     }
 
     @Test
-    public void builderInitializesDefaultLayoutWhenLayoutIsNotProvided() throws IllegalAccessException {
+    public void builderFailsLayoutIsNotProvided() {
 
         // given
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withLayout(null);
 
-        // when
-        ElasticsearchAppender appender = builder.build();
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No layout provided");
 
-        // then
-        assertNotNull(PowerMockito.field(ElasticsearchAppender.class, "layout").get(appender));
+        // when
+        builder.build();
 
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test
     public void builderFailsWhenBatchDeliveryIsNull() {
 
         // given
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withBatchDelivery(null);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No batchDelivery [AsyncBatchDelivery] provided");
 
         // when
         builder.build();
@@ -347,7 +359,9 @@ public class ElasticsearchAppenderTest {
     }
 
     private LifeCycle createLifeCycleTestObject() {
-        return createTestElasticsearchAppenderBuilder(JacksonJsonLayout.newBuilder().build()).build();
+        return createTestElasticsearchAppenderBuilder(JacksonJsonLayout.newBuilder()
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+                .build()).build();
     }
 
     private LogEvent createTestLogEvent() {
@@ -386,7 +400,10 @@ public class ElasticsearchAppenderTest {
     }
 
     public static Builder createTestElasticsearchAppenderBuilder() {
-        return createTestElasticsearchAppenderBuilder(null);
+        return createTestElasticsearchAppenderBuilder(new JacksonJsonLayout.Builder()
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+                .build()
+        );
     }
 
     public static Builder createTestElasticsearchAppenderBuilder(AbstractLayout layout) {

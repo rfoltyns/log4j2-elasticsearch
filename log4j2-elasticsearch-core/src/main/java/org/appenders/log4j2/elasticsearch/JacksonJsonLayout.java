@@ -25,11 +25,13 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
@@ -43,7 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Allows to customize serialization of incoming events
+ * Allows to customize serialization of incoming events. See {@link Builder} API docs for more details
  */
 @Plugin(name = JacksonJsonLayout.PLUGIN_NAME, category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
 public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements ItemSourceLayout, LifeCycle {
@@ -104,11 +106,19 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         @PluginElement(JacksonMixIn.ELEMENT_TYPE)
         private JacksonMixIn[] mixins = new JacksonMixIn[0];
 
+        @PluginElement("VirtualProperty")
+        private VirtualProperty[] virtualProperties = new VirtualProperty[0];
+
         @PluginBuilderAttribute("afterburner")
         private boolean useAfterburner;
 
         @Override
         public JacksonJsonLayout build() {
+
+            if (getConfiguration() == null) {
+                throw new ConfigurationException("No Configuration instance provided for " + PLUGIN_NAME);
+            }
+
             return new JacksonJsonLayout(
                     getConfiguration(),
                     createConfiguredWriter(Arrays.asList(mixins)),
@@ -130,7 +140,29 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
                 objectMapper.addMixIn(mixin.getTargetClass(), mixin.getMixInClass());
             }
 
+            for (VirtualProperty property : virtualProperties) {
+                if (!property.isDynamic()) {
+                    property.setValue(createValueResolver().resolve(property.getValue()));
+                }
+            }
+
+            SerializationConfig customConfig = objectMapper.getSerializationConfig()
+                    .with(new JacksonHandlerInstantiator(
+                            virtualProperties,
+                            createValueResolver()
+                    ));
+
+            objectMapper.setConfig(customConfig);
+
             return objectMapper.writer(new MinimalPrettyPrinter());
+
+        }
+
+        /**
+         * @return resolver used when {@link VirtualProperty}(-ies) configured
+         */
+        protected ValueResolver createValueResolver() {
+            return new Log4j2Lookup(getConfiguration().getStrSubstitutor());
         }
 
         protected ObjectMapper createDefaultObjectMapper() {
@@ -157,6 +189,23 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
          */
         public Builder withMixins(JacksonMixIn... mixins) {
             this.mixins = mixins;
+            return this;
+        }
+
+        /**
+         * Allows to append properties to serialized {@link LogEvent} and {@link Message}.
+         *
+         * Non-dynamic properties ({@code VirtualProperty#dynamic == false}) will be resolved on {@link #build()} call.
+         *
+         * Dynamic properties ({@code VirtualProperty#isDynamic == true}) will NOT be resolved on {@link #build()} call and resolution will be deferred to underlying {@link VirtualPropertiesWriter}.
+         *
+         * Similar to Log4j2 {@code KeyValuePair}.
+         *
+         * @param virtualProperties properties to be appended to JSON output
+         * @return this
+         */
+        public Builder withVirtualProperties(VirtualProperty... virtualProperties) {
+            this.virtualProperties = virtualProperties;
             return this;
         }
 

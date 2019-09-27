@@ -24,8 +24,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.core.jackson.ExtendedLog4j2JsonModule;
 import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
@@ -37,19 +41,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,6 +106,21 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
+    public void throwsOnNullConfiguration() {
+
+        // given
+        JacksonJsonLayout.Builder builder = createDefaultTestBuilder()
+                .setConfiguration(null);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No Configuration instance provided for " + JacksonJsonLayout.PLUGIN_NAME);
+
+        // when
+        builder.build();
+
+    }
+
+    @Test
     public void builderBuildsLayoutWithDefaultItemSourceFactoryIfNotConfigured() {
 
         // given
@@ -142,7 +163,7 @@ public class JacksonJsonLayoutTest {
         JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         builder.withAfterburner(true);
 
-        ObjectMapper objectMapper = Mockito.mock(ObjectMapper.class);
+        ObjectMapper objectMapper = spy(new ObjectMapper());
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
 
         // when
@@ -162,7 +183,8 @@ public class JacksonJsonLayoutTest {
         JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
         builder.withMixins(JacksonMixInTest.createDefaultTestBuilder().build());
 
-        ObjectMapper objectMapper = Mockito.mock(ObjectMapper.class);
+        ObjectMapper objectMapper = spy(ObjectMapper.class);
+
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
 
         // when
@@ -175,6 +197,82 @@ public class JacksonJsonLayoutTest {
         Module.SetupContext setupContext = mock(Module.SetupContext.class);
         captor.getValue().setupModule(setupContext);
         verify(setupContext).setMixInAnnotations(eq(LogEvent.class), eq(LogEventJacksonJsonMixIn.class));
+
+    }
+
+    @Test
+    public void builderBuildsMapperWithCustomHandlerInstantiator() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ObjectMapper objectMapper = spy(ObjectMapper.class);
+
+        when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
+
+        // when
+        builder.build();
+
+        // then
+        ArgumentCaptor<SerializationConfig> captor = ArgumentCaptor.forClass(SerializationConfig.class);
+        verify(objectMapper).setConfig(captor.capture());
+
+        HandlerInstantiator handlerInstantiator = captor.getValue().getHandlerInstantiator();
+        assertTrue(handlerInstantiator instanceof JacksonHandlerInstantiator);
+
+    }
+
+    @Test
+    public void builderResolvesNonDynamicVirtualProperties() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(builder.createValueResolver()).thenReturn(valueResolver);
+
+        String expectedValue = UUID.randomUUID().toString();
+        VirtualProperty virtualProperty = new VirtualProperty.Builder()
+                .withDynamic(false)
+                .withName(UUID.randomUUID().toString())
+                .withValue(expectedValue)
+                .build();
+
+        builder.withVirtualProperties(virtualProperty);
+
+        // when
+        builder.build();
+
+        // then
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(valueResolver).resolve(captor.capture());
+
+        assertEquals(expectedValue, captor.getValue());
+    }
+
+    @Test
+    public void builderDoesNotResolveDynamicVirtualProperties() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(builder.createValueResolver()).thenReturn(valueResolver);
+
+        String expectedValue = UUID.randomUUID().toString();
+        VirtualProperty virtualProperty = new VirtualProperty.Builder()
+                .withDynamic(true)
+                .withName(UUID.randomUUID().toString())
+                .withValue(expectedValue)
+                .build();
+
+        builder.withVirtualProperties(virtualProperty);
+
+        // when
+        builder.build();
+
+        // then
+        verify(valueResolver, never()).resolve(anyString());
 
     }
 
@@ -205,8 +303,23 @@ public class JacksonJsonLayoutTest {
 
     }
 
+    @Test
+    public void builderCreatesLog4j2ValueResolver() {
+
+        // given
+        JacksonJsonLayout.Builder builder  = spy(createDefaultTestBuilder());
+
+        // when
+        ValueResolver result = builder.createValueResolver();
+
+        // then
+        assertTrue(result instanceof Log4j2Lookup);
+
+    }
+
     private JacksonJsonLayout.Builder createDefaultTestBuilder() {
-        return JacksonJsonLayout.newBuilder();
+        return JacksonJsonLayout.newBuilder()
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration());
     }
 
     @Test

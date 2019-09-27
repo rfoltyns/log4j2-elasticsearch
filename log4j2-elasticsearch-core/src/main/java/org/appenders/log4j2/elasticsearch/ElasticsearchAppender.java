@@ -35,10 +35,6 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
@@ -123,7 +119,7 @@ public class ElasticsearchAppender extends AbstractAppender {
             }
 
             if (layout == null) {
-                layout = JacksonJsonLayout.newBuilder().build();
+                throw new ConfigurationException("No layout provided for Elasticsearch appender");
             }
 
             return new ElasticsearchAppender(name, filter, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
