@@ -22,9 +22,8 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
-import org.apache.logging.log4j.status.StatusLogger;
 
-import java.util.*;
+import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ExtendedBulk extends Bulk {

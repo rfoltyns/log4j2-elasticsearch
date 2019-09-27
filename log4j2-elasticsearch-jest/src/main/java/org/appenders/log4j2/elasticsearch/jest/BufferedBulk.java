@@ -23,11 +23,11 @@ package org.appenders.log4j2.elasticsearch.jest;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
-import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
