@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.ObjectMessage;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
@@ -142,8 +143,12 @@ public class HCBatchOperationsTest {
     }
 
     private JacksonJsonLayout createDefaultTestJacksonJsonLayout(PooledItemSourceFactory itemSourceFactory) {
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
-        builder.withItemSourceFactory(itemSourceFactory);
+
+        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+        );
+
         return builder.build();
     }
 
