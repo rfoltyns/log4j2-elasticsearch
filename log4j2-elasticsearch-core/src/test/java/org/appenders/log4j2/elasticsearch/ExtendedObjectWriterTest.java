@@ -28,7 +28,6 @@ import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
@@ -39,8 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

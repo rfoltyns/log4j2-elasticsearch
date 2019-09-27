@@ -35,7 +35,6 @@ import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.function.Supplier;
 
 /**
  * Uses underlying {@link ItemSourcePool} to get {@link ItemSource} instances.
