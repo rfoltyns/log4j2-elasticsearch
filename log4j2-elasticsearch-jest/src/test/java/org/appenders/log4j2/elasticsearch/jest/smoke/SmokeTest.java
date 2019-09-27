@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
 
 
 import io.searchbox.client.config.HttpClientConfig;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
@@ -33,6 +34,7 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.jest.BufferedJestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
@@ -109,8 +111,13 @@ public class SmokeTest extends SmokeTestBase {
                 .withPattern("yyyy-MM-dd-HH")
                 .build();
 
+        JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+                .withVirtualProperties(
+                        new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
+                        new VirtualProperty("progField", "constantValue", false)
+                );
 
-        JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder();
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
                     .withPoolName("itemPool")

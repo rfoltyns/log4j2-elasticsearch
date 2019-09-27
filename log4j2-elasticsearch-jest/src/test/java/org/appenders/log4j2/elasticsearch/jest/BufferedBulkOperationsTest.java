@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.searchbox.core.Bulk;
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.ObjectMessage;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
@@ -246,8 +247,12 @@ public class BufferedBulkOperationsTest {
     }
 
     private JacksonJsonLayout createDefaultTestJacksonJsonLayout(PooledItemSourceFactory bufferedSourceFactory) {
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder());
-        builder.withItemSourceFactory(bufferedSourceFactory);
+
+        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder()
+                .withItemSourceFactory(bufferedSourceFactory)
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+        );
+
         return builder.build();
     }
 
