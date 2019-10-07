@@ -25,18 +25,42 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
+import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class JestBulkOperationsTest {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void nonStringItemSourceIsNotSupported() {
+
+        // given
+        BatchOperations<Bulk> bulkOperations = JestHttpObjectFactoryTest.createTestObjectFactoryBuilder().build().createBatchOperations();
+
+        ItemSource itemSource = Object::new;
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("Non String payloads are not supported");
+
+        // when
+        bulkOperations.createBatchItem("testIndex", itemSource);
+
+    }
 
     @Test
     public void bulkContainsAddedStringItem() {
@@ -74,7 +98,7 @@ public class JestBulkOperationsTest {
         Bulk bulk = batchBuilder.build();
 
         // then
-        verify(itemSource).getSource();
+        verify(itemSource, times(2)).getSource();
         JestBatchIntrospector introspector = new JestBatchIntrospector();
         Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
 

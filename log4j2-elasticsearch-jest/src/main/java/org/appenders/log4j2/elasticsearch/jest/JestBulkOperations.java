@@ -22,9 +22,11 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 
+import io.netty.buffer.ByteBuf;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -56,10 +58,13 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
 
     @Override
     public Object createBatchItem(String indexName, ItemSource source) {
-        return new Index.Builder(source.getSource())
+        if (source.getSource() instanceof String) {
+            return new Index.Builder(source.getSource())
                 .index(indexName)
                 .type(mappingType)
                 .build();
+        }
+        throw new ConfigurationException("Non String payloads are not supported by this factory. Make sure that proper ClientObjectFactory implementation is configured");
     }
 
     @Override
