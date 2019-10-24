@@ -38,6 +38,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -249,10 +250,9 @@ public class BulkEmitterTest {
 
         // when
         emitter.add(new Object());
-        Thread.currentThread().sleep(2000);
 
         // then
-        verify(dummyObserver).apply(any());
+        verify(dummyObserver, timeout(2000)).apply(any());
 
     }
 
@@ -265,6 +265,8 @@ public class BulkEmitterTest {
         emitter.addListener(dummyObserver);
 
         assertTrue(TEST_BATCH_SIZE > 1);
+
+        emitter.start();
 
         // when
         emitter.add(new Object());
@@ -284,6 +286,8 @@ public class BulkEmitterTest {
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 10, new TestBatchOperations());
         Function<TestBatch, Boolean> dummyObserver = dummyObserver();
         emitter.addListener(dummyObserver);
+
+        emitter.start();
 
         // when
         emitter.add(new Object());

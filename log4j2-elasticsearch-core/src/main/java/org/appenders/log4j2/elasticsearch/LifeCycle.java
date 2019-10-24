@@ -22,16 +22,56 @@ package org.appenders.log4j2.elasticsearch;
 
 public interface LifeCycle {
 
+    enum State {
+        STARTED, STOPPED
+    }
+
+    /**
+     * Returns LifeCycle of given object
+     *
+     * @param o object to be checked for LifeCycle presence
+     * @return LifeCycle of given object, {@link LifeCycle#NOOP} otherwise
+     */
+    static LifeCycle of(Object o) {
+        return o instanceof LifeCycle ? (LifeCycle) o : NOOP;
+    }
+
+    LifeCycle NOOP = new Noop();
+
     void start();
 
-    void stop();
+    /**
+     * Delegates to {@link #stop(long, boolean)} by default
+     */
+    default void stop() {
+        stop(0, false);
+    }
+
+    default LifeCycle stop(long timeout, boolean runInBackground) {
+        return this;
+    }
 
     boolean isStarted();
 
     boolean isStopped();
 
-    enum State {
-        STARTED, STOPPED
+    class Noop implements LifeCycle {
+
+        @Override
+        public void start() {
+
+        }
+
+        @Override
+        public boolean isStarted() {
+            return false;
+        }
+
+        @Override
+        public boolean isStopped() {
+            return false;
+        }
+
     }
 
 }

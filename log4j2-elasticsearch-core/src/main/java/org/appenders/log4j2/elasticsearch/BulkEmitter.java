@@ -33,6 +33,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static java.lang.Thread.sleep;
+
 /**
  * Time- and size-based batch scheduler. Uses provided {@link BatchOperations} implementation to produce batches and
  * delivers them to provided listener.
@@ -55,8 +57,18 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private final int deliveryInterval;
     private final BatchOperations<BATCH_TYPE> batchOperations;
     private final Timer scheduler;
+    private final DelayedShutdown delayedShutdown = new DelayedShutdown(this::doStop)
+            .onDecrement(remaining -> {
+                LOG.info(
+                        "Waiting for last items... {}s, {} items enqueued",
+                        remaining / 1000,
+                        size.get()
+                );
+                notifyListener();
+            });
 
     private Function<BATCH_TYPE, Boolean> listener;
+
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
@@ -153,17 +165,27 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     @Override
     public void stop() {
+        stop(0, false);
+    }
 
-        LOG.debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
+    @Override
+    public LifeCycle stop(long timeout, boolean runInBackground) {
+        delayedShutdown.delay(timeout).start(runInBackground);
+        return this;
+    }
 
-        notifyListener();
-        scheduler.cancel();
-        scheduler.purge();
+    private void doStop() {
+        if (!isStopped()) {
+            LOG.debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
 
-        state = State.STOPPED;
+            notifyListener();
+            scheduler.cancel();
+            scheduler.purge();
 
-        LOG.debug("{} stopped", getClass().getSimpleName());
+            state = State.STOPPED;
 
+            LOG.debug("{} stopped", getClass().getSimpleName());
+        }
     }
 
     @Override

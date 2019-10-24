@@ -30,14 +30,18 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
+import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -94,6 +98,30 @@ public class BatchDeliveryTest {
 
         // when
         batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void builderConfiguresShutdownDelayMillis() {
+
+        // given
+        long expectedShutdownDelayMillis = 10 + new Random().nextInt(100);
+        FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withFailoverPolicy(failoverPolicy)
+                .withShutdownDelayMillis(expectedShutdownDelayMillis);
+
+        AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+        asyncBatchDelivery.start();
+
+        // when
+        asyncBatchDelivery.stop();
+
+        // then
+        ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+        verify(LifeCycle.of(failoverPolicy)).stop(captor.capture(), anyBoolean());
+        assertEquals((Long) expectedShutdownDelayMillis, captor.getValue());
 
     }
 
@@ -286,7 +314,7 @@ public class BatchDeliveryTest {
         batchDelivery.stop();
 
         // then
-        verify(batchEmitter).stop();
+        verify(batchEmitter).stop(anyLong(), anyBoolean());
 
     }
 
@@ -327,6 +355,45 @@ public class BatchDeliveryTest {
 
         // then
         verify(objectFactory).stop();
+
+    }
+
+
+    @Test
+    public void lifecycleStartStartsFailoverPolicyOnlyOnce() {
+
+        // given
+        FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withFailoverPolicy(failoverPolicy)
+                .build();
+
+        // when
+        batchDelivery.start();
+        batchDelivery.start();
+
+        // then
+        verify(LifeCycle.of(failoverPolicy)).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsFailoverPolicyOnlyOnce() {
+
+        // given
+        FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withFailoverPolicy(failoverPolicy)
+                .build();
+
+        batchDelivery.start();
+
+        // when
+        batchDelivery.stop();
+        batchDelivery.stop();
+
+        // then
+        verify(LifeCycle.of(failoverPolicy)).stop(anyLong(), anyBoolean());
 
     }
 
@@ -387,4 +454,40 @@ public class BatchDeliveryTest {
     }
 
 
+    private class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
+
+        private State state = State.STOPPED;
+
+        @Override
+        public void deliver(Object failedPayload) {
+
+        }
+
+        @Override
+        public void start() {
+            state = State.STARTED;
+        }
+
+        @Override
+        public void stop() {
+            state = State.STOPPED;
+        }
+
+        @Override
+        public LifeCycle stop(long timeout, boolean runInBackground) {
+            state = State.STOPPED;
+            return this;
+        }
+
+        @Override
+        public boolean isStarted() {
+            return state == State.STARTED;
+        }
+
+        @Override
+        public boolean isStopped() {
+            return state == State.STOPPED;
+        }
+
+    }
 }

@@ -48,7 +48,13 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     private final IndexTemplate indexTemplate;
     private final ClientObjectFactory<Object, Object> objectFactory;
+    private final FailoverPolicy failoverPolicy;
+    private final long delayShutdownInMillis;
 
+    /**
+     * @deprecated As of 1.5, this constructor will be removed. Use {@link Builder} instead.
+     */
+    @Deprecated
     public AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
         this.batchOperations = objectFactory.createBatchOperations();
         this.batchEmitter = createBatchEmitterServiceProvider()
@@ -59,6 +65,22 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                         failoverPolicy);
         this.indexTemplate = indexTemplate;
         this.objectFactory = objectFactory;
+        this.failoverPolicy = failoverPolicy;
+        this.delayShutdownInMillis = Builder.DEFAULT_SHUTDOWN_DELAY;
+    }
+
+    protected AsyncBatchDelivery(Builder builder) {
+        this.batchOperations = builder.clientObjectFactory.createBatchOperations();
+        this.batchEmitter = createBatchEmitterServiceProvider()
+                .createInstance(
+                        builder.batchSize,
+                        builder.deliveryInterval,
+                        builder.clientObjectFactory,
+                        builder.failoverPolicy);
+        this.indexTemplate = builder.indexTemplate;
+        this.objectFactory = builder.clientObjectFactory;
+        this.failoverPolicy = builder.failoverPolicy;
+        this.delayShutdownInMillis = builder.shutdownDelayMillis;
     }
 
     /**
@@ -93,7 +115,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         public static final int DEFAULT_BATCH_SIZE = 1000;
 
         /**
-         * Default: 1000
+         * Default: 1000 ms
          */
         public static final int DEFAULT_DELIVERY_INTERVAL = 1000;
 
@@ -101,6 +123,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
          * Default: {@link NoopFailoverPolicy}
          */
         public static final FailoverPolicy DEFAULT_FAILOVER_POLICY = new NoopFailoverPolicy();
+
+        /**
+         * Default: 5000 ms
+         */
+        public static final long DEFAULT_SHUTDOWN_DELAY = 5000L;
 
         @PluginElement("elasticsearchClientFactory")
         @Required(message = "No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
@@ -118,12 +145,15 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         @PluginElement("indexTemplate")
         private IndexTemplate indexTemplate;
 
+        @PluginBuilderAttribute("shutdownDelayMillis")
+        public long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
+
         @Override
         public AsyncBatchDelivery build() {
             if (clientObjectFactory == null) {
                 throw new ConfigurationException("No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
             }
-            return new AsyncBatchDelivery(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy, indexTemplate);
+            return new AsyncBatchDelivery(this);
         }
 
         public Builder withClientObjectFactory(ClientObjectFactory clientObjectFactory) {
@@ -151,6 +181,10 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             return this;
         }
 
+        public Builder withShutdownDelayMillis(long shutdownDelayMillis) {
+            this.shutdownDelayMillis = shutdownDelayMillis;
+            return this;
+        }
     }
 
     // ==========
@@ -170,6 +204,10 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
         batchEmitter.start();
 
+        if (!LifeCycle.of(failoverPolicy).isStarted()) {
+            LifeCycle.of(failoverPolicy).start();
+        }
+
         state = State.STARTED;
     }
 
@@ -178,8 +216,15 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
         LOG.debug("Stopping {}", getClass().getSimpleName());
 
-        if (!batchEmitter.isStopped()){
-            batchEmitter.stop();
+        if (!LifeCycle.of(failoverPolicy).isStopped()) {
+            // Shutdown MUST happen in background to allow the execution to continue
+            // and allow last items flushed by emitter to fail (in case of outage downstream)
+            // and get handled properly
+            LifeCycle.of(failoverPolicy).stop(delayShutdownInMillis, true);
+        }
+
+        if (!batchEmitter.isStopped()) {
+            batchEmitter.stop(delayShutdownInMillis, false);
         }
 
         if (!objectFactory.isStopped()) {
