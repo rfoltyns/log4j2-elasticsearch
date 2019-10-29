@@ -242,7 +242,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
             Response result = createClient().execute(request, responseHandler);
             if (!result.isSucceeded()) {
-                throw new ConfigurationException(result.getErrorMessage());
+                LOG.error(result.getErrorMessage());
             }
         } finally {
             byteBuf.release();

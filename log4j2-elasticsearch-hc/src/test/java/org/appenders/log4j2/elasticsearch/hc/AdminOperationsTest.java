@@ -42,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -108,25 +109,48 @@ public class AdminOperationsTest {
     }
 
     @Test
-    public void throwsIfTemplateActionNotSucceeded() throws IOException {
+    public void errorMessageIsRetrievedIfTemplateActionNotSucceeded() throws IOException {
 
         //given
         HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
 
         HttpClient httpClient = mockedHttpClient(factory);
 
-        mockedResult(httpClient, false);
+        Response responseMock = mockedResult(httpClient, false);
 
         IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
                 .withPath("classpath:indexTemplate.json")
                 .withName("testName")
                 .build());
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("IndexTemplate not added");
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(responseMock).getErrorMessage();
+
+    }
+
+    @Test
+    public void errorMessageIsNotRetrievedIfTemplateActionHasSucceeded() throws IOException {
+
+        //given
+        HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
+
+        HttpClient httpClient = mockedHttpClient(factory);
+
+        Response responseMock = mockedResult(httpClient, true);
+
+        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+                .withPath("classpath:indexTemplate.json")
+                .withName("testName")
+                .build());
 
         // when
         factory.execute(indexTemplate);
+
+        // then
+        verify(responseMock, never()).getErrorMessage();
 
     }
 
@@ -148,11 +172,11 @@ public class AdminOperationsTest {
 
     }
 
-    private void mockedResult(HttpClient httpClient, boolean isSucceeded) throws IOException {
-        mockedResult(httpClient, isSucceeded, new AtomicReference<>());
+    private Response mockedResult(HttpClient httpClient, boolean isSucceeded) throws IOException {
+        return mockedResult(httpClient, isSucceeded, new AtomicReference<>());
     }
 
-    private void mockedResult(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) throws IOException {
+    private Response mockedResult(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) throws IOException {
         BatchResult result = mock(BatchResult.class);
         when(httpClient.execute(any(), any())).thenAnswer(invocation -> {
             IndexTemplateRequest templateRequest = invocation
@@ -163,6 +187,8 @@ public class AdminOperationsTest {
         when(result.getErrorMessage()).thenReturn("IndexTemplate not added");
 
         when(result.isSucceeded()).thenReturn(isSucceeded);
+
+        return result;
     }
 
     private HttpClient mockedHttpClient(HCHttp factory) {
