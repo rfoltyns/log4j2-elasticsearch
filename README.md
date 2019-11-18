@@ -7,6 +7,8 @@
 
 This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
+Latest released code (1.3.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.3).
+
 Project consists of:
 * `log4j-elasticsearch-core` - skeleton provider for conrete implementations
 * `log4j2-elasticsearch-hc` - optimized Apache Async HTTP client compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
@@ -30,7 +32,8 @@ Project consists of:
 * (1.3) Fully configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
 * (1.4 - H2 2019) Reliable, file-based failover/retry
 * (1.4) `log4j2-elasticsearch-hc` module - optimized async HTTP client
-  
+* (1.4) Custom output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
+
 ## Usage
 
 1. Add this snippet to your `pom.xml` file:
