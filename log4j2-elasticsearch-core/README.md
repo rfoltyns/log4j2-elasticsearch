@@ -163,7 +163,7 @@ Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
 name | Attribute | yes | n/a |
 value | Attribute | yes | n/a | Static value or contextual variable resolvable with <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>.
-dynamic | Attribute | no | false | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4jLookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4jLookup.java)). Otherwise, will be resolved only on startup.
+dynamic | Attribute | no | false | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4j2Lookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4j2Lookup.java)). Otherwise, will be resolved only on startup.
 
 Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
 
