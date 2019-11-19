@@ -20,12 +20,13 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-import io.netty.buffer.ByteBuf;
+import io.searchbox.action.AbstractDocumentTargetedAction;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestClientFactory;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.DocumentResult;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
@@ -41,8 +42,8 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 
-import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -112,11 +113,15 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
         return bulk -> {
             BufferedBulk bufferedBulk = (BufferedBulk)bulk;
             LOG.warn(String.format("Batch of %s items failed. Redirecting to %s", bufferedBulk.getActions().size(), failover.getClass().getName()));
-            bufferedBulk.getActions().forEach(failedItem -> {
-                ByteBuf byteBuf = ((BufferedIndex) failedItem).source.getSource();
-                failover.deliver(byteBuf.toString(0, byteBuf.writerIndex(), Charset.defaultCharset()));
-            });
-            return true;
+            try {
+                bufferedBulk.getActions().stream()
+                        .map(item -> failedItemOps.createItem(((BufferedIndex) item)))
+                        .forEach(failover::deliver);
+                return true;
+            } catch (Exception e) {
+                LOG.error("Unable to execute failover", e);
+                return false;
+            }
         };
     }
 
@@ -189,6 +194,10 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             if (pooledItemSourceFactory == null) {
                 throw new ConfigurationException("No PooledItemSourceFactory configured for BufferedJestHttpObjectFactory");
             }
+        }
+
+        protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps() {
+            return new BufferedHttpFailedItemOps();
         }
 
         public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {

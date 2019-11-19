@@ -34,6 +34,7 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -208,11 +209,11 @@ public class JestHttpObjectFactoryTest {
         config.createFailureHandler(failoverPolicy).apply(bulk);
 
         // then
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(failoverPolicy, times(2)).deliver((String) captor.capture());
+        ArgumentCaptor<FailedItemSource> captor = ArgumentCaptor.forClass(FailedItemSource.class);
+        verify(failoverPolicy, times(2)).deliver(captor.capture());
 
-        assertTrue(captor.getAllValues().contains(payload1));
-        assertTrue(captor.getAllValues().contains(payload2));
+        assertTrue(captor.getAllValues().get(0).getSource().equals(payload1));
+        assertTrue(captor.getAllValues().get(1).getSource().equals(payload2));
     }
 
     @Test

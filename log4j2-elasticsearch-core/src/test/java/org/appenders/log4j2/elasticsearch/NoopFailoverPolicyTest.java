@@ -21,9 +21,14 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class NoopFailoverPolicyTest {
 
@@ -41,14 +46,22 @@ public class NoopFailoverPolicyTest {
     }
 
     @Test
-    public void deliverReturnsImmediately() {
+    public void deliverFailedItemSourceDelegatesToGenericAPI() {
 
         // given
         NoopFailoverPolicy.Builder builder = NoopFailoverPolicy.newBuilder();
-        FailoverPolicy failoverPolicy = builder.build();
+        FailoverPolicy<Object> failoverPolicy = spy(builder.build());
+
+        FailedItemSource<Object> failedItemSource = mock(FailedItemSource.class);
+
+        ItemSource itemSource = mock(ItemSource.class);
+        when(failedItemSource.getSource()).thenReturn(itemSource);
 
         // when
-        failoverPolicy.deliver(null);
+        failoverPolicy.deliver(failedItemSource);
+
+        // then
+        verify(failoverPolicy).deliver(itemSource);
 
     }
 }

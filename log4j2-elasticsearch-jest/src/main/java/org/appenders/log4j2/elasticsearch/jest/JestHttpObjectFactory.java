@@ -21,11 +21,14 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
+import io.searchbox.action.AbstractDocumentTargetedAction;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.DocumentResult;
+import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
 import io.searchbox.indices.template.PutTemplate;
 import io.searchbox.indices.template.TemplateAction;
@@ -45,12 +48,13 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
+import org.appenders.log4j2.elasticsearch.jest.failover.JestHttpFailedItemOps;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
@@ -74,6 +78,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     protected final String mappingType;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
+
+    protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps;
 
     private JestClient client;
 
@@ -153,6 +159,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.discoveryEnabled = builder.discoveryEnabled;
         this.auth = builder.auth;
         this.mappingType = builder.mappingType;
+        this.failedItemOps = builder.failedItemOps;
     }
 
     @Override
@@ -219,9 +226,18 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
             @Override
             public Boolean apply(Bulk bulk) {
-                List<Object> items = introspector.items(bulk);
-                LOG.warn(String.format("Batch of %s items failed. Redirecting to %s", items.size(), failover.getClass().getName()));
-                items.forEach(failedItem -> failover.deliver(failedItem));
+
+                Collection items = introspector.items(bulk);
+
+                LOG.warn(String.format("Batch of %s items failed. Redirecting to %s",
+                        items.size(),
+                        failover.getClass().getName()));
+
+                items.forEach(item -> {
+                    Index failedAction = (Index) item;
+                    failover.deliver(failedItemOps.createItem(failedAction));
+                });
+
                 return true;
             }
 
@@ -313,12 +329,18 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         @PluginBuilderAttribute
         protected String mappingType = DEFAULT_MAPPING_TYPE;
 
+        protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps = failedItemOps();
+
         @Override
         public JestHttpObjectFactory build() {
 
             validate();
 
             return new JestHttpObjectFactory(this);
+        }
+
+        protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps() {
+            return new JestHttpFailedItemOps();
         }
 
         protected void validate() {

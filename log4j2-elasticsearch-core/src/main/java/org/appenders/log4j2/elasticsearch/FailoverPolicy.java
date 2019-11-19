@@ -21,6 +21,8 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+
 /**
  * Provides a failure handler interface. Implementation of this class MUST handle failed items gracefully.
  *
@@ -36,5 +38,14 @@ public interface FailoverPolicy<T> {
      * @param failedPayload payload to be handled
      */
     void deliver(T failedPayload);
+
+    /**
+     * SHOULD provide an alternate method of delivery
+     *
+     * @param failedPayload payload to be handled
+     */
+    default void deliver(FailedItemSource<T> failedPayload) {
+        deliver(failedPayload.getSource()); // fallback to existing API for backwards compatibility
+    }
 
 }

@@ -35,6 +35,7 @@ import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -263,11 +264,11 @@ public class HCHttpTest {
         config.createFailureHandler(failoverPolicy).apply(request);
 
         // then
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<FailedItemSource> captor = ArgumentCaptor.forClass(FailedItemSource.class);
         verify(failoverPolicy, times(2)).deliver(captor.capture());
 
-        assertTrue(captor.getAllValues().contains(source1));
-        assertTrue(captor.getAllValues().contains(source2));
+        assertTrue(captor.getAllValues().get(0).getSource().equals(source1.getSource()));
+        assertTrue(captor.getAllValues().get(1).getSource().equals(source2.getSource()));
     }
 
     @Test
@@ -449,6 +450,35 @@ public class HCHttpTest {
         verify(batchRequest, times(1)).completed();
 
         assertEquals(batchRequest, captor.getValue());
+
+    }
+
+    @Test
+    public void failureHandlerDoesNotThrowOnFailoverException() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
+        HCHttp objectFactory = spy(builder.build());
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+
+        BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
+        BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
+
+        Function<BatchRequest, Boolean> failoverHandler = objectFactory.createFailureHandler(failedPayload -> {
+            throw new ClassCastException("test exception");
+        });
+
+        ResponseHandler<BatchResult> responseHandler = objectFactory.createResultHandler(batchRequest, failoverHandler);
+
+        BatchResult result = mock(BatchResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(batchRequest, times(1)).completed();
 
     }
 

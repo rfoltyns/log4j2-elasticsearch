@@ -26,8 +26,7 @@ import io.searchbox.action.JestActionIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
 
 /**
  * Accesses {@link Bulk} non-private members
@@ -37,14 +36,11 @@ public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
     private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector = new JestActionIntrospector();
 
     @Override
-    public List<Object> items(Bulk introspected) {
-        return introspected.bulkableActions
-            .stream()
-            .map(item -> itemIntrospector().getPayload((AbstractDocumentTargetedAction<DocumentResult>) item))
-            .collect(Collectors.toList());
+    public Collection items(Bulk introspected) {
+        return introspected.bulkableActions;
     }
 
-    public BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector() {
+    public BatchItemIntrospector itemIntrospector() {
         return itemIntrospector;
     }
 

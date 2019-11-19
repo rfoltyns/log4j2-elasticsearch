@@ -47,6 +47,8 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
+import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -82,6 +84,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     protected final String mappingType;
     protected final boolean pooledResponseBuffers;
     protected final int pooledResponseBuffersSizeInBytes;
+    protected final FailedItemOps<IndexRequest> failedItemOps;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
@@ -98,16 +101,22 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         this.mappingType = builder.mappingType;
         this.pooledResponseBuffers = builder.pooledResponseBuffers;
         this.pooledResponseBuffersSizeInBytes = builder.pooledResponseBuffersSizeInBytes;
+        this.failedItemOps = builder.failedItemOps;
         this.objectReader = configuredReader();
     }
 
     @Override
     public Function<BatchRequest, Boolean> createFailureHandler(FailoverPolicy failover) {
-        return batch -> {
-            BatchRequest batchRequest = batch;
+        return batchRequest -> {
             LOG.warn(String.format("BatchRequest of %s indexRequests failed. Redirecting to %s", batchRequest.getIndexRequests().size(), failover.getClass().getName()));
-            batchRequest.getIndexRequests().forEach(failedItem -> {
-                failover.deliver(failedItem.source);
+            batchRequest.getIndexRequests().forEach(indexRequest -> {
+                // TODO: FailoverPolicyChain
+                try {
+                    failover.deliver(failedItemOps.createItem(indexRequest));
+                } catch (Exception e) {
+                    // let's handle here as exception thrown at this stage will cause the client to shutdown
+                    LOG.error(e.getMessage(), e);
+                }
             });
             return true;
         };
@@ -293,7 +302,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         protected PooledItemSourceFactory pooledItemSourceFactory;
 
         @PluginBuilderAttribute
-        private String mappingType = "_doc";
+        protected String mappingType = "_doc";
+
+        protected FailedItemOps<IndexRequest> failedItemOps = createFailedItemOps();
 
         @Override
         public HCHttp build() {
@@ -310,6 +321,10 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             if (pooledItemSourceFactory == null) {
                 throw new ConfigurationException("No PooledItemSourceFactory provided for " + PLUGIN_NAME);
             }
+        }
+
+        protected FailedItemOps<IndexRequest> createFailedItemOps() {
+            return new HCFailedItemOps();
         }
 
         public Builder withServerUris(String serverUris) {

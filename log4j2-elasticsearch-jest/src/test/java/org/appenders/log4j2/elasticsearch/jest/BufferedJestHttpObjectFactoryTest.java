@@ -40,6 +40,7 @@ import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -48,6 +49,7 @@ import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
@@ -252,11 +254,14 @@ public class BufferedJestHttpObjectFactoryTest {
         config.createFailureHandler(failoverPolicy).apply(bulk);
 
         // then
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<FailedItemSource> captor = ArgumentCaptor.forClass(FailedItemSource.class);
         verify(failoverPolicy, times(2)).deliver(captor.capture());
 
-        assertTrue(captor.getAllValues().contains(payload1));
-        assertTrue(captor.getAllValues().contains(payload2));
+        FailedItemSource<ByteBuf> item1 = captor.getAllValues().get(0);
+        assertTrue(item1.getSource().toString(Charset.defaultCharset()).equals(payload1));
+
+        FailedItemSource<ByteBuf> item2 = captor.getAllValues().get(1);
+        assertTrue(item2.getSource().toString(Charset.defaultCharset()).equals(payload2));
     }
 
     @Test
@@ -362,6 +367,31 @@ public class BufferedJestHttpObjectFactoryTest {
         verify((BufferedBulk)bulk, times(1)).completed();
 
         assertEquals(bulk, captor.getValue());
+
+    }
+
+     @Test
+    public void failureHandlerDoesNotRethrowExceptions() {
+
+        // given
+        BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
+        BufferedJestHttpObjectFactory objectFactory = spy(builder.build());
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+
+
+        Function<Bulk, Boolean> failoverHandler = objectFactory.createFailureHandler(failedPayload -> {
+            throw new ClassCastException("test exception");
+        });
+
+        Bulk bulk = createTestBatch(payload1);
+        JestResultHandler<JestResult> responseHandler = objectFactory.createResultHandler(bulk, failoverHandler);
+
+        JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        responseHandler.completed(result);
 
     }
 

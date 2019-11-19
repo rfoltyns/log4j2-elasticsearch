@@ -21,7 +21,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-
+import io.searchbox.action.AbstractAction;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
@@ -30,13 +30,15 @@ import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -78,7 +80,8 @@ public class JestBulkOperationsTest {
 
         // then
         JestBatchIntrospector introspector = new JestBatchIntrospector();
-        Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
+        AbstractAction action = (AbstractAction) introspector.items(bulk).iterator().next();
+        assertEquals(testPayload, introspector.itemIntrospector().getPayload(action));
 
     }
 
@@ -100,7 +103,8 @@ public class JestBulkOperationsTest {
         // then
         verify(itemSource, times(2)).getSource();
         JestBatchIntrospector introspector = new JestBatchIntrospector();
-        Assert.assertEquals(testPayload, introspector.items(bulk).get(0));
+        AbstractAction action = (AbstractAction) introspector.items(bulk).iterator().next();
+        assertEquals(testPayload, introspector.itemIntrospector().getPayload(action));
 
     }
 
@@ -118,7 +122,7 @@ public class JestBulkOperationsTest {
         String type = item.getType();
 
         // then
-        Assert.assertEquals("index", type);
+        assertEquals("index", type);
 
     }
 
@@ -137,7 +141,7 @@ public class JestBulkOperationsTest {
         String type = item.getType();
 
         // then
-        Assert.assertEquals(expectedMappingType, type);
+        assertEquals(expectedMappingType, type);
 
     }
 
