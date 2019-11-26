@@ -43,7 +43,6 @@ import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
@@ -74,7 +73,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
      * @param bufferedSourceFactory
      * @param auth
      *
-     * @deprecated As of 1.5, this constructor will be removed. Use {@link Builder} instead
+     * @deprecated As of 1.5, this constructor will be removed. Use {@link #BufferedJestHttpObjectFactory(Builder)} instead
      */
     @Deprecated
     protected BufferedJestHttpObjectFactory(
@@ -87,7 +86,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             PooledItemSourceFactory bufferedSourceFactory,
             Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth
     ) {
-        this(
+        super(
                 serverUris,
                 connTimeout,
                 readTimeout,
@@ -95,39 +94,17 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 defaultMaxTotalConnectionPerRoute,
                 Runtime.getRuntime().availableProcessors(),
                 discoveryEnabled,
-                bufferedSourceFactory,
                 auth,
-                new JacksonMixIn[]{},
                 DEFAULT_MAPPING_TYPE
         );
+        this.itemSourceFactory = bufferedSourceFactory;
+        this.mixIns = new JacksonMixIn[]{};
     }
 
-    private BufferedJestHttpObjectFactory(
-            Collection<String> serverUris,
-            int connTimeout,
-            int readTimeout,
-            int maxTotalConnections,
-            int defaultMaxTotalConnectionPerRoute,
-            int ioThreadCount,
-            boolean discoveryEnabled,
-            PooledItemSourceFactory bufferedSourceFactory,
-            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth,
-            JacksonMixIn[] mixIns,
-            String mappingType
-    ) {
-        super(
-                serverUris,
-                connTimeout,
-                readTimeout,
-                maxTotalConnections,
-                defaultMaxTotalConnectionPerRoute,
-                ioThreadCount,
-                discoveryEnabled,
-                auth,
-                mappingType
-        );
-        this.itemSourceFactory = bufferedSourceFactory;
-        this.mixIns = mixIns;
+    protected BufferedJestHttpObjectFactory(Builder builder) {
+        super(builder);
+        this.itemSourceFactory = builder.pooledItemSourceFactory;
+        this.mixIns = builder.mixIns;
     }
 
     @Override
@@ -202,18 +179,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
             validate();
 
-            return new BufferedJestHttpObjectFactory(
-                    Arrays.asList(serverUris.split(";")),
-                    connTimeout,
-                    readTimeout,
-                    maxTotalConnection,
-                    defaultMaxTotalConnectionPerRoute,
-                    ioThreadCount,
-                    discoveryEnabled,
-                    pooledItemSourceFactory,
-                    auth,
-                    mixIns,
-                    mappingType);
+            return new BufferedJestHttpObjectFactory(this);
         }
 
         protected void validate() {

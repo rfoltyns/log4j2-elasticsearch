@@ -88,7 +88,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
      * @param defaultMaxTotalConnectionPerRoute Number of connections available per Apache CPool
      * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
      * @param auth Security configuration
-     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String)} instead.
+     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #JestHttpObjectFactory(Builder)} instead.
      *
      */
     @Deprecated
@@ -120,8 +120,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
      * @param ioThreadCount number of 'I/O Dispatcher' threads started by Apache HC `IOReactor`
      * @param auth Security configuration
      * @param mappingType Elasticsearch mapping type name. MAY be set to '_doc' for Elasticsearch 7.x compatibility
-     *
+     * @deprecated As of 1.5, this constructor will be removed. Use {@link #JestHttpObjectFactory(Builder)} instead
      */
+    @Deprecated
     protected JestHttpObjectFactory(Collection<String> serverUris,
                                     int connTimeout,
                                     int readTimeout,
@@ -140,6 +141,18 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.discoveryEnabled = discoveryEnabled;
         this.auth = auth;
         this.mappingType = mappingType;
+    }
+
+    protected JestHttpObjectFactory(Builder builder) {
+        this.serverUris = Arrays.asList(builder.serverUris.split(";"));
+        this.connTimeout = builder.connTimeout;
+        this.readTimeout = builder.readTimeout;
+        this.maxTotalConnections = builder.maxTotalConnection;
+        this.defaultMaxTotalConnectionsPerRoute = builder.defaultMaxTotalConnectionPerRoute;
+        this.ioThreadCount = builder.ioThreadCount;
+        this.discoveryEnabled = builder.discoveryEnabled;
+        this.auth = builder.auth;
+        this.mappingType = builder.mappingType;
     }
 
     @Override
@@ -305,17 +318,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
             validate();
 
-            return new JestHttpObjectFactory(
-                    Arrays.asList(serverUris.split(";")),
-                    connTimeout,
-                    readTimeout,
-                    maxTotalConnection,
-                    defaultMaxTotalConnectionPerRoute,
-                    ioThreadCount,
-                    discoveryEnabled,
-                    auth,
-                    mappingType
-            );
+            return new JestHttpObjectFactory(this);
         }
 
         protected void validate() {
