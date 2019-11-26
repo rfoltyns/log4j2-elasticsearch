@@ -36,7 +36,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * <p>Resizable pool of {@link ItemSource<T>} elements.
+ * <p>Resizable pool of {@link ItemSource} elements.
  * <p>Automatically expands when it runs out of elements. Expansion size depends on {@link ResizePolicy} configuration.
  * <p>Automatically recycles unused elements. Recycle size depends on {@link ResizePolicy} configuration.
  * <p>Pooled elements can be added explicitly with {@link #incrementPoolSize(int)} and/or {@link #incrementPoolSize()} methods.

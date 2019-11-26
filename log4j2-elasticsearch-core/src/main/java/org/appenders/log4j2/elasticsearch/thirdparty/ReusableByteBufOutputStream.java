@@ -47,6 +47,8 @@ public class ReusableByteBufOutputStream extends OutputStream implements DataOut
 
     /**
      * Creates a new stream which writes data to the specified {@code buffer}.
+     *
+     * @param buffer {@code io.nett.buffer.ByteBuf} to work with
      */
     public ReusableByteBufOutputStream(ByteBuf buffer) {
         if (buffer == null) {

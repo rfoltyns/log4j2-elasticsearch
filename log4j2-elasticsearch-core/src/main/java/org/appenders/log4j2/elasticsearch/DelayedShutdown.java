@@ -8,24 +8,22 @@ import java.util.function.Consumer;
 /**
  * Allows to define multi-phase shutdown procedures. Currently, 3 phases can be defined:
  * <ul>
- * <li>{@link #onStart} is run immediately after shutdown is started</li>.
+ * <li>{@link #onStart} is run immediately after shutdown is started
  * Suitable for actual shutdown task or preparation for shutdown, e.g.: shutting down thread pools.
  * <li>{@link #onDecrement(Consumer)} is run after {@link #onStart} each {@link #decrementInMillis}
- * while {@code delay - timeTakenToExecuteOnStart - decrementInMillis * numberOfOnDecrementExecutions > 0}</li>
+ * while {@code delay - timeTakenToExecuteOnStart - decrementInMillis * numberOfOnDecrementExecutions > 0}
  * Suitable for shutdown monitoring.
- * <li>{@link #afterDelay(Runnable)} is run after defined {@link #delay(long)}</li>.
+ * <li>{@link #afterDelay(Runnable)} is run after defined {@link #delay(long)}
  * Suitable for actual shutdown task, cleanup tasks, etc.
  * </ul>
- * <p>
- * {@link #onError(Consumer)} can be specified to handle any {@link #onStart} and {@link #onDecrement} runtime errors.
+ * <p>{@link #onError(Consumer)} can be specified to handle any {@link #onStart} and {@link #onDecrement} runtime errors.
  * Once executed, {@link #afterDelay(Runnable)} will be executed immediately regardless of remaining delay.
  * <p>
  * {@link #onError(Consumer)} will NOT be executed after {@link #afterDelay(Runnable)} errors.
- * <p>
- * If {@link #onStart} takes more than {@link #delay}, it will continue until completion.
+ * <p>If {@link #onStart} takes more than {@link #delay}, it will continue until completion.
  * In this case {@link #onDecrement(Consumer)} will never be executed
  * and shutdown will proceed to {@link #afterDelay(Runnable)} immediately
- * <p>
+ * 
  */
 public class DelayedShutdown extends Thread {
 
