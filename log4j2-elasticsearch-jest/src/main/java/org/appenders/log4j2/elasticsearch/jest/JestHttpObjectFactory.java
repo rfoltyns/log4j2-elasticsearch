@@ -239,10 +239,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         try {
             JestResult result = createClient().execute(templateAction);
             if (!result.isSucceeded()) {
-                throw new ConfigurationException("IndexTemplate not added: " + result.getErrorMessage());
+                LOG.error("IndexTemplate not added: " + result.getErrorMessage());
             }
         } catch (IOException e) {
-            throw new ConfigurationException("IndexTemplate not added: " + e.getMessage());
+            LOG.error("IndexTemplate not added: " + e.getMessage());
         }
     }
 
