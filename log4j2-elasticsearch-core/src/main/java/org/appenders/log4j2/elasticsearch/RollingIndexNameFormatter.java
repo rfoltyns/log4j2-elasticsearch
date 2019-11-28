@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Format: {@code <indexName>-<datePattern>}
  */
 @Plugin(name = "RollingIndexName", category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
-public class RollingIndexNameFormatter implements IndexNameFormatter {
+public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
     public static final String SEPARATOR = "-";
 

@@ -32,7 +32,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import static org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter.PLUGIN_NAME;
 
 @Plugin(name = PLUGIN_NAME, category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
-public class NoopIndexNameFormatter implements IndexNameFormatter {
+public class NoopIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
     static final String PLUGIN_NAME = "IndexName";
 
