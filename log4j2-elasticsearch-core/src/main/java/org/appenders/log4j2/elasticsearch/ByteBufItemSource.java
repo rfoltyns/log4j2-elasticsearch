@@ -28,7 +28,7 @@ import io.netty.buffer.ByteBuf;
  */
 public class ByteBufItemSource implements ItemSource<ByteBuf> {
 
-    private ByteBuf source;
+    private final ByteBuf source;
     private final ReleaseCallback releaseCallback;
 
     public ByteBufItemSource(ByteBuf source, ReleaseCallback releaseCallback) {
