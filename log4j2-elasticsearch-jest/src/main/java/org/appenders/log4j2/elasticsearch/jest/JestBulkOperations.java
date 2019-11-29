@@ -21,8 +21,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-
-import io.netty.buffer.ByteBuf;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
