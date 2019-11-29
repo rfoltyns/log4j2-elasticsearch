@@ -20,30 +20,11 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.ItemSource;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-public class FailedItemSource<T> implements ItemSource<T> {
-
-    private final ItemSource<T> itemSource;
-    private final FailedItemInfo info;
-
-    public FailedItemSource(ItemSource<T> itemSource, FailedItemInfo info) {
-        this.itemSource = itemSource;
-        this.info = info;
-    }
-
-    public FailedItemInfo getInfo() {
-        return info;
-    }
-
-    @Override
-    public T getSource() {
-        return itemSource.getSource();
-    }
-
-    @Override
-    public void release() {
-        this.itemSource.release();
-    }
+@JsonSerialize(using = ByteBufSerializer.class)
+@JsonDeserialize(using = ByteBufDeserializer.class)
+public class CompositeByteBufMixIn {
 
 }

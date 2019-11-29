@@ -22,28 +22,23 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
-public class FailedItemSource<T> implements ItemSource<T> {
+import java.util.List;
 
-    private final ItemSource<T> itemSource;
-    private final FailedItemInfo info;
+public class KeySequenceConfigKeys implements ItemSource<KeySequenceConfigKeys> {
 
-    public FailedItemSource(ItemSource<T> itemSource, FailedItemInfo info) {
-        this.itemSource = itemSource;
-        this.info = info;
+    private final List<CharSequence> keys;
+
+    public KeySequenceConfigKeys(List<CharSequence> keySequenceConfigKeys) {
+        this.keys = keySequenceConfigKeys;
     }
 
-    public FailedItemInfo getInfo() {
-        return info;
-    }
-
-    @Override
-    public T getSource() {
-        return itemSource.getSource();
+    public List<CharSequence> getKeys() {
+        return keys;
     }
 
     @Override
-    public void release() {
-        this.itemSource.release();
+    public KeySequenceConfigKeys getSource() {
+        return this;
     }
 
 }

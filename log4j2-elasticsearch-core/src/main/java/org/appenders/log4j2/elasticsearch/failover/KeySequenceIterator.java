@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2019 Rafal Foltynski
+ * Copyright (C) 2019 - 2020 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,30 +20,28 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.ItemSource;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicLong;
 
-public class FailedItemSource<T> implements ItemSource<T> {
+class KeySequenceIterator implements Iterator<CharSequence> {
 
-    private final ItemSource<T> itemSource;
-    private final FailedItemInfo info;
+    private final KeySequence keySequence;
+    private final AtomicLong remaining;
 
-    public FailedItemSource(ItemSource<T> itemSource, FailedItemInfo info) {
-        this.itemSource = itemSource;
-        this.info = info;
-    }
-
-    public FailedItemInfo getInfo() {
-        return info;
+    public KeySequenceIterator(KeySequence keySequence, long maxKeys) {
+        this.keySequence = keySequence;
+        this.remaining = new AtomicLong(maxKeys);
     }
 
     @Override
-    public T getSource() {
-        return itemSource.getSource();
+    public boolean hasNext() {
+        return remaining.get() > 0 && keySequence.readerKeysAvailable() > 0;
     }
 
     @Override
-    public void release() {
-        this.itemSource.release();
+    public CharSequence next() {
+        remaining.decrementAndGet();
+        return keySequence.nextReaderKey();
     }
 
 }

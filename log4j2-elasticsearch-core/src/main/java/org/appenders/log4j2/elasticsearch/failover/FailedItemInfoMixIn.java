@@ -20,30 +20,14 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.ItemSource;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class FailedItemSource<T> implements ItemSource<T> {
+public abstract class FailedItemInfoMixIn {
 
-    private final ItemSource<T> itemSource;
-    private final FailedItemInfo info;
-
-    public FailedItemSource(ItemSource<T> itemSource, FailedItemInfo info) {
-        this.itemSource = itemSource;
-        this.info = info;
-    }
-
-    public FailedItemInfo getInfo() {
-        return info;
-    }
-
-    @Override
-    public T getSource() {
-        return itemSource.getSource();
-    }
-
-    @Override
-    public void release() {
-        this.itemSource.release();
-    }
+    @JsonCreator
+    public FailedItemInfoMixIn(
+            @JsonProperty(value = "targetName", required = true) String targetName
+    ) {}
 
 }

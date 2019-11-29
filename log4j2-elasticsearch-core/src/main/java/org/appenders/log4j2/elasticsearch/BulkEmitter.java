@@ -67,7 +67,6 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     private Function<BATCH_TYPE, Boolean> listener;
 
-
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this.maxSize = atSize;
         this.deliveryInterval = intervalInMillis;

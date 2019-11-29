@@ -52,9 +52,9 @@ public class NoopFailoverPolicyTest {
         NoopFailoverPolicy.Builder builder = NoopFailoverPolicy.newBuilder();
         FailoverPolicy<Object> failoverPolicy = spy(builder.build());
 
-        FailedItemSource<Object> failedItemSource = mock(FailedItemSource.class);
+        ItemSource<Object> failedItemSource = mock(FailedItemSource.class);
 
-        ItemSource itemSource = mock(ItemSource.class);
+        Object itemSource = mock(ItemSource.class);
         when(failedItemSource.getSource()).thenReturn(itemSource);
 
         // when

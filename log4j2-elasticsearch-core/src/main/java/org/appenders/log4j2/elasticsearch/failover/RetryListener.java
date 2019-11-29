@@ -20,30 +20,8 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.ItemSource;
-
-public class FailedItemSource<T> implements ItemSource<T> {
-
-    private final ItemSource<T> itemSource;
-    private final FailedItemInfo info;
-
-    public FailedItemSource(ItemSource<T> itemSource, FailedItemInfo info) {
-        this.itemSource = itemSource;
-        this.info = info;
-    }
-
-    public FailedItemInfo getInfo() {
-        return info;
-    }
-
-    @Override
-    public T getSource() {
-        return itemSource.getSource();
-    }
-
-    @Override
-    public void release() {
-        this.itemSource.release();
-    }
-
+/**
+ * Marker interface. Helps to dispatch events in {@link org.appenders.log4j2.elasticsearch.FailoverPolicy}
+ */
+public interface RetryListener extends FailoverListener<FailedItemSource> {
 }

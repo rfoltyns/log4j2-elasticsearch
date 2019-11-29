@@ -112,7 +112,12 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     @Override
     public Function<BatchRequest, Boolean> createFailureHandler(FailoverPolicy failover) {
         return batchRequest -> {
-            LOG.warn(String.format("BatchRequest of %s indexRequests failed. Redirecting to %s", batchRequest.getIndexRequests().size(), failover.getClass().getName()));
+
+            long start = System.currentTimeMillis();
+            int batchSize = batchRequest.getIndexRequests().size();
+
+            LOG.warn("BatchRequest of {} indexRequests failed. Redirecting to {}", batchSize, failover.getClass().getName());
+
             batchRequest.getIndexRequests().forEach(indexRequest -> {
                 // TODO: FailoverPolicyChain
                 try {
@@ -122,6 +127,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                     LOG.error(e.getMessage(), e);
                 }
             });
+
+            LOG.trace("BatchRequest of {} indexRequests redirected in {} ms", batchSize, System.currentTimeMillis() - start);
+
             return true;
         };
     }

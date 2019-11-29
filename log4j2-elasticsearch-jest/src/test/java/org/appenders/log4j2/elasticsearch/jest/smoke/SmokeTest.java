@@ -35,6 +35,9 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
+import org.appenders.log4j2.elasticsearch.failover.FileBackedRetryFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
+import org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.jest.BufferedJestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
@@ -99,10 +102,21 @@ public class SmokeTest extends SmokeTestBase {
                 .withPath("classpath:indexTemplate-7.json")
                 .build();
 
+        KeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(2);
+
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
                 .withDeliveryInterval(1000)
+                .withFailoverPolicy(FileBackedRetryFailoverPolicy.newBuilder()
+                        .withKeySequenceSelector(keySequenceSelector)
+                        .withFileName("failedItems.chronicleMap")
+                        .withAverageValueSize(2048)
+                        .withNumberOfEntries(1000000)
+                        .withBatchSize(5000)
+                        .withRetryDelay(3000)
+                        .withMonitored(true)
+                        .build())
                 .withIndexTemplate(indexTemplate)
                 .build();
 

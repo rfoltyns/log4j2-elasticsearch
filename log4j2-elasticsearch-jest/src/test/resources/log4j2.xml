@@ -61,9 +61,15 @@
                              caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
                 </JestBufferedHttp>
-                <!--<AppenderRefFailoverPolicy>
-                    <AppenderRef ref="CONSOLE" />
-                </AppenderRefFailoverPolicy>-->
+                <FileBackedRetryFailoverPolicy fileName="failedItems.chronicleMap"
+                                               numberOfEntries="1000000"
+                                               averageValueSize="2048"
+                                               batchSize="5000"
+                                               retryDelay="3000"
+                                               monitored="true"
+                                               monitorTaskInterval="30000">
+                    <SingleKeySequenceSelector sequenceId="1"/>
+                </FileBackedRetryFailoverPolicy>
             </AsyncBatchDelivery>
         </Elasticsearch>
     </Appenders>

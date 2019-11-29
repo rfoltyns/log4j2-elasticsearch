@@ -35,6 +35,10 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
+import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
+import org.appenders.log4j2.elasticsearch.failover.FileBackedRetryFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
+import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
@@ -48,7 +52,7 @@ public class SmokeTest extends SmokeTestBase {
 
     public static final int BATCH_SIZE = 10000;
     public static final int ADDITIONAL_BATCH_SIZE = (int) (BATCH_SIZE * 0.2); // prevent tiny batches by allowing notifier to 
-    public static final int INITIAL_ITEM_POOL_SIZE = 20000;
+    public static final int INITIAL_ITEM_POOL_SIZE = 40000;
     public static final int INITIAL_ITEM_SIZE_IN_BYTES = 256;
     public static final int INITIAL_BATCH_POOL_SIZE = 4;
 
@@ -73,9 +77,10 @@ public class SmokeTest extends SmokeTestBase {
 
         httpObjectFactoryBuilder.withConnTimeout(500)
                 .withReadTimeout(20000)
-                .withIoThreadCount(8)
+                .withIoThreadCount(4)
                 .withMaxTotalConnections(8)
-                .withMappingType("_doc");
+                .withMappingType("_doc")
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4));
 
         if (secured) {
             httpObjectFactoryBuilder.withServerUris("https://localhost:9200")
@@ -89,15 +94,34 @@ public class SmokeTest extends SmokeTestBase {
                 .withPath("classpath:indexTemplate-7.json")
                 .build();
 
+        KeySequenceSelector keySequenceSelector =
+                new Log4j2SingleKeySequenceSelector.Builder()
+                        .withSequenceId(1)
+                        .build();
+
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
                 .withDeliveryInterval(1000)
                 .withIndexTemplate(indexTemplate)
+                .withFailoverPolicy(new FileBackedRetryFailoverPolicy.Builder()
+                        .withKeySequenceSelector(keySequenceSelector)
+                        .withFileName("failedItems.chronicleMap")
+                        .withNumberOfEntries(1000000)
+                        .withAverageValueSize(2048)
+                        .withFileName("c:/Users/bh/Downloads/failedItems.chronicleMap")
+                        .withNumberOfEntries(1000000)
+                        .withAverageValueSize(2024)
+                        .withBatchSize(5000)
+                        .withRetryDelay(4000)
+                        .withMonitored(true)
+                        .withMonitorTaskInterval(1000)
+                        .build())
+                .withShutdownDelayMillis(10000)
                 .build();
 
         IndexNameFormatter indexNameFormatter = RollingIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2_test")
+                .withIndexName("log4j2_hc")
                 .withPattern("yyyy-MM-dd-HH")
                 .build();
 

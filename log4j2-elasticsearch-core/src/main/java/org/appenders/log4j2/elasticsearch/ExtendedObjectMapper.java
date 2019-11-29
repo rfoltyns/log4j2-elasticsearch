@@ -33,8 +33,18 @@ public class ExtendedObjectMapper extends ObjectMapper {
         super(jsonFactory);
     }
 
+    public ExtendedObjectMapper(ExtendedObjectMapper extendedObjectMapper) {
+        super(extendedObjectMapper);
+    }
+
     public ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
         return new ExtendedObjectWriter(this, config, rootType, pp);
+    }
+
+    @Override
+    public ObjectMapper copy() {
+        _checkInvalidCopy(ExtendedObjectMapper.class);
+        return new ExtendedObjectMapper(this);
     }
 
 }

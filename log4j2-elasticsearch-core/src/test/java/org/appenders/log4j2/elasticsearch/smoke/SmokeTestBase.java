@@ -53,12 +53,12 @@ public abstract class SmokeTestBase {
     private final AtomicInteger localCounter = new AtomicInteger();
 
     // TODO: expose all via system properties
-    public static final int LIMIT_PER_SEC = 10000;
+    public static final int LIMIT_PER_SEC = 5000;
     public static final int INITIAL_SLEEP_PER_THREAD = 10;
-    public static final int MILLIS_BEFORE_SHUTDOWN = 30000;
-    public static final int MILLIS_AFTER_SHUTDOWN = 3000000;
+    public static final int MILLIS_BEFORE_SHUTDOWN = 60000;
+    public static final int MILLIS_AFTER_SHUTDOWN = 60000;
     public static final int NUMBER_OF_PRODUCERS = 100;
-    public static final int LOG_SIZE = 1;
+    public static final int LOG_SIZE = 300;
     private boolean secure = false;
     private final AtomicInteger numberOfLogs = new AtomicInteger(1000000);
 
@@ -216,7 +216,6 @@ public abstract class SmokeTestBase {
 
     <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
 
-
         final AtomicInteger sleepTime = new AtomicInteger(INITIAL_SLEEP_PER_THREAD);
         CountDownLatch latch = new CountDownLatch(numberOfProducers);
 
@@ -224,6 +223,7 @@ public abstract class SmokeTestBase {
         AtomicInteger totalCounter = new AtomicInteger();
         for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
             new Thread(() -> {
+
                 for (;numberOfLogs.decrementAndGet() >= 0; totalCounter.incrementAndGet()) {
                     logger.info(marker, logSupplier.get());
                     localCounter.incrementAndGet();
@@ -232,6 +232,7 @@ public abstract class SmokeTestBase {
                     } catch (InterruptedException e) {
                         interrupted();
                     }
+
                 }
                 latch.countDown();
             }).start();
@@ -240,7 +241,7 @@ public abstract class SmokeTestBase {
         while (latch.getCount() != 0) {
             sleep(1000);
             int count = localCounter.getAndSet(0);
-            if (count > LIMIT_PER_SEC) {
+            if (count > LIMIT_PER_SEC && sleepTime.get() != 1) {
                 sleepTime.incrementAndGet();
             } else if (sleepTime.get() > 1) {
                 sleepTime.decrementAndGet();

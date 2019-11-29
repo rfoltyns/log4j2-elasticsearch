@@ -52,7 +52,7 @@ public class DelayedShutdown extends Thread {
     /**
      * Default: 1000
      */
-    private static final int DEFAULT_DECREMENT_IN_MILLIS = 1000;
+    public static final int DEFAULT_DECREMENT_IN_MILLIS = 1000;
 
     private final Runnable onStart;
 

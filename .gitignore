@@ -1,3 +1,6 @@
+# Project test files
+*/**/*.chronicleMap
+
 # IntelliJ
 .idea
 

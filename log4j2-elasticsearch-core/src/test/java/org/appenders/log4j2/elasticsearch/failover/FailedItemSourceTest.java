@@ -71,26 +71,6 @@ public class FailedItemSourceTest {
     }
 
     @Test
-    public void failureIdCanBeChanged() {
-
-        // given
-        ItemSource<Object> itemSource = mock(ItemSource.class);
-        FailedItemSource failedItemSource = new FailedItemSource<>(
-                itemSource,
-                mock(FailedItemInfo.class));
-        CharSequence expectedFailureId = UUID.randomUUID().toString();
-
-        assertNull(failedItemSource.getFailureId());
-
-        // when
-        failedItemSource.setFailureId(expectedFailureId);
-
-        // then
-        assertEquals(expectedFailureId, failedItemSource.getFailureId());
-
-    }
-
-    @Test
     public void targetNameCanBeRetrieved() {
 
         // given

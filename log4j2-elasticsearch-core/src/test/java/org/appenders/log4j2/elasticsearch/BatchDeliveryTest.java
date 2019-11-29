@@ -23,6 +23,9 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery.Builder;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -251,6 +254,63 @@ public class BatchDeliveryTest {
     }
 
     @Test
+    public void failoverListenerDelegatesToBatchDelivery() {
+
+        // given
+        AsyncBatchDelivery batchDelivery = spy(createTestBatchDeliveryBuilder().build());
+
+        FailoverListener listener = batchDelivery.failoverListener();
+
+        FailedItemInfo failedItemInfo = mock(FailedItemInfo.class);
+        String expectedTargetName = UUID.randomUUID().toString();
+        when(failedItemInfo.getTargetName()).thenReturn(expectedTargetName);
+
+        FailedItemSource failedItemSource = mock(FailedItemSource.class);
+        when(failedItemSource.getInfo()).thenReturn(failedItemInfo);
+
+        // when
+        listener.notify(failedItemSource);
+
+        // then
+        verify(batchDelivery).add(eq(expectedTargetName), eq(failedItemSource));
+
+    }
+
+    @Test
+    public void lifecycleStartSetsUpFailoverListenerIfFailoverPolicyIsNotStarted() {
+
+        TestFailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withFailoverPolicy(failoverPolicy)
+                .build();
+
+        // when
+        batchDelivery.start();
+
+        // then
+        verify(failoverPolicy).addListener(any());
+
+    }
+
+    @Test
+    public void lifecycleStartDoesNotSetUpFailoverListenerIfFailoverPolicyStarted() {
+
+        TestFailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+        BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withFailoverPolicy(failoverPolicy)
+                .build();
+
+        failoverPolicy.start();
+
+        // when
+        batchDelivery.start();
+
+        // then
+        verify(failoverPolicy, never()).addListener(any());
+
+    }
+
+    @Test
     public void lifecycleStartStartsBatchEmitter() {
 
         // given
@@ -383,6 +443,7 @@ public class BatchDeliveryTest {
         FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
         BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withFailoverPolicy(failoverPolicy)
+                .withShutdownDelayMillis(0)
                 .build();
 
         batchDelivery.start();
@@ -434,7 +495,9 @@ public class BatchDeliveryTest {
     }
 
     private LifeCycle createLifeCycleTestObject() {
-        return createTestBatchDeliveryBuilder().build();
+        return createTestBatchDeliveryBuilder()
+                .withShutdownDelayMillis(0)
+                .build();
     }
 
     static class TestAsyncBatchDelivery extends AsyncBatchDelivery {
