@@ -33,8 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import static java.lang.Thread.sleep;
-
 /**
  * Time- and size-based batch scheduler. Uses provided {@link BatchOperations} implementation to produce batches and
  * delivers them to provided listener.
