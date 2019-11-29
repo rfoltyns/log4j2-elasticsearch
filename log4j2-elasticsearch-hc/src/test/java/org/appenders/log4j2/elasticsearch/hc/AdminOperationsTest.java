@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 
 import io.netty.buffer.ByteBuf;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -54,7 +53,7 @@ public class AdminOperationsTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void passesIndexTemplateToClient() throws IOException {
+    public void passesIndexTemplateToClient() {
 
         //given
         HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
@@ -82,7 +81,7 @@ public class AdminOperationsTest {
     }
 
     @Test
-    public void errorMessageContainsExceptionMessageOnTemplateActionFailure() throws IOException {
+    public void errorMessageContainsExceptionMessageOnTemplateActionFailure() {
 
         //given
         HttpClient httpClient = mock(HttpClient.class);
@@ -172,11 +171,11 @@ public class AdminOperationsTest {
 
     }
 
-    private Response mockedResult(HttpClient httpClient, boolean isSucceeded) throws IOException {
+    private Response mockedResult(HttpClient httpClient, boolean isSucceeded) {
         return mockedResult(httpClient, isSucceeded, new AtomicReference<>());
     }
 
-    private Response mockedResult(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) throws IOException {
+    private Response mockedResult(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) {
         BatchResult result = mock(BatchResult.class);
         when(httpClient.execute(any(), any())).thenAnswer(invocation -> {
             IndexTemplateRequest templateRequest = invocation
