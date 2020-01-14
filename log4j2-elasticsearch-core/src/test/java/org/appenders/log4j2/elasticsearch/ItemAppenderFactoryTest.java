@@ -20,11 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.ByteBufferDestination;
 import org.apache.logging.log4j.message.Message;
 import org.junit.Rule;
@@ -33,12 +30,14 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -69,15 +68,15 @@ public class ItemAppenderFactoryTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void messageOnlyAbstractStringLayout() {
+    public void messageOnlyLayout() {
 
         // given
         ItemAppenderFactory factory = new ItemAppenderFactory();
         String formattedIndexName = UUID.randomUUID().toString();
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
 
-        AbstractStringLayout abstractStringLayout = mock(AbstractStringLayout.class);
-        ItemAppender itemAppender = factory.createInstance(true, abstractStringLayout, batchDelivery);
+        Layout Layout = mock(Layout.class);
+        ItemAppender itemAppender = factory.createInstance(true, Layout, batchDelivery);
 
         String expectedMessage = UUID.randomUUID().toString();
         LogEvent logEvent = mock(LogEvent.class);
@@ -89,9 +88,9 @@ public class ItemAppenderFactoryTest {
         itemAppender.append(formattedIndexName, logEvent);
 
         // then
-        assertEquals(StringAppender.class, itemAppender.getClass());
+        assertTrue(itemAppender instanceof StringAppender);
 
-        verify(abstractStringLayout, never()).toSerializable(any());
+        verify(Layout, never()).toSerializable(any());
 
         verify(batchDelivery).add(indexNameCaptor.capture(), stringLogCaptor.capture());
         assertEquals(formattedIndexName, indexNameCaptor.getValue());
@@ -100,14 +99,14 @@ public class ItemAppenderFactoryTest {
     }
 
     @Test
-    public void nonMessageOnlyAbstractStringLayout() {
+    public void nonMessageOnlyLayout() {
 
         // given
         ItemAppenderFactory factory = new ItemAppenderFactory();
         String formattedIndexName = UUID.randomUUID().toString();
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
 
-        AbstractStringLayout stringBasedLayout = mock(AbstractStringLayout.class);
+        Layout stringBasedLayout = mock(Layout.class);
         ItemAppender itemAppender = factory.createInstance(false, stringBasedLayout, batchDelivery);
 
         String expectedMessage = UUID.randomUUID().toString();
@@ -119,7 +118,7 @@ public class ItemAppenderFactoryTest {
         itemAppender.append(formattedIndexName, logEvent);
 
         // then
-        assertEquals(StringAppender.class, itemAppender.getClass());
+        assertTrue(itemAppender instanceof StringAppender);
 
         verify(stringBasedLayout).toSerializable(logEventCaptor.capture());
         assertEquals(logEvent, logEventCaptor.getValue());
@@ -131,16 +130,16 @@ public class ItemAppenderFactoryTest {
     }
 
     @Test
-    public void givenAbstractLayoutImplementingItemSourceLayoutDelegatesToItemSourceLayoutFactoryMethod() {
+    public void givenAnyLayoutImplementingItemSourceLayoutDelegatesToItemSourceLayoutFactoryMethod() {
 
         // given
         ItemAppenderFactory factory = spy(new ItemAppenderFactory());
 
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
-        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceaLayout(mock(Configuration.class)));
+        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceLayout());
 
         // when
-        factory.createInstance(false, (AbstractLayout)itemSourceLayout, batchDelivery);
+        factory.createInstance(false, itemSourceLayout, batchDelivery);
 
         // then
         verify(factory).createInstance(eq(false), eq(itemSourceLayout), eq(batchDelivery));
@@ -156,8 +155,8 @@ public class ItemAppenderFactoryTest {
         String formattedIndexName = UUID.randomUUID().toString();
 
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
-        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceaLayout(mock(Configuration.class)));
-        ItemSourceAppender itemAppender = (ItemSourceAppender) factory.createInstance(false, (AbstractLayout)itemSourceLayout, batchDelivery);
+        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceLayout());
+        ItemSourceAppender itemAppender = factory.createInstance(false, itemSourceLayout, batchDelivery);
 
         String expectedMessage = UUID.randomUUID().toString();
         ItemSource itemSource = new StringItemSource(expectedMessage);
@@ -187,8 +186,9 @@ public class ItemAppenderFactoryTest {
         String formattedIndexName = UUID.randomUUID().toString();
         BatchDelivery batchDelivery = mock(BatchDelivery.class);
 
-        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceaLayout(mock(Configuration.class)));
-        ItemSourceAppender itemAppender = (ItemSourceAppender) factory.createInstance(true, (AbstractLayout)itemSourceLayout, batchDelivery);
+        ItemSourceLayout itemSourceLayout = spy(new TestItemSourceLayout());
+        ItemSourceAppender itemAppender =
+                factory.createInstance(true, itemSourceLayout, batchDelivery);
 
         String expectedMessage = UUID.randomUUID().toString();
         ItemSource itemSource = new StringItemSource(expectedMessage);
@@ -214,34 +214,25 @@ public class ItemAppenderFactoryTest {
 
     }
 
-    @Test
-    public void unsupportedLayout() {
-
-        // given
-        ItemAppenderFactory factory = new ItemAppenderFactory();
-
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Unsupported layout");
-
-        // when
-        factory.createInstance(false, mock(AbstractLayout.class), mock(BatchDelivery.class));
-
-    }
-
     private LogEvent createDefaultTestLogEvent() {
-        LogEvent logEvent = mock(LogEvent.class);
-        return logEvent;
+        return mock(LogEvent.class);
     }
 
-    private class TestItemSourceaLayout extends AbstractLayout implements ItemSourceLayout {
+    private class TestItemSourceLayout implements ItemSourceLayout, Layout {
 
-        public TestItemSourceaLayout(Configuration configuration) {
-            super(configuration, null, null);
+        @Override
+        public byte[] getFooter() {
+            return new byte[0];
+        }
+
+        @Override
+        public byte[] getHeader() {
+            return new byte[0];
         }
 
         @Override
         public byte[] toByteArray(LogEvent event) {
-            return null;
+            return new byte[0];
         }
 
         @Override
@@ -251,6 +242,11 @@ public class ItemAppenderFactoryTest {
 
         @Override
         public String getContentType() {
+            return null;
+        }
+
+        @Override
+        public Map<String, String> getContentFormat() {
             return null;
         }
 

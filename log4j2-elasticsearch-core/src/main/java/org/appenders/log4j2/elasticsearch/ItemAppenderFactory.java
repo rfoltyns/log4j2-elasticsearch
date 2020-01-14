@@ -20,9 +20,7 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.core.layout.AbstractStringLayout;
+import org.apache.logging.log4j.core.Layout;
 
 public class ItemAppenderFactory {
 
@@ -35,7 +33,7 @@ public class ItemAppenderFactory {
      * @param batchDelivery serialization result consumer
      * @return configured {@link ItemAppender}
      */
-    public ItemAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+    public ItemAppender createInstance(boolean messageOnly, Layout<String> layout, BatchDelivery batchDelivery) {
 
         if (layout instanceof ItemSourceLayout) {
             ItemSourceLayout itemSourceLayout = (ItemSourceLayout) layout;
@@ -46,12 +44,7 @@ public class ItemAppenderFactory {
             return new StringAppender(batchDelivery, logEvent -> logEvent.getMessage().getFormattedMessage());
         }
 
-        if (layout instanceof AbstractStringLayout) {
-            AbstractStringLayout abstractStringLayout = (AbstractStringLayout) layout;
-            return new StringAppender(batchDelivery, abstractStringLayout::toSerializable);
-        }
-
-        throw new ConfigurationException("Unsupported layout: " + layout.getClass());
+        return new StringAppender(batchDelivery, layout::toSerializable);
 
     }
 

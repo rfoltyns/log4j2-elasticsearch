@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -30,7 +31,6 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.filter.ThresholdFilter;
 import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 import org.apache.logging.log4j.message.SimpleMessage;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
@@ -148,7 +148,7 @@ public class ElasticsearchAppenderTest {
     public void appenderUsesProvidedLayoutWhenMessageOnlyIsSetToFalse() {
 
         // given
-        AbstractStringLayout layout = PowerMockito.mock(AbstractStringLayout.class);
+        Layout layout = PowerMockito.mock(Layout.class);
 
         ElasticsearchAppender.Builder builder = ElasticsearchAppenderTest.createTestElasticsearchAppenderBuilder();
         builder.withMessageOnly(false);
@@ -236,7 +236,7 @@ public class ElasticsearchAppenderTest {
 
         ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
             @Override
-            public ItemSourceAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+            public ItemSourceAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
                 return mockItemAppender;
             }
         };
@@ -260,7 +260,7 @@ public class ElasticsearchAppenderTest {
 
         ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
             @Override
-            public ItemSourceAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+            public ItemSourceAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
                 return mockItemAppender;
             }
         };
@@ -285,7 +285,7 @@ public class ElasticsearchAppenderTest {
 
         ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
             @Override
-            public ItemSourceAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+            public ItemSourceAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
                 return mockItemAppender;
             }
         };
@@ -312,7 +312,7 @@ public class ElasticsearchAppenderTest {
 
         ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
             @Override
-            public ItemAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+            public ItemAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
                 return mockItemAppender;
             }
         };
@@ -340,7 +340,7 @@ public class ElasticsearchAppenderTest {
 
         ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
             @Override
-            public ItemAppender createInstance(boolean messageOnly, AbstractLayout layout, BatchDelivery batchDelivery) {
+            public ItemAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
                 return mockItemAppender;
             }
         };

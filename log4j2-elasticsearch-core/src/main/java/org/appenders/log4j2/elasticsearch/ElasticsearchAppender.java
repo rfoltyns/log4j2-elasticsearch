@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.Filter;
+import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
@@ -32,8 +33,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.core.layout.AbstractStringLayout;
 
 import java.util.concurrent.TimeUnit;
 
@@ -43,8 +42,8 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * Formatted message may be produced by
  * <ul>
- * <li> (default) {@code org.apache.logging.log4j.core.layout.JsonLayout.toSerializable(LogEvent)}
- * <li> provided {@code org.apache.logging.log4j.core.layout.AbstractLayout.toSerializable(LogEvent)}
+ * <li> {@code org.apache.logging.log4j.core.Layout.toSerializable(LogEvent)} e.g. {@code org.apache.logging.log4j.core.layout.JsonLayout}
+ * <li> {@link ItemSourceLayout} e.g. {@link JacksonJsonLayout}
  * <li> or {@code org.apache.logging.log4j.message.Message.getFormattedMessage()} (see {@link ElasticsearchAppender.Builder#withMessageOnly(boolean)}
  * messageOnly})
  * </ul>
@@ -57,7 +56,7 @@ public class ElasticsearchAppender extends AbstractAppender {
     private final IndexNameFormatter indexNameFormatter;
     private final ItemAppender itemAppender;
 
-    protected ElasticsearchAppender(String name, Filter filter, AbstractLayout layout,
+    protected ElasticsearchAppender(String name, Filter filter, Layout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
         super(name, filter, layout, ignoreExceptions);
         this.indexNameFormatter = indexNameFormatter;
@@ -94,7 +93,7 @@ public class ElasticsearchAppender extends AbstractAppender {
         private Filter filter;
 
         @PluginElement("layout")
-        private AbstractLayout layout;
+        private Layout layout;
 
         @PluginBuilderAttribute
         private boolean ignoreExceptions;
@@ -141,7 +140,7 @@ public class ElasticsearchAppender extends AbstractAppender {
          * @param layout layout to be used
          * @return Builder this
          */
-        public Builder withLayout(AbstractLayout layout) {
+        public Builder withLayout(Layout layout) {
             this.layout = layout;
             return this;
         }
@@ -168,7 +167,7 @@ public class ElasticsearchAppender extends AbstractAppender {
          * Default: false
          *
          * @param messageOnly If true, formatted message will be produced by {@link org.apache.logging.log4j.message.Message#getFormattedMessage}.
-         *                    Otherwise, configured {@link AbstractStringLayout} will be used
+         *                    Otherwise, configured {@link Layout} will be used
          * @return Builder this
          */
         public Builder withMessageOnly(boolean messageOnly) {

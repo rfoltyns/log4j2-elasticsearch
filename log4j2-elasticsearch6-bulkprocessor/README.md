@@ -42,9 +42,9 @@ Delivery is triggered each `deliveryInterval` or when number of undelivered logs
 
 ### Message output
 There are at least three ways to generate output
-* (default) JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
+* JsonLayout will serialize LogEvent using Jackson mapper configured in log4j-core
 * `messageOnly="true"` can be configured set to make use of user-provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation
-* custom `org.apache.logging.log4j.core.layout.AbstractStringLayout` can be provided to appender config to use any other serialization mechanism
+* custom `org.apache.logging.log4j.core.Layout` can be provided to appender config to use any other serialization mechanism
 
 ### Failover
 Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
