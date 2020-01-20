@@ -8,7 +8,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-core</artifactId>
-    <version>1.3.5</version>
+    <version>1.3.6</version>
 </dependency>
 ```
 
@@ -186,6 +186,9 @@ See [custom MessageFactory example](https://github.com/rfoltyns/log4j2-elasticse
 
 ### Failover
 Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
+
+### Backoff
+Since 1.4, `BackoffPolicy` can provide additional fail-safe during delivery. See [backoff policies](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/backoff/) and client-specific implementations.
 
 ### Object pooling
 Since 1.3, `PooledItemSourceFactory` can be configured, providing `io.netty.buffer.ByteBuf`-backed `ByteBufItemSource` instances for serialized batch items and batch requests.
