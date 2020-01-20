@@ -35,6 +35,8 @@ import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Rule;
 import org.junit.Test;
@@ -59,6 +61,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
@@ -109,6 +112,21 @@ public class HCHttpTest {
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " provided");
+
+        // when
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsIfBackoffPolicyIsNotProvided() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
+        builder.withBackoffPolicy(null);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No " + BackoffPolicy.NAME + " provided");
 
         // when
         builder.build();
@@ -179,8 +197,8 @@ public class HCHttpTest {
     public void httpParamsArePassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
 
         // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        builder.withConnTimeout(TEST_CONNECTION_TIMEOUT)
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
                 .withIoThreadCount(TEST_IO_THREAD_COUNT)
@@ -482,6 +500,117 @@ public class HCHttpTest {
 
     }
 
+    @Test
+    public void failoverHandlerIsExecutedImmediatelyIfBackoffPolicyShouldApply() {
+
+        // given
+        TestBackoffPolicy<BatchRequest> backoffPolicy = new TestBackoffPolicy<BatchRequest>() {
+            @Override
+            public boolean shouldApply(BatchRequest data) {
+                return true;
+            }
+        };
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBackoffPolicy(backoffPolicy);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+        Function<BatchRequest, Boolean> failoverHandler = mock(Function.class);
+
+        HCHttp config = spy(builder.build());
+        when(config.createFailureHandler(eq(failoverPolicy))).thenReturn(failoverHandler);
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+
+        BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
+        BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
+
+        Function<BatchRequest, Boolean> batchListener = config.createBatchListener(failoverPolicy);
+
+        // when
+        batchListener.apply(batchRequest);
+
+        // then
+        ArgumentCaptor<BatchRequest> captor = ArgumentCaptor.forClass(BatchRequest.class);
+        verify(failoverHandler, times(1)).apply(captor.capture());
+        verify(batchRequest, times(1)).completed();
+
+        assertEquals(batchRequest, captor.getValue());
+
+    }
+
+    @Test
+    public void failoverHandlerIsNotExecutedImmediatelyIfBackoffPolicyShouldNotApply() {
+
+        // given
+        TestBackoffPolicy<BatchRequest> backoffPolicy = spy(new TestBackoffPolicy<BatchRequest>() {
+            @Override
+            public boolean shouldApply(BatchRequest data) {
+                return false;
+            }
+        });
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBackoffPolicy(backoffPolicy);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+        Function<BatchRequest, Boolean> failoverHandler = mock(Function.class);
+
+        HCHttp config = spy(builder.build());
+        when(config.createFailureHandler(eq(failoverPolicy))).thenReturn(failoverHandler);
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+
+        BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
+        BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
+
+        Function<BatchRequest, Boolean> batchListener = config.createBatchListener(failoverPolicy);
+
+        config.start();
+
+        // when
+        batchListener.apply(batchRequest);
+
+        // then
+        ArgumentCaptor<BatchRequest> captor = ArgumentCaptor.forClass(BatchRequest.class);
+        verify(backoffPolicy, times(1)).register(captor.capture());
+        verify(batchRequest, never()).completed();
+
+        assertEquals(batchRequest, captor.getValue());
+
+    }
+
+
+    @Test
+    public void failureHandlerDeregistersRequestFromBackoffPolicyAfterException() {
+
+        // given
+        BackoffPolicy<BatchRequest> backoffPolicy = mock(BackoffPolicy.class);
+        HCHttp objectFactory = createDefaultHttpObjectFactoryBuilder()
+                .withBackoffPolicy(backoffPolicy)
+                .build();
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+
+        BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
+        BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+        Function<BatchRequest, Boolean> failoverHandler = objectFactory.createFailureHandler(failoverPolicy);
+
+        ResponseHandler<BatchResult> responseHandler = objectFactory.createResultHandler(batchRequest, failoverHandler);
+
+        BatchResult result = mock(BatchResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(backoffPolicy, times(1)).deregister(eq(batchRequest));
+
+    }
+
     private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
         ByteBuf buffer = byteBufAllocator.buffer(16);
         buffer.writeBytes(payload.getBytes());
@@ -646,4 +775,22 @@ public class HCHttpTest {
         return createDefaultHttpObjectFactoryBuilder().build();
     }
 
+    private class TestBackoffPolicy<T> implements BackoffPolicy<BatchRequest> {
+
+        @Override
+        public boolean shouldApply(BatchRequest data) {
+            return false;
+        }
+
+        @Override
+        public void register(BatchRequest data) {
+
+        }
+
+        @Override
+        public void deregister(BatchRequest data) {
+
+        }
+
+    }
 }

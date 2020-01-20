@@ -58,6 +58,34 @@ See [available output configuration methods](../log4j2-elasticsearch-core#messag
 ### Failover
 See [failover options](../log4j2-elasticsearch-core#failover)
 
+### Backoff
+Since 1.4, `BackoffPolicy` can provide additional fail-safe during delivery.
+In the event of cluster failure or slowdown, when policy gets triggered, batch will be automatically redirected to configured `FailoverPolicy` (see [failover options](../log4j2-elasticsearch-core#failover)).
+
+#### BatchLimitBackoffPolicy
+
+`BatchLimitBackoffPolicy` is a simple `BackoffPolicy` based on a number of currently processed batches (batches that arrived at the `HCHttp` batch listener). Every arriving batch will increase the "in-flight count" by 1 if `maxBatchesInFlight` is not exceeded. Every response to a batch request decreases "in-flight count" by 1. Every batch that arrives when `maxBatchesInFlight` limit is met is redirected to configured `FailoverPolicy`.
+
+:warning: **See [failover options](../log4j2-elasticsearch-core#failover) for available `FailoverPolicy` implementations. If no `FailoverPolicy` is configured, batch will be lost!**
+
+Name | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+maxBatchesInFlight | Attribute | no | 8 | Maximum number of batches delivered simultaneously (including the ones waiting for a response).
+
+Example:
+``` xml
+<Elasticsearch ...>
+    <AsyncBatchDelivery ... >
+        ...
+        <HCHttp ...>
+            ...
+            <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
+            ...
+        </HCHttp>
+    </AsyncBatchDelivery>
+</Elasticsearch>
+```
+
 ### Index name
 See [index name](../log4j2-elasticsearch-core#index-name) or [index rollover](../log4j2-elasticsearch-core#index-rollover)
 

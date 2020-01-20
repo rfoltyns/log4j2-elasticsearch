@@ -25,6 +25,7 @@
                                              monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
                         <UnlimitedResizePolicy resizeFactor="0.70" />
                     </PooledItemSourceFactory>
+                    <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
 <!--                    <Security>-->
 <!--                        <BasicCredentials username="admin" password="changeme" useAuthToken="true"/>-->
 <!--                        &lt;!&ndash;<JKS keystorePath="${sys:jksCertInfo.keystorePath}"&ndash;&gt;-->

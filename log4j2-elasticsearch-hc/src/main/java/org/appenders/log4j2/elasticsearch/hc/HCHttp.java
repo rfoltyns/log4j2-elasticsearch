@@ -47,6 +47,8 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
 
@@ -85,6 +87,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     protected final boolean pooledResponseBuffers;
     protected final int pooledResponseBuffersSizeInBytes;
     protected final FailedItemOps<IndexRequest> failedItemOps;
+    protected final BackoffPolicy<BatchRequest> backoffPolicy;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
@@ -103,6 +106,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         this.pooledResponseBuffersSizeInBytes = builder.pooledResponseBuffersSizeInBytes;
         this.failedItemOps = builder.failedItemOps;
         this.objectReader = configuredReader();
+        this.backoffPolicy = builder.backoffPolicy;
     }
 
     @Override
@@ -150,19 +154,27 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
                 LOG.info("Cluster service time: {}", result.getTook());
 
+                backoffPolicy.deregister(request);
+
                 if (!result.isSucceeded()) {
                     // TODO: filter only failed indexRequests when retry is ready.
                     // failing whole request for now
                     failureHandler.apply(request);
                 }
                 request.completed();
+
             }
 
             @Override
             public void failed(Exception ex) {
+
                 LOG.warn(ex.getMessage(), ex);
+
+                backoffPolicy.deregister(request);
+
                 failureHandler.apply(request);
                 request.completed();
+
             }
 
             @Override
@@ -223,8 +235,18 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                     }
                 }
 
+                if (backoffPolicy.shouldApply(request)) {
+                    LOG.warn("Backoff applied. Request rejected.");
+                    failureHandler.apply(request);
+                    request.completed();
+                    return false;
+                } else {
+                    backoffPolicy.register(request);
+                }
+
                 ResponseHandler<BatchResult> responseHandler = createResultHandler(request, failureHandler);
                 createClient().executeAsync(request, responseHandler);
+
                 return true;
             }
 
@@ -273,6 +295,8 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         public static final int DEFAULT_RESPONSE_BUFFER_SIZE = 1024 * 1024;
 
+        private static final BackoffPolicy<BatchRequest> DEFAULT_BACKOFF_POLICY = new NoopBackoffPolicy<>();
+
         @PluginBuilderAttribute
         @Required(message = "No serverUris provided for " + PLUGIN_NAME)
         protected String serverUris;
@@ -304,6 +328,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         @PluginBuilderAttribute
         protected String mappingType = "_doc";
 
+        @PluginElement(BackoffPolicy.NAME)
+        protected BackoffPolicy<BatchRequest> backoffPolicy = DEFAULT_BACKOFF_POLICY;
+
         protected FailedItemOps<IndexRequest> failedItemOps = createFailedItemOps();
 
         @Override
@@ -320,6 +347,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             }
             if (pooledItemSourceFactory == null) {
                 throw new ConfigurationException("No PooledItemSourceFactory provided for " + PLUGIN_NAME);
+            }
+            if (backoffPolicy == null) {
+                throw new ConfigurationException("No BackoffPolicy provided for " + PLUGIN_NAME);
             }
         }
 
@@ -354,6 +384,11 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {
             this.pooledItemSourceFactory = pooledItemSourceFactory;
+            return this;
+        }
+
+        public Builder withBackoffPolicy(BackoffPolicy<BatchRequest> backoffPolicy) {
+            this.backoffPolicy = backoffPolicy;
             return this;
         }
 
