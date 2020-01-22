@@ -115,8 +115,8 @@ public class HttpClientFactory {
                 ),
                 new UnlimitedResizePolicy.Builder().withResizeFactor(0.5).build(),
                 1000L,
-                true,
-                1000,
+                false,
+                30000,
                 maxTotalConnections
         );
         return bufferPool;

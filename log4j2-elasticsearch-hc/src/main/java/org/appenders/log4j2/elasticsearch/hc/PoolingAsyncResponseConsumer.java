@@ -43,8 +43,6 @@ import java.io.IOException;
  */
 public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<HttpResponse> {
 
-    private static final Logger LOG = StatusLogger.getLogger();
-
     private ItemSourcePool<SimpleInputBuffer> itemSourcePool;
 
     private volatile HttpResponse response;
@@ -112,7 +110,7 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
         try {
             return itemSourcePool.getPooled();
         } catch (PoolResourceException e) {
-            throw new IOException("Unable to handle response: " + e.getMessage());
+            throw new IOException("Unable get pooled response buffer: " + e.getMessage());
         }
     }
 
