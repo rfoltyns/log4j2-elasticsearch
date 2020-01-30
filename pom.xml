@@ -51,9 +51,9 @@
         <log4j2.version>2.11.1</log4j2.version>
         <jacoco.version>0.8.3</jacoco.version>
         <jackson.version>2.9.8</jackson.version>
-        <httpclient.version>4.5.10</httpclient.version>
+        <httpclient.version>4.5.11</httpclient.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
-        <httpcore.version>4.4.5</httpcore.version>
+        <httpcore.version>4.4.13</httpcore.version>
     </properties>
 
     <modules>
