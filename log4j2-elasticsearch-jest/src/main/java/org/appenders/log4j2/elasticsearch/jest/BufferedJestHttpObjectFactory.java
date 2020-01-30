@@ -43,6 +43,7 @@ import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
+import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
 
 import java.util.Collection;
 import java.util.function.Function;

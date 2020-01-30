@@ -34,8 +34,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;

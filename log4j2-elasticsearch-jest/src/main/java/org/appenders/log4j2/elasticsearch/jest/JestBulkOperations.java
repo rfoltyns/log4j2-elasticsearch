@@ -58,9 +58,9 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
     public Object createBatchItem(String indexName, ItemSource source) {
         if (source.getSource() instanceof String) {
             return new Index.Builder(source.getSource())
-                .index(indexName)
-                .type(mappingType)
-                .build();
+                    .index(indexName)
+                    .type(mappingType)
+                    .build();
         }
         throw new ConfigurationException("Non String payloads are not supported by this factory. Make sure that proper ClientObjectFactory implementation is configured");
     }

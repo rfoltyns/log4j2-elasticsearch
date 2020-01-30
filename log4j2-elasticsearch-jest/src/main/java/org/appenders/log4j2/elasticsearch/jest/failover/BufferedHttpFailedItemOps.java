@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.jest;
+package org.appenders.log4j2.elasticsearch.jest.failover;
 
 /*-
  * #%L
@@ -27,6 +27,7 @@ import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+import org.appenders.log4j2.elasticsearch.jest.BufferedIndex;
 
 public class BufferedHttpFailedItemOps implements FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> {
 

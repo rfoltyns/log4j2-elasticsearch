@@ -26,7 +26,6 @@ import io.searchbox.core.DocumentResult;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
-import org.appenders.log4j2.elasticsearch.jest.BufferedHttpFailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.BufferedIndex;
 import org.junit.Test;
 
