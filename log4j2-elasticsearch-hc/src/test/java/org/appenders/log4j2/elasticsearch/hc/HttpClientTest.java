@@ -306,7 +306,7 @@ public class HttpClientTest {
 
         // then
         verify(responseHandler).failed(exceptionCaptor.capture());
-        assertEquals("Problem during request processing", exceptionCaptor.getValue().getMessage());
+        assertEquals("Problem during response processing", exceptionCaptor.getValue().getMessage());
         assertEquals(exceptionMessage, exceptionCaptor.getValue().getCause().getMessage());
 
         verify(responseHandler, never()).completed(any());
@@ -359,6 +359,26 @@ public class HttpClientTest {
         assertEquals("Request cancelled", exceptionCaptor.getValue().getMessage());
 
         verify(responseHandler, never()).completed(any());
+
+    }
+
+    @Test
+    public void executeAsyncCallbackDoesNotRethrowOnResponseHandlerExceptions() throws IOException {
+
+        // given
+        ResponseHandler<Response> responseHandler = createMockTestResultHandler();
+        RuntimeException testException = spy(new RuntimeException("test exception"));
+        doThrow(testException).when(responseHandler).failed(any());
+
+        HCResultCallback<Response> asyncCallback = new HCResultCallback<>(responseHandler);
+
+        Exception exception = mock(Exception.class);
+
+        // when
+        asyncCallback.failed(exception);
+
+        // then
+        verify(testException).getMessage();
 
     }
 

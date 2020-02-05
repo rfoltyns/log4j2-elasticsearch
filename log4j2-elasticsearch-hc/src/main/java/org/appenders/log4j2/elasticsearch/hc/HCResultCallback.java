@@ -62,7 +62,7 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
             failed(e);
             return;
         } catch (Throwable t) {
-            failed(new Exception("Problem during request processing", t));
+            failed(new Exception("Problem during response processing", t));
             return;
         } finally {
             if (inputStream != null) {
@@ -81,7 +81,12 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
 
     @Override
     public void failed(Exception ex) {
-        responseHandler.failed(ex);
+        try {
+            responseHandler.failed(ex);
+        } catch (Exception e) {
+            // uncaught exception may cause the client to shutdown
+            log.error("Callback failed", e);
+        }
     }
 
     @Override
