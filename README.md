@@ -23,16 +23,17 @@ Project consists of:
 * Batch size and flush interval configuration
 * Failover (redirect failed batch to alternative target)
 * JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) or [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout) by default since 1.3 or Log4j2 JsonLayout)
-* (since 1.1) Index rollover (hourly, daily, etc.)
-* (1.1) Index template configuration
+* (Since 1.1) Index rollover (hourly, daily, etc.)
+* Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
-* (1.2) HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
+* HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
 * (1.3) [Buffer object pool](log4j2-elasticsearch-core#object-pooling) (memory allocation reduced by ~80%)
-* (1.3) Buffered Jest HTTP client
-* (1.3) Fully configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
-* (1.4 - H2 2019) Reliable, file-based failover/retry
-* (1.4) `log4j2-elasticsearch-hc` module - optimized async HTTP client
-* (1.4) Custom output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
+* Buffered Jest HTTP client
+* Fully configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
+* (1.4 - Q1 2020) Failover with persistence and retry
+* Log overflow prevention with backoff policies
+* `log4j2-elasticsearch-hc` module - optimized HTTP client
+* Custom output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
 
 ## Usage
 
