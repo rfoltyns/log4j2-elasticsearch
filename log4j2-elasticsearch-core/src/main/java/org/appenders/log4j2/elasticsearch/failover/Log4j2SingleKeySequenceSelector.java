@@ -30,7 +30,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 @Plugin(name = Log4j2SingleKeySequenceSelector.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
 public class Log4j2SingleKeySequenceSelector extends SingleKeySequenceSelector {
 
-    static final String PLUGIN_NAME = "IdleKeySequenceSelector";
+    static final String PLUGIN_NAME = "SingleKeySequenceSelector";
 
     public Log4j2SingleKeySequenceSelector(Builder builder) {
         super(builder.sequenceId);
