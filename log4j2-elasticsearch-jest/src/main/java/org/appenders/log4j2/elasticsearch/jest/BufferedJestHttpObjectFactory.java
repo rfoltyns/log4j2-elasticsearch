@@ -42,6 +42,7 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
 
@@ -97,7 +98,8 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 Runtime.getRuntime().availableProcessors(),
                 discoveryEnabled,
                 auth,
-                DEFAULT_MAPPING_TYPE
+                DEFAULT_MAPPING_TYPE,
+                new NoopBackoffPolicy()
         );
         this.itemSourceFactory = bufferedSourceFactory;
         this.mixIns = new JacksonMixIn[]{};
@@ -136,6 +138,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
             @Override
             public void completed(JestResult result) {
+
+                backoffPolicy.deregister(bulk);
+
                 if (!result.isSucceeded()) {
                     LOG.warn(result.getErrorMessage());
                     // TODO: filter only failed items when retry is ready.
@@ -148,6 +153,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             @Override
             public void failed(Exception ex) {
                 LOG.warn(ex.getMessage(), ex);
+                backoffPolicy.deregister(bulk);
                 failureHandler.apply(bulk);
                 ((BufferedBulk)bulk).completed();
             }

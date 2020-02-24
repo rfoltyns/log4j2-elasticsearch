@@ -49,6 +49,7 @@
                                              monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
                         <UnlimitedResizePolicy resizeFactor="0.70" />
                     </PooledItemSourceFactory>
+                    <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
                     <XPackAuth>
                         <BasicCredentials username="admin" password="changeme" />
                         <!--<JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->

@@ -21,10 +21,12 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
+import io.searchbox.action.AbstractAction;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.BulkResult;
 import io.searchbox.core.Index;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -34,9 +36,12 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
@@ -52,7 +57,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.never;
@@ -62,6 +68,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class JestHttpObjectFactoryTest {
+
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
 
     private static final int TEST_CONNECTION_TIMEOUT = 1111;
     private static final int TEST_READ_TIMEOUT = 2222;
@@ -78,15 +87,33 @@ public class JestHttpObjectFactoryTest {
         return builder;
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderFailsIfServerUrisStringIsNull() {
+    @Test
+    public void builderThrowsIfServerUrisStringIsNull() {
 
         // given
         Builder builder = createTestObjectFactoryBuilder();
         String serverUris = null;
 
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No serverUris provided");
+
         // when
         builder.withServerUris(serverUris);
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsIfBackoffPolicyIsNotProvided() {
+
+        // given
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(null);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("No " + BackoffPolicy.NAME + " provided");
+
+        // when
         builder.build();
 
     }
@@ -385,6 +412,118 @@ public class JestHttpObjectFactoryTest {
         verify(failoverHandler, times(1)).apply(captor.capture());
 
         assertEquals(bulk, captor.getValue());
+    }
+
+    @Test
+    public void failoverHandlerIsExecutedImmediatelyIfBackoffPolicyShouldApply() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        when(backoffPolicy.shouldApply(any())).thenReturn(true);
+
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        JestHttpObjectFactory config = spy(builder.build());
+
+        String payload1 = "test1";
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+        Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
+
+        // when
+        listener.apply(bulk);
+
+        // then
+        ArgumentCaptor<FailedItemSource> captor = ArgumentCaptor.forClass(FailedItemSource.class);
+        verify(failoverPolicy, times(1)).deliver(captor.capture());
+
+        assertEquals(payload1, captor.getValue().getSource());
+
+    }
+
+    @Test
+    public void failoverHandlerIsNotExecutedImmediatelyIfBackoffPolicyShouldNotApply() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        when(backoffPolicy.shouldApply(any())).thenReturn(false);
+
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        JestHttpObjectFactory config = spy(builder.build());
+
+        String payload1 = "test1";
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+        Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
+
+        // when
+        listener.apply(bulk);
+
+        // then
+        ArgumentCaptor<FailedItemSource> captor = ArgumentCaptor.forClass(FailedItemSource.class);
+        verify(failoverPolicy, never()).deliver(captor.capture());
+
+    }
+
+    @Test
+    public void responseHandlerDeregistersRequestFromBackoffPolicyAfterException() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        JestHttpObjectFactory config = spy(builder.build());
+
+        String payload1 = "test1";
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+
+        JestResultHandler<JestResult> responseHandler = config.createResultHandler(bulk, config.createFailureHandler(failoverPolicy));
+
+        JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(backoffPolicy, times(1)).deregister(eq(bulk));
+
+    }
+
+    @Test
+    public void responseHandlerDeregistersRequestFromBackoffPolicyAfterSuccess() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        JestHttpObjectFactory config = spy(builder.build());
+
+        String payload1 = "test1";
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+
+        JestResultHandler<JestResult> responseHandler = config.createResultHandler(bulk, config.createFailureHandler(failoverPolicy));
+
+        JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(true);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(backoffPolicy, times(1)).deregister(eq(bulk));
+
     }
 
     // JestClient is started on first execution outside of LifeCycle scope

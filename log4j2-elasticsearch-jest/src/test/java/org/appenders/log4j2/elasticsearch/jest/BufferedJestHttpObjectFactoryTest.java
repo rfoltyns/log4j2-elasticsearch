@@ -23,10 +23,12 @@ package org.appenders.log4j2.elasticsearch.jest;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
+import io.searchbox.action.AbstractAction;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.BulkResult;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
@@ -40,6 +42,7 @@ import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,6 +65,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
@@ -418,6 +422,62 @@ public class BufferedJestHttpObjectFactoryTest {
         // then
         assertEquals(Runtime.getRuntime().availableProcessors(),
                 PowerMockito.field(factory.getClass(), "ioThreadCount").get(factory));
+
+    }
+
+    @Test
+    public void responseHandlerDeregistersRequestFromBackoffPolicyAfterException() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        BufferedJestHttpObjectFactory config = spy(builder.build());
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+
+        JestResultHandler<JestResult> responseHandler = config.createResultHandler(bulk, config.createFailureHandler(failoverPolicy));
+
+        JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(backoffPolicy, times(1)).deregister(eq(bulk));
+
+    }
+
+    @Test
+    public void responseHandlerDeregistersRequestFromBackoffPolicyAfterSuccess() {
+
+        // given
+        BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
+        builder.withBackoffPolicy(backoffPolicy);
+
+        BufferedJestHttpObjectFactory config = spy(builder.build());
+
+        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        Bulk bulk = createTestBatch(payload1);
+
+        FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
+
+        JestResultHandler<JestResult> responseHandler = config.createResultHandler(bulk, config.createFailureHandler(failoverPolicy));
+
+        JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(true);
+
+        // when
+        responseHandler.completed(result);
+
+        // then
+        verify(backoffPolicy, times(1)).deregister(eq(bulk));
 
     }
 

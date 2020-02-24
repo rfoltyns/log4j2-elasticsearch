@@ -21,12 +21,14 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
+import io.searchbox.action.AbstractAction;
 import io.searchbox.action.AbstractDocumentTargetedAction;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.client.config.HttpClientConfig;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.BulkResult;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
@@ -48,6 +50,8 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.JestHttpFailedItemOps;
 
@@ -76,6 +80,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final boolean discoveryEnabled;
     private final Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth;
     protected final String mappingType;
+    protected final BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
 
@@ -85,7 +90,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     /**
      * This constructor is deprecated and will be removed in 1.5.
-     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String)} instead.
+     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String, BackoffPolicy)} instead.
      *
      * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
      * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
@@ -113,7 +118,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 Runtime.getRuntime().availableProcessors(),
                 discoveryEnabled,
                 auth,
-                DEFAULT_MAPPING_TYPE);
+                DEFAULT_MAPPING_TYPE,
+                new NoopBackoffPolicy<>());
     }
 
     /**
@@ -137,7 +143,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                                     int ioThreadCount,
                                     boolean discoveryEnabled,
                                     Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth,
-                                    String mappingType) {
+                                    String mappingType,
+                                    BackoffPolicy backoffPolicy) {
         this.serverUris = serverUris;
         this.connTimeout = connTimeout;
         this.readTimeout = readTimeout;
@@ -147,6 +154,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.discoveryEnabled = discoveryEnabled;
         this.auth = auth;
         this.mappingType = mappingType;
+        this.backoffPolicy = backoffPolicy;
     }
 
     protected JestHttpObjectFactory(Builder builder) {
@@ -160,6 +168,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.auth = builder.auth;
         this.mappingType = builder.mappingType;
         this.failedItemOps = builder.failedItemOps;
+        this.backoffPolicy = builder.backoffPolicy;
     }
 
     @Override
@@ -208,6 +217,14 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                         // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
                         LOG.error("Deferred operation failed: {}", e.getMessage());
                     }
+                }
+
+                if (backoffPolicy.shouldApply(bulk)) {
+                    LOG.warn("Backoff applied. Request rejected.");
+                    failureHandler.apply(bulk);
+                    return false;
+                } else {
+                    backoffPolicy.register(bulk);
                 }
 
                 JestResultHandler<JestResult> jestResultHandler = createResultHandler(bulk, failureHandler);
@@ -271,6 +288,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         return new JestResultHandler<JestResult>() {
             @Override
             public void completed(JestResult result) {
+
+                backoffPolicy.deregister(bulk);
+
                 if (!result.isSucceeded()) {
                     LOG.warn(result.getErrorMessage());
                     failureHandler.apply(bulk);
@@ -279,6 +299,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             @Override
             public void failed(Exception ex) {
                 LOG.warn(ex.getMessage(), ex);
+                backoffPolicy.deregister(bulk);
                 failureHandler.apply(bulk);
             }
         };
@@ -295,6 +316,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<JestHttpObjectFactory> {
+
+        private static final BackoffPolicy<AbstractAction<BulkResult>> DEFAULT_BACKOFF_POLICY =
+                new NoopBackoffPolicy<>();
 
         @PluginBuilderAttribute
         @Required(message = "No serverUris provided for JestClientConfig")
@@ -329,6 +353,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         @PluginBuilderAttribute
         protected String mappingType = DEFAULT_MAPPING_TYPE;
 
+        @PluginElement("backoffPolicy")
+        protected BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = DEFAULT_BACKOFF_POLICY;
+
         protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps = failedItemOps();
 
         @Override
@@ -345,7 +372,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         protected void validate() {
             if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for " + JestHttpObjectFactory.class.getName());
+                throw new ConfigurationException("No serverUris provided for " + JestHttpObjectFactory.class.getSimpleName());
+            }
+            if (backoffPolicy == null) {
+                throw new ConfigurationException("No BackoffPolicy provided for JestHttp");
             }
         }
 
@@ -391,6 +421,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
+            return this;
+        }
+
+        public Builder withBackoffPolicy(BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy) {
+            this.backoffPolicy = backoffPolicy;
             return this;
         }
 
