@@ -49,7 +49,7 @@ public class KeySequenceConfigRepository {
             Long.parseLong(System.getProperty("appenders.failover.keysequence.consistencyCheckDelay", "200"))
     );
 
-    final long id = UUID.randomUUID().getMostSignificantBits();
+    static final long ID = UUID.randomUUID().getMostSignificantBits();
 
     final long expireInMillis;
     final Map<CharSequence, ItemSource> map;
@@ -111,7 +111,7 @@ public class KeySequenceConfigRepository {
      * Stores given {@link KeySequenceConfig}. If this repository does not contain given config, it registers the config key in the key sequence configs index ({@link #INDEX_KEY_NAME}).
      * <p>{@link KeySequenceConfig#expireAt} will be updated according to the value of {@link #expireInMillis}:
      * {@code System.currentTimeMillis() + expireInMillis}
-     * <p>{@link KeySequenceConfig#ownerId} will be set to {@link #id}
+     * <p>{@link KeySequenceConfig#ownerId} will be set to {@link #ID}
      *
      * @param config {@link KeySequenceConfig} to store
      */
@@ -123,7 +123,7 @@ public class KeySequenceConfigRepository {
 
         long now = System.currentTimeMillis();
         config.setExpireAt(now + expireInMillis);
-        config.setOwnerId(id);
+        config.setOwnerId(ID);
 
         map.put(config.getKey(), config);
 
@@ -209,7 +209,7 @@ public class KeySequenceConfigRepository {
         KeySequenceConfig actual = (KeySequenceConfig) map.get(config.getKey());
 
         // verify that sequence still owned
-        return actual.getOwnerId() == id;
+        return actual.getOwnerId() == ID;
 
     }
 

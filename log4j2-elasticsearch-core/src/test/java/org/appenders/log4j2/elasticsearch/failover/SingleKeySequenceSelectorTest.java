@@ -179,7 +179,35 @@ public class SingleKeySequenceSelectorTest {
     }
 
     @Test
-    public void keySequenceIsNotReusedOnFirstCallWhenMatchingAndNonExpiredKeySequenceFoundInProvidedRepository() {
+    public void keySequenceIsReusedOnFirstCallIfThereIsAnExpiredAndNotOwnedKeySequenceWithMatchingSequenceIdInProvidedRepository() {
+
+        // given
+        Map<CharSequence, ItemSource> map = new HashMap<>();
+        KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0);
+
+        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        repository.persist(config);
+
+        sleep(1);
+
+        CharSequence expectedKey = config.getKey();
+
+        SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(UUID.fromString((String)expectedKey).getMostSignificantBits());
+        keySequenceSelector.withRepository(repository);
+
+        config.setOwnerId(KeySequenceConfigRepository.ID + 1);
+        map.put(config.getKey(), config);
+
+        // when
+        KeySequence keySequence = keySequenceSelector.firstAvailable();
+
+        // then
+        assertEquals(expectedKey, keySequence.getConfig(true).getKey());
+
+    }
+
+    @Test
+    public void keySequenceIsNotReusedOnFirstCallWhenMatchingNonExpiredAndNotOwnedKeySequenceFoundInProvidedRepository() {
 
         // given
         System.setProperty("appenders.failover.keysequence.consistencyCheckDelay", "1");
@@ -192,6 +220,9 @@ public class SingleKeySequenceSelectorTest {
 
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId());
         keySequenceSelector.withRepository(repository);
+
+        config.setOwnerId(KeySequenceConfigRepository.ID + 1);
+        map.put(config.getKey(), config);
 
         // when
         KeySequence keySequence = keySequenceSelector.firstAvailable();
@@ -202,7 +233,7 @@ public class SingleKeySequenceSelectorTest {
     }
 
     @Test
-    public void newKeySequenceIsNotCreatedOnFirstCallWhenNotExpiredKeySequenceFoundInProvidedRepository() {
+    public void keySequenceIsReusedOnFirstCallWhenMatchingNonExpiredAndOwnedKeySequenceFoundInProvidedRepository() {
 
         // given
         System.setProperty("appenders.failover.keysequence.consistencyCheckDelay", "1");
@@ -213,11 +244,38 @@ public class SingleKeySequenceSelectorTest {
         KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
+        CharSequence expectedKey = config.getKey();
+
+        SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId());
+        keySequenceSelector.withRepository(repository);
+
+        // when
+        KeySequence keySequence = keySequenceSelector.firstAvailable();
+
+        // then
+        assertEquals(expectedKey, keySequence.getConfig(true).getKey());
+
+    }
+
+    @Test
+    public void newKeySequenceIsNotCreatedOnFirstCallWhenNotExpiredAndNotOwnedKeySequenceFoundInProvidedRepository() {
+
+        // given
+        System.setProperty("appenders.failover.keysequence.consistencyCheckDelay", "1");
+
+        Map<CharSequence, ItemSource> map = new HashMap<>();
+        KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 1000);
+
+        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        repository.persist(config);
 
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId());
         keySequenceSelector.withRepository(repository);
 
         int size = map.size();
+
+        config.setOwnerId(KeySequenceConfigRepository.ID + 1);
+        map.put(config.getKey(), config);
 
         // when
         KeySequence keySequence = keySequenceSelector.firstAvailable();

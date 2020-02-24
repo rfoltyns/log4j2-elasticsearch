@@ -392,12 +392,12 @@ public class KeySequenceConfigRepositoryTest {
         Map<CharSequence, ItemSource> map = createDefaultTestMap();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0);
         KeySequenceConfig config = createTestKeySequenceConfig();
-
         repository.persist(config);
 
         // when
-        KeySequenceConfigRepository otherRepository = new KeySequenceConfigRepository(map, 0);
-        otherRepository.persist(config);
+        config.setOwnerId(KeySequenceConfigRepository.ID + 1);
+        map.put(config.getKey(), config);
+
         boolean result = repository.consistencyCheck(config);
 
         // then
