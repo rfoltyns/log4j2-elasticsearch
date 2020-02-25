@@ -139,12 +139,26 @@ Default output:
 
 `{"timeMillis":1545968929481,"loggerName":"elasticsearch","level":"INFO","message":"Hello, World!","thread":"Thread-18"}`
 
-Example:
+Example with pooled buffers (pools must be configured for both `ClientObjectFactory` and layout, see [object pooling](#object-pooling)):
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JacksonJsonLayout>
+        <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="1024" initialPoolSize="10000" />
+        <JacksonMixIn mixInClass="foo.bar.CustomLogEventMixIn"
+                      targetClass="org.apache.logging.log4j.core.LogEvent"/>
+        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"
+    </JacksonJsonLayout>
+    ...
+</Elasticsearch>
+```
+
+
+Example with no pooled buffers:
 ```xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     ...
     <JacksonJsonLayout afterburner="true">
-        <PooledItemSourceFactory itemSizeInBytes="512" initialPoolSize="10000" />
         <JacksonMixIn mixInClass="foo.bar.CustomLogEventMixIn"
                       targetClass="org.apache.logging.log4j.core.LogEvent"/>
         <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"
@@ -168,9 +182,34 @@ dynamic | Attribute | no | false | if `true`, indicates that value may change ov
 Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
 
 #### Log4j2 JsonLayout
-`JsonLayout` will serialize LogEvent using Jackson mapper configured in log4j-core. Custom `org.apache.logging.log4j.core.layout.AbstractLayout` can be provided to appender config to use any other serialization mechanism.
+`JsonLayout` will serialize LogEvent using Jackson mapper configured in log4j-core. Custom `org.apache.logging.log4j.core.Layout` can be provided to appender config to use any other serialization mechanism.
 
-Output may vary across different Log4j2 versions (see: #9)
+Output may vary across different Log4j2 versions (see: [#9](https://github.com/rfoltyns/log4j2-elasticsearch/issues/15))
+
+Example:
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JsonLayout compact="true"/>
+    ...
+</Elasticsearch>
+```
+
+Also, since `LogEvent.timeMillis` is not included in this layout, [IndexTemplate](#index-template) must include mappings for `instant.epochSeconds`:
+```json
+...
+"mappings": {
+  "properties": {
+  ...
+    "instant.epochSecond": {
+      "type": "date",
+      "format": "epoch_second"
+    },
+  ...
+  }
+}
+...
+```
 
 #### Raw log message
 `messageOnly="true"` can be configured for all layouts mentioned above to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation.
@@ -212,7 +251,7 @@ Example:
 ``` xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     <JacksonJsonLayout>
-        <PooledItemSourceFactory itemSizeInBytes="512" initialPoolSize="10000" />
+        <PooledItemSourceFactory itemSizeInBytes="1024" initialPoolSize="20000" />
     </JacksonJsonLayout>
     <AsyncBatchDelivery batchSize="5000" deliveryInterval="20000" >
         ...
@@ -261,7 +300,7 @@ decrease pool size by shrinkSize
 
 Example:
 ```xml
-<PooledItemSourceFactory itemSizeInBytes="512" initialPoolSize="10000">
+<PooledItemSourceFactory itemSizeInBytes="1024" initialPoolSize="10000">
     <UnlimitedResizePolicy resizeFactor="0.2" />
 </PooledItemSourceFactory>
 ```
