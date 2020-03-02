@@ -226,6 +226,112 @@ See [custom MessageFactory example](https://github.com/rfoltyns/log4j2-elasticse
 ### Failover
 Each unsuccessful batch can be redirected to any given `FailoverPolicy` implementation. By default, each log entry will be separately delivered to configured strategy class, but this behaviour can be amended by providing custom `ClientObjectFactory` implementation.
 
+#### AppenderRefFailoverPolicy
+
+Redirects failed batches to configured `org.apache.logging.log4j.core.Appender`. Output depends on target appender layout.
+
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+appenderRef | Attribute | yes | n/a | Name of appender available in current configuration
+
+:warning: This policy will NOT work with [object pooling](#object-pooling). Only String-based items are allowed ([StringItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/StringItemSource.java)).
+
+Example:
+```xml
+<Console name="CONSOLE" />
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <AsyncBatchDelivery ...>
+        ...
+        <AppenderRefFailoverPolicy>
+            <AppenderRef ref="CONSOLE" />
+        </AppenderRefFailoverPolicy>
+        ...
+    </AsyncBatchDelivery>
+    ...
+</Elasticsearch>
+```
+
+#### ChronicleMapRetryFailoverPolicy
+
+Since 1.4, failover with retry can be configured to minimize data loss.
+Each item is stored separately in [ChronicleMap](https://github.com/OpenHFT/Chronicle-Map) - a file-backed key value store.
+
+##### Overview
+
+This failover policy consists of following key components:
+* [ChronicleMapRetryFailoverPolicy](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/ChronicleMapRetryFailoverPolicy.java) - policy setup and failed item inbound handler. Stores each item under unique key provided by `KeySequence`
+* [RetryProcessor](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/RetryProcessor.java) - retries a batch of failed items (failed item outbound handler) and persits current `KeySequence` state. See scheduling options below
+* [KeySequence](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequence.java) - keeps track of current reader and writer keys. Writer index increases on failed item write and readex index "chases" the writer index during retries until they're equal
+* [KeySequenceSelector](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequenceSelector.java) - `KeySequence` resolver. Keeps track of the `KeySequence` to use. Recovers old one after restart or creates a new one if none exists
+* [KeySequenceConfig](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequenceConfig.java) - persistable view of `KeySequence`
+* [KeySequenceConfigRepository](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequenceConfigRepository.java) - `KeySequenceConfig` CRUD operations
+
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+fileName | Attribute | Yes | None | Path to [ChronicleMap](https://github.com/OpenHFT/Chronicle-Map) file. Will get created if doesn't exist. Will TRY to recover previous state if exist.
+numberOfEntries | Attribute | Yes | None | Storage capacity. Actual number of stored items MAY exceed this number but it's NOT recommended. Store operations MAY fail below this limit if `averageValueSize` was exceeded.
+keySequenceSelector | Element | Yes | None | `KeySequence` provider. See documentation below for available options
+averageValueSize | Attribute | No | 1024 | Average size of failed item including additional metadata. By default, suitable for small logs (up to 100-200 characters)
+batchSize | Attribute | No | 1000 | Maximum size of failed items list retried by `RetryProcessor` after each `retryDelay`
+retryDelay | Attribute | No | 10000 | Delay between the end of previous `RetryProcessor` run and start of next one. This is NOT an interval between two consecutive `RetryProcessor` runs (reasons behind `scheduleAtFixedDelay`: retry runs should not overlap; retry should be a fairly transparent background operation; retry should not generate too much additional load on top of the current load if target cluster is down or slow anyway; retrying itself should be a temporary state, it's the storage capacity that should allow it to recover so there's no need to rush it)
+monitored | Attribute | No | false | If `true`, retry metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly. <br><br>Example output: `sequenceId: 1, total: 452920, enqueued: 452918` where: <br> `total` is a number of failed items + number of key sequences + key sequence list (internal index of all available key sequences) <br> `enqueued` is a number of entries currently available for retry within `KeySequence` with `sequenceId`=1
+monitorTaskInterval | Attribute | No | 30000 | Interval between metrics logs. 30 seconds by default.
+
+##### Considerations
+
+Even though the majority of tests have proven that this policy works as described, there are several limitations that MUST be taken into account before going forward with this approach:
+
+* :warning: it is NOT a fully bullet-proof solution(!) there are still multiple scenarios when logs WILL be lost, so test your application extensively before using it in production!
+* :warning: successful setup of this policy depends on `sequenceId` uniqueness. If multiple processes use the same storage file, each one of them MUST specify a unique `sequenceId` (see docs below), otherwise they may overwrite each others' data and lead to data loss
+* :warning: as storage setup is synchronous, application startup time will increase and the difference will depend directly on `numberOfEntries` - more entries to store, bigger storage required, more bytes to allocate or recover on startup
+* :warning: application MUST shutdown gracefully - if there's a retry or failover in progress and process gets killed (e.g with OOM killer), storage file may be left in a faulty and unrecoverable state and may have to be deleted
+* :warning: reliability of this policy depends on underlying hardware performance. SSD > HDD. Heavy load testing and failure injection is encouraged before release
+* :warning: reliability of this policy may depend on system load
+* :warning: given that performance of this policy may vary and may depend on disk I/O, it was mainly tested and proven to work at ~5000 small logs per second and retrying 5000 items every ~5 seconds at commodity hardware. Effort is being made to make these numbers better
+* :warning: long lasting cluster outages or slow ingestion will lead to data loss (as it does with default noop policy anyway)
+
+Example:
+```xml
+<Elasticsearch>
+    ...
+    <AsyncBatchDelivery ...>
+        ...
+        <ChronicleMapRetryFailoverPolicy fileName="failedItems.chronicleMap"
+                                      numberOfEntries="1000000"
+                                      monitored="true">
+            <SingleKeySequenceSelector sequenceId="1"/>
+        </ChronicleMapRetryFailoverPolicy>
+        ...
+    </AsyncBatchDelivery>
+    ...
+</Elasticsearch>
+```
+
+##### SingleKeySequenceSelector
+
+Since 1.4, single `KeySequence` per process can be defined (all failed logs will be stored and retried using the same `KeySequence`)
+When configured correctly, it ensures that processes using the same storage file are operating on different datasets.
+
+:warning: Sharing file over multiple processes is experimental.
+
+:warning: If more than 1 JVM is using the same `sequenceId`, one of them MAY fail to start.
+
+Example:
+```xml
+<Elasticsearch>
+    ...
+    <AsyncBatchDelivery ...>
+        ...
+        <ChronicleMapRetryFailoverPolicy ...>
+            <SingleKeySequenceSelector sequenceId="1"/>
+        </ChronicleMapRetryFailoverPolicy>
+        ...
+    </AsyncBatchDelivery>
+    ...
+</Elasticsearch>
+```
+
 ### Backoff
 Since 1.4, `BackoffPolicy` can provide additional fail-safe during delivery. See [backoff policies](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/backoff/) and client-specific implementations.
 
