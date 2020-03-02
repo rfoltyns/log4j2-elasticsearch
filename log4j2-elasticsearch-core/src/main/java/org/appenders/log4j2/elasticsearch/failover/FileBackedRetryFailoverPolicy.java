@@ -27,7 +27,7 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.status.StatusLogger;
@@ -238,32 +238,32 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
         /**
          * Default retry interval: 10 seconds
          */
-        public static final int DEFAULT_RETRY_INTERVAL = 10000;
+        public static final int DEFAULT_RETRY_DELAY = 10000;
 
 
-        @PluginAttribute("fileName")
+        @PluginBuilderAttribute("fileName")
         protected String fileName;
 
-        @PluginAttribute("numberOfEntries")
+        @PluginBuilderAttribute("numberOfEntries")
         protected long numberOfEntries;
 
-        @PluginAttribute("averageValueSize")
+        @PluginBuilderAttribute(value = "averageValueSize")
         protected int averageValueSize = DEFAULT_AVERAGE_VALUE_SIZE;
 
-        @PluginAttribute("batchSize")
+        @PluginBuilderAttribute(value = "batchSize")
         protected int batchSize = DEFAULT_BATCH_SIZE;
 
-        @PluginAttribute("retryDelay")
-        protected long retryDelay = DEFAULT_RETRY_INTERVAL;
+        @PluginBuilderAttribute(value = "retryDelay")
+        protected long retryDelay = DEFAULT_RETRY_DELAY;
 
         @PluginElement("keySequenceSelector")
         protected KeySequenceSelector keySequenceSelector;
 
-        @PluginAttribute("monitored")
+        @PluginBuilderAttribute("monitored")
         protected boolean monitored;
 
-        @PluginAttribute("monitorTaskInterval")
-        protected long monitorTaskInterval = DEFAULT_RETRY_INTERVAL;
+        @PluginBuilderAttribute(value = "monitorTaskInterval")
+        protected long monitorTaskInterval = DEFAULT_RETRY_DELAY;
 
         private ChronicleMap<CharSequence, ItemSource> chronicleMap;
 

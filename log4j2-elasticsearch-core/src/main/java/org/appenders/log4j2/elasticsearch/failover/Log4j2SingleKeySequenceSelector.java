@@ -24,7 +24,7 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
 @Plugin(name = Log4j2SingleKeySequenceSelector.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
@@ -43,7 +43,7 @@ public class Log4j2SingleKeySequenceSelector extends SingleKeySequenceSelector {
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<SingleKeySequenceSelector> {
 
-        @PluginAttribute("sequenceId")
+        @PluginBuilderAttribute("sequenceId")
         protected long sequenceId;
 
         @Override

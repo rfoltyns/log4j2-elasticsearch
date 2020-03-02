@@ -26,7 +26,7 @@ import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
 
@@ -48,7 +48,7 @@ public class Log4j2BatchLimitBackoffPolicy extends BatchLimitBackoffPolicy<Abstr
 
         static final int DEFAULT_MAX_BATCHES_IN_FLIGHT = 8;
 
-        @PluginAttribute("maxBatchesInFlight")
+        @PluginBuilderAttribute("maxBatchesInFlight")
         protected int maxBatchesInFlight = DEFAULT_MAX_BATCHES_IN_FLIGHT;
 
         @Override
