@@ -55,10 +55,10 @@ import java.util.function.Supplier;
  * Uses Chronicle-Map (https://github.com/OpenHFT/Chronicle-Map) to store failed items.
  * Uses {@link RetryProcessor} to retry failed items.
  */
-@Plugin(name = FileBackedRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
-public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>, LifeCycle {
+@Plugin(name = ChronicleMapRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
+public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSource>, LifeCycle {
 
-    public static final String PLUGIN_NAME = "FileBackedRetryFailoverPolicy";
+    public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
 
     private static final StatusLogger LOGGER = StatusLogger.getLogger();
 
@@ -90,7 +90,7 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
      *
      * @param builder config
      */
-    protected FileBackedRetryFailoverPolicy(Builder builder) {
+    protected ChronicleMapRetryFailoverPolicy(Builder builder) {
         this.failedItems = builder.chronicleMap;
         this.keySequenceSelector = builder.keySequenceSelector;
         this.keySequenceSupplier = keySequenceSelector.currentKeySequence();
@@ -210,17 +210,17 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
             throw new ConfigurationException(String.format(
                     "%s was not provided for %s",
                     RetryListener.class.getSimpleName(),
-                    FileBackedRetryFailoverPolicy.class.getSimpleName())
+                    ChronicleMapRetryFailoverPolicy.class.getSimpleName())
             );
         }
     }
 
     @PluginBuilderFactory
-    public static FileBackedRetryFailoverPolicy.Builder newBuilder() {
+    public static ChronicleMapRetryFailoverPolicy.Builder newBuilder() {
         return new Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<FileBackedRetryFailoverPolicy> {
+    public static class Builder implements org.apache.logging.log4j.core.util.Builder<ChronicleMapRetryFailoverPolicy> {
 
         /**
          * Default entry size: 1024 bytes
@@ -268,17 +268,17 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
         private ChronicleMap<CharSequence, ItemSource> chronicleMap;
 
         @Override
-        public final FileBackedRetryFailoverPolicy build() {
+        public final ChronicleMapRetryFailoverPolicy build() {
 
             if (keySequenceSelector == null) {
                 throw new ConfigurationException(
-                        KeySequenceSelector.class.getSimpleName() + " was not provided for " + FileBackedRetryFailoverPolicy.class.getSimpleName()
+                        KeySequenceSelector.class.getSimpleName() + " was not provided for " + ChronicleMapRetryFailoverPolicy.class.getSimpleName()
                 );
             }
 
             if (fileName == null) {
                 throw new ConfigurationException(String.format("fileName was not provided for %s",
-                        FileBackedRetryFailoverPolicy.class.getSimpleName()));
+                        ChronicleMapRetryFailoverPolicy.class.getSimpleName()));
             }
 
             if (averageValueSize < 1024) {
@@ -298,10 +298,10 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
                 this.keySequenceSelector = configuredKeySequenceSelector();
             } catch (Exception e) {
                 throw new ConfigurationException("Could not initialize " +
-                        FileBackedRetryFailoverPolicy.class.getSimpleName(), e);
+                        ChronicleMapRetryFailoverPolicy.class.getSimpleName(), e);
             }
 
-            return new FileBackedRetryFailoverPolicy(this);
+            return new ChronicleMapRetryFailoverPolicy(this);
 
         }
 
@@ -314,7 +314,7 @@ public class FileBackedRetryFailoverPolicy implements FailoverPolicy<ItemSource>
             if (keySequence == null) {
                 // Lack of key sequence in this spot should be terminal
                 // invalid config/storage issues/concurrent updates -> it won't work properly -> just throw..
-                throw new IllegalStateException("Failed to find a valid key sequence for " + FileBackedRetryFailoverPolicy.class);
+                throw new IllegalStateException("Failed to find a valid key sequence for " + ChronicleMapRetryFailoverPolicy.class);
             }
 
             return keySequenceSelector;

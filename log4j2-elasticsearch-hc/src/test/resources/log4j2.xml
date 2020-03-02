@@ -38,7 +38,7 @@
 <!--                             caPath="${sys:pemCertInfo.caPath}" />-->
 <!--                    </Security>-->
                 </HCHttp>
-                <FileBackedRetryFailoverPolicy fileName="failedItems.chronicleMap"
+                <ChronicleMapRetryFailoverPolicy fileName="failedItems.chronicleMap"
                                               numberOfEntries="1000000"
                                               averageValueSize="2048"
                                               batchSize="5000"
@@ -46,7 +46,7 @@
                                               monitored="true"
                                               monitorTaskInterval="30000">
                     <SingleKeySequenceSelector sequenceId="1"/>
-                </FileBackedRetryFailoverPolicy>
+                </ChronicleMapRetryFailoverPolicy>
             </AsyncBatchDelivery>
         </Elasticsearch>
     </Appenders>

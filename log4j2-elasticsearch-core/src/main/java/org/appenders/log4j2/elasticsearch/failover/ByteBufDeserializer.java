@@ -32,7 +32,7 @@ public class ByteBufDeserializer extends JsonDeserializer {
 
     @Override
     public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        // GIVEN that this deserializer will be used ONLY in FileBackedFailoverPolicy scope
+        // GIVEN that this deserializer will be used ONLY in ChronicleMapRetryFailoverPolicy scope
         // WHEN retry rate is constant
         // THEN PooledByteBufAllocator will NOT allocate excessive amount of memory
         return allocator().compositeBuffer(2).writeBytes(p.getBinaryValue());

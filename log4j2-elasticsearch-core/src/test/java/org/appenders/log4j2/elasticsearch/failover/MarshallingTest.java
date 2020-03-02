@@ -144,7 +144,7 @@ public class MarshallingTest {
 
     private ChronicleMap<CharSequence, ItemSource> createDefaultTestChronicleMap() throws IOException {
         File file = createTempFile();
-        return new FileBackedRetryFailoverPolicy.Builder()
+        return new ChronicleMapRetryFailoverPolicy.Builder()
                 .withFileName(file.getAbsolutePath())
                 .withNumberOfEntries(10)
                 .withAverageValueSize(1024)

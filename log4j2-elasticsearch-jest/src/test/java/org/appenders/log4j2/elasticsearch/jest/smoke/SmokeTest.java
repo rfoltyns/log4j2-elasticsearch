@@ -35,7 +35,7 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
-import org.appenders.log4j2.elasticsearch.failover.FileBackedRetryFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
@@ -108,7 +108,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
                 .withDeliveryInterval(1000)
-                .withFailoverPolicy(FileBackedRetryFailoverPolicy.newBuilder()
+                .withFailoverPolicy(ChronicleMapRetryFailoverPolicy.newBuilder()
                         .withKeySequenceSelector(keySequenceSelector)
                         .withFileName("failedItems.chronicleMap")
                         .withAverageValueSize(2048)

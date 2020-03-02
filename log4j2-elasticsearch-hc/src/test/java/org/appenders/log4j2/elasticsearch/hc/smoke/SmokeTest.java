@@ -36,7 +36,7 @@ import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
-import org.appenders.log4j2.elasticsearch.failover.FileBackedRetryFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
@@ -104,7 +104,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
                 .withDeliveryInterval(1000)
                 .withIndexTemplate(indexTemplate)
-                .withFailoverPolicy(new FileBackedRetryFailoverPolicy.Builder()
+                .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
                         .withKeySequenceSelector(keySequenceSelector)
                         .withFileName("failedItems.chronicleMap")
                         .withNumberOfEntries(1000000)

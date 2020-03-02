@@ -63,7 +63,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class FileBackedRetryFailoverPolicyTest {
+public class ChronicleMapRetryFailoverPolicyTest {
 
     public static final long DEFAULT_TEST_SEQUENCE_ID = 1;
 
@@ -85,10 +85,10 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderBuildsSuccessfully() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder();
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder();
 
         // when
-        FileBackedRetryFailoverPolicy policy = builder.build();
+        ChronicleMapRetryFailoverPolicy policy = builder.build();
 
         // then
         assertNotNull(policy);
@@ -99,7 +99,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsIfFileNameIsNull() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withFileName(null);
 
         expectedException.expect(ConfigurationException.class);
@@ -114,7 +114,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsIfAverageValueSizeIsTooLow() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withAverageValueSize(511);
 
         expectedException.expect(ConfigurationException.class);
@@ -129,7 +129,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsIfNumberOfEntriesIsTooLow() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withNumberOfEntries(2);
 
         expectedException.expect(ConfigurationException.class);
@@ -144,7 +144,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsIfBatchSizeIsTooLow() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withBatchSize(0);
 
         expectedException.expect(ConfigurationException.class);
@@ -159,7 +159,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsOnMapInitializationIOException() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = spy(createDefaultTestFailoverPolicyBuilder());
+        ChronicleMapRetryFailoverPolicy.Builder builder = spy(createDefaultTestFailoverPolicyBuilder());
         IOException testException = spy(new IOException("test exception"));
         doThrow(testException).when(builder).createChronicleMap();
 
@@ -176,12 +176,12 @@ public class FileBackedRetryFailoverPolicyTest {
     public void builderThrowsIfKeySequenceSelectorIsNull() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withKeySequenceSelector(null);
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage(KeySequenceSelector.class.getSimpleName() + " was not provided for " +
-                FileBackedRetryFailoverPolicy.class.getSimpleName());
+                ChronicleMapRetryFailoverPolicy.class.getSimpleName());
 
         // when
         builder.build();
@@ -195,13 +195,13 @@ public class FileBackedRetryFailoverPolicyTest {
         KeySequenceSelector keySequenceSelector = mock(KeySequenceSelector.class);
         when(keySequenceSelector.firstAvailable()).thenReturn(null);
 
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withKeySequenceSelector(keySequenceSelector);
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage("Could not initialize " +
-                FileBackedRetryFailoverPolicy.class.getSimpleName());
-        expectedException.expectCause(new ExceptionMatcher(IllegalStateException.class, "Failed to find a valid key sequence for FileBackedRetryFailoverPolicy"));
+                ChronicleMapRetryFailoverPolicy.class.getSimpleName());
+        expectedException.expectCause(new ExceptionMatcher(IllegalStateException.class, "Failed to find a valid key sequence for ChronicleMapRetryFailoverPolicy"));
         // when
         builder.build();
 
@@ -212,10 +212,10 @@ public class FileBackedRetryFailoverPolicyTest {
 
         // given
         long expectedInterval = DEFAULT_TEST_RETRY_INTERVAL;
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withRetryDelay(expectedInterval);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy(builder.build());
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy(builder.build());
         failoverPolicy.addListener(mock(RetryListener.class));
 
         ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
@@ -234,10 +234,10 @@ public class FileBackedRetryFailoverPolicyTest {
     public void failoverListenerIsAddedIfInstanceOfRetryListener() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withRetryDelay(DEFAULT_TEST_RETRY_INTERVAL);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy(builder.build());
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy(builder.build());
 
         // when
         failoverPolicy.addListener(mock(RetryListener.class));
@@ -251,10 +251,10 @@ public class FileBackedRetryFailoverPolicyTest {
     public void failoverListenerIsNotAddedIfNotInstanceOfRetryListener() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withRetryDelay(DEFAULT_TEST_RETRY_INTERVAL);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy(builder.build());
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy(builder.build());
 
         // when
         failoverPolicy.addListener(mock(FailoverListener.class));
@@ -271,7 +271,7 @@ public class FileBackedRetryFailoverPolicyTest {
         ChronicleHashCorruption corruption = mock(ChronicleHashCorruption.class);
         when(corruption.exception()).thenReturn(mock(IOException.class));
 
-        FileBackedRetryFailoverPolicy.HashCorruptionListener listener = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.HashCorruptionListener listener = createDefaultTestFailoverPolicyBuilder()
                 .createCorruptionListener();
 
         // when
@@ -289,7 +289,7 @@ public class FileBackedRetryFailoverPolicyTest {
         // given
         ChronicleHashCorruption corruption = mock(ChronicleHashCorruption.class);
 
-        FileBackedRetryFailoverPolicy.HashCorruptionListener listener = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy.HashCorruptionListener listener = createDefaultTestFailoverPolicyBuilder()
                 .createCorruptionListener();
 
         // when
@@ -312,12 +312,12 @@ public class FileBackedRetryFailoverPolicyTest {
         when(keySequenceSelector.currentKeySequence()).thenReturn(() -> keySequence);
 
         String fileName = createTempFile().getAbsolutePath();
-        FileBackedRetryFailoverPolicy.Builder builder = FileBackedRetryFailoverPolicy.newBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = ChronicleMapRetryFailoverPolicy.newBuilder()
                 .withKeySequenceSelector(keySequenceSelector)
                 .withFileName(fileName)
                 .withNumberOfEntries(TEST_NUMBER_OF_ENTRIES);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
 
         ItemSource failedItemSource = mock(ItemSource.class);
 
@@ -337,10 +337,10 @@ public class FileBackedRetryFailoverPolicyTest {
 
         ChronicleMap<CharSequence, ItemSource> failedItems = createDefaultTestChronicleMap();
 
-        FileBackedRetryFailoverPolicy.Builder builder =
+        ChronicleMapRetryFailoverPolicy.Builder builder =
                 createDefaultTestFailoverPolicyBuilder(fileName, failedItems);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
 
         ItemSource<Object> failedItemSource = mock(FailedItemSource.class);
         String expectedKey = UUID.randomUUID().toString();
@@ -362,10 +362,10 @@ public class FileBackedRetryFailoverPolicyTest {
 
         ChronicleMap<CharSequence, ItemSource> failedItems = createDefaultTestChronicleMap();
 
-        FileBackedRetryFailoverPolicy.Builder builder =
+        ChronicleMapRetryFailoverPolicy.Builder builder =
                 createDefaultTestFailoverPolicyBuilder(fileName, failedItems);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
 
         CharSequence unexpectedKey = UUID.randomUUID().toString();
 
@@ -381,7 +381,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void exceptionCountIsIncrementedOnStorageFailure() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder().build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder().build();
 
         ItemSource<Object> failedItemSource = mock(FailedItemSource.class);
 
@@ -406,13 +406,13 @@ public class FileBackedRetryFailoverPolicyTest {
         ItemSource itemSource = mock(FailedItemSource.class);
         RetryProcessorTest.fillMap(failedItems, 1, keySequenceSelector, () -> itemSource);
 
-        FileBackedRetryFailoverPolicy.Builder builder =
+        ChronicleMapRetryFailoverPolicy.Builder builder =
                 createDefaultTestFailoverPolicyBuilder(createTempFile().getAbsolutePath(), failedItems)
                 .withKeySequenceSelector(keySequenceSelector);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
 
-        FileBackedRetryFailoverPolicy.MetricsPrinter metricsPrinter = failoverPolicy.new MetricsPrinter();
+        ChronicleMapRetryFailoverPolicy.MetricsPrinter metricsPrinter = failoverPolicy.new MetricsPrinter();
 
         verify(failedItems, never()).size();
 
@@ -428,13 +428,13 @@ public class FileBackedRetryFailoverPolicyTest {
     public void lifecycleStartFailsIfNoListenersConfigured() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder().build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder().build();
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage(
                 RetryListener.class.getSimpleName()
                         + " was not provided for "
-                        + FileBackedRetryFailoverPolicy.class.getSimpleName()
+                        + ChronicleMapRetryFailoverPolicy.class.getSimpleName()
         );
 
         // when
@@ -446,7 +446,7 @@ public class FileBackedRetryFailoverPolicyTest {
     public void lifecycleStartSchedulesMetricsPrinterIfConfigured() throws IOException {
 
         // given
-        FileBackedRetryFailoverPolicy failoverPolicy = spy(new FileBackedRetryFailoverPolicy(
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy(new ChronicleMapRetryFailoverPolicy(
                 createDefaultTestFailoverPolicyBuilder()
                         .withMonitored(true)
                         .withMonitorTaskInterval(DEFAULT_TEST_MONITOR_TASK_INTERVAL)
@@ -460,8 +460,8 @@ public class FileBackedRetryFailoverPolicyTest {
         failoverPolicy.start();
 
         // then
-        ArgumentCaptor<FileBackedRetryFailoverPolicy.MetricsPrinter> captor = ArgumentCaptor.forClass(
-                FileBackedRetryFailoverPolicy.MetricsPrinter.class
+        ArgumentCaptor<ChronicleMapRetryFailoverPolicy.MetricsPrinter> captor = ArgumentCaptor.forClass(
+                ChronicleMapRetryFailoverPolicy.MetricsPrinter.class
         );
 
         verify(executorService).scheduleAtFixedRate(
@@ -517,7 +517,7 @@ public class FileBackedRetryFailoverPolicyTest {
 
         assertFalse(lifeCycle.isStarted());
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy((FileBackedRetryFailoverPolicy)lifeCycle);
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy((ChronicleMapRetryFailoverPolicy)lifeCycle);
 
         DelayedShutdown delayedShutdown = spy(new DelayedShutdown(() -> {}));
         when(failoverPolicy.delayedShutdown()).thenReturn(delayedShutdown);
@@ -539,7 +539,7 @@ public class FileBackedRetryFailoverPolicyTest {
 
         assertFalse(lifeCycle.isStarted());
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy((FileBackedRetryFailoverPolicy)lifeCycle);
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy((ChronicleMapRetryFailoverPolicy)lifeCycle);
 
         DelayedShutdown delayedShutdown = spy(new DelayedShutdown(() -> {}));
         when(failoverPolicy.delayedShutdown()).thenReturn(delayedShutdown);
@@ -564,7 +564,7 @@ public class FileBackedRetryFailoverPolicyTest {
 
         assertFalse(lifeCycle.isStarted());
 
-        FileBackedRetryFailoverPolicy failoverPolicy = spy((FileBackedRetryFailoverPolicy)lifeCycle);
+        ChronicleMapRetryFailoverPolicy failoverPolicy = spy((ChronicleMapRetryFailoverPolicy)lifeCycle);
 
         InvocationCounter counter = new InvocationCounter();
         DelayedShutdown delayedShutdown = spy(new DelayedShutdown(() -> counter.increment()));
@@ -592,11 +592,11 @@ public class FileBackedRetryFailoverPolicyTest {
 
         ChronicleMap<CharSequence, ItemSource> failedItems = createDefaultTestChronicleMap();
 
-        FileBackedRetryFailoverPolicy.Builder builder =
+        ChronicleMapRetryFailoverPolicy.Builder builder =
                 createDefaultTestFailoverPolicyBuilder(fileName, failedItems)
                 .withKeySequenceSelector(createDummyKeySequenceSelector());
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
         failoverPolicy.addListener((RetryListener)failedItemSource -> true);
 
         failoverPolicy.start();
@@ -619,11 +619,11 @@ public class FileBackedRetryFailoverPolicyTest {
         ChronicleMap<CharSequence, ItemSource> failedItems = createDefaultTestChronicleMap();
 
         KeySequenceSelector keySequenceSelector = spy(createDummyKeySequenceSelector());
-        FileBackedRetryFailoverPolicy.Builder builder =
+        ChronicleMapRetryFailoverPolicy.Builder builder =
                 createDefaultTestFailoverPolicyBuilder(fileName, failedItems)
                         .withKeySequenceSelector(keySequenceSelector);
 
-        FileBackedRetryFailoverPolicy failoverPolicy = builder.build();
+        ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
         failoverPolicy.addListener((RetryListener)failedItemSource -> true);
 
         failoverPolicy.start();
@@ -691,7 +691,7 @@ public class FileBackedRetryFailoverPolicyTest {
 
     private LifeCycle createLifeCycleTestObject() throws IOException {
 
-        FileBackedRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder()
+        ChronicleMapRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder()
                 .withKeySequenceSelector(createDefaultTestKeySequenceSelector())
                 .build();
 
@@ -700,16 +700,16 @@ public class FileBackedRetryFailoverPolicyTest {
 
     }
 
-    public FileBackedRetryFailoverPolicy.Builder createDefaultTestFailoverPolicyBuilder() throws IOException {
+    public ChronicleMapRetryFailoverPolicy.Builder createDefaultTestFailoverPolicyBuilder() throws IOException {
         File tempFile = createTempFile();
-        return FileBackedRetryFailoverPolicy.newBuilder()
+        return ChronicleMapRetryFailoverPolicy.newBuilder()
                 .withKeySequenceSelector(createDefaultTestKeySequenceSelector())
                 .withFileName(tempFile.getAbsolutePath())
                 .withNumberOfEntries(TEST_NUMBER_OF_ENTRIES);
     }
 
-    public FileBackedRetryFailoverPolicy.Builder createDefaultTestFailoverPolicyBuilder(String fileName, ChronicleMap<CharSequence, ItemSource> failedItems) {
-        return new FileBackedRetryFailoverPolicy.Builder() {
+    public ChronicleMapRetryFailoverPolicy.Builder createDefaultTestFailoverPolicyBuilder(String fileName, ChronicleMap<CharSequence, ItemSource> failedItems) {
+        return new ChronicleMapRetryFailoverPolicy.Builder() {
             @Override
             ChronicleMap<CharSequence, ItemSource> createChronicleMap() {
                 return failedItems;
