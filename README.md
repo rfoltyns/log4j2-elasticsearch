@@ -7,7 +7,7 @@
 
 This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
-Latest released code (1.3.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.3).
+Latest released code (1.4.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.4).
 
 Project consists of:
 * `log4j-elasticsearch-core` - skeleton provider for conrete implementations
@@ -27,13 +27,18 @@ Project consists of:
 * Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
 * HTTPS support (XPack Security and Shield - visit submodules for compatibility matrix)
-* (1.3) [Buffer object pool](log4j2-elasticsearch-core#object-pooling) (memory allocation reduced by ~80%)
-* Buffered Jest HTTP client
-* Fully configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
-* (1.4 - Q1 2020) Failover with persistence and retry
+* (1.3) [Pooled buffers](log4j2-elasticsearch-core#object-pooling) (lower memory footprint)
+* Configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
+* (1.4) Failover with persistence and retry
 * Log overflow prevention with backoff policies
-* `log4j2-elasticsearch-hc` module - optimized HTTP client
-* Custom output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
+* [`log4j2-elasticsearch-hc`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc) module - optimized HTTP client
+* Custom JSON output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
+
+### Roadmap
+
+* `IndexTemplate`-like integrations
+* Metrics
+* Pluggable internal logging
 
 ## Usage
 
@@ -42,12 +47,13 @@ Project consists of:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.3.5</version>
+    <version>1.4.0</version>
 </dependency>
 ```
-(ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below)
 
-2. Add this snippet to `log4j2.xml` configuration:
+Ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below
+
+2. Use simple `log4j2.xml` configuration:
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
@@ -60,9 +66,11 @@ Project consists of:
 </Appenders>
 ```
 
-or log4j2.properties (see [example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/resources/log4j2.properties))
+or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc)
 
-or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java)
+or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
+
+or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
 
 3. Start logging directly to Elasticsearch!
 ```java

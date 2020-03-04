@@ -7,8 +7,13 @@ By default, FasterXML is used generate output with [JacksonJsonLayout](https://g
 
 ## Maven
 
-Not released yet
-
+```xml
+<dependency>
+    <groupId>org.appenders.log4j</groupId>
+    <artifactId>log4j2-elasticsearch-hc</artifactId>
+    <version>1.4.0</version>
+</dependency>
+```
 ## Usage
 
 Add `HCHttp` to
@@ -22,11 +27,14 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
-        <IndexName indexName="log4j2" />
-        <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
-            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <HCHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>">
-                <PooledItemSourceFactory itemSizeInBytes="1024000" initialPoolSize="4" />
+        <IndexName indexName="log4j2"/>
+        <JacksonJsonLayout>
+            <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="1024" initialPoolSize="3000"/>
+        </JacksonJsonLayout>
+        <AsyncBatchDelivery batchSize="1000" deliveryInterval="10000" >
+            <IndexTemplate name="log4j2" path="classpath:indexTemplate-7.json" />
+            <HCHttp serverUris="http://localhost:9200">
+                <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="1024000" initialPoolSize="3"/>
             </HCHttp>
         </AsyncBatchDelivery>
     </Elasticsearch>
@@ -134,10 +142,11 @@ PEM | Not tested | Yes | Yes| Yes
 
 Be aware that following jars may have to be provided by user for this library to work:
 
+* Netty: `io.netty:netty-buffer`
 * Jackson FasterXML: `com.fasterxml.jackson.core:jackson-core,jackson-databind,jackson-annotations`
 * Jackson FasterXML Afterburner module if `JacksonJsonLayout:afterburner=true`: `com.fasterxml.jackson.module:jackson-module-afterburner`
 * Log4j2: `org.apache.logging.log4j:log4-api,log4j-core`
-* Disruptor (if using `AsyncAppender`): `com.lmax:distuptor`
+* Disruptor (if using `AsyncAppender`): `com.lmax:disruptor`
 * Bouncy Castle (if using `Security`): `org.bouncycastle:bcprov-jdk15on,bcpkix-jdk15on`
 
 See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch-hc/latest) for a list of dependencies.
