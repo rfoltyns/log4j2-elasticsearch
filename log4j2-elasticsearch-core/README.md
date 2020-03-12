@@ -73,7 +73,7 @@ Since 1.1, rolling index can be defined using `RollingIndexName` tag:
         <RollingIndexName indexName="log4j2" pattern="yyyy-MM-dd" timeZone="Europe/Warsaw" separator="." />
         ...
     </Elasticsearch>
-</App
+</Appenders>
 ```
 
 `pattern` accepts any valid date pattern with years down to millis (although rolling daily or weekly should be sufficient for most use cases)

@@ -192,8 +192,7 @@ public class RollingIndexNameFormatterTest {
         LogEvent logEvent = mock(LogEvent.class);
         when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.MINUTES.toMillis(1));
 
-        IndexNameFormatter formatter = new TestFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE,
-            RollingIndexNameFormatter.DEFAULT_SEPARATOR);
+        IndexNameFormatter formatter = new TestFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE, RollingIndexNameFormatter.DEFAULT_SEPARATOR);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         new Thread() {
