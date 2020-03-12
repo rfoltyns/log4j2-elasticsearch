@@ -152,6 +152,37 @@ public class RollingIndexNameFormatterTest {
         Assert.assertEquals("testIndexName-2017-12-20-22.54", formattedIndexName);
     }
 
+    @Test
+    public void returnsCustomSeparatorFormattedIndexName() {
+
+        // given
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
+        builder.withSeparator(".");
+        IndexNameFormatter formatter = builder.build();
+
+        // when
+        String formattedIndexName = formatter.format(logEvent);
+
+        // then
+        Assert.assertEquals("testIndexName.2017-12-20-23.54", formattedIndexName);
+    }
+
+    @Test
+    public void returnsDefaultSeparatorFormattedIndexNameWithoutCustomSeparator() {
+
+        // given
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        IndexNameFormatter formatter = new RollingIndexNameFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE);
+
+        // when
+        String formattedIndexName = formatter.format(logEvent);
+
+        // then
+        Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
+    }
 
     @Test
     public void returnsEventTimeBasedNameInsteadOfCurrentNameDuringRollover() throws InterruptedException {
