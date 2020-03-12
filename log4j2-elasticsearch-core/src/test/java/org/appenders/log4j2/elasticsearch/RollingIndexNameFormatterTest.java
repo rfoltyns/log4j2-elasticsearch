@@ -9,9 +9,7 @@ package org.appenders.log4j2.elasticsearch;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -219,14 +217,14 @@ public class RollingIndexNameFormatterTest {
     public void concurrencyTest() throws InterruptedException {
 
         // given
-        //        TestFormatter.TEST_PATTERN_PROCESSOR = Mockito.spy(new PatternProcessor("%d{" + DATE_PATTERN_WITH_MINUTES + "}"));
+        // TestFormatter.TEST_PATTERN_PROCESSOR = Mockito.spy(new PatternProcessor("%d{" + DATE_PATTERN_WITH_MINUTES + "}"));
 
         for (int ii = 0; ii < 100; ii++) {
             IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
             runSingleConcurrencyTest(formatter, 20);
         }
 
-        //        Mockito.verify(TestFormatter.TEST_PATTERN_PROCESSOR, Mockito.times(100)).getNextTime(Mockito.any(long.class), Mockito.eq(1), Mockito.eq(false));
+        // Mockito.verify(TestFormatter.TEST_PATTERN_PROCESSOR, Mockito.times(100)).getNextTime(Mockito.any(long.class), Mockito.eq(1), Mockito.eq(false));
     }
 
     private void runSingleConcurrencyTest(IndexNameFormatter formatter, int numberOfThreads) throws InterruptedException {
