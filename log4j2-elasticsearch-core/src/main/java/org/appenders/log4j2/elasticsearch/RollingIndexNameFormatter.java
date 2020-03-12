@@ -42,10 +42,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Plugin(name = "RollingIndexName", category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
 public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
-    public static final String SEPARATOR = "-";
+    public static final String DEFAULT_SEPARATOR = "-";
 
     private String indexName;
     private String currentName;
+    private String separator;
     private long nextRolloverTime;
     private final AtomicBoolean rollingOver = new AtomicBoolean();
 
@@ -66,10 +67,15 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
     private long currentFileTime;
 
     protected RollingIndexNameFormatter(String indexName, String pattern, long initTimeInMillis, TimeZone timeZone) {
+        this(indexName, pattern, initTimeInMillis, timeZone, DEFAULT_SEPARATOR);
+    }
+
+    protected RollingIndexNameFormatter(String indexName, String pattern, long initTimeInMillis, TimeZone timeZone, String separator) {
         this.indexName = indexName;
         this.fastDateFormat = FastDateFormat.getInstance(pattern, timeZone);
         this.patternProcessor = createPatternProcessor(pattern);
         this.currentName = doFormat(indexName, initTimeInMillis);
+        this.separator = separator;
 
         long previousTime = this.patternProcessor.getNextTime(initTimeInMillis, -1, false);
         this.patternProcessor.setPrevFileTime(previousTime);
@@ -116,7 +122,7 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
     }
 
     private String doFormat(String indexName, long timeInMillis) {
-        return fastDateFormat.format(timeInMillis, buffer(indexName).append(SEPARATOR)).toString();
+        return fastDateFormat.format(timeInMillis, buffer(indexName).append(separator)).toString();
     }
 
     private StringBuilder buffer(String indexName) {
@@ -143,6 +149,9 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
         @PluginBuilderAttribute
         private String timeZone = DEFAULT_TIME_ZONE;
 
+        @PluginBuilderAttribute
+        private String separator = DEFAULT_SEPARATOR;
+
         @Override
         public RollingIndexNameFormatter build() {
             if (indexName == null) {
@@ -151,7 +160,7 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
             if (pattern == null) {
                 throw new ConfigurationException("No pattern provided for RollingIndexName");
             }
-            return new RollingIndexNameFormatter(indexName, pattern, getInitTimeInMillis(), TimeZone.getTimeZone(timeZone));
+            return new RollingIndexNameFormatter(indexName, pattern, getInitTimeInMillis(), TimeZone.getTimeZone(timeZone), separator);
         }
 
         public Builder withIndexName(String indexName) {
@@ -166,6 +175,11 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
         public Builder withTimeZone(String timeZone) {
             this.timeZone = timeZone;
+            return this;
+        }
+
+        public Builder withSeparator(String separator) {
+            this.separator = separator;
             return this;
         }
 
