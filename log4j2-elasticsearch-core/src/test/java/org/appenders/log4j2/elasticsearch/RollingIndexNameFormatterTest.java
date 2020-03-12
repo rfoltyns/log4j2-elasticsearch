@@ -54,8 +54,8 @@ public class RollingIndexNameFormatterTest {
 
     private static long getTestTimeInMillis() {
         return LocalDateTime.of(2017, 12, 20, 23, 54, 0, 0)
-                .atZone(ZoneId.of(RollingIndexNameFormatter.Builder.DEFAULT_TIME_ZONE))
-                .toInstant().toEpochMilli();
+                            .atZone(ZoneId.of(RollingIndexNameFormatter.Builder.DEFAULT_TIME_ZONE))
+                            .toInstant().toEpochMilli();
     }
 
     public static RollingIndexNameFormatter.Builder createRollingIndexNameFormatterBuilder() {
@@ -81,7 +81,7 @@ public class RollingIndexNameFormatterTest {
     }
 
     @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptioWhenIndexNameIsNull() {
+    public void builderThrowsExceptionWhenIndexNameIsNull() {
 
         // when
         RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
@@ -93,7 +93,7 @@ public class RollingIndexNameFormatterTest {
 
 
     @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptioWhenPatternIsNull() {
+    public void builderThrowsExceptionWhenPatternIsNull() {
 
         // when
         RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
@@ -152,6 +152,23 @@ public class RollingIndexNameFormatterTest {
         Assert.assertEquals("testIndexName-2017-12-20-22.54", formattedIndexName);
     }
 
+    @Test
+    public void returnsCustomSeparatorFormattedIndexName() {
+
+        // given
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
+        builder.withSeparator(".");
+        IndexNameFormatter formatter = builder.build();
+
+        // when
+        String formattedIndexName = formatter.format(logEvent);
+
+        // then
+        Assert.assertEquals("testIndexName.2017-12-20-23.54", formattedIndexName);
+    }
+
 
     @Test
     public void returnsEventTimeBasedNameInsteadOfCurrentNameDuringRollover() throws InterruptedException {
@@ -175,7 +192,8 @@ public class RollingIndexNameFormatterTest {
         LogEvent logEvent = mock(LogEvent.class);
         when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.MINUTES.toMillis(1));
 
-        IndexNameFormatter formatter = new TestFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE);
+        IndexNameFormatter formatter = new TestFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE,
+            RollingIndexNameFormatter.DEFAULT_SEPARATOR);
 
         CountDownLatch countDownLatch = new CountDownLatch(1);
         new Thread() {
@@ -202,14 +220,14 @@ public class RollingIndexNameFormatterTest {
     public void concurrencyTest() throws InterruptedException {
 
         // given
-//        TestFormatter.TEST_PATTERN_PROCESSOR = Mockito.spy(new PatternProcessor("%d{" + DATE_PATTERN_WITH_MINUTES + "}"));
+        //        TestFormatter.TEST_PATTERN_PROCESSOR = Mockito.spy(new PatternProcessor("%d{" + DATE_PATTERN_WITH_MINUTES + "}"));
 
         for (int ii = 0; ii < 100; ii++) {
             IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
             runSingleConcurrencyTest(formatter, 20);
         }
 
-//        Mockito.verify(TestFormatter.TEST_PATTERN_PROCESSOR, Mockito.times(100)).getNextTime(Mockito.any(long.class), Mockito.eq(1), Mockito.eq(false));
+        //        Mockito.verify(TestFormatter.TEST_PATTERN_PROCESSOR, Mockito.times(100)).getNextTime(Mockito.any(long.class), Mockito.eq(1), Mockito.eq(false));
     }
 
     private void runSingleConcurrencyTest(IndexNameFormatter formatter, int numberOfThreads) throws InterruptedException {
@@ -269,8 +287,8 @@ public class RollingIndexNameFormatterTest {
 
         public static PatternProcessor TEST_PATTERN_PROCESSOR;
 
-        public TestFormatter(String indexName, String pattern, long initTimeInMillis, TimeZone timeZone) {
-            super(indexName, pattern, initTimeInMillis, timeZone);
+        public TestFormatter(String indexName, String pattern, long initTimeInMillis, TimeZone timeZone, String separator) {
+            super(indexName, pattern, initTimeInMillis, timeZone, separator);
         }
 
         @Override
