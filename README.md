@@ -10,12 +10,12 @@ This is a parent project for log4j2 appender plugins capable of pushing logs in 
 Latest released code (1.4.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.4).
 
 Project consists of:
-* `log4j-elasticsearch-core` - skeleton provider for conrete implementations
+* `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
 * `log4j2-elasticsearch-hc` - optimized Apache Async HTTP client compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
-* `log4j-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
-* `log4j-elasticsearch2-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/java-docs-bulk-processor.html) compatible with 2.x clusters
-* `log4j-elasticsearch5-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/java-docs-bulk-processor.html) compatible with 5.x and 6.x clusters
-* `log4j-elasticsearch6-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.2/java-docs-bulk-processor.html) compatible with 6.x clusters
+* `log4j2-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
+* `log4j2-elasticsearch2-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/java-docs-bulk-processor.html) compatible with 2.x clusters
+* `log4j2-elasticsearch5-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/java-docs-bulk-processor.html) compatible with 5.x and 6.x clusters
+* `log4j2-elasticsearch6-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.2/java-docs-bulk-processor.html) compatible with 6.x clusters
 
 ## Features
 
@@ -77,6 +77,9 @@ or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch
 Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
 log.info("Hello, World!");
 ```
+
+Logs not arriving? Visit [examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples) and verify your config.
+
 ## Dependencies
 
 Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
