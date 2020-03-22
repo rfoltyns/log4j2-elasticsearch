@@ -37,4 +37,9 @@ public class StringItemSource implements ItemSource<String> {
         return source;
     }
 
+    @Override
+    public String toString() {
+        return source;
+    }
+
 }

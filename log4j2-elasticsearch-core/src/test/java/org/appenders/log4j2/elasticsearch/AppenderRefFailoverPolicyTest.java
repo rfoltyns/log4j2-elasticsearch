@@ -21,25 +21,37 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.Test;
 
-import static org.mockito.Matchers.any;
+import java.util.UUID;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class AppenderRefFailoverPolicyTest {
 
+    static {
+        System.setProperty("io.netty.allocator.maxOrder", "2");
+    }
+
     @Test
-    public void deliversToAppenderRef() {
+    public void deliverStringDeliversToAppenderRef() {
 
         // given
         Appender appender = mock(Appender.class);
@@ -50,13 +62,63 @@ public class AppenderRefFailoverPolicyTest {
 
         FailoverPolicy<String> failoverPolicy = createTestFailoverPolicy(testAppenderRef, configuration);
 
-        String failedMessage = "test failed message";
+        String failedMessage = UUID.randomUUID().toString();
 
         // when
         failoverPolicy.deliver(failedMessage);
 
         // then
         verify(appender, times(1)).append(any(LogEvent.class));
+    }
+
+    @Test
+    public void deliverItemSourceDelegates() {
+
+        // given
+        Appender appender = mock(Appender.class);
+        when(appender.isStarted()).thenReturn(true);
+        Configuration configuration = mock(Configuration.class);
+        String testAppenderRef = "testAppenderRef";
+        when(configuration.getAppender(testAppenderRef)).thenReturn(appender);
+
+        FailoverPolicy<String> failoverPolicy = spy(createTestFailoverPolicy(testAppenderRef, configuration));
+
+        String failedMessage = UUID.randomUUID().toString();
+        ItemSource<String> itemSource = new StringItemSource(failedMessage);
+
+        // when
+        failoverPolicy.deliver(itemSource);
+
+        // then
+        verify(failoverPolicy).deliver(eq(failedMessage));
+    }
+
+    @Test
+    public void deliverFailedItemSourceDelegates() {
+
+        // given
+        Appender appender = mock(Appender.class);
+        when(appender.isStarted()).thenReturn(true);
+        Configuration configuration = mock(Configuration.class);
+        String testAppenderRef = "testAppenderRef";
+        when(configuration.getAppender(testAppenderRef)).thenReturn(appender);
+
+        FailoverPolicy<String> failoverPolicy = spy(createTestFailoverPolicy(testAppenderRef, configuration));
+
+        String failedMessage = UUID.randomUUID().toString();
+        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+        buffer.writeBytes(failedMessage.getBytes());
+
+        FailedItemSource itemSource = new FailedItemSource<>(
+                new ByteBufItemSource(buffer, source -> {}),
+                new FailedItemInfo(UUID.randomUUID().toString())
+        );
+
+        // when
+        failoverPolicy.deliver(itemSource);
+
+        // then
+        verify(failoverPolicy).deliver(eq(failedMessage));
     }
 
     @Test

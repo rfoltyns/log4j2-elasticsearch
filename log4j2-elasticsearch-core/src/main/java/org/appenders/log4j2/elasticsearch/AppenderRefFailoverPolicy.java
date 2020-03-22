@@ -34,6 +34,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.message.SimpleMessage;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 
 /**
  * Allows to redirect failed logs to another appender.
@@ -58,6 +59,20 @@ public class AppenderRefFailoverPolicy implements FailoverPolicy<String> {
         resolveAppender();
 
         doDeliver(failedPayload);
+    }
+
+    @Override
+    public void deliver(ItemSource failedPayload) {
+
+        // Since Configuration is not complete during the startup, let's resolve lazily here
+        this.resolveAppender();
+
+        doDeliver(failedPayload.toString());
+    }
+
+    @Override
+    public void deliver(FailedItemSource failedPayload) {
+        deliver((ItemSource)failedPayload);
     }
 
     /**

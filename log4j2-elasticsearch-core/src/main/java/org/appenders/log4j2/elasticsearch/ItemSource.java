@@ -20,8 +20,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 import java.io.Serializable;
 
 /**

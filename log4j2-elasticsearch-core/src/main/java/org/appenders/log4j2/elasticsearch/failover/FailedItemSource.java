@@ -46,4 +46,9 @@ public class FailedItemSource<T> implements ItemSource<T> {
         this.itemSource.release();
     }
 
+    @Override
+    public String toString() {
+        return itemSource.toString();
+    }
+
 }

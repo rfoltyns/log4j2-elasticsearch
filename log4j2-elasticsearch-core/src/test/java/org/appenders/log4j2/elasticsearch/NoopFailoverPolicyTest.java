@@ -46,7 +46,7 @@ public class NoopFailoverPolicyTest {
     }
 
     @Test
-    public void deliverFailedItemSourceDelegatesToGenericAPI() {
+    public void deliverItemSourceDelegatesToGenericAPI() {
 
         // given
         NoopFailoverPolicy.Builder builder = NoopFailoverPolicy.newBuilder();
@@ -61,6 +61,27 @@ public class NoopFailoverPolicyTest {
         failoverPolicy.deliver(failedItemSource);
 
         // then
+        verify(failoverPolicy).deliver(itemSource);
+
+    }
+
+    @Test
+    public void deliverFailedItemSourceDelegatesToGenericAPI() {
+
+        // given
+        NoopFailoverPolicy.Builder builder = NoopFailoverPolicy.newBuilder();
+        FailoverPolicy<Object> failoverPolicy = spy(builder.build());
+
+        FailedItemSource<Object> failedItemSource = mock(FailedItemSource.class);
+
+        Object itemSource = mock(ItemSource.class);
+        when(failedItemSource.getSource()).thenReturn(itemSource);
+
+        // when
+        failoverPolicy.deliver(failedItemSource);
+
+        // then
+        verify(failoverPolicy).deliver((ItemSource)failedItemSource);
         verify(failoverPolicy).deliver(itemSource);
 
     }

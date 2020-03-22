@@ -44,9 +44,20 @@ public interface FailoverPolicy<T> {
      * SHOULD provide an alternate method of delivery
      *
      * @param failedPayload payload to be handled
+     * @deprecated {@link ItemSource} parameter was added in 1.4. It was a mistake. Method will be removed in 1.5. Use {@link #deliver(FailedItemSource)} instead.
      */
+    @Deprecated
     default void deliver(ItemSource<T> failedPayload) {
         deliver(failedPayload.getSource()); // fallback to existing API for backwards compatibility
+    }
+
+    /**
+     * SHOULD provide an alternate method of delivery
+     *
+     * @param failedPayload
+     */
+    default void deliver(FailedItemSource<T> failedPayload) {
+        deliver((ItemSource<T>)failedPayload); // fallback to existing API for backwards compatibility
     }
 
     /**
