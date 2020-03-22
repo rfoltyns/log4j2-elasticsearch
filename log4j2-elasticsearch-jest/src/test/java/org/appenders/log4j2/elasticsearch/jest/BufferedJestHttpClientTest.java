@@ -26,7 +26,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
-import io.searchbox.client.config.ElasticsearchVersion;
 import io.searchbox.core.Bulk;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
