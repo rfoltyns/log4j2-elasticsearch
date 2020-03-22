@@ -160,7 +160,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             @Override
             public void completed(BatchResult result) {
 
-                LOG.info("Cluster service time: {}", result.getTook());
+                LOG.debug("Cluster service time: {}", result.getTook());
 
                 backoffPolicy.deregister(request);
 
