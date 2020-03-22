@@ -45,8 +45,6 @@ import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-
 public class FailedItemMarshaller implements BytesWriter<ItemSource>, BytesReader<ItemSource>,
         ReadResolvable<FailedItemMarshaller> {
 

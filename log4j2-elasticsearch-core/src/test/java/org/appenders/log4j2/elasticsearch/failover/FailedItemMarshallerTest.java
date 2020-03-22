@@ -20,14 +20,11 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import net.openhft.chronicle.bytes.Bytes;
-import net.openhft.chronicle.bytes.HeapBytesStore;
-import net.openhft.chronicle.bytes.VanillaBytes;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireOut;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;

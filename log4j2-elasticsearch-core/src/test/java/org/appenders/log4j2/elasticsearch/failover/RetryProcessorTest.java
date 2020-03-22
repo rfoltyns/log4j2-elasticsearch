@@ -21,9 +21,7 @@ package org.appenders.log4j2.elasticsearch.failover;
  */
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;

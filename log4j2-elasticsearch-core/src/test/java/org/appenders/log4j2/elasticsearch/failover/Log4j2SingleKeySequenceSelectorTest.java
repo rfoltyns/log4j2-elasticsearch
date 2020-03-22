@@ -21,19 +21,11 @@ package org.appenders.log4j2.elasticsearch.failover;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class Log4j2SingleKeySequenceSelectorTest {
 
