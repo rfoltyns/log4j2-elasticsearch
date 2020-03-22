@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
@@ -83,7 +82,6 @@ public class HCBatchOperations implements BatchOperations<BatchRequest> {
     protected ObjectWriter configuredWriter() {
         return new ExtendedObjectMapper(new MappingJsonFactory())
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .registerModule(new AfterburnerModule())
                 .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
                 .writerFor(IndexRequest.class);
     }
