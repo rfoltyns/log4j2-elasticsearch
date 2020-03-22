@@ -69,7 +69,6 @@ public class SmokeTest extends SmokeTestBase {
                         .withPoolName("batchPool")
                         .withInitialPoolSize(INITIAL_BATCH_POOL_SIZE)
                         .withItemSizeInBytes(estimatedBatchSizeInBytes)
-                        .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
                         .withMonitored(true)
                         .withMonitorTaskInterval(10000)
                         .build()
@@ -79,7 +78,6 @@ public class SmokeTest extends SmokeTestBase {
                 .withReadTimeout(20000)
                 .withIoThreadCount(4)
                 .withMaxTotalConnections(8)
-                .withMappingType("_doc")
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4));
 
         if (secured) {
@@ -109,9 +107,6 @@ public class SmokeTest extends SmokeTestBase {
                         .withFileName("failedItems.chronicleMap")
                         .withNumberOfEntries(1000000)
                         .withAverageValueSize(2048)
-                        .withFileName("c:/Users/bh/Downloads/failedItems.chronicleMap")
-                        .withNumberOfEntries(1000000)
-                        .withAverageValueSize(2024)
                         .withBatchSize(5000)
                         .withRetryDelay(4000)
                         .withMonitored(true)
