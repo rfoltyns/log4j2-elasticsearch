@@ -20,17 +20,17 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 
-@Plugin(name = Log4j2SingleKeySequenceSelector.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
+@Plugin(name = Log4j2SingleKeySequenceSelector.PLUGIN_NAME, category = Node.CATEGORY, elementType = Log4j2SingleKeySequenceSelector.ELEMENT_TYPE, printObject = true)
 public class Log4j2SingleKeySequenceSelector extends SingleKeySequenceSelector {
 
     static final String PLUGIN_NAME = "SingleKeySequenceSelector";
+    static final String ELEMENT_TYPE = "keySequenceSelector";
 
     public Log4j2SingleKeySequenceSelector(Builder builder) {
         super(builder.sequenceId);

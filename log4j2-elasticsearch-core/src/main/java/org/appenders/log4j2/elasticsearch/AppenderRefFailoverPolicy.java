@@ -38,7 +38,7 @@ import org.apache.logging.log4j.message.SimpleMessage;
 /**
  * Allows to redirect failed logs to another appender.
  */
-@Plugin(name = "AppenderRefFailoverPolicy", category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
+@Plugin(name = "AppenderRefFailoverPolicy", category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
 public class AppenderRefFailoverPolicy implements FailoverPolicy<String> {
 
     protected final AppenderRef appenderRef;

@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 import net.openhft.chronicle.hash.ChronicleHashCorruption;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
-import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -55,7 +54,7 @@ import java.util.function.Supplier;
  * Uses Chronicle-Map (https://github.com/OpenHFT/Chronicle-Map) to store failed items.
  * Uses {@link RetryProcessor} to retry failed items.
  */
-@Plugin(name = ChronicleMapRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = Appender.ELEMENT_TYPE, printObject = true)
+@Plugin(name = ChronicleMapRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
 public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSource>, LifeCycle {
 
     public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
