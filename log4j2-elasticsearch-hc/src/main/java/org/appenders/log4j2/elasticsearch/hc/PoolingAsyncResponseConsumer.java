@@ -29,8 +29,6 @@ import org.apache.http.nio.entity.ContentBufferEntity;
 import org.apache.http.nio.protocol.AbstractAsyncResponseConsumer;
 import org.apache.http.nio.util.SimpleInputBuffer;
 import org.apache.http.protocol.HttpContext;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
