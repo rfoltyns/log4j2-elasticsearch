@@ -11,7 +11,7 @@ By default, FasterXML is used generate output with [JacksonJsonLayout](https://g
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-hc</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 </dependency>
 ```
 ## Usage

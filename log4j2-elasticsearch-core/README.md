@@ -8,7 +8,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-core</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1</version>
 </dependency>
 ```
 
@@ -233,8 +233,6 @@ Redirects failed batches to configured `org.apache.logging.log4j.core.Appender`.
 Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
 appenderRef | Attribute | yes | n/a | Name of appender available in current configuration
-
-:warning: This policy will NOT work with [object pooling](#object-pooling). Only String-based items are allowed ([StringItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/StringItemSource.java)).
 
 Example:
 ```xml
