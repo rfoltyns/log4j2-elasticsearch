@@ -207,7 +207,7 @@ public abstract class SmokeTestBase {
     @Test
     public void propertiesConfigTest() throws InterruptedException {
 
-        System.setProperty("log4j.configurationFile", "log4j2-buffered-example.properties");
+        System.setProperty("log4j.configurationFile", "log4j2.properties");
         AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger("elasticsearch");
