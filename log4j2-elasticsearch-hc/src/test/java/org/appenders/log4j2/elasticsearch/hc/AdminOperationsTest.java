@@ -179,7 +179,7 @@ public class AdminOperationsTest {
         BatchResult result = mock(BatchResult.class);
         when(httpClient.execute(any(), any())).thenAnswer(invocation -> {
             IndexTemplateRequest templateRequest = invocation
-                    .getArgumentAt(0, IndexTemplateRequest.class);
+                    .getArgument(0);
             argCaptor.set(((ByteBuf)templateRequest.source).copy());
             return result;
         });
