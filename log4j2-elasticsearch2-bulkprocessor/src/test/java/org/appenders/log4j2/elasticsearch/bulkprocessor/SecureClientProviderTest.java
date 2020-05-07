@@ -48,4 +48,20 @@ public class SecureClientProviderTest {
         Mockito.verify(auth).configure(any());
     }
 
+    @Test
+    public void providedClientSettingsAreUsedToCustomizeClient() {
+
+        // given
+        Auth<Settings.Builder> auth = mock(Auth.class);
+        ClientSettings clientSettings = mock(ClientSettings.class);
+        ClientProvider clientProvider = new SecureClientProvider(auth, clientSettings);
+
+        // when
+        clientProvider.createClient();
+
+        // then
+        Mockito.verify(clientSettings).applyTo(any());
+    }
+
 }
+

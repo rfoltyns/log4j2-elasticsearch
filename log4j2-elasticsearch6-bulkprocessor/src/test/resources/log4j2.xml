@@ -40,6 +40,9 @@
                              clientCertPath="${sys:pemCertInfo.clientCertPath}"
                              caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
+                    <ClientSettings>
+                        <ClientSetting name="cluster.name" value="${sys:clusterName}" />
+                    </ClientSettings>
                 </ElasticsearchBulkProcessor>
                 <NoopFailoverPolicy />
             </AsyncBatchDelivery>

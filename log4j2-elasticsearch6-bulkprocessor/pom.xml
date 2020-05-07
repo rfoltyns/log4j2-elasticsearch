@@ -109,6 +109,7 @@
                         <pemCertInfo.keyPassphrase>changeme</pemCertInfo.keyPassphrase>
                         <pemCertInfo.clientCertPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.crt</pemCertInfo.clientCertPath>
                         <pemCertInfo.caPath>${project.build.testOutputDirectory}/certificate-bundle/ca/ca.crt</pemCertInfo.caPath>
+                        <clusterName>log4j2-elasticsearch</clusterName>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>

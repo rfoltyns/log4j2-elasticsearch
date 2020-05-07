@@ -27,12 +27,21 @@ import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.shield.ShieldPlugin;
 
+import static org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory.Builder.DEFAULT_CLIENT_SETTINGS;
+
 public class SecureClientProvider implements ClientProvider<TransportClient> {
 
     private final Auth<Settings.Builder> auth;
+    private final ClientSettings clientSettings;
 
     public SecureClientProvider(Auth<Settings.Builder> auth) {
         this.auth = auth;
+        this.clientSettings = DEFAULT_CLIENT_SETTINGS;
+    }
+
+    public SecureClientProvider(Auth<Settings.Builder> auth, ClientSettings clientSettings) {
+        this.auth = auth;
+        this.clientSettings = clientSettings;
     }
 
     @Override
@@ -40,6 +49,7 @@ public class SecureClientProvider implements ClientProvider<TransportClient> {
         Settings.Builder clientSettingsBuilder = Settings.builder();
 
         auth.configure(clientSettingsBuilder);
+        clientSettings.applyTo(clientSettingsBuilder);
 
         return TransportClient.builder()
                 .addPlugin(ShieldPlugin.class)

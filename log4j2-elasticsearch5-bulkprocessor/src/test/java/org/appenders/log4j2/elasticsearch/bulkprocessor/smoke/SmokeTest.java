@@ -29,6 +29,8 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSetting;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettings;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
@@ -42,6 +44,16 @@ public class SmokeTest extends SmokeTestBase {
 
         BulkProcessorObjectFactory.Builder builder = BulkProcessorObjectFactory.newBuilder()
                 .withServerUris("tcp://localhost:9300");
+
+        ClientSetting clusterName = ClientSetting.newBuilder()
+                .withName("cluster.name")
+                .withValue(System.getProperty("clusterName"))
+                .build();
+
+        ClientSettings clientSettings = ClientSettings.newBuilder()
+                .withClientSettings(clusterName).build();
+
+        builder.withClientSettings(clientSettings);
 
         if (secured) {
             PEMCertInfo certInfo = PEMCertInfo.newBuilder()

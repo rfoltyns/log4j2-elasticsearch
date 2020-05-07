@@ -37,6 +37,9 @@
                              truststorePath="${sys:jksCertInfo.truststorePath}"
                              truststorePassword="${sys:jksCertInfo.truststorePassword}" />
                     </ShieldAuth>
+                    <ClientSettings>
+                        <ClientSetting name="cluster.name" value="${sys:clusterName}" />
+                    </ClientSettings>
                 </ElasticsearchBulkProcessor>
                 <NoopFailoverPolicy />
             </AsyncBatchDelivery>

@@ -50,6 +50,7 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
@@ -71,8 +72,9 @@ public class BulkProcessorObjectFactoryTest {
 
 
     public static Builder createTestObjectFactoryBuilder() {
-        Builder builder = BulkProcessorObjectFactory.newBuilder();
-        builder.withServerUris(TEST_SERVER_URIS);
+        Builder builder = BulkProcessorObjectFactory.newBuilder()
+                .withServerUris(TEST_SERVER_URIS)
+                .withClientSettings(ClientSettings.newBuilder().build());
         return builder;
     }
 
@@ -169,6 +171,20 @@ public class BulkProcessorObjectFactoryTest {
         builder.withAuth(null);
 
         BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        ClientProvider clientProvider = factory.getClientProvider();
+
+        // then
+        Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+
+    }
+
+    @Test
+    public void insecureTransportCanBeSetUpWithMinimalConstructor() {
+
+        // given
+        BulkProcessorObjectFactory factory = new BulkProcessorObjectFactory(Collections.singletonList(TEST_SERVER_URIS), null);
 
         // when
         ClientProvider clientProvider = factory.getClientProvider();
