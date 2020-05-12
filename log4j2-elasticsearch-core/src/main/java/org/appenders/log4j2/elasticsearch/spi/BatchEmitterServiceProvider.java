@@ -29,8 +29,12 @@ import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 
-import java.util.Iterator;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 /**
  * {@link BatchEmitterFactory} SPI loader.
@@ -38,6 +42,21 @@ import java.util.ServiceLoader;
 public class BatchEmitterServiceProvider {
 
     private static final Logger LOG = InternalLogging.getLogger();
+
+    private final Collection<Iterable<BatchEmitterFactory>> serviceLoaders;
+
+    public BatchEmitterServiceProvider() {
+        this(Arrays.asList(serviceLoader(Thread.currentThread().getContextClassLoader()),
+                serviceLoader(BatchEmitterServiceProvider.class.getClassLoader())));
+    }
+
+    BatchEmitterServiceProvider(Collection<Iterable<BatchEmitterFactory>> serviceLoaders) {
+        this.serviceLoaders = Collections.unmodifiableList(
+                serviceLoaders.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList())
+        );
+    }
 
     /**
      * Creates an instance of {@link BatchEmitter} using one of available {@link BatchEmitterFactory} services. A check
@@ -60,10 +79,32 @@ public class BatchEmitterServiceProvider {
                                        ClientObjectFactory clientObjectFactory,
                                        FailoverPolicy failoverPolicy) {
 
-        ServiceLoader<BatchEmitterFactory> loader = ServiceLoader.load(BatchEmitterFactory.class);
-        Iterator<BatchEmitterFactory> it = loader.iterator();
-        while (it.hasNext()) {
-            BatchEmitterFactory factory = it.next();
+        for (Iterable<BatchEmitterFactory> serviceLoader : serviceLoaders) {
+
+            BatchEmitter batchEmitter = createInstance(
+                    batchSize,
+                    deliveryInterval,
+                    clientObjectFactory,
+                    failoverPolicy,
+                    serviceLoader);
+
+            if (batchEmitter != null) {
+                return batchEmitter;
+            }
+
+        }
+        throw new ConfigurationException(String.format(
+                "No compatible BatchEmitter implementations for %s found",
+                clientObjectFactory.getClass().getName()));
+    }
+
+    private BatchEmitter createInstance(int batchSize,
+                                        int deliveryInterval,
+                                        ClientObjectFactory clientObjectFactory,
+                                        FailoverPolicy failoverPolicy,
+                                        Iterable<BatchEmitterFactory> serviceLoader){
+
+        for (BatchEmitterFactory factory : serviceLoader) {
             LOG.info("BatchEmitterFactory class found {}", factory.getClass().getName());
             if (factory.accepts(clientObjectFactory.getClass())) {
                 LOG.info("Using {} as BatchEmitterFactoryProvider", factory);
@@ -71,7 +112,11 @@ public class BatchEmitterServiceProvider {
             }
         }
 
-        throw new ConfigurationException(String.format("No compatible BatchEmitter implementations for %s found", clientObjectFactory.getClass().getName()));
-
+        return null;
     }
+
+    private static Iterable<BatchEmitterFactory> serviceLoader(ClassLoader classLoader) {
+        return ServiceLoader.load(BatchEmitterFactory.class, classLoader);
+    }
+
 }
