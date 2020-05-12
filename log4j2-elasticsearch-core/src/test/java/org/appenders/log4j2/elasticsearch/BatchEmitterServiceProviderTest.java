@@ -45,6 +45,7 @@ import static org.appenders.log4j2.elasticsearch.AppenderRefFailoverPolicyTest.c
 import static org.appenders.log4j2.elasticsearch.BatchDeliveryTest.createTestObjectFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.LARGE_TEST_INTERVAL;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.TEST_BATCH_SIZE;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
@@ -66,7 +67,7 @@ public class BatchEmitterServiceProviderTest {
     public void setUp()
     {
         PowerMockito.mockStatic(ServiceLoader.class);
-        Mockito.when(ServiceLoader.load(Mockito.any(Class.class))).thenReturn(mockServiceLoader);
+        Mockito.when(ServiceLoader.load(any(Class.class), any(ClassLoader.class))).thenReturn(mockServiceLoader);
     }
 
     @Test
@@ -131,7 +132,6 @@ public class BatchEmitterServiceProviderTest {
 
         // when
         createWithTestValues(serviceProvider);
-
 
     }
 
