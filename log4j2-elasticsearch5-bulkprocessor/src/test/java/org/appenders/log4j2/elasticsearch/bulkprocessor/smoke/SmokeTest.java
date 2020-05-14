@@ -21,9 +21,11 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor.smoke;
  */
 
 
+import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory;
@@ -75,8 +77,12 @@ public class SmokeTest extends SmokeTestBase {
                 .withIndexName("log4j2_test_es5")
                 .build();
 
+        JacksonJsonLayout jacksonJsonLayout = JacksonJsonLayout.newBuilder()
+                .setConfiguration(LoggerContext.getContext(false).getConfiguration()).build();
+
         return ElasticsearchAppender.newBuilder()
                 .withName("elasticsearch")
+                .withLayout(jacksonJsonLayout)
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)
                 .withIgnoreExceptions(false);
