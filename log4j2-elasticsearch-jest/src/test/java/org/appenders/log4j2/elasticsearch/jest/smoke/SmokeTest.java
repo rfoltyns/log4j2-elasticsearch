@@ -98,7 +98,7 @@ public class SmokeTest extends SmokeTestBase {
         }
 
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
-                .withName("log4j2_test_jest")
+                .withName("log4j2-elasticsearch-programmatic-test-template")
                 .withPath("classpath:indexTemplate-7.json")
                 .build();
 
