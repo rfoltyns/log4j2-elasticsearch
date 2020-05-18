@@ -31,9 +31,11 @@ import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
@@ -87,9 +89,11 @@ public class SmokeTest extends SmokeTestBase {
             httpObjectFactoryBuilder.withServerUris("http://localhost:9200");
         }
 
+        LoggerContext ctx = LoggerContext.getContext(false);
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
-                .withName("log4j2_test")
+                .withName("log4j2-elasticsearch-programmatic-test-template")
                 .withPath("classpath:indexTemplate-7.json")
+                .withValueResolver(new Log4j2Lookup(ctx.getConfiguration().getStrSubstitutor()))
                 .build();
 
         KeySequenceSelector keySequenceSelector =
@@ -120,7 +124,6 @@ public class SmokeTest extends SmokeTestBase {
                 .withPattern("yyyy-MM-dd-HH")
                 .build();
 
-        LoggerContext ctx = LoggerContext.getContext(false);
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
                 .setConfiguration(ctx.getConfiguration())
                 .withVirtualProperties(

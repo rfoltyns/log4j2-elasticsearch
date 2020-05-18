@@ -1,8 +1,8 @@
 {
-  "template": "log4j2*",
+  "template":"${sys:indexTemplate.indexPatterns}",
   "settings": {
     "index": {
-      "refresh_interval": "5s"
+      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}"
     }
   },
   "mappings": {

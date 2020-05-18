@@ -129,6 +129,8 @@
                         <jksCertInfo.keystorePassword>password</jksCertInfo.keystorePassword>
                         <jksCertInfo.truststorePath>${project.build.testOutputDirectory}/jks/truststore.jks</jksCertInfo.truststorePath>
                         <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
+                        <indexTemplate.indexPatterns>log4j2*</indexTemplate.indexPatterns>
+                        <indexTemplate.settings.index.refreshInterval>5s</indexTemplate.settings.index.refreshInterval>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
