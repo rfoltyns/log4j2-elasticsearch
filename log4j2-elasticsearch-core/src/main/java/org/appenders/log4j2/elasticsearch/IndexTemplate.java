@@ -21,11 +21,13 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginValue;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
@@ -75,6 +77,23 @@ public class IndexTemplate {
         @PluginValue("sourceString")
         private String source;
 
+        /**
+         * @param valueResolver variable resolver
+         * @deprecated Added temporarily, solely to support variables in programmatic config.
+         * Will be removed when SetupOps API is added.
+         */
+        @Deprecated
+        @PluginConfiguration
+        private Configuration configuration;
+
+        /**
+         * @param valueResolver variable resolver
+         * @deprecated Added temporarily, solely to support variables in programmatic config.
+         * Will be removed when SetupOps API is added.
+         */
+        @Deprecated
+        private ValueResolver valueResolver;
+
         @Override
         public IndexTemplate build() {
             if (name == null) {
@@ -83,7 +102,40 @@ public class IndexTemplate {
             if ((path == null && source == null) || (path != null && source != null)) {
                 throw new ConfigurationException("Either path or source have to be provided for IndexTemplate");
             }
-            return new IndexTemplate(name, loadSource());
+
+            final String source = getValueResolver().resolve(loadSource());
+
+            return new IndexTemplate(name, source);
+        }
+
+        /* visible for testing */
+        @Deprecated
+        ValueResolver getValueResolver() {
+
+            // allow programmatic override
+            if (valueResolver != null) {
+                return valueResolver;
+            }
+
+            // handle XML config
+            if (configuration != null) {
+                return new Log4j2Lookup(configuration.getStrSubstitutor());
+            }
+
+            // fallback to no-op
+            return new ValueResolver() {
+
+                @Override
+                public String resolve(String unresolved) {
+                    return unresolved;
+                }
+
+                @Override
+                public String resolve(VirtualProperty property) {
+                    return property.getValue();
+                }
+
+            };
         }
 
         private String loadSource() {
@@ -112,6 +164,29 @@ public class IndexTemplate {
 
         public Builder withSource(String source) {
             this.source = source;
+            return this;
+        }
+
+        /**
+         *
+         * @param configuration Log4j2 StrSubstitutor provider
+         * @deprecated Added temporarily, solely to support variables in programmatic config.
+         * Will be removed when SetupOps API is added.
+         * @return this
+         */
+        Builder withConfiguration(Configuration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        /**
+         * @param valueResolver variable resolver
+         * @deprecated Added temporarily, solely to support variables in programmatic config.
+         * Will be removed when SetupOps API is added.
+         */
+        @Deprecated
+        public Builder withValueResolver(ValueResolver valueResolver) {
+            this.valueResolver = valueResolver;
             return this;
         }
 

@@ -21,11 +21,18 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.lookup.Interpolator;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
 
 public class IndexTemplateTest {
 
@@ -154,4 +161,129 @@ public class IndexTemplateTest {
         builder.build();
     }
 
+    @Test
+    public void builderResolvesSourceWithValueResolverIfProvided() {
+
+        // given
+        String var1Name = UUID.randomUUID().toString();
+        String var1Value = UUID.randomUUID().toString();
+        String var2Name = UUID.randomUUID().toString();
+        String var2Value = UUID.randomUUID().toString();
+
+        System.setProperty(var1Name, var1Value);
+        System.setProperty(var2Name, var2Value);
+
+        String expected = String.format("{\n\t\"%s: \"%s\",\n\t\"%s: \"%s\"}",
+                var1Name, var1Value, var2Name, var2Value);
+
+        String source  = String.format("{\n\t\"%s: \"%s\",\n\t\"%s: \"%s\"}",
+                var1Name, String.format("${sys:%s}", var1Name),
+                var2Name, String.format("${sys:%s}", var2Name));
+
+        IndexTemplate.Builder builder = createTestIndexTemplateBuilder()
+                .withPath(null)
+                .withSource(source)
+                .withValueResolver(defaultTestValueResolver());
+
+        // when
+        IndexTemplate template = builder.build();
+
+        // then
+        assertEquals(expected, template.getSource());
+    }
+
+    @Test
+    public void builderResolvesSourceIfValueResolverNotProvidedAndConfigurationProvided() {
+
+        // given
+        String var1Name = UUID.randomUUID().toString();
+        String var1Value = UUID.randomUUID().toString();
+        String var2Name = UUID.randomUUID().toString();
+        String var2Value = UUID.randomUUID().toString();
+
+        System.setProperty(var1Name, var1Value);
+        System.setProperty(var2Name, var2Value);
+
+        String expected = String.format("{\n\t\"%s: \"%s\",\n\t\"%s: \"%s\"}",
+                var1Name, var1Value, var2Name, var2Value);
+
+        String source  = String.format("{\n\t\"%s: \"%s\",\n\t\"%s: \"%s\"}",
+                var1Name, String.format("${sys:%s}", var1Name),
+                var2Name, String.format("${sys:%s}", var2Name));
+
+        IndexTemplate.Builder builder = createTestIndexTemplateBuilder()
+                .withPath(null)
+                .withSource(source)
+                .withConfiguration(LoggerContext.getContext(false).getConfiguration());
+
+        // when
+        IndexTemplate template = builder.build();
+
+        // then
+        assertEquals(expected, template.getSource());
+    }
+
+    @Test
+    public void builderResolvesSourceWithNoopResolverIfValueResolverNotProvidedAndConfigurationNotProvided() {
+
+        // given
+        String var1Name = UUID.randomUUID().toString();
+        String var1Value = UUID.randomUUID().toString();
+        String var2Name = UUID.randomUUID().toString();
+        String var2Value = UUID.randomUUID().toString();
+
+        System.setProperty(var1Name, var1Value);
+        System.setProperty(var2Name, var2Value);
+
+        String source  = String.format("{\n\t\"%s: \"%s\",\n\t\"%s: \"%s\"}",
+                var1Name, String.format("${sys:%s}", var1Name),
+                var2Name, String.format("${sys:%s}", var2Name));
+
+        IndexTemplate.Builder builder = createTestIndexTemplateBuilder()
+                .withPath(null)
+                .withSource(source)
+                .withConfiguration(null)
+                .withValueResolver(null);
+
+        // when
+        IndexTemplate template = builder.build();
+
+        // then
+        assertEquals(source, template.getSource());
+    }
+
+    @Test
+    public void builderNoopResolverDoesntNotResolveVirtualProperty() {
+
+        // given
+        String var1Name = UUID.randomUUID().toString();
+        String var1Value = UUID.randomUUID().toString();
+        String var2Name = UUID.randomUUID().toString();
+        String var2Value = UUID.randomUUID().toString();
+
+        System.setProperty(var1Name, var1Value);
+        System.setProperty(var2Name, var2Value);
+
+        IndexTemplate.Builder builder = createTestIndexTemplateBuilder()
+                .withPath(null)
+                .withSource(TEST_SOURCE)
+                .withConfiguration(null)
+                .withValueResolver(null);
+
+        ValueResolver resolver = builder.getValueResolver();
+
+        VirtualProperty virtualProperty = new VirtualProperty(
+                var1Name, String.format("${sys:%s}", var1Name), false);
+
+        // when
+        String result = resolver.resolve(virtualProperty);
+
+        // then
+        assertEquals(String.format("${sys:%s}", var1Name), result);
+    }
+
+    @NotNull
+    public Log4j2Lookup defaultTestValueResolver() {
+        return new Log4j2Lookup(new StrSubstitutor(new Interpolator()));
+    }
 }
