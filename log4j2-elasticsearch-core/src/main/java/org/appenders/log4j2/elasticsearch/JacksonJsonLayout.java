@@ -109,6 +109,9 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         @PluginElement("VirtualProperty")
         private VirtualProperty[] virtualProperties = new VirtualProperty[0];
 
+        @PluginElement("VirtualPropertyFilter")
+        private VirtualPropertyFilter[] virtualPropertyFilters = new VirtualPropertyFilter[0];
+
         @PluginBuilderAttribute("afterburner")
         private boolean useAfterburner;
 
@@ -140,16 +143,19 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
                 objectMapper.addMixIn(mixin.getTargetClass(), mixin.getMixInClass());
             }
 
+            ValueResolver valueResolver = createValueResolver();
+
             for (VirtualProperty property : virtualProperties) {
                 if (!property.isDynamic()) {
-                    property.setValue(createValueResolver().resolve(property.getValue()));
+                    property.setValue(valueResolver.resolve(property.getValue()));
                 }
             }
 
             SerializationConfig customConfig = objectMapper.getSerializationConfig()
                     .with(new JacksonHandlerInstantiator(
                             virtualProperties,
-                            createValueResolver()
+                            valueResolver,
+                            virtualPropertyFilters
                     ));
 
             objectMapper.setConfig(customConfig);
@@ -206,6 +212,17 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
          */
         public Builder withVirtualProperties(VirtualProperty... virtualProperties) {
             this.virtualProperties = virtualProperties;
+            return this;
+        }
+
+        /**
+         * Allows to define inclusion/exclusion filters for {@link VirtualProperty}-ies.
+         *
+         * @param virtualPropertyFilters filters to be applied to each configured {@link VirtualProperty}
+         * @return this
+         */
+        public Builder withVirtualPropertyFilters(VirtualPropertyFilter[] virtualPropertyFilters) {
+            this.virtualPropertyFilters = virtualPropertyFilters;
             return this;
         }
 

@@ -251,6 +251,33 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
+    public void builderDoesNotUseFiltersWhileResolvingNonDynamicVirtualProperties() {
+
+        // given
+        VirtualPropertyFilter filter = mock(VirtualPropertyFilter.class);
+
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder()
+                .withVirtualPropertyFilters(new VirtualPropertyFilter[] { filter }));
+
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(builder.createValueResolver()).thenReturn(valueResolver);
+
+        VirtualProperty virtualProperty = new VirtualProperty.Builder()
+                .withDynamic(false)
+                .withName(UUID.randomUUID().toString())
+                .withValue(UUID.randomUUID().toString())
+                .build();
+
+        builder.withVirtualProperties(virtualProperty);
+
+        // when
+        builder.build();
+
+        // then
+        verify(filter, never()).isIncluded(any(), any());
+    }
+
+    @Test
     public void builderDoesNotResolveDynamicVirtualProperties() {
 
         // given

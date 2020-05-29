@@ -43,6 +43,7 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
 
     protected final VirtualProperty[] virtualProperties;
     protected final ValueResolver valueResolver;
+    protected final VirtualPropertyFilter[] filters;
 
     VirtualPropertiesWriter() {
         throw new UnsupportedOperationException(String.format(
@@ -51,11 +52,41 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
         );
     }
 
+    /**
+     * Initializes writer with no filters
+     *
+     * @param virtualProperties {@link VirtualProperty}-ies to append
+     * @param valueResolver {@link ValueResolver} dynamic variables resolver
+     */
     public VirtualPropertiesWriter(VirtualProperty[] virtualProperties, ValueResolver valueResolver) {
-        this.virtualProperties = virtualProperties;
-        this.valueResolver = valueResolver;
+        this(virtualProperties, valueResolver, new VirtualPropertyFilter[0]);
     }
 
+    /**
+     * @param virtualProperties {@link VirtualProperty}-ies to append
+     * @param valueResolver {@link ValueResolver} dynamic variables resolver
+     * @param filters {@link VirtualPropertyFilter} inclusion filters. Allow to include/exclude
+     * {@link VirtualProperty} by name or value returned by {@link ValueResolver}
+     */
+    public VirtualPropertiesWriter(VirtualProperty[] virtualProperties, ValueResolver valueResolver, VirtualPropertyFilter[] filters) {
+        this.virtualProperties = virtualProperties;
+        this.valueResolver = valueResolver;
+        this.filters = filters;
+    }
+
+    /**
+     *
+     * @param propDef property definition created by {@code by com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector}
+     * @param annotations contains only @JsonAppend at the moment
+     * @param type {@link VirtualProperty}[]
+     * @param virtualProperties {@link VirtualProperty}-ies to append
+     * @param valueResolver {@link ValueResolver} dynamic variables resolver
+     *
+     * @deprecated This constructor should not be invoked directly and should only be used within
+     * {@link #withConfig(MapperConfig, AnnotatedClass, BeanPropertyDefinition, JavaType)} call.
+     * It will be removed in future releases.
+     */
+    @Deprecated
     public VirtualPropertiesWriter(
             BeanPropertyDefinition propDef,
             Annotations annotations,
@@ -63,9 +94,33 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
             VirtualProperty[] virtualProperties,
             ValueResolver valueResolver
     ) {
+        this(propDef, annotations, type, virtualProperties, valueResolver, new VirtualPropertyFilter[0]);
+    }
+
+    /**
+     * This constructor should not be invoked directly and should only be used within
+     * {@link #withConfig(MapperConfig, AnnotatedClass, BeanPropertyDefinition, JavaType)} call.
+     *
+     * @param propDef property definition created by {@code by com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector}
+     * @param annotations contains only @JsonAppend at the moment
+     * @param type {@link VirtualProperty}[]
+     * @param virtualProperties {@link VirtualProperty}-ies to append
+     * @param valueResolver {@link ValueResolver} dynamic variables resolver
+     * @param filters {@link VirtualPropertyFilter} inclusion filters. Allow to include/exclude
+     * {@link VirtualProperty} by name or value returned by {@link ValueResolver}
+     */
+    VirtualPropertiesWriter(
+            BeanPropertyDefinition propDef,
+            Annotations annotations,
+            JavaType type,
+            VirtualProperty[] virtualProperties,
+            ValueResolver valueResolver,
+            VirtualPropertyFilter[] filters
+    ) {
         super(propDef, annotations, type);
         this.virtualProperties = virtualProperties;
         this.valueResolver = valueResolver;
+        this.filters = filters;
     }
 
     @Override
@@ -75,12 +130,31 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
 
     @Override
     public void serializeAsField(Object bean, JsonGenerator gen, SerializerProvider prov) throws Exception {
-        if (virtualProperties.length > 0) {
-            for (int i = 0; i < virtualProperties.length; i++) {
-                gen.writeFieldName(virtualProperties[i].getName());
-                gen.writeString(valueResolver.resolve(virtualProperties[i]));
+
+        for (int i = 0; i < virtualProperties.length; i++) {
+
+            VirtualProperty property = virtualProperties[i];
+
+            String resolved = valueResolver.resolve(property);
+            if (isExcluded(property, resolved)) {
+                continue;
+            }
+
+            gen.writeFieldName(property.getName());
+            gen.writeString(resolved);
+
+        }
+    }
+
+    private boolean isExcluded(VirtualProperty property, String resolved) {
+
+        for (int i = 0; i < filters.length; i++) {
+            if (!filters[i].isIncluded(property.getName(), resolved)) {
+                return true;
             }
         }
+
+        return false;
     }
 
     /**
@@ -96,7 +170,8 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
                 ),
                 type,
                 virtualProperties,
-                valueResolver
+                valueResolver,
+                filters
         );
     }
 

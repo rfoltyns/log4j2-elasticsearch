@@ -25,8 +25,10 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
+import com.fasterxml.jackson.databind.introspect.AnnotationCollector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import org.apache.logging.log4j.core.LogEvent;
@@ -36,6 +38,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.VirtualPropertyTest.createDefaultVirtualPropertyBuilder;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -124,25 +127,15 @@ public class VirtualPropertiesWriterTest {
 
         VirtualPropertiesWriter writer = spy(new VirtualPropertiesWriter(
                 new VirtualProperty[0],
-                mock(ValueResolver.class)
+                mock(ValueResolver.class),
+                new VirtualPropertyFilter[0]
         ));
 
         JavaType javaType = config.constructType(LogEvent.class);
-        AnnotatedClass annotatedClass = AnnotatedClassResolver.resolve(
-                config,
-                javaType,
-                null
-        );
+        AnnotatedClass annotatedClass = createTestAnnotatedClass(config, javaType);
 
-        SimpleBeanPropertyDefinition simpleBeanPropertyDefinition = SimpleBeanPropertyDefinition.construct(
-                config,
-                new VirtualAnnotatedMember(
-                        annotatedClass,
-                        LogEvent.class,
-                        "virtualProperties",
-                        javaType
-                )
-        );
+        SimpleBeanPropertyDefinition simpleBeanPropertyDefinition =
+                getTestBeanPropertyDefinition(config, javaType, annotatedClass);
 
         VirtualPropertiesWriter result = writer.withConfig(
                 config,
@@ -154,6 +147,48 @@ public class VirtualPropertiesWriterTest {
         // then
         assertArrayEquals(writer.virtualProperties, result.virtualProperties);
         assertEquals(writer.valueResolver, result.valueResolver);
+        assertEquals(writer.filters, result.filters);
+
+    }
+
+    @Test
+    public void writerCreatedWithDeprecatedConstructorWritesGivenProperties() throws Exception {
+
+        // given
+        ObjectMapper objectMapper = new ObjectMapper();
+        SerializationConfig config = objectMapper.getSerializationConfig();
+
+        JavaType javaType = config.constructType(LogEvent.class);
+        AnnotatedClass annotatedClass = createTestAnnotatedClass(config, javaType);
+
+        SimpleBeanPropertyDefinition simpleBeanPropertyDefinition =
+                getTestBeanPropertyDefinition(config, javaType, annotatedClass);
+
+        String expectedName = UUID.randomUUID().toString();
+        String expectedValue = UUID.randomUUID().toString();
+        VirtualProperty virtualProperty = spy(createNonDynamicVirtualProperty(expectedName, expectedValue));
+
+        ValueResolver valueResolver = createTestValueResolver(virtualProperty, expectedValue);
+
+        VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
+                simpleBeanPropertyDefinition,
+                new AnnotationCollector.OneAnnotation(
+                        annotatedClass.getRawType(),
+                        annotatedClass.getAnnotations().get(JsonAppend.class)
+                ),
+                javaType,
+                new VirtualProperty[] { virtualProperty },
+                valueResolver
+        );
+
+        JsonGenerator jsonGenerator = mock(JsonGenerator.class);
+
+        // when
+        writer.serializeAsField(new Object(), jsonGenerator, mock(SerializerProvider.class));
+
+        // then
+        verify(jsonGenerator).writeFieldName(eq(expectedName));
+        verify(jsonGenerator).writeString(eq(expectedValue));
 
     }
 
@@ -162,11 +197,7 @@ public class VirtualPropertiesWriterTest {
 
         // given
         String expectedValue = UUID.randomUUID().toString();
-        VirtualProperty virtualProperty = spy(VirtualPropertyTest.createDefaultVirtualPropertyBuilder()
-                .withValue(expectedValue)
-                .withDynamic(false)
-                .build()
-        );
+        VirtualProperty virtualProperty = spy(createNonDynamicVirtualProperty(null, expectedValue));
 
         ValueResolver valueResolver = mock(ValueResolver.class);
 
@@ -189,17 +220,19 @@ public class VirtualPropertiesWriterTest {
         // given
         String expectedName = UUID.randomUUID().toString();
         String expectedValue = UUID.randomUUID().toString();
-        VirtualProperty virtualProperty = VirtualPropertyTest.createDefaultVirtualPropertyBuilder()
-                .withName(expectedName)
-                .withValue(expectedValue)
-                .build();
 
-        ValueResolver valueResolver = mock(ValueResolver.class);
-        when(valueResolver.resolve((VirtualProperty) any())).thenReturn(expectedValue);
+        VirtualProperty excludedVirtualProperty = createNonDynamicVirtualProperty(expectedName, expectedValue);
+        VirtualProperty virtualProperty = createNonDynamicVirtualProperty(expectedName, expectedValue);
+
+        ValueResolver valueResolver = createTestValueResolver(virtualProperty, expectedValue);
+
+        VirtualPropertyFilter virtualPropertyFilter =
+                createNonExcludingTestVirtualPropertyFilter(expectedName, expectedValue);
 
         VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
-                new VirtualProperty[] { virtualProperty },
-                valueResolver
+                new VirtualProperty[] { excludedVirtualProperty, virtualProperty },
+                valueResolver,
+                new VirtualPropertyFilter[] { virtualPropertyFilter }
         );
 
         JsonGenerator jsonGenerator = mock(JsonGenerator.class);
@@ -230,7 +263,114 @@ public class VirtualPropertiesWriterTest {
         // then
         verify(jsonGenerator, never()).writeFieldName(anyString());
         verify(jsonGenerator, never()).writeString(anyString());
+        verify(jsonGenerator, never()).writeString(eq((String)null));
 
+    }
+
+    @Test
+    public void serializeAsFieldDoesNotWritePropertiesIfPropertiesExcludedByFilters() throws Exception {
+
+        // given
+        VirtualProperty virtualProperty = mock(VirtualProperty.class);
+
+        ValueResolver valueResolver = mock(ValueResolver.class);
+
+        VirtualPropertyFilter virtualPropertyFilter = mock(VirtualPropertyFilter.class);
+        when(virtualPropertyFilter.isIncluded(any(), any())).thenReturn(false);
+
+        VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
+                new VirtualProperty[] { virtualProperty },
+                valueResolver,
+                new VirtualPropertyFilter[] { virtualPropertyFilter }
+        );
+
+        JsonGenerator jsonGenerator = mock(JsonGenerator.class);
+
+        // when
+        writer.serializeAsField(new Object(), jsonGenerator, mock(SerializerProvider.class));
+
+        // then
+        verify(jsonGenerator, never()).writeFieldName(anyString());
+        verify(jsonGenerator, never()).writeString(anyString());
+        verify(jsonGenerator, never()).writeString(eq((String)null));
+
+    }
+
+    @Test
+    public void serializeAsFieldWritesPropertiesIfPropertiesNotExcludedByFilters() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        String expectedValue = UUID.randomUUID().toString();
+        VirtualProperty virtualProperty = spy(createNonDynamicVirtualProperty(expectedName, expectedValue));
+
+        ValueResolver valueResolver = createTestValueResolver(virtualProperty, expectedValue);
+
+        VirtualPropertyFilter virtualPropertyFilter =
+                createNonExcludingTestVirtualPropertyFilter(expectedName, expectedValue);
+
+        VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
+                new VirtualProperty[] { virtualProperty },
+                valueResolver,
+                new VirtualPropertyFilter[] { virtualPropertyFilter }
+        );
+
+        JsonGenerator jsonGenerator = mock(JsonGenerator.class);
+
+        // when
+        writer.serializeAsField(new Object(), jsonGenerator, mock(SerializerProvider.class));
+
+        // then
+        verify(jsonGenerator).writeFieldName(eq(expectedName));
+        verify(jsonGenerator).writeString(eq(expectedValue));
+
+    }
+
+    private ValueResolver createTestValueResolver(VirtualProperty virtualProperty, String expectedValue) {
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(virtualProperty)).thenReturn(expectedValue);
+        return valueResolver;
+    }
+
+    private VirtualProperty createNonDynamicVirtualProperty(String expectedName, String expectedValue) {
+
+        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder();
+
+        if (expectedName != null) {
+            builder.withName(expectedName);
+        }
+
+        if (expectedValue != null) {
+            builder.withValue(expectedValue);
+        }
+
+        return builder.withDynamic(false).build();
+    }
+
+    private VirtualPropertyFilter createNonExcludingTestVirtualPropertyFilter(String expectedName, String expectedValue) {
+        VirtualPropertyFilter virtualPropertyFilter = mock(VirtualPropertyFilter.class);
+        when(virtualPropertyFilter.isIncluded(expectedName, expectedValue)).thenReturn(true);
+        return virtualPropertyFilter;
+    }
+
+    private SimpleBeanPropertyDefinition getTestBeanPropertyDefinition(SerializationConfig config, JavaType javaType, AnnotatedClass annotatedClass) {
+        return SimpleBeanPropertyDefinition.construct(
+                config,
+                new VirtualAnnotatedMember(
+                        annotatedClass,
+                        LogEvent.class,
+                        "virtualProperties",
+                        javaType
+                )
+        );
+    }
+
+    private AnnotatedClass createTestAnnotatedClass(SerializationConfig config, JavaType javaType) {
+        return AnnotatedClassResolver.resolve(
+                config,
+                javaType,
+                null
+        );
     }
 
 }

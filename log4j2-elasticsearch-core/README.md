@@ -183,6 +183,38 @@ dynamic | Attribute | no | false | if `true`, indicates that value may change ov
 
 Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
 
+##### Virtual Property Filters
+
+Since 1.4.3, implementations of [`VirtualPropertyFilter`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/VirtualPropertyFilter.java) can be configured to include or exclude `VirtualProperty` by name and/or value resolved by [Log4j2Lookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4j2Lookup.java) (or custom [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java)).
+
+Available filters:
+
+* `NonEmptyFilter` - excludes `VirtualProperty` is resolved value is `null` or empty (doesn't exclude blank)
+
+Custom filtering can be implemented with [`VirtualPropertyFilter`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/VirtualPropertyFilter.java).
+
+Example:
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JacksonJsonLayout afterburner="true">
+        <!-- will be included because it's resolved to "undefined" -->
+        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}" />
+        <!-- will be included if envVariable is not available on startup because it's resolved to "${env:envVariable}" -->
+        <VirtualProperty name="field1" value="${env:envVariable}" />
+        <!-- will NOT be included if envVariable is not available on startup because it's resolved to "" -->
+        <VirtualProperty name="field2" value="${env:envVariable:-}" />
+        <!-- order doesn't matter -->
+        <NonEmptyFilter/>
+        <!-- will NOT be included if envVariable is not available on startup because it's resolved to "" -->
+        <VirtualProperty name="field3" value="$${env:envVariable:-}" />
+        <!-- will NOT be included if ctxVariable is not available in runtime -->
+        <VirtualProperty name="field4" value="$${ctx:ctxVariable:-}" dynamic="true" />
+    </JacksonJsonLayout>
+    ...
+</Elasticsearch>
+```
+
 #### Log4j2 JsonLayout
 `JsonLayout` will serialize LogEvent using Jackson mapper configured in log4j-core. Custom `org.apache.logging.log4j.core.Layout` can be provided to appender config to use any other serialization mechanism.
 

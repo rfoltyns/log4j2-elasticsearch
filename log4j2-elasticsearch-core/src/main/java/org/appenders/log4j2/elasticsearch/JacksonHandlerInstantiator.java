@@ -35,6 +35,8 @@ public class JacksonHandlerInstantiator extends HandlerInstantiator {
 
     private final VirtualProperty[] virtualProperties;
     private final ValueResolver valueResolver;
+    private final VirtualPropertyFilter[] virtualPropertyFilters;
+
     private VirtualPropertiesWriter instance;
 
     /**
@@ -42,8 +44,17 @@ public class JacksonHandlerInstantiator extends HandlerInstantiator {
      * @param valueResolver used to resolve properties if {@link VirtualProperty#isDynamic()} is true
      */
     public JacksonHandlerInstantiator(VirtualProperty[] virtualProperties, ValueResolver valueResolver) {
+        this(virtualProperties, valueResolver, new VirtualPropertyFilter[0]);
+    }
+
+    public JacksonHandlerInstantiator(
+            VirtualProperty[] virtualProperties,
+            ValueResolver valueResolver,
+            VirtualPropertyFilter[] virtualPropertyFilters
+    ) {
         this.virtualProperties = virtualProperties;
         this.valueResolver = valueResolver;
+        this.virtualPropertyFilters = virtualPropertyFilters;
     }
 
     @Override
@@ -81,7 +92,8 @@ public class JacksonHandlerInstantiator extends HandlerInstantiator {
         if (instance == null) {
             instance = new VirtualPropertiesWriter(
                     virtualProperties,
-                    valueResolver);
+                    valueResolver,
+                    virtualPropertyFilters);
         }
         return instance;
     }
