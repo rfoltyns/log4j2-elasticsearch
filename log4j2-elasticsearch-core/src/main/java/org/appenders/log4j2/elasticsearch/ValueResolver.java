@@ -22,6 +22,20 @@ package org.appenders.log4j2.elasticsearch;
 
 public interface ValueResolver {
 
+    ValueResolver NO_OP = new ValueResolver() {
+
+        @Override
+        public String resolve(String unresolved) {
+            return unresolved;
+        }
+
+        @Override
+        public String resolve(VirtualProperty property) {
+            return property.getValue();
+        }
+
+    };
+
     String resolve(String unresolved);
 
     String resolve(VirtualProperty property);

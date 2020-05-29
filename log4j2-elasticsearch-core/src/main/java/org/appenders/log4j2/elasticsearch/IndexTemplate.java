@@ -123,19 +123,7 @@ public class IndexTemplate {
             }
 
             // fallback to no-op
-            return new ValueResolver() {
-
-                @Override
-                public String resolve(String unresolved) {
-                    return unresolved;
-                }
-
-                @Override
-                public String resolve(VirtualProperty property) {
-                    return property.getValue();
-                }
-
-            };
+            return ValueResolver.NO_OP;
         }
 
         private String loadSource() {
