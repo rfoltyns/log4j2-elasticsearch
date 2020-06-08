@@ -29,7 +29,8 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -59,7 +60,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
 
     public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
 
-    private static final StatusLogger LOGGER = StatusLogger.getLogger();
+    private static final Logger LOGGER = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 

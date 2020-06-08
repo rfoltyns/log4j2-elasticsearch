@@ -22,18 +22,18 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 @Plugin(name = StringItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
 public class StringItemSourceFactory implements ItemSourceFactory {
 
     static final String PLUGIN_NAME = "StringItemSourceAppender";
 
-    private static final Logger LOGGER = StatusLogger.getLogger();
+    private static final Logger LOGGER = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 

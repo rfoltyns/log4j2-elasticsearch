@@ -20,8 +20,8 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 class RetryProcessor implements Runnable {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     private final long backoffMillis;
 

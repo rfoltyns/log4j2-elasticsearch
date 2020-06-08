@@ -20,8 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 import java.util.function.Consumer;
 
@@ -47,7 +47,7 @@ import java.util.function.Consumer;
  */
 public class DelayedShutdown extends Thread {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * Default: 1000

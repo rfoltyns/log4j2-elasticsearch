@@ -23,14 +23,14 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
 import java.io.IOException;
@@ -44,7 +44,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
 
     public static final String PLUGIN_NAME = "PooledItemSourceFactory";
 
-    protected static final Logger LOGGER = StatusLogger.getLogger();
+    protected static final Logger LOGGER = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 

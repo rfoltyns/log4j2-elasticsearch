@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -29,7 +28,8 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -59,7 +59,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
 
     static final String PLUGIN_NAME = "ElasticsearchBulkProcessor";
 
-    private static Logger LOG = StatusLogger.getLogger();
+    private static Logger LOG = InternalLogging.getLogger();
 
     private final Collection<String> serverUris;
     private final UriParser uriParser = new UriParser();

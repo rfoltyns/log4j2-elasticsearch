@@ -23,8 +23,8 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.concurrent.FutureCallback;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +37,7 @@ import java.io.InputStream;
  */
 public class HCResultCallback<T extends Response> implements FutureCallback<HttpResponse> {
 
-    private static final Logger log = StatusLogger.getLogger();
+    private static final Logger log = InternalLogging.getLogger();
 
     private final ResponseHandler<T> responseHandler;
 

@@ -21,9 +21,9 @@ package org.appenders.log4j2.elasticsearch.spi;
  */
 
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -37,7 +37,7 @@ import java.util.ServiceLoader;
  */
 public class BatchEmitterServiceProvider {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * Creates an instance of {@link BatchEmitter} using one of available {@link BatchEmitterFactory} services. A check

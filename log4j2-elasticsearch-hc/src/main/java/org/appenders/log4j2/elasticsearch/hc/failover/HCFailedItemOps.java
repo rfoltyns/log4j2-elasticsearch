@@ -20,8 +20,8 @@ package org.appenders.log4j2.elasticsearch.hc.failover;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
@@ -30,7 +30,7 @@ import org.appenders.log4j2.elasticsearch.hc.IndexRequest;
 
 public class HCFailedItemOps implements FailedItemOps<IndexRequest> {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * @param failed failed request

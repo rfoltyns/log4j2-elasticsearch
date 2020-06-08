@@ -35,8 +35,8 @@ import net.openhft.chronicle.hash.serialization.BytesReader;
 import net.openhft.chronicle.hash.serialization.BytesWriter;
 import net.openhft.chronicle.wire.WireIn;
 import net.openhft.chronicle.wire.WireOut;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -48,7 +48,7 @@ import org.jetbrains.annotations.Nullable;
 public class FailedItemMarshaller implements BytesWriter<ItemSource>, BytesReader<ItemSource>,
         ReadResolvable<FailedItemMarshaller> {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     private ObjectMapper objectMapper;
 

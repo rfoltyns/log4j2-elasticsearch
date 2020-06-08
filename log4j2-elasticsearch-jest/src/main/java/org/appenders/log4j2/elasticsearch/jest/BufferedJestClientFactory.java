@@ -32,15 +32,15 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.nio.conn.NHttpClientConnectionManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 /**
  * Creates configured {@link BufferedJestHttpClient}
  */
 public class BufferedJestClientFactory extends ExtendedJestClientFactory {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * This constructor is deprecated, it will be removed in 1.5,

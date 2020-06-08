@@ -20,8 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,7 +46,7 @@ import java.util.function.Supplier;
  */
 public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
-    protected static final Logger LOGGER = StatusLogger.getLogger();
+    protected static final Logger LOGGER = InternalLogging.getLogger();
 
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
     // TODO: make configurable via system property

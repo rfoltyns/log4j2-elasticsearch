@@ -20,9 +20,9 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 import java.util.function.Function;
 
@@ -31,7 +31,7 @@ import java.util.function.Function;
  */
 public class ItemSourceAppender implements ItemAppender<LogEvent> {
 
-    static final Logger LOG = StatusLogger.getLogger();
+    static final Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 

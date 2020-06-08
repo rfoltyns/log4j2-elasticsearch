@@ -20,8 +20,8 @@ package org.appenders.log4j2.elasticsearch.backoff;
  * #L%
  */
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class BatchLimitBackoffPolicy<T> implements BackoffPolicy<T> {
 
-    private static final Logger LOG = StatusLogger.getLogger();
+    private static final Logger LOG = InternalLogging.getLogger();
 
     private final AtomicInteger batchesInFlight = new AtomicInteger();
     private final int maxBatchesInFlight;

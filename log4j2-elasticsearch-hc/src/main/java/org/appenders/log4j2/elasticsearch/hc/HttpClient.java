@@ -26,8 +26,8 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.status.StatusLogger;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ import java.io.IOException;
  */
 class HttpClient implements LifeCycle {
 
-    private final static Logger LOG = StatusLogger.getLogger();
+    private final static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
