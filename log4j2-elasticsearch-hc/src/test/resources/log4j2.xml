@@ -7,8 +7,9 @@
             <RollingIndexName indexName="log4j2_test" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
-                <VirtualProperty name="hostname" value="$${env:hostname:-undefined}" />
-                <VirtualProperty name="dynamicField" value="$${env:dynamicValue}" dynamic="true" />
+                <NonEmptyFilter/>
+                <VirtualProperty name="field1" value="$${ctx:ctxVariable:-}" dynamic="true" />
+                <VirtualProperty name="field2" value="$${env:envVariable:-}" />
                 <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="512" initialPoolSize="10000"
                                          monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
                     <UnlimitedResizePolicy resizeFactor="0.6" />
