@@ -32,13 +32,13 @@ Project consists of:
 * (1.4) Failover with persistence and retry
 * Log overflow prevention with backoff policies
 * [`log4j2-elasticsearch-hc`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc) module - optimized HTTP client
-* Custom JSON output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties)
+* Custom JSON output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties) and (since 1.4.3) [filters](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-property-filters)
+* Pluggable [internal logging](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/core/logging/InternalLogging.java) (since 1.4.3)
 
 ### Roadmap
 
-* `IndexTemplate`-like integrations
+* `IndexTemplate`-like integrations: ILM policy support in 1.5
 * Metrics
-* Pluggable internal logging
 
 ## Usage
 
@@ -47,7 +47,7 @@ Project consists of:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.4.1</version>
+    <version>1.4.3</version>
 </dependency>
 ```
 
