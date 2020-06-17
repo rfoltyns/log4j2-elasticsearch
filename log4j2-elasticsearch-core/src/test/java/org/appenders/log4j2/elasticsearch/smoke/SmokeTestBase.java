@@ -59,7 +59,7 @@ public abstract class SmokeTestBase {
     public static final int MILLIS_AFTER_SHUTDOWN = 60000;
     public static final int NUMBER_OF_PRODUCERS = 100;
     public static final int LOG_SIZE = 300;
-    private boolean secure = false;
+    protected boolean secure = false;
     private final AtomicInteger numberOfLogs = new AtomicInteger(1000000);
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
@@ -75,13 +75,13 @@ public abstract class SmokeTestBase {
         return new String(bytes);
     }
 
-    public final void createLoggerProgrammatically(ElasticsearchAppender.Builder appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
+    public final void createLoggerProgrammatically(Supplier<ElasticsearchAppender.Builder> appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
 
         LoggerContext ctx = LoggerContext.getContext(false);
 
         final Configuration config = ctx.getConfiguration();
 
-        Appender appender = appenderBuilder.build();
+        Appender appender = appenderBuilder.get().build();
         appender.start();
 
         AppenderRef ref = AppenderRef.createAppenderRef(DEFAULT_APPENDER_NAME, Level.INFO, null);
@@ -110,7 +110,7 @@ public abstract class SmokeTestBase {
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         createLoggerProgrammatically(
-                createElasticsearchAppenderBuilder(false, false, secure),
+                () -> createElasticsearchAppenderBuilder(false, false, secure),
                 createAsyncLoggerConfigDelegateProvider());
 
         String loggerThatReferencesElasticsearchAppender = "elasticsearch";
@@ -133,7 +133,7 @@ public abstract class SmokeTestBase {
         System.setProperty("AsyncLogger.WaitStrategy", "sleep");
 
         createLoggerProgrammatically(
-                createElasticsearchAppenderBuilder(false, false, secure),
+                () -> createElasticsearchAppenderBuilder(false, false, secure),
                 createAsyncLoggerConfigDelegateProvider());
 
         final String log = createLog();
@@ -158,7 +158,7 @@ public abstract class SmokeTestBase {
         System.setProperty("AsyncLoggerConfig.WaitStrategy", "sleep");
 
         createLoggerProgrammatically(
-                createElasticsearchAppenderBuilder(false, true, secure),
+                () -> createElasticsearchAppenderBuilder(false, true, secure),
                 createAsyncLoggerConfigDelegateProvider());
 
         Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);

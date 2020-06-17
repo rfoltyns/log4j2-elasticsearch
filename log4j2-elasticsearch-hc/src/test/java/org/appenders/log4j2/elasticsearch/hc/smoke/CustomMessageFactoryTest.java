@@ -49,7 +49,7 @@ public class CustomMessageFactoryTest extends SmokeTest {
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         createLoggerProgrammatically(
-                createElasticsearchAppenderBuilder(true, false, false),
+                () -> createElasticsearchAppenderBuilder(true, false, secure),
                 configuration -> configuration.getAsyncLoggerConfigDelegate()
         );
 
