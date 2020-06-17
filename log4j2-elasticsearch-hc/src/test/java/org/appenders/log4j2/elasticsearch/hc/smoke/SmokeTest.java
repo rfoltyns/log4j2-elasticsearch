@@ -140,8 +140,7 @@ public class SmokeTest extends SmokeTestBase {
                     .withMonitored(true)
                     .withMonitorTaskInterval(10000)
                     .build();
-            layoutBuilder.withItemSourceFactory(sourceFactoryConfig)
-                    .withAfterburner(true).build();
+            layoutBuilder.withItemSourceFactory(sourceFactoryConfig).build();
         }
 
         return ElasticsearchAppender.newBuilder()
