@@ -110,6 +110,7 @@
                         <pemCertInfo.clientCertPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.crt</pemCertInfo.clientCertPath>
                         <pemCertInfo.caPath>${project.build.testOutputDirectory}/certificate-bundle/ca/ca.crt</pemCertInfo.caPath>
                         <clusterName>log4j2-elasticsearch</clusterName>
+                        <smokeTest.batchSize>10000</smokeTest.batchSize>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>

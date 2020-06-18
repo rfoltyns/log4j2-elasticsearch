@@ -61,4 +61,10 @@ public class InternalLoggingTest {
 
     }
 
+    public static Logger mockTestLogger() {
+        Logger mockedLogger = mock(Logger.class);
+        InternalLogging.setLogger(mockedLogger);
+        return mockedLogger;
+    }
+
 }

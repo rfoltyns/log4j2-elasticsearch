@@ -35,7 +35,6 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
-import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
@@ -49,27 +48,29 @@ import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.junit.Ignore;
 
+import static org.appenders.core.util.PropertiesUtil.getInt;
+
 @Ignore
 public class SmokeTest extends SmokeTestBase {
-
-    public static final int BATCH_SIZE = 10000;
-    public static final int ADDITIONAL_BATCH_SIZE = (int) (BATCH_SIZE * 0.2); // prevent tiny batches by allowing notifier to 
-    public static final int INITIAL_ITEM_POOL_SIZE = 40000;
-    public static final int INITIAL_ITEM_SIZE_IN_BYTES = 256;
-    public static final int INITIAL_BATCH_POOL_SIZE = 4;
 
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
+        final int batchSize = getInt("smokeTest.batchSize", 10000);
+        final int additionalBatchSize = (int) (batchSize * 0.2); // prevent tiny batches
+        final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
+        final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
+        final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
+
         HCHttp.Builder httpObjectFactoryBuilder;
         httpObjectFactoryBuilder = HCHttp.newBuilder();
 
-        int estimatedBatchSizeInBytes = BATCH_SIZE * INITIAL_ITEM_SIZE_IN_BYTES;
+        int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
 
         httpObjectFactoryBuilder.withItemSourceFactory(
                 PooledItemSourceFactory.newBuilder()
                         .withPoolName("batchPool")
-                        .withInitialPoolSize(INITIAL_BATCH_POOL_SIZE)
+                        .withInitialPoolSize(initialBatchPoolSize)
                         .withItemSizeInBytes(estimatedBatchSizeInBytes)
                         .withMonitored(true)
                         .withMonitorTaskInterval(10000)
@@ -103,7 +104,7 @@ public class SmokeTest extends SmokeTestBase {
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
-                .withBatchSize(BATCH_SIZE + ADDITIONAL_BATCH_SIZE)
+                .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
                 .withIndexTemplate(indexTemplate)
                 .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
@@ -134,8 +135,8 @@ public class SmokeTest extends SmokeTestBase {
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
                     .withPoolName("itemPool")
-                    .withInitialPoolSize(INITIAL_ITEM_POOL_SIZE)
-                    .withItemSizeInBytes(INITIAL_ITEM_SIZE_IN_BYTES)
+                    .withInitialPoolSize(initialItemPoolSize)
+                    .withItemSizeInBytes(initialItemBufferSizeInBytes)
                     .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
                     .withMonitored(true)
                     .withMonitorTaskInterval(10000)

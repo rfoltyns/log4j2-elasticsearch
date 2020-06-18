@@ -43,6 +43,7 @@ import java.util.function.Supplier;
 
 import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
+import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public abstract class SmokeTestBase {
 
@@ -53,7 +54,6 @@ public abstract class SmokeTestBase {
     private final AtomicInteger localCounter = new AtomicInteger();
 
     // TODO: expose all via system properties
-    public static final int LIMIT_PER_SEC = 5000;
     public static final int INITIAL_SLEEP_PER_THREAD = 10;
     public static final int MILLIS_BEFORE_SHUTDOWN = 60000;
     public static final int MILLIS_AFTER_SHUTDOWN = 60000;
@@ -238,10 +238,11 @@ public abstract class SmokeTestBase {
             }).start();
         }
 
+        final int limitPerSec = getInt("smokeTest.limitPerSec", 10000);
         while (latch.getCount() != 0) {
             sleep(1000);
             int count = localCounter.getAndSet(0);
-            if (count > LIMIT_PER_SEC && sleepTime.get() != 1) {
+            if (count > limitPerSec && sleepTime.get() != 1) {
                 sleepTime.incrementAndGet();
             } else if (sleepTime.get() > 1) {
                 sleepTime.decrementAndGet();

@@ -36,6 +36,8 @@ import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.junit.Ignore;
 
+import static org.appenders.core.util.PropertiesUtil.getInt;
+
 @Ignore
 public class SmokeTest extends SmokeTestBase {
 
@@ -81,7 +83,7 @@ public class SmokeTest extends SmokeTestBase {
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(bulkProcessorObjectFactory)
-                .withBatchSize(30000)
+                .withBatchSize(getInt("smokeTest.batchSize", 10000))
                 .withDeliveryInterval(1000)
                 .build();
 
