@@ -50,7 +50,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <log4j2.version>2.11.1</log4j2.version>
         <jacoco.version>0.8.3</jacoco.version>
-        <jackson.version>2.9.8</jackson.version>
+        <jackson.version>2.11.0</jackson.version>
         <httpclient.version>4.5.11</httpclient.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
         <httpcore.version>4.4.13</httpcore.version>
@@ -130,7 +130,6 @@
                 <artifactId>jackson-module-afterburner</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
