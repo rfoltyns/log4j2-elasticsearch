@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.junit.Test;
 
@@ -29,13 +30,52 @@ import static org.junit.Assert.assertEquals;
 public class ExtendedObjectMapperTest {
 
     @Test
-    public void newWriterReturnsExtendedObjectWrite() {
+    public void newWriterWithNoArgsReturnsExtendedObjectWriter() {
 
         // given
         ExtendedObjectMapper mapper = new ExtendedObjectMapper(new JsonFactory());
 
         // when
-        ObjectWriter writer = mapper._newWriter(mapper.getSerializationConfig(), mapper.getTypeFactory().constructArrayType(Object.class), null);
+        ObjectWriter writer = mapper.writer();
+
+        // then
+        assertEquals(ExtendedObjectWriter.class, writer.getClass());
+    }
+
+    @Test
+    public void newWriterReturnsExtendedObjectWriter() {
+
+        // given
+        ExtendedObjectMapper mapper = new ExtendedObjectMapper(new JsonFactory());
+
+        // when
+        ObjectWriter writer = mapper.writerFor(Object.class);
+
+        // then
+        assertEquals(ExtendedObjectWriter.class, writer.getClass());
+    }
+
+    @Test
+    public void newWriterWithPrettyPrinterReturnsExtendedObjectWriter() {
+
+        // given
+        ExtendedObjectMapper mapper = new ExtendedObjectMapper(new JsonFactory());
+
+        // when
+        ObjectWriter writer = mapper.writer(new MinimalPrettyPrinter());
+
+        // then
+        assertEquals(ExtendedObjectWriter.class, writer.getClass());
+    }
+
+    @Test
+    public void newWriterWithFormatSchemaReturnsExtendedObjectWriter() {
+
+        // given
+        ExtendedObjectMapper mapper = new ExtendedObjectMapper(new JsonFactory());
+
+        // when
+        ObjectWriter writer = mapper.writer(() -> JsonFactory.FORMAT_NAME_JSON);
 
         // then
         assertEquals(ExtendedObjectWriter.class, writer.getClass());

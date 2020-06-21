@@ -20,6 +20,7 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import com.fasterxml.jackson.core.FormatSchema;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.PrettyPrinter;
 import com.fasterxml.jackson.databind.JavaType;
@@ -37,6 +38,16 @@ public class ExtendedObjectMapper extends ObjectMapper {
         super(extendedObjectMapper);
     }
 
+    @Override
+    protected ObjectWriter _newWriter(SerializationConfig config) {
+        return new ExtendedObjectWriter(this, config);
+    }
+
+    protected ObjectWriter _newWriter(SerializationConfig config, FormatSchema schema) {
+        return new ExtendedObjectWriter(this, config, schema);
+    }
+
+    @Override
     public ObjectWriter _newWriter(SerializationConfig config, JavaType rootType, PrettyPrinter pp) {
         return new ExtendedObjectWriter(this, config, rootType, pp);
     }
