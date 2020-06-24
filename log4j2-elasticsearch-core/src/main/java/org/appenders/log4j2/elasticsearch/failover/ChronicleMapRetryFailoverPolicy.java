@@ -64,7 +64,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
 
     private volatile State state = State.STOPPED;
 
-    private final ChronicleMap<CharSequence, ItemSource> failedItems;
+    private final MapProxy<CharSequence, ItemSource> failedItems;
     private final KeySequenceSelector keySequenceSelector;
     private final Supplier<KeySequence> keySequenceSupplier;
 
@@ -91,7 +91,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
      * @param builder config
      */
     protected ChronicleMapRetryFailoverPolicy(Builder builder) {
-        this.failedItems = builder.chronicleMap;
+        this.failedItems = builder.mapProxy;
         this.keySequenceSelector = builder.keySequenceSelector;
         this.keySequenceSupplier = keySequenceSelector.currentKeySequence();
         this.batchSize = builder.batchSize;
@@ -265,7 +265,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
         @PluginBuilderAttribute(value = "monitorTaskInterval")
         protected long monitorTaskInterval = DEFAULT_RETRY_DELAY;
 
-        private ChronicleMap<CharSequence, ItemSource> chronicleMap;
+        private MapProxy<CharSequence, ItemSource> mapProxy;
 
         @Override
         public final ChronicleMapRetryFailoverPolicy build() {
@@ -294,7 +294,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
             }
 
             try {
-                this.chronicleMap = createChronicleMap();
+                this.mapProxy = new ChronicleMapProxy(createChronicleMap());
                 this.keySequenceSelector = configuredKeySequenceSelector();
             } catch (Exception e) {
                 throw new ConfigurationException("Could not initialize " +
@@ -307,7 +307,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
 
         protected KeySequenceSelector configuredKeySequenceSelector() {
 
-            KeySequenceConfigRepository repository = createKeySequenceConfigRepository(this.chronicleMap);
+            KeySequenceConfigRepository repository = createKeySequenceConfigRepository(this.mapProxy);
             keySequenceSelector.withRepository(repository);
 
             KeySequence keySequence = keySequenceSelector.firstAvailable();
