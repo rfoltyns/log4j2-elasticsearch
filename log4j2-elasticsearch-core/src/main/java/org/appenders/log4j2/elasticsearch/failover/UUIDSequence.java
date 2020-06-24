@@ -25,7 +25,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Provides a sequence of UUID(n, m), where n >= 0 and m >= 0
+ * Provides a sequence of UUID(n, m), where n &gt;= 0 and m &gt;= 0
  */
 public class UUIDSequence implements KeySequence {
 

@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * <p>First available {@link KeySequenceConfig} can be retrieved with {@link #firstAvailable()} call where "first available" meets following criteria:
  * <ul>
  * <li>Has the same sequence id as configured {@link #sequenceId}
- * <li>Is managed by provided {@link KeySequenceConfigRepository}: {@code repo.ID == keySequenceConfig.ownerId} or expired where "expired" means: currentTimeInMillis >= {@link KeySequenceConfig#getExpireAt()})
+ * <li>Is managed by provided {@link KeySequenceConfigRepository}: {@code repo.ID == keySequenceConfig.ownerId} or expired where "expired" means: currentTimeInMillis &gt;= {@link KeySequenceConfig#getExpireAt()})
  * </ul>
  *
  * <p>NOTE: Once provided with {@link KeySequenceConfigRepository}, {@link #firstAvailable()} MUST be called to
