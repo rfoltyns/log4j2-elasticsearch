@@ -130,7 +130,8 @@ public class SmokeTest extends SmokeTestBase {
                 .withVirtualProperties(
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
-                );
+                )
+                .withSingleThread(true);
 
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()

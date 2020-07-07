@@ -20,6 +20,7 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -341,6 +342,39 @@ public class JacksonJsonLayoutTest {
 
         // then
         assertTrue(result instanceof Log4j2Lookup);
+
+    }
+
+    @Test
+    public void createsSingleThreadJsonFactoryIfConfigured() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        builder.withSingleThread(true);
+
+        // when
+        ObjectMapper defaultObjectMapper = builder.createDefaultObjectMapper();
+
+        // then
+        verify(builder).createJsonFactory();
+        assertTrue(defaultObjectMapper.getFactory() instanceof SingleThreadJsonFactory);
+
+    }
+
+
+    @Test
+    public void createsJsonFactoryByDefault() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        builder.withSingleThread(false);
+
+        // when
+        ObjectMapper defaultObjectMapper = builder.createDefaultObjectMapper();
+
+        // then
+        verify(builder).createJsonFactory();
+        assertEquals(defaultObjectMapper.getFactory().getClass(), JsonFactory.class);
 
     }
 

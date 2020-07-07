@@ -115,6 +115,9 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         @PluginBuilderAttribute("afterburner")
         private boolean useAfterburner;
 
+        @PluginBuilderAttribute("singleThread")
+        private boolean singleThread;
+
         @Override
         public JacksonJsonLayout build() {
 
@@ -172,9 +175,16 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         }
 
         protected ObjectMapper createDefaultObjectMapper() {
-            return new ExtendedObjectMapper(new JsonFactory())
+            return new ExtendedObjectMapper(createJsonFactory())
                     .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                     .configure(SerializationFeature.CLOSE_CLOSEABLE, false);
+        }
+
+        protected JsonFactory createJsonFactory() {
+            if (singleThread) {
+                return new SingleThreadJsonFactory();
+            }
+            return new JsonFactory();
         }
 
         /**
@@ -234,6 +244,21 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
          */
         public Builder withAfterburner(boolean useAfterburner) {
             this.useAfterburner = useAfterburner;
+            return this;
+        }
+
+        /**
+         * Allows to configure {@link SingleThreadJsonFactory}
+         *
+         * NOTE: Use ONLY when {@link JacksonJsonLayout#serialize(LogEvent)}/{@link JacksonJsonLayout#serialize(Message)}
+         * are called exclusively by a one thread at a time, e.g. with AsyncLogger
+         *
+         * @param singleThread if true, {@link SingleThreadJsonFactory} will be used to create serializers,
+         *                    otherwise {@code com.fasterxml.jackson.core.JsonFactory} will be used
+         * @return this
+         */
+        public Builder withSingleThread(boolean singleThread) {
+            this.singleThread = singleThread;
             return this;
         }
     }
