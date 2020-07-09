@@ -42,7 +42,11 @@ import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.message.Message;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Allows to customize serialization of incoming events. See {@link Builder} API docs for more details
@@ -100,11 +104,21 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
          */
         static final ItemSourceFactory DEFAULT_SOURCE_FACTORY = StringItemSourceFactory.newBuilder().build();
 
+        /**
+         * Default: {@code [ExtendedLog4j2JsonModule]}
+         */
+        static final JacksonModule[] DEFAULT_JACKSON_MODULES = new JacksonModule[]{
+                new ExtendedLog4j2JsonModule()
+        };
+
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
         private ItemSourceFactory itemSourceFactory = DEFAULT_SOURCE_FACTORY;
 
         @PluginElement(JacksonMixIn.ELEMENT_TYPE)
         private JacksonMixIn[] mixins = new JacksonMixIn[0];
+
+        @PluginElement("JacksonModule")
+        private JacksonModule[] jacksonModules = DEFAULT_JACKSON_MODULES;
 
         @PluginElement("VirtualProperty")
         private VirtualProperty[] virtualProperties = new VirtualProperty[0];
@@ -127,24 +141,67 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
 
             return new JacksonJsonLayout(
                     getConfiguration(),
-                    createConfiguredWriter(Arrays.asList(mixins)),
+                    createConfiguredWriter(),
                     itemSourceFactory
             );
         }
 
+        protected ObjectWriter createConfiguredWriter() {
+            return createConfiguredWriter(Arrays.asList(mixins)); // this method can be inlined in 1.6
+        }
+
+        /**
+         * @deprecated As of 1.6, this method will be removed, use {@link #createConfiguredWriter()} instead
+          */
+        @Deprecated
         protected ObjectWriter createConfiguredWriter(List<JacksonMixIn> mixins) {
 
             ObjectMapper objectMapper = createDefaultObjectMapper();
-            objectMapper.registerModule(new ExtendedLog4j2JsonModule());
+
+            return configureModules(objectMapper, getJacksonModules())
+                    .configureMixins(objectMapper, mixins)
+                    .configureVirtualProperties(objectMapper, virtualProperties, virtualPropertyFilters)
+                    .createConfiguredWriter(objectMapper);
+
+        }
+
+        private Collection<JacksonModule> getJacksonModules() {
+
+            LinkedList<JacksonModule> linkedList = new LinkedList<>(Arrays.asList(DEFAULT_JACKSON_MODULES));
+            linkedList.addAll(Arrays.asList(this.jacksonModules));
 
             if (useAfterburner) {
                 // com.fasterxml.jackson.module:jackson-module-afterburner required here
-                new JacksonAfterburnerModuleConfigurer().configure(objectMapper);
+                linkedList.add(new JacksonAfterburnerModuleConfigurer());
             }
+
+            return new JacksonModulesList(linkedList);
+
+        }
+
+        protected ObjectWriter createConfiguredWriter(ObjectMapper objectMapper) {
+            return objectMapper.writer(new MinimalPrettyPrinter());
+        }
+
+        protected Builder configureModules(ObjectMapper objectMapper, Collection<JacksonModule> modules) {
+
+            for (JacksonModule module : modules) {
+                module.applyTo(objectMapper);
+            }
+
+            return this;
+        }
+
+        protected Builder configureMixins(ObjectMapper objectMapper, List<JacksonMixIn> mixins) {
 
             for (JacksonMixIn mixin : mixins) {
                 objectMapper.addMixIn(mixin.getTargetClass(), mixin.getMixInClass());
             }
+            return this;
+
+        }
+
+        protected Builder configureVirtualProperties(ObjectMapper objectMapper, VirtualProperty[] virtualProperties, VirtualPropertyFilter[] virtualPropertyFilters) {
 
             ValueResolver valueResolver = createValueResolver();
 
@@ -163,8 +220,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
 
             objectMapper.setConfig(customConfig);
 
-            return objectMapper.writer(new MinimalPrettyPrinter());
-
+            return this;
         }
 
         /**
@@ -261,6 +317,66 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
             this.singleThread = singleThread;
             return this;
         }
+
+        /**
+         * Allow to configure additional {@code com.fasterxml.jackson.databind.Module} implementations
+         *
+         * @param modules Jackson modules to register on {@link #build()}
+         * @return this
+         */
+        public Builder withJacksonModules(JacksonModule... modules) {
+            this.jacksonModules = Stream.of(modules).flatMap(Stream::of)
+                    .toArray(JacksonModule[]::new);
+            return this;
+        }
+
+        /**
+         * First-comes, first-served {@link JacksonModule} linked list. Ensures that no more than one element of specific type is present.
+         */
+        private static class JacksonModulesList extends LinkedHashSet<JacksonModule> {
+
+            public JacksonModulesList(LinkedList<JacksonModule> linkedList) {
+                super(linkedList);
+            }
+
+            /**
+             * Adds given {@link JacksonModule} to the list if element of the same type is not already present.
+             *
+             * @param jacksonModule {@link JacksonModule} to add
+             * @return <i>true</i>, if element was added, <i>false</i> otherwise
+             */
+            @Override
+            public boolean add(JacksonModule jacksonModule) {
+
+                if (this.contains(jacksonModule)) {
+                    return false;
+                }
+
+                return super.add(jacksonModule);
+
+            }
+
+            /**
+             * Checks if this list contains an element with the same class name.
+             *
+             * @param o element to check
+             * @return <i>true</i> if element is present, <i>false</i> otherwise
+             */
+            @Override
+            public boolean contains(Object o) {
+
+                for (JacksonModule jacksonModule : this) {
+                    if (jacksonModule.getClass().getName().equals(o.getClass().getName())) {
+                        return true;
+                    }
+                }
+
+                return false;
+
+            }
+
+        }
+
     }
 
     // ==========

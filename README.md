@@ -35,6 +35,7 @@ Project consists of:
 * Custom JSON output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties) and (since 1.4.3) [filters](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-property-filters)
 * Pluggable [internal logging](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/core/logging/InternalLogging.java) (since 1.4.3)
 * (1.5) [ILM policy](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#index-lifecycle-management) configuration
+* Configurable [Jackson modules](log4j2-elasticsearch-core#jackson-modules) support
 
 ### Roadmap
 

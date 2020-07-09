@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -58,6 +59,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -193,7 +195,7 @@ public class JacksonJsonLayoutTest {
 
         // then
         ArgumentCaptor<ExtendedLog4j2JsonModule> captor = ArgumentCaptor.forClass(ExtendedLog4j2JsonModule.class);
-        verify(objectMapper).registerModule(captor.capture());
+        verify(objectMapper, times(1)).registerModule(captor.capture());
 
         Module.SetupContext setupContext = mock(Module.SetupContext.class);
         captor.getValue().setupModule(setupContext);
@@ -305,6 +307,70 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
+    public void builderConfiguresDefaultJacksonModules() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ObjectMapper objectMapper = spy(new ObjectMapper());
+        when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
+
+        JacksonModule jacksonModule1 = new TestJacksonModule();
+        builder.withJacksonModules(jacksonModule1);
+
+        // when
+        builder.build();
+
+        // then
+        verify(objectMapper, times(2)).registerModule(any());
+
+    }
+
+    @Test
+    public void builderConfiguresAdditionalJacksonModulesIfConfigured() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
+
+        JacksonModule jacksonModule1 = mock(JacksonModule.class);
+        JacksonModule jacksonModule2 = spy(new TestJacksonModule());
+        builder.withJacksonModules(jacksonModule1, jacksonModule2);
+
+        // when
+        builder.build();
+
+        // then
+        verify(jacksonModule1).applyTo(eq(objectMapper));
+        verify(jacksonModule2).applyTo(eq(objectMapper));
+
+    }
+
+    @Test
+    public void builderDoesNotAllowToOverrideModulesWithTheSameClassName() {
+
+        // given
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
+
+        JacksonModule jacksonModule1 = spy(new TestJacksonModule());
+        JacksonModule jacksonModule2 = spy(new TestJacksonModule());
+        builder.withJacksonModules(jacksonModule1, jacksonModule2);
+
+        // when
+        builder.build();
+
+        // then
+        verify(jacksonModule1).applyTo(eq(objectMapper));
+        verify(jacksonModule2, never()).applyTo(eq(objectMapper));
+
+    }
+
+    @Test
     public void builderCreatesExtendedObjectWriter() {
 
         // given
@@ -327,7 +393,7 @@ public class JacksonJsonLayoutTest {
         builder.build();
 
         // then
-        verify(builder).createConfiguredWriter(any());
+        verify(builder).createConfiguredWriter(any(ObjectMapper.class));
 
     }
 
@@ -501,6 +567,15 @@ public class JacksonJsonLayoutTest {
 
         public LayoutTestItemSource(String source) {
             super(source);
+        }
+
+    }
+
+    private class TestJacksonModule extends SimpleModule implements JacksonModule {
+
+        @Override
+        public void applyTo(ObjectMapper objectMapper) {
+            objectMapper.registerModule(this);
         }
 
     }

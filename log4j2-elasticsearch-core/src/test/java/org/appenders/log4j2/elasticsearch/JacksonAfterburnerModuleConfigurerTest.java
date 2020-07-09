@@ -26,10 +26,27 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class JacksonAfterburnerModuleConfigurerTest {
+
+    @Test
+    public void deprecatedConfigureDelegates() {
+
+        // given
+        JacksonAfterburnerModuleConfigurer configurer = spy(new JacksonAfterburnerModuleConfigurer());
+
+        ObjectMapper objectMapper = spy(new ObjectMapper());
+
+        // when
+        configurer.configure(objectMapper);
+
+        // then
+        verify(configurer).applyTo(same(objectMapper));
+
+    }
 
     @Test
     public void configuresAfterburnerModule() {
@@ -40,7 +57,7 @@ public class JacksonAfterburnerModuleConfigurerTest {
         ObjectMapper objectMapper = spy(new ObjectMapper());
 
         // when
-        configurer.configure(objectMapper);
+        configurer.applyTo(objectMapper);
 
         // then
         ArgumentCaptor<AfterburnerModule> captor = ArgumentCaptor.forClass(AfterburnerModule.class);

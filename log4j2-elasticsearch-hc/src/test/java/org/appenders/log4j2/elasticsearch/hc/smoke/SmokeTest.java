@@ -44,6 +44,7 @@ import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPoli
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.ExampleJacksonModule;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
@@ -138,7 +139,8 @@ public class SmokeTest extends SmokeTestBase {
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
                 )
-                .withSingleThread(true);
+                .withSingleThread(true)
+                .withJacksonModules(ExampleJacksonModule.newBuilder().build());
 
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()

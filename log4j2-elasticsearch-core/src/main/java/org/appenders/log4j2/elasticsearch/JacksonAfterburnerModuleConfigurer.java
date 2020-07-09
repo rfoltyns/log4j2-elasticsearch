@@ -28,9 +28,19 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
  * when {@code org.appenders.log4j2.elasticsearch.JacksonJsonLayout.Builder#withAfterburner(boolean)} is set to false
  * and com.fasterxml.jackson.module:jackson-module-afterburner dependency was not provided
  */
-final class JacksonAfterburnerModuleConfigurer {
+class JacksonAfterburnerModuleConfigurer implements JacksonModule {
 
+    /**
+     * @param objectMapper mapper to configure
+     * @deprecated As of 1.6, this method will be removed. Use {@link #applyTo(ObjectMapper)} instead
+     */
+    @Deprecated
     void configure(ObjectMapper objectMapper) {
+        applyTo(objectMapper);
+    }
+
+    @Override
+    public void applyTo(ObjectMapper objectMapper) {
         objectMapper.registerModule(new AfterburnerModule());
     }
 

@@ -20,6 +20,7 @@ package org.apache.logging.log4j.core.jackson;
  * #L%
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
@@ -27,8 +28,9 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.impl.ExtendedStackTraceElement;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
 import org.apache.logging.log4j.message.Message;
+import org.appenders.log4j2.elasticsearch.JacksonModule;
 
-public class ExtendedLog4j2JsonModule extends SimpleModule {
+public class ExtendedLog4j2JsonModule extends SimpleModule implements JacksonModule {
 
     @Override
     public void setupModule(SetupContext context) {
@@ -46,4 +48,10 @@ public class ExtendedLog4j2JsonModule extends SimpleModule {
         context.setMixInAnnotations(LogEvent.class, LogEventJacksonJsonMixIn.class);
 
     }
+
+    @Override
+    public void applyTo(ObjectMapper objectMapper) {
+        objectMapper.registerModule(this);
+    }
+
 }

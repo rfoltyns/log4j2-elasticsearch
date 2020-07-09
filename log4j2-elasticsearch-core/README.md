@@ -176,6 +176,7 @@ singleThread | Attribute | no | false | Use ONLY with `AsyncLogger`. If `true`, 
 mixins | Element(s) | no | None | Array of `JacksonMixIn` elements. Can be used to override default serialization of LogEvent, Message and related objects
 virtualProperties (since 1.4) | Element(s) | no | None | Array of `VirtualProperty` elements. Similar to `KeyValuePair`, can be used to define properties resolvable on the fly, not available in LogEvent(s).
 virtualPropertiesFilter (since 1.4.3) | Element(s) | no | None | Array of `VirtualPropertyFilter` elements, can be used to include/exclude `VirtualProperty` dynamically.
+jacksonModules (since 1.5) | Element(s) | no | [ExtendedLog4j2JsonModule](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/apache/logging/log4j/core/jackson/ExtendedLog4j2JsonModule.java) | Array of `JacksonModule` elements. Can be used to configure any aspect of (de)serialization.
 itemSourceFactory | Element | yes (since 1.4) | n/a | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available
 
 Default output:
@@ -251,6 +252,27 @@ Example:
         <VirtualProperty name="field3" value="$${env:envVariable:-}" />
         <!-- will NOT be included if ctxVariable is not available in runtime -->
         <VirtualProperty name="field4" value="$${ctx:ctxVariable:-}" dynamic="true" />
+    </JacksonJsonLayout>
+    ...
+</Elasticsearch>
+```
+
+##### Jackson Modules
+
+Since 1.5, implementations of [`JacksonModule`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonModule.java) can be used to configure any aspect of (de)serialization. It was added to allow to configure any arbitrary Jackson FasterXML Module (see [example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/test/java/org/appenders/log4j2/elasticsearch/ExampleJacksonModule.java)), but in fact, it can be used to apply any configuration that's e.g. not supported by other features (mixins, virtual properties, filters, etc) or not supported yet.
+
+Available modules:
+
+* `JacksonAfterburnerModule` - configures `com.fasterxml.jackson.module:jackson-module-afterburner`
+
+Example:
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JacksonJsonLayout>
+        <JacksonAfterburnerModule/>
+        <ExampleJacksonModule/> <!-- not released - test sources only -->
+        <!--<CustomJacksonModule anyProperty="anyValue"/>-->
     </JacksonJsonLayout>
     ...
 </Elasticsearch>
