@@ -125,7 +125,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         public static final long DEFAULT_SHUTDOWN_DELAY = 5000L;
 
         @PluginElement("elasticsearchClientFactory")
-        @Required(message = "No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
+        @Required(message = "No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
         private ClientObjectFactory clientObjectFactory;
 
         @PluginBuilderAttribute
@@ -146,7 +146,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         @Override
         public AsyncBatchDelivery build() {
             if (clientObjectFactory == null) {
-                throw new ConfigurationException("No Elasticsearch client factory [JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
+                throw new ConfigurationException("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
             }
             return new AsyncBatchDelivery(this);
         }
