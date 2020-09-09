@@ -224,7 +224,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
 
         /**
          * Default entry size: 1024 bytes
-         * <p/>
+         * <br>
          * NOTE: Suitable for small logs (~300 characters)
          * )
          */

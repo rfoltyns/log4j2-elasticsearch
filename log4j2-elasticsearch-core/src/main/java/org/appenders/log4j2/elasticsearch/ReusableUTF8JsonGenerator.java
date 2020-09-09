@@ -49,9 +49,9 @@ public class ReusableUTF8JsonGenerator extends UTF8JsonGenerator {
 
     /**
      * Resets for new write.
-     * <p></p>
+     * <br>
      * Does NOT release buffers.
-     * <p></p>
+     * <br>
      * <p>{@code com.fasterxml.jackson.core.JsonGenerator.Feature.AUTO_CLOSE_JSON_CONTENT} supported</p>
      * <p>{@code com.fasterxml.jackson.core.JsonGenerator.Feature.AUTO_CLOSE_TARGET} supported</p>
      * <p>{@code com.fasterxml.jackson.core.JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM} supported</p>

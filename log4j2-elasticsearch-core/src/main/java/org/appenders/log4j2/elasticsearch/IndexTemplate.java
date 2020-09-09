@@ -169,6 +169,7 @@ public class IndexTemplate {
 
         /**
          * @param valueResolver variable resolver
+         * @return this
          * @deprecated Added temporarily, solely to support variables in programmatic config.
          * Will be removed when SetupOps API is added.
          */

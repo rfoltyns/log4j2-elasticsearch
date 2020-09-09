@@ -38,14 +38,14 @@ import java.io.Writer;
 
 /**
  * Instances of this class are NOT thread safe!
- * <p></p>
+ * <br>
  * Instances of {@code com.fasterxml.jackson.core.JsonGenerator} based
  * writers created by this class are NOT tread safe!
- * <p></p>
+ * <br>
  * Allows to reuse <i>ONE(!)</i> {@code com.fasterxml.jackson.core.JsonGenerator}
  * for every {@link #_createUTF8Generator(OutputStream, IOContext)} call
  * by replacing several relevant components with one-per-factory counterparts.
- * <p></p>
+ * <br>
  * Unless accessed exclusively by a single thread at once,
  * concurrent calls to writers based on this factory
  * will eventually lead to serialization errors as
@@ -69,7 +69,7 @@ public class SingleThreadJsonFactory extends JsonFactory {
 
     /**
      * Used by {@link #copy()}.
-     * <p></p>
+     * <br>
      * Copies only inherited fields.
      *
      * @param factory source factory

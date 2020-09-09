@@ -57,7 +57,7 @@ public class KeySequenceConfigRepository {
     /**
      * {@link #expireInMillis} will be set to value of system property {@code "appenders.failover.keysequence.expireInMillis"}
      * or {@link #DEFAULT_EXPIRE_IN_MILLIS} if property is not present
-     * @param dataSource
+     * @param dataSource storage
      */
     public KeySequenceConfigRepository(Map<CharSequence, ItemSource> dataSource) {
         this(
@@ -101,6 +101,8 @@ public class KeySequenceConfigRepository {
      * Checks if given {@link KeySequenceConfig} exists in this repository
      *
      * @param keySequenceConfigKey config key
+     *
+     * @return <i>true</i>, if this instance contains given key, <i>false</i> otherwise
      */
 
     public boolean contains(CharSequence keySequenceConfigKey) {
