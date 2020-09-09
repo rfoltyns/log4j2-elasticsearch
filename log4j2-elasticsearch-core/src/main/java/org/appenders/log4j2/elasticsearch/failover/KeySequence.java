@@ -38,6 +38,7 @@ public interface KeySequence {
     CharSequence nextWriterKey();
 
     /**
+     * @param maxKeys Max number of items in returned iterator
      * @return iterator over a batch of next reader keys
      */
     Iterator<CharSequence> nextReaderKeys(long maxKeys);

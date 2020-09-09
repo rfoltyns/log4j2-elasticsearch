@@ -59,7 +59,7 @@ public class BatchRequestTest {
     @Test
     public void builderBuildsSuccessfully() {
 
-        // then
+        // given
         BatchRequest.Builder builder = createDefaultTestObjectBuilder();
 
         // when

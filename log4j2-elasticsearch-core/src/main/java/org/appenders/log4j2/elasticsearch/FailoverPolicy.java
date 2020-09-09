@@ -54,14 +54,16 @@ public interface FailoverPolicy<T> {
     /**
      * SHOULD provide an alternate method of delivery
      *
-     * @param failedPayload
+     * @param failedPayload payload to be handled
      */
     default void deliver(FailedItemSource<T> failedPayload) {
         deliver((ItemSource<T>)failedPayload); // fallback to existing API for backwards compatibility
     }
 
+
     /**
      * @param failoverListener listener to be notified about events of policy's choice
+     * @param <U> {@link FailoverListener} implementation
      */
     default <U extends FailoverListener> void addListener(U failoverListener) {
         // noop

@@ -60,7 +60,7 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
      *
      * @param entity response entity
      * @param contentType content type of given entity
-     * @throws IOException
+     * @throws IOException on pool errors
      */
     @Override
     protected void onEntityEnclosed(

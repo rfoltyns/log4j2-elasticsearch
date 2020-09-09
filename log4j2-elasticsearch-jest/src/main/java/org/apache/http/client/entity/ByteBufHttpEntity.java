@@ -82,10 +82,9 @@ public class ByteBufHttpEntity extends AbstractHttpEntity {
     }
 
     /**
-     * Unsupported. Content handling available only via {@link #getContent()}
+     * Unsupported. Throws UnsupportedOperationException. Content handling available only via {@link #getContent()}
      * 
      * @param outstream target stream
-     * @throws UnsupportedOperationException
      */
     @Override
     public void writeTo(final OutputStream outstream) {

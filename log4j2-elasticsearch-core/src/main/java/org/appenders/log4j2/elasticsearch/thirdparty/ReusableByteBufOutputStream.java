@@ -135,7 +135,7 @@ public class ReusableByteBufOutputStream extends OutputStream implements DataOut
     }
 
     /**
-     * Returns the buffer where this stream is writing data.
+     * @return underlying buffer
      */
     public ByteBuf buffer() {
         return buffer;
