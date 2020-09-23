@@ -505,7 +505,12 @@ public class BatchDeliveryTest {
         private BatchEmitterServiceProvider mockedProvider;
 
         public TestAsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
-            super(batchSize, deliveryInterval, objectFactory, failoverPolicy, indexTemplate);
+            super(new Builder()
+                    .withBatchSize(batchSize)
+                    .withDeliveryInterval(deliveryInterval)
+                    .withClientObjectFactory(objectFactory)
+                    .withFailoverPolicy(failoverPolicy)
+                    .withIndexTemplate(indexTemplate));
         }
 
         @Override

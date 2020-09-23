@@ -54,23 +54,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
     private final long delayShutdownInMillis;
 
     /**
-     * @deprecated As of 1.5, this constructor will be removed. Use {@link Builder} instead.
+     * @param builder {@link Builder} instance
      */
-    @Deprecated
-    public AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
-        this.batchOperations = objectFactory.createBatchOperations();
-        this.batchEmitter = createBatchEmitterServiceProvider()
-                .createInstance(
-                        batchSize,
-                        deliveryInterval,
-                        objectFactory,
-                        failoverPolicy);
-        this.indexTemplate = indexTemplate;
-        this.objectFactory = objectFactory;
-        this.failoverPolicy = failoverPolicy;
-        this.delayShutdownInMillis = Builder.DEFAULT_SHUTDOWN_DELAY;
-    }
-
     protected AsyncBatchDelivery(Builder builder) {
         this.batchOperations = builder.clientObjectFactory.createBatchOperations();
         this.batchEmitter = createBatchEmitterServiceProvider()
