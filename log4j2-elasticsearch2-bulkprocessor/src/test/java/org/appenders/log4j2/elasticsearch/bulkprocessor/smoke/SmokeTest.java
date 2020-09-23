@@ -26,6 +26,7 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials;
@@ -79,12 +80,18 @@ public class SmokeTest extends SmokeTestBase {
             builder.withAuth(auth);
         }
 
+        IndexTemplate indexTemplate = IndexTemplate.newBuilder()
+                .withName("log4j2-elasticsearch2-bulkprocessor-index-template")
+                .withPath("classpath:indexTemplate.json")
+                .build();
+
         BulkProcessorObjectFactory bulkProcessorObjectFactory = builder.build();
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(bulkProcessorObjectFactory)
                 .withBatchSize(getInt("smokeTest.batchSize", 10000))
                 .withDeliveryInterval(1000)
+                .withIndexTemplate(indexTemplate)
                 .build();
 
         NoopIndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
