@@ -43,17 +43,8 @@ public class BufferedJestClientFactory extends ExtendedJestClientFactory {
     private static final Logger LOG = InternalLogging.getLogger();
 
     /**
-     * This constructor is deprecated, it will be removed in 1.5,
-     * use {@link #BufferedJestClientFactory(WrappedHttpClientConfig)} instead
-     *
-     * @param httpClientConfig {@link io.searchbox.client.config.HttpClientConfig}
-     * @deprecated As of 1.5, this constructor will be removed
+     * @param wrappedHttpClientConfig HTTP config
      */
-    @Deprecated
-    public BufferedJestClientFactory(io.searchbox.client.config.HttpClientConfig httpClientConfig) {
-        super(new WrappedHttpClientConfig.Builder(httpClientConfig).build());
-    }
-
     public BufferedJestClientFactory(WrappedHttpClientConfig wrappedHttpClientConfig) {
         super(wrappedHttpClientConfig);
     }

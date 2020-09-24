@@ -400,32 +400,6 @@ public class BufferedJestHttpObjectFactoryTest {
     }
 
     @Test
-    public void deprecatedConstructorSetsDefaultIoThreadCount() throws IllegalAccessException {
-
-        // given
-        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest
-                .createDefaultTestSourceFactoryConfig()
-                .build();
-
-        // when
-        BufferedJestHttpObjectFactory factory = new BufferedJestHttpObjectFactory(
-                Arrays.asList(TEST_SERVER_URIS.split(";")),
-                TEST_CONNECTION_TIMEOUT,
-                TEST_READ_TIMEOUT,
-                TEST_MAX_TOTAL_CONNECTIONS,
-                TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE,
-                TEST_DISCOVERY_ENABLED,
-                bufferedSourceFactory,
-                null
-        );
-
-        // then
-        assertEquals(Runtime.getRuntime().availableProcessors(),
-                PowerMockito.field(factory.getClass(), "ioThreadCount").get(factory));
-
-    }
-
-    @Test
     public void responseHandlerDeregistersRequestFromBackoffPolicyAfterException() {
 
         // given

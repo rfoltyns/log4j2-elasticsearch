@@ -34,7 +34,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
-import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -42,14 +41,10 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
-import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
 
-import java.util.Collection;
 import java.util.function.Function;
-
-import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
 
 @Plugin(name = BufferedJestHttpObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
@@ -63,47 +58,6 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     private final PooledItemSourceFactory itemSourceFactory;
 
     private final JacksonMixIn[] mixIns;
-
-    /**
-     * This constructor is deprecated and will be removed in 1.5.
-     *
-     * @param serverUris
-     * @param connTimeout
-     * @param readTimeout
-     * @param maxTotalConnections
-     * @param defaultMaxTotalConnectionPerRoute
-     * @param discoveryEnabled
-     * @param bufferedSourceFactory
-     * @param auth
-     *
-     * @deprecated As of 1.5, this constructor will be removed. Use {@link #BufferedJestHttpObjectFactory(Builder)} instead
-     */
-    @Deprecated
-    protected BufferedJestHttpObjectFactory(
-            Collection<String> serverUris,
-            int connTimeout,
-            int readTimeout,
-            int maxTotalConnections,
-            int defaultMaxTotalConnectionPerRoute,
-            boolean discoveryEnabled,
-            PooledItemSourceFactory bufferedSourceFactory,
-            Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth
-    ) {
-        super(
-                serverUris,
-                connTimeout,
-                readTimeout,
-                maxTotalConnections,
-                defaultMaxTotalConnectionPerRoute,
-                Runtime.getRuntime().availableProcessors(),
-                discoveryEnabled,
-                auth,
-                DEFAULT_MAPPING_TYPE,
-                new NoopBackoffPolicy()
-        );
-        this.itemSourceFactory = bufferedSourceFactory;
-        this.mixIns = new JacksonMixIn[]{};
-    }
 
     protected BufferedJestHttpObjectFactory(Builder builder) {
         super(builder);

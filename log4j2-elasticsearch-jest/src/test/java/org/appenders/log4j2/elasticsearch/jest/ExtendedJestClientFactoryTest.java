@@ -72,7 +72,7 @@ public class ExtendedJestClientFactoryTest {
     public void ioReactorConfigUsesGivenReadTimeout() {
 
         // given
-        HttpClientConfig.Builder httpClientConfigBuilder = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         int expectedReadTImeout = random.nextInt(1000) + 1;
         httpClientConfigBuilder.readTimeout(expectedReadTImeout);
@@ -92,7 +92,7 @@ public class ExtendedJestClientFactoryTest {
     public void ioReactorConfigUsesGivenConnectTimeout() {
 
         // given
-        HttpClientConfig.Builder httpClientConfigBuilder = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         int expectedConnectTImeout = random.nextInt(1000) + 1;
         httpClientConfigBuilder.connTimeout(expectedConnectTImeout);
@@ -128,7 +128,7 @@ public class ExtendedJestClientFactoryTest {
     public void registryBuilderUsesProvidedHttpIOSessionStrategy() {
 
         // given
-        HttpClientConfig.Builder httpClientConfigBuilder = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         SchemeIOSessionStrategy expectedSchemeIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
         httpClientConfigBuilder.httpIOSessionStrategy(expectedSchemeIOSessionStrategy);
@@ -148,10 +148,8 @@ public class ExtendedJestClientFactoryTest {
     public void registryBuilderUsesProvidedHttpsIOSessionStrategy() {
 
         // given
-        HttpClientConfig.Builder httpClientConfigBuilder = createDefaultTestHttpClientConfigBuilder();
-
         SchemeIOSessionStrategy expectedSchemeIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
-        httpClientConfigBuilder.httpsIOSessionStrategy(expectedSchemeIOSessionStrategy);
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder(expectedSchemeIOSessionStrategy);
 
         WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(httpClientConfigBuilder.build());
         ExtendedJestClientFactory factory = new ExtendedJestClientFactory(builder.build());
@@ -234,12 +232,12 @@ public class ExtendedJestClientFactoryTest {
     public void getAsyncConnectionManagerConfiguresMaxTotalIfConfigured() {
 
         // given
-        HttpClientConfig.Builder config = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         int expectedMaxTotalConnection = random.nextInt(100) + 10;
-        config.maxTotalConnection(expectedMaxTotalConnection);
+        httpClientConfigBuilder.maxTotalConnection(expectedMaxTotalConnection);
 
-        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(config.build());
+        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(httpClientConfigBuilder.build());
         ExtendedJestClientFactory factory = spy(new ExtendedJestClientFactory(builder.build()));
 
         PoolingNHttpClientConnectionManager mockedNHttpConnectionManager = mock(PoolingNHttpClientConnectionManager.class);
@@ -258,12 +256,12 @@ public class ExtendedJestClientFactoryTest {
     public void getAsyncConnectionManagerConfiguresDefaultMaxTotalPerRouteIfConfigured() {
 
         // given
-        HttpClientConfig.Builder config = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         int expectedMaxTotalConnection = random.nextInt(100) + 10;
-        config.defaultMaxTotalConnectionPerRoute(expectedMaxTotalConnection);
+        httpClientConfigBuilder.defaultMaxTotalConnectionPerRoute(expectedMaxTotalConnection);
 
-        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(config.build());
+        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(httpClientConfigBuilder.build());
         ExtendedJestClientFactory factory = spy(new ExtendedJestClientFactory(builder.build()));
 
         PoolingNHttpClientConnectionManager mockedNHttpConnectionManager = mock(PoolingNHttpClientConnectionManager.class);
@@ -282,13 +280,13 @@ public class ExtendedJestClientFactoryTest {
     public void getAsyncConnectionManagerConfiguresMaxTotalPerRouteIfConfigured() {
 
         // given
-        HttpClientConfig.Builder config = createDefaultTestHttpClientConfigBuilder();
+        HttpClientConfig.Builder httpClientConfigBuilder = createTestHttpClientConfigBuilder();
 
         HttpRoute expectedHttpRoute = new HttpRoute(new HttpHost("localhost"));
         int expectedMaxTotalConnection = random.nextInt(100) + 10;
-        config.maxTotalConnectionPerRoute(expectedHttpRoute, expectedMaxTotalConnection);
+        httpClientConfigBuilder.maxTotalConnectionPerRoute(expectedHttpRoute, expectedMaxTotalConnection);
 
-        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(config.build());
+        WrappedHttpClientConfig.Builder builder = createDefaultTestWrappedHttpClientConfigBuilder(httpClientConfigBuilder.build());
         ExtendedJestClientFactory factory = spy(new ExtendedJestClientFactory(builder.build()));
 
         PoolingNHttpClientConnectionManager mockedNHttpConnectionManager = mock(PoolingNHttpClientConnectionManager.class);
@@ -303,13 +301,20 @@ public class ExtendedJestClientFactoryTest {
 
     }
 
-    private HttpClientConfig.Builder createDefaultTestHttpClientConfigBuilder() {
-        return new HttpClientConfig.Builder("http://localhost:9200");
+    private HttpClientConfig.Builder createTestHttpClientConfigBuilder() {
+        return new HttpClientConfig.Builder("http://localhost:9200")
+                .httpIOSessionStrategy(mock(SchemeIOSessionStrategy.class))
+                .httpsIOSessionStrategy(mock(SchemeIOSessionStrategy.class));
+    }
+
+    private HttpClientConfig.Builder createTestHttpClientConfigBuilder(SchemeIOSessionStrategy schemeIOSessionStrategy) {
+        return new HttpClientConfig.Builder("http://localhost:9200")
+                .httpIOSessionStrategy(schemeIOSessionStrategy)
+                .httpsIOSessionStrategy(schemeIOSessionStrategy);
     }
 
     private WrappedHttpClientConfig.Builder createDefaultTestWrappedHttpClientConfigBuilder() {
-        HttpClientConfig httpClientConfig = createDefaultTestHttpClientConfigBuilder().build();
-        return new WrappedHttpClientConfig.Builder(httpClientConfig);
+        return new WrappedHttpClientConfig.Builder(createTestHttpClientConfigBuilder().build());
     }
 
     private WrappedHttpClientConfig.Builder createDefaultTestWrappedHttpClientConfigBuilder(HttpClientConfig httpClientConfig) {
