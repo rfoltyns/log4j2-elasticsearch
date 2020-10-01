@@ -38,6 +38,8 @@ import java.io.OutputStream;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
+import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.mockito.Mockito.mock;
@@ -190,9 +192,9 @@ public class FailedItemMarshallerTest {
         FailedItemMarshaller failedItemMarshaller = new FailedItemMarshaller();
 
         CompositeByteBuf byteBuf = new CompositeByteBuf(PooledByteBufAllocator.DEFAULT, false, 2).capacity(1024);
-        ByteBufItemSource itemSource = new ByteBufItemSource(byteBuf, source -> {});
+        ByteBufItemSource itemSource = createTestItemSource(byteBuf, source -> {});
         FailedItemSource<ByteBuf> failedItemSource =
-                new FailedItemSource<>(itemSource, new FailedItemInfo(UUID.randomUUID().toString()));
+                createTestFailedItemSource(itemSource, new FailedItemInfo(UUID.randomUUID().toString()));
 
         ReusableByteBufOutputStream outputStream =
                 new ReusableByteBufOutputStream(byteBuf);

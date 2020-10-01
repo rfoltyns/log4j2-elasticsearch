@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createDefaultTestKeySequenceConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -53,7 +54,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         sleep(1);
@@ -138,7 +139,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId() + 1);
@@ -160,7 +161,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         sleep(1);
@@ -185,7 +186,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         sleep(1);
@@ -215,7 +216,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 1000);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId());
@@ -241,7 +242,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 1000);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         CharSequence expectedKey = config.getKey();
@@ -266,7 +267,7 @@ public class SingleKeySequenceSelectorTest {
         Map<CharSequence, ItemSource> map = new HashMap<>();
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 1000);
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(config.getSeqId());
@@ -299,7 +300,7 @@ public class SingleKeySequenceSelectorTest {
             }
         };
 
-        KeySequenceConfig config = KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig config = createDefaultTestKeySequenceConfig();
         repository.persist(config);
 
         sleep(1);

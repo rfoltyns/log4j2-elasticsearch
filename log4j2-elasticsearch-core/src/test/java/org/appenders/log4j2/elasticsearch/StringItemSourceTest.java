@@ -31,7 +31,7 @@ public class StringItemSourceTest {
         String expected = "expectedSource";
 
         // when
-        ItemSource<String> itemSource = new StringItemSource(expected);
+        ItemSource<String> itemSource = createTestStringItemSource(expected);
         String actualSource = itemSource.getSource();
 
         // then
@@ -43,7 +43,7 @@ public class StringItemSourceTest {
 
         // given
         String expected = "expectedSource";
-        ItemSource<String> itemSource = new StringItemSource(expected);
+        ItemSource<String> itemSource = createTestStringItemSource(expected);
 
         // when
         itemSource.release();
@@ -51,6 +51,10 @@ public class StringItemSourceTest {
         // then
         Assert.assertEquals(expected, itemSource.getSource());
 
+    }
+
+    public static StringItemSource createTestStringItemSource(String expected) {
+        return new StringItemSource(expected);
     }
 
 }

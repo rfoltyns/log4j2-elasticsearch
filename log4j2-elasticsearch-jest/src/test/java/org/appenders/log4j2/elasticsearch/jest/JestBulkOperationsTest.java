@@ -36,6 +36,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -91,7 +92,7 @@ public class JestBulkOperationsTest {
         BatchBuilder<Bulk> batchBuilder = bulkOperations.createBatchBuilder();
 
         String testPayload = "{ \"testfield\": \"testvalue\" }";
-        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        StringItemSource itemSource = spy(createTestStringItemSource(testPayload));
         Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
 
         // when
@@ -113,7 +114,7 @@ public class JestBulkOperationsTest {
         BatchOperations<Bulk> bulkOperations = new JestBulkOperations();
 
         String testPayload = "{ \"testfield\": \"testvalue\" }";
-        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        StringItemSource itemSource = spy(createTestStringItemSource(testPayload));
         Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
 
         // when
@@ -132,7 +133,7 @@ public class JestBulkOperationsTest {
         BatchOperations<Bulk> bulkOperations = new JestBulkOperations(expectedMappingType);
 
         String testPayload = "{ \"testfield\": \"testvalue\" }";
-        StringItemSource itemSource = spy(new StringItemSource(testPayload));
+        StringItemSource itemSource = spy(createTestStringItemSource(testPayload));
         Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
 
         // when

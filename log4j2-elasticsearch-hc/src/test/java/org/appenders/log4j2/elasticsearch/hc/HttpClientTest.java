@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.CompositeByteBuf;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpResponse;
@@ -37,7 +38,6 @@ import org.apache.http.nio.protocol.BasicAsyncResponseConsumer;
 import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.protocol.HttpContext;
-import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.junit.Assert;
@@ -56,7 +56,8 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -679,11 +680,9 @@ public class HttpClientTest {
     }
 
     private ItemSource<ByteBuf> createDefaultTestByteBufItemSource(String payload) {
-        ByteBuf buffer = byteBufAllocator.buffer(16);
+        CompositeByteBuf buffer = createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
-        return new ByteBufItemSource(buffer, source -> {
-            // noop
-        });
+        return createTestItemSource(buffer, source -> {});
     }
 
 }

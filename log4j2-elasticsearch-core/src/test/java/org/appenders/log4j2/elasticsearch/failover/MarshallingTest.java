@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import net.openhft.chronicle.map.ChronicleMap;
-import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,6 +38,9 @@ import java.util.Random;
 import java.util.UUID;
 
 import static java.lang.Math.abs;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
+import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
+import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createTestKeySequenceConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -62,7 +64,7 @@ public class MarshallingTest {
         long expectedReaderIndex = randomLong();
         long expectedWriterIndex = randomLong();
 
-        KeySequenceConfig config = new KeySequenceConfig(expectedSeqId, expectedReaderIndex, expectedWriterIndex);
+        KeySequenceConfig config = createTestKeySequenceConfig(expectedSeqId, expectedReaderIndex, expectedWriterIndex);
         config.setOwnerId(expectedOwnerId);
 
         CharSequence expectedId = config.getKey();
@@ -121,10 +123,11 @@ public class MarshallingTest {
 
         assertEquals(expectedPayload, byteBuf.toString(Charset.defaultCharset()));
 
-        ItemSource<ByteBuf> expectedSource = new ByteBufItemSource(byteBuf, (source) -> byteBuf.release());
+        ItemSource<ByteBuf> expectedSource = createTestItemSource(
+                byteBuf, (source) -> byteBuf.release());
 
         String targetName = UUID.randomUUID().toString();
-        FailedItemSource<ByteBuf> failedItemSource = new FailedItemSource<>(
+        FailedItemSource<ByteBuf> failedItemSource = createTestFailedItemSource(
                 expectedSource,
                 new FailedItemInfo(targetName)
         );

@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.junit.Assert;
@@ -40,8 +39,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
-import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.IndexRequestTest.createIndexRequestBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -140,8 +138,7 @@ public class BatchRequestTest {
         // given
         ObjectWriter writer = spy(new ObjectMapper().writerFor(IndexRequest.class));
 
-        CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source1 = new ByteBufItemSource(byteBuf1, source -> {});
+        ItemSource<ByteBuf> source1 = createTestItemSource();
         String index1 = UUID.randomUUID().toString();
         String mappingType = UUID.randomUUID().toString();
         IndexRequest action1 = createIndexRequestBuilder(source1)
@@ -149,8 +146,7 @@ public class BatchRequestTest {
                 .type(mappingType)
                 .build();
 
-        CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source2 = new ByteBufItemSource(byteBuf2, source -> {});
+        ItemSource<ByteBuf> source2 = createTestItemSource();
         String index2 = UUID.randomUUID().toString();
 
         IndexRequest action2 = createIndexRequestBuilder(source2)
@@ -160,7 +156,7 @@ public class BatchRequestTest {
 
         BatchRequest request = new BatchRequest.Builder()
                 .withObjectWriter(writer)
-                .withBuffer(new ByteBufItemSource(createDefaultTestByteBuf(), source -> {}))
+                .withBuffer(createTestItemSource())
                 .add(action1)
                 .add(action2)
                 .build();
@@ -299,7 +295,7 @@ public class BatchRequestTest {
     }
 
     public static BatchRequest createTestBatch(BatchRequest.Builder builder, ItemSource<ByteBuf>... payloads) {
-        builder.withBuffer(new ByteBufItemSource(byteBufAllocator.buffer(32), source -> {}));
+        builder.withBuffer(createTestItemSource());
         builder.withObjectWriter(mock(ObjectWriter.class));
 
         for (ItemSource<ByteBuf> payload : payloads) {
@@ -315,8 +311,7 @@ public class BatchRequestTest {
         // given
         ObjectWriter writer = spy(new ObjectMapper().writerFor(IndexRequest.class));
 
-        CompositeByteBuf byteBuf1 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source1 = new ByteBufItemSource(byteBuf1, source -> {});
+        ItemSource<ByteBuf> source1 = createTestItemSource();
         String index = UUID.randomUUID().toString();
         String mappingType = UUID.randomUUID().toString();
         IndexRequest action1 = createIndexRequestBuilder(source1)
@@ -324,8 +319,7 @@ public class BatchRequestTest {
                 .type(mappingType)
                 .build();
 
-        CompositeByteBuf byteBuf2 = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> source2 = new ByteBufItemSource(byteBuf2, source -> {});
+        ItemSource<ByteBuf> source2 = createTestItemSource();
         IndexRequest action2 = createIndexRequestBuilder(source2)
                 .index(index)
                 .type(mappingType)
@@ -333,7 +327,7 @@ public class BatchRequestTest {
 
         BatchRequest batchRequest = new BatchRequest.Builder()
                 .withObjectWriter(writer)
-                .withBuffer(new ByteBufItemSource(createDefaultTestByteBuf(), source -> {}))
+                .withBuffer(createTestItemSource())
                 .add(action1)
                 .add(action2)
                 .build();

@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -40,7 +41,7 @@ public class FailedItemSourceTest {
         // given
         FailedItemInfo failedItemInfo = mock(FailedItemInfo.class);
         StringItemSource itemSource = mock(StringItemSource.class);
-        FailedItemSource<String> failedItemSource = new FailedItemSource<>(itemSource, failedItemInfo);
+        FailedItemSource<String> failedItemSource = createTestFailedItemSource(itemSource, failedItemInfo);
 
         String expectedSource = UUID.randomUUID().toString();
         when(itemSource.getSource()).thenReturn(expectedSource);
@@ -59,7 +60,7 @@ public class FailedItemSourceTest {
         // given
         FailedItemInfo failedItemInfo = mock(FailedItemInfo.class);
         ItemSource<Object> itemSource = mock(ItemSource.class);
-        FailedItemSource<Object> failedItemSource = new FailedItemSource<>(itemSource, failedItemInfo);
+        FailedItemSource<Object> failedItemSource = createTestFailedItemSource(itemSource, failedItemInfo);
 
         // when
         failedItemSource.release();
@@ -77,12 +78,16 @@ public class FailedItemSourceTest {
         FailedItemInfo failedItemInfo = new FailedItemInfo(expectedTargetName);
 
         // when
-        FailedItemSource failedItemSource = new FailedItemSource<Object>(
-                mock(ItemSource.class),
-                failedItemInfo);
+        FailedItemSource failedItemSource = createTestFailedItemSource(mock(ItemSource.class), failedItemInfo);
 
         // then
         assertEquals(expectedTargetName, failedItemSource.getInfo().getTargetName());
+    }
+
+    public static <T> FailedItemSource<T> createTestFailedItemSource(
+            ItemSource<T> itemSource,
+            FailedItemInfo failedItemInfo) {
+        return new FailedItemSource<>(itemSource, failedItemInfo);
     }
 
 }

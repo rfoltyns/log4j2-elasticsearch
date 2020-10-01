@@ -40,7 +40,7 @@ import java.io.OutputStream;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -224,8 +224,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = new ByteBufItemSource(byteBuf, source -> {});
+        ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
@@ -244,8 +243,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = new ByteBufItemSource(byteBuf, source -> {});
+        ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
@@ -267,8 +265,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
-        ByteBuf byteBuf = createDefaultTestByteBuf();
-        ItemSource<ByteBuf> bufferedItemSource = spy(new ByteBufItemSource(byteBuf, source -> {}));
+        ItemSource<ByteBuf> bufferedItemSource = spy(createTestItemSource());
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);

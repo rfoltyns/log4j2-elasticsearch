@@ -32,6 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
 import static org.mockito.Mockito.spy;
 
 public class ElasticsearchBulkOperationsTest {
@@ -77,7 +78,7 @@ public class ElasticsearchBulkOperationsTest {
         BatchOperations<BulkRequest> batchOperations = createDefaultTestBulkRequestBatchOperations();
 
         String expectedPayload = "expectedPayload";
-        StringItemSource itemSource = spy(new StringItemSource(expectedPayload));
+        StringItemSource itemSource = spy(createTestStringItemSource(expectedPayload));
 
         // when
         IndexRequest batchItem = (IndexRequest) batchOperations.createBatchItem("testIndex", itemSource);

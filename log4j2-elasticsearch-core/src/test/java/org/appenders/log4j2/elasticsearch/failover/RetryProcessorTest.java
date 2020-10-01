@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 
+import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequenceConfig;
 import static org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelectorTest.DEFAULT_TEST_SEQUENCE_ID;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
 import static org.junit.Assert.assertEquals;
@@ -223,7 +224,7 @@ public class RetryProcessorTest {
         KeySequenceSelector keySequenceSelector = createDefaultTestKeySequenceSelector(sequenceId, items);
         fillMap(items, mapSize, keySequenceSelector, () -> itemSource);
 
-        UUIDSequence keySequence = new UUIDSequence(UUIDSequenceTest.createDefaultTestKeySequenceConfig());
+        UUIDSequence keySequence = new UUIDSequence(createDefaultTestKeySequenceConfig());
         keySequence.nextWriterKey(); // progress key sequence
         items.remove(keySequence.nextReaderKey()); // have to remove AFTER keySequenceSelector initialization
 
@@ -283,7 +284,7 @@ public class RetryProcessorTest {
         KeySequenceSelector keySequenceSelector = createDefaultTestKeySequenceSelector(DEFAULT_TEST_SEQUENCE_ID, items);
         fillMap(items, mapSize, keySequenceSelector, () -> itemSource);
 
-        UUIDSequence keySequence = new UUIDSequence(UUIDSequenceTest.createDefaultTestKeySequenceConfig());
+        UUIDSequence keySequence = new UUIDSequence(createDefaultTestKeySequenceConfig());
         keySequence.nextWriterKey(); // progress key sequence
 
         ItemSource invalidItemSource = mock(ItemSource.class);

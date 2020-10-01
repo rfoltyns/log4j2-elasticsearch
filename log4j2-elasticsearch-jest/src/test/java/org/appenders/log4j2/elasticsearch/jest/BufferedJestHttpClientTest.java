@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.CompositeByteBuf;
 import io.searchbox.client.JestResult;
 import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
@@ -53,7 +54,8 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -142,7 +144,7 @@ public class BufferedJestHttpClientTest {
         ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
 
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
-        ByteBufItemSource buffer = new ByteBufItemSource(byteBufAllocator.buffer(32), source -> { });
+        ByteBufItemSource buffer = createTestItemSource();
         builder.withBuffer(buffer);
 
         Bulk bulk = createTestBatch(builder, payload1, payload2);
@@ -426,16 +428,14 @@ public class BufferedJestHttpClientTest {
     }
 
     private ItemSource<ByteBuf> createDefaultTestItemSource(String payload) {
-        ByteBuf buffer = byteBufAllocator.buffer(16);
+        CompositeByteBuf buffer = createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
-        return new ByteBufItemSource(buffer, source -> {
-            // noop
-        });
+        return createTestItemSource(buffer, source -> {});
     }
 
     private BufferedBulk createTestBatch(ItemSource<ByteBuf>... payloads) {
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
-        builder.withBuffer(new ByteBufItemSource(byteBufAllocator.buffer(32), source -> {}));
+        builder.withBuffer(createTestItemSource());
 
         builder.withObjectWriter(createDefaultTestObjectWriter());
         builder.withObjectReader(createDefaultTestObjectReader());

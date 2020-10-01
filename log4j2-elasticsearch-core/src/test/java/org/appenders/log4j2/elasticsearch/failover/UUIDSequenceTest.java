@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -31,6 +30,7 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
+import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createTestKeySequenceConfig;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,7 +53,7 @@ public class UUIDSequenceTest {
     public void throwsOnInitialReaderIndexLowerThanReservedKeys() {
 
         // given
-        KeySequenceConfig sequenceConfig = createDefaultTestReaderIndexConfig(RESERVED_KEYS - 1);
+        KeySequenceConfig sequenceConfig = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS - 1, RESERVED_KEYS);
 
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("readerIndex cannot be lower than");
@@ -67,7 +67,7 @@ public class UUIDSequenceTest {
     public void throwsOnInitialWriterIndexLowerThanReservedKeys() {
 
         // given
-        KeySequenceConfig sequenceConfig = new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS - 1);
+        KeySequenceConfig sequenceConfig = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS - 1);
 
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("writerIndex cannot be lower than");
@@ -115,7 +115,7 @@ public class UUIDSequenceTest {
         KeySequence sequence1 = createDefaultTestUUIDSequence(config1);
 
         KeySequenceConfig config2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID + 1, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID + 1);
         KeySequence sequence2 = createDefaultTestUUIDSequence(config2);
 
         // when
@@ -131,11 +131,11 @@ public class UUIDSequenceTest {
 
         // given
         KeySequenceConfig config1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID);
         KeySequence sequence1 = createDefaultTestUUIDSequence(config1);
 
         KeySequenceConfig config2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID);
         KeySequence sequence2 = createDefaultTestUUIDSequence(config2);
 
         // when
@@ -151,11 +151,11 @@ public class UUIDSequenceTest {
 
         // given
         KeySequenceConfig config1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID);
         KeySequence sequence1 = createDefaultTestUUIDSequence(config1);
 
         KeySequenceConfig config2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS + 1, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS + 1, RESERVED_KEYS);
         KeySequence sequence2 = createDefaultTestUUIDSequence(config2);
 
         // when
@@ -171,11 +171,11 @@ public class UUIDSequenceTest {
 
         // given
         KeySequenceConfig config1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID);
         KeySequence sequence1 = createDefaultTestUUIDSequence(config1);
 
         KeySequenceConfig config2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS + 1, RESERVED_KEYS + 1);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS + 1, RESERVED_KEYS + 1);
         KeySequence sequence2 = createDefaultTestUUIDSequence(config2);
 
         assertTrue(sequence1.equals(sequence2));
@@ -194,11 +194,11 @@ public class UUIDSequenceTest {
 
         // given
         KeySequenceConfig config1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID);
         KeySequence sequence1 = createDefaultTestUUIDSequence(config1);
 
         KeySequenceConfig config2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS + 1);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS + 1);
         KeySequence sequence2 = createDefaultTestUUIDSequence(config2);
 
         // when
@@ -236,7 +236,7 @@ public class UUIDSequenceTest {
         CharSequence expectedFirstKey = getNextExpectedKey(RESERVED_KEYS + 1);
         CharSequence expectedSecondKey = getNextExpectedKey(RESERVED_KEYS + 2);
 
-        KeySequenceConfig config = createDefaultTestWriterIndexConfig(RESERVED_KEYS + 2);
+        KeySequenceConfig config = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS + 2);
         KeySequence sequence = createDefaultTestUUIDSequence(config);
 
         // when
@@ -410,7 +410,7 @@ public class UUIDSequenceTest {
         CharSequence expectedFirstKey = getNextExpectedKey(RESERVED_KEYS + 1);
         CharSequence expectedSecondKey = getNextExpectedKey(RESERVED_KEYS + 2);
 
-        KeySequenceConfig config = createDefaultTestWriterIndexConfig(RESERVED_KEYS + 2);
+        KeySequenceConfig config = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS + 2);
         KeySequence sequence = createDefaultTestUUIDSequence(config);
 
         Iterator<CharSequence> iterator = sequence.nextReaderKeys(2);
@@ -584,26 +584,16 @@ public class UUIDSequenceTest {
         return new UUID(DEFAULT_TEST_SEQ_ID, reservedKeys).toString();
     }
 
-    @NotNull
     public static KeySequenceConfig createDefaultTestKeySequenceConfig() {
         return new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS);
     }
 
-    @NotNull
     public static KeySequence createDefaultTestKeySequence() {
         return new UUIDSequence(createDefaultTestKeySequenceConfig());
     }
 
     private UUIDSequence createDefaultTestUUIDSequence(KeySequenceConfig sequenceConfig) {
         return new UUIDSequence(sequenceConfig);
-    }
-
-    private KeySequenceConfig createDefaultTestWriterIndexConfig(int initialWriterIndex) {
-        return new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, initialWriterIndex);
-    }
-
-    private KeySequenceConfig createDefaultTestReaderIndexConfig(int initialReaderIndex) {
-        return new KeySequenceConfig(DEFAULT_TEST_SEQ_ID, initialReaderIndex, RESERVED_KEYS);
     }
 
 }

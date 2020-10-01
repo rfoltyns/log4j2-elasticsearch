@@ -21,8 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
@@ -35,6 +34,10 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
+import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
+import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
@@ -84,7 +87,7 @@ public class AppenderRefFailoverPolicyTest {
         FailoverPolicy<String> failoverPolicy = spy(createTestFailoverPolicy(testAppenderRef, configuration));
 
         String failedMessage = UUID.randomUUID().toString();
-        ItemSource<String> itemSource = new StringItemSource(failedMessage);
+        ItemSource<String> itemSource = createTestStringItemSource(failedMessage);
 
         // when
         failoverPolicy.deliver(itemSource);
@@ -106,11 +109,11 @@ public class AppenderRefFailoverPolicyTest {
         FailoverPolicy<String> failoverPolicy = spy(createTestFailoverPolicy(testAppenderRef, configuration));
 
         String failedMessage = UUID.randomUUID().toString();
-        ByteBuf buffer = PooledByteBufAllocator.DEFAULT.buffer();
+        CompositeByteBuf buffer = createDefaultTestByteBuf();
         buffer.writeBytes(failedMessage.getBytes());
 
-        FailedItemSource itemSource = new FailedItemSource<>(
-                new ByteBufItemSource(buffer, source -> {}),
+        FailedItemSource itemSource = createTestFailedItemSource(
+                createTestItemSource(buffer, source -> {}),
                 new FailedItemInfo(UUID.randomUUID().toString())
         );
 

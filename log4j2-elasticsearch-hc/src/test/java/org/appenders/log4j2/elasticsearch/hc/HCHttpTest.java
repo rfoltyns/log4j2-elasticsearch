@@ -22,10 +22,11 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
-import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
@@ -51,7 +52,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
+import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
@@ -611,11 +612,9 @@ public class HCHttpTest {
     }
 
     private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
-        ByteBuf buffer = byteBufAllocator.buffer(16);
+        CompositeByteBuf buffer = ByteBufItemSourceTest.createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
-        return new ByteBufItemSource(buffer, source -> {
-            // noop
-        });
+        return createTestItemSource(buffer, source -> {});
     }
 
     @Test

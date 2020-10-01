@@ -34,14 +34,34 @@ import static org.junit.Assert.assertTrue;
 
 public class KeySequenceConfigTest {
 
+    static final int DEFAULT_OFFSET = 100;
+
     private static final long DEFAULT_TEST_SEQUENCE_ID = 1;
+    private static Random random = new Random();
+    private static int offsetMultiplier = 1;
+
+    public static KeySequenceConfig createDefaultTestKeySequenceConfig() {
+        return createTestKeySequenceConfig(
+                random.nextInt(DEFAULT_OFFSET) + DEFAULT_OFFSET * offsetMultiplier++);
+    }
+
+    public static KeySequenceConfig createTestKeySequenceConfig(long sequenceId) {
+        return new KeySequenceConfig(
+                sequenceId,
+                UUIDSequence.RESERVED_KEYS,
+                UUIDSequence.RESERVED_KEYS
+        );
+    }
+
+    public static KeySequenceConfig createTestKeySequenceConfig(long sequenceId, long readerKey, long writerKey) {
+        return new KeySequenceConfig(sequenceId, readerKey, writerKey);
+    }
 
     @Test
     public void toStringShowsNecessaryInfo() throws IOException {
 
         // given
-        KeySequenceConfig keySequenceConfig =
-                KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig keySequenceConfig = createDefaultTestKeySequenceConfig();
 
         // when
         String result = keySequenceConfig.toString();
@@ -59,8 +79,7 @@ public class KeySequenceConfigTest {
     public void equalsReturnsFalseIfNullProvided() {
 
         // given
-        KeySequenceConfig keySequenceConfig =
-                KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig keySequenceConfig = createDefaultTestKeySequenceConfig();
 
         // when
         boolean result = keySequenceConfig.equals(null);
@@ -73,8 +92,7 @@ public class KeySequenceConfigTest {
     public void equalsReturnsFalseIfWrongTypeProvided() {
 
         // given
-        KeySequenceConfig keySequenceConfig =
-                KeySequenceConfigRepositoryTest.createDefaultTestKeySequenceConfig();
+        KeySequenceConfig keySequenceConfig = createDefaultTestKeySequenceConfig();
 
         Object object = new Object();
 
@@ -91,10 +109,10 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID + 1, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID + 1, RESERVED_KEYS, RESERVED_KEYS);
 
         // when
         boolean result = keySequenceConfig1.equals(keySequenceConfig2);
@@ -109,11 +127,11 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig1.setOwnerId(1);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig2.setOwnerId(2);
 
         // when
@@ -129,10 +147,10 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS + 1, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS + 1, RESERVED_KEYS);
 
         // when
         boolean result = keySequenceConfig1.equals(keySequenceConfig2);
@@ -147,10 +165,10 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS + 1);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS + 1);
 
         // when
         boolean result = keySequenceConfig1.equals(keySequenceConfig2);
@@ -165,11 +183,11 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig1.setExpireAt(1);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig2.setExpireAt(2);
 
         // when
@@ -185,12 +203,12 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig keySequenceConfig1 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig1.setOwnerId(1);
         keySequenceConfig1.setExpireAt(1);
 
         KeySequenceConfig keySequenceConfig2 =
-                new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
         keySequenceConfig2.setOwnerId(1);
         keySequenceConfig2.setExpireAt(1);
 
@@ -207,7 +225,7 @@ public class KeySequenceConfigTest {
 
         // given
         KeySequenceConfig config =
-                        new KeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
+                        createTestKeySequenceConfig(DEFAULT_TEST_SEQUENCE_ID, RESERVED_KEYS, RESERVED_KEYS);
 
         Random random = new Random();
 

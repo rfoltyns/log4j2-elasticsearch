@@ -42,7 +42,8 @@ public class ByteBufItemSourceTest {
 
         // given
         CompositeByteBuf expectedSource = createDefaultTestByteBuf();
-        ItemSource itemSource = new ByteBufItemSource(expectedSource, mock(ReleaseCallback.class));
+        ItemSource itemSource =
+                createTestItemSource(expectedSource, mock(ReleaseCallback.class));
 
         // when
         Object actualSource = itemSource.getSource();
@@ -61,7 +62,7 @@ public class ByteBufItemSourceTest {
         CompositeByteBuf byteBuf = createDefaultTestByteBuf();
 
         // then
-        ItemSource source = new ByteBufItemSource(byteBuf, callback);
+        ItemSource source = createTestItemSource(byteBuf, callback);
         source.release();
 
         // then
@@ -81,7 +82,7 @@ public class ByteBufItemSourceTest {
         CompositeByteBuf byteBuf = spy(createDefaultTestByteBuf());
 
         // then
-        ItemSource source = new ByteBufItemSource(byteBuf, callback);
+        ItemSource source = createTestItemSource(byteBuf, callback);
         source.release();
 
         // then
@@ -91,6 +92,14 @@ public class ByteBufItemSourceTest {
 
     public static CompositeByteBuf createDefaultTestByteBuf() {
         return new CompositeByteBuf(byteBufAllocator, false, 2);
+    }
+
+    public static ByteBufItemSource createTestItemSource() {
+        return createTestItemSource(createDefaultTestByteBuf(), source -> {});
+    }
+
+    public static ByteBufItemSource createTestItemSource(CompositeByteBuf byteBuf, ReleaseCallback callback) {
+        return new ByteBufItemSource(byteBuf, callback);
     }
 
 }
