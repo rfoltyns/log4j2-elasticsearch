@@ -207,14 +207,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     public HttpClient createClient() {
         if (client == null) {
 
-            HttpClientFactory.Builder builder = new HttpClientFactory.Builder()
-                    .withServerList(serverUris)
-                    .withConnTimeout(connTimeout)
-                    .withReadTimeout(readTimeout)
-                    .withMaxTotalConnections(maxTotalConnections)
-                    .withIoThreadCount(ioThreadCount)
-                    .withPooledResponseBuffers(pooledResponseBuffers)
-                    .withPooledResponseBuffersSizeInBytes(pooledResponseBuffersSizeInBytes);
+            HttpClientFactory.Builder builder = createHttpClientFactoryBuilder();
 
             if (this.auth != null) {
                 auth.configure(builder);
@@ -292,6 +285,18 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     @Override
     public void addOperation(Operation operation) {
         operations.add(operation);
+    }
+
+    /* extension point */
+    protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {
+        return new HttpClientFactory.Builder()
+                .withServerList(serverUris)
+                .withConnTimeout(connTimeout)
+                .withReadTimeout(readTimeout)
+                .withMaxTotalConnections(maxTotalConnections)
+                .withIoThreadCount(ioThreadCount)
+                .withPooledResponseBuffers(pooledResponseBuffers)
+                .withPooledResponseBuffersSizeInBytes(pooledResponseBuffersSizeInBytes);
     }
 
     @PluginBuilderFactory
