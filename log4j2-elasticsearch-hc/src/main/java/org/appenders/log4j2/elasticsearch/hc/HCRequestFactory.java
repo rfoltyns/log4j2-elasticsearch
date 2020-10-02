@@ -23,6 +23,8 @@ package org.appenders.log4j2.elasticsearch.hc;
 import io.netty.buffer.ByteBuf;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -43,13 +45,19 @@ public class HCRequestFactory implements RequestFactory<HttpUriRequest> {
 
         if (request.getHttpMethodName().equalsIgnoreCase("POST")) {
             httpUriRequest = new HttpPost(url);
+        } else if (request.getHttpMethodName().equalsIgnoreCase("GET")) {
+            httpUriRequest = new HttpGet(url);
         } else if (request.getHttpMethodName().equalsIgnoreCase("PUT")) {
             httpUriRequest = new HttpPut(url);
+        } else if (request.getHttpMethodName().equalsIgnoreCase("HEAD")) {
+            httpUriRequest = new HttpHead(url);
         } else {
             throw new UnsupportedOperationException(request.getHttpMethodName());
         }
 
-        ((HttpEntityEnclosingRequest)httpUriRequest).setEntity(createHttpEntity(request));
+        if (httpUriRequest instanceof HttpEntityEnclosingRequest) {
+            ((HttpEntityEnclosingRequest)httpUriRequest).setEntity(createHttpEntity(request));
+        }
 
         return httpUriRequest;
     }

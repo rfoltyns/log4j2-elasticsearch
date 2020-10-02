@@ -24,6 +24,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.http.HttpEntityEnclosingRequest;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -99,6 +101,40 @@ public class HCRequestFactoryTest {
 
         // then
         assertTrue(result instanceof HttpPut);
+        assertEquals(result.getURI(), new URI(expectedUrl));
+
+    }
+
+    @Test
+    public void createsHeadRequest() throws IOException, URISyntaxException {
+
+        // given
+        HCRequestFactory factory = createDefaultTestObject();
+        String expectedUrl = UUID.randomUUID().toString();
+        Request request = createDefaultMockRequest(expectedUrl, "HEAD");
+
+        // when
+        HttpUriRequest result = factory.create(expectedUrl, request);
+
+        // then
+        assertTrue(result instanceof HttpHead);
+        assertEquals(result.getURI(), new URI(expectedUrl));
+
+    }
+
+    @Test
+    public void createsGetRequest() throws IOException, URISyntaxException {
+
+        // given
+        HCRequestFactory factory = createDefaultTestObject();
+        String expectedUrl = UUID.randomUUID().toString();
+        Request request = createDefaultMockRequest(expectedUrl, "GET");
+
+        // when
+        HttpUriRequest result = factory.create(expectedUrl, request);
+
+        // then
+        assertTrue(result instanceof HttpGet);
         assertEquals(result.getURI(), new URI(expectedUrl));
 
     }
