@@ -22,8 +22,6 @@ package org.appenders.log4j2.elasticsearch.spi;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -36,12 +34,12 @@ import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * {@link BatchEmitterFactory} SPI loader.
  */
 public class BatchEmitterServiceProvider {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     private final Collection<Iterable<BatchEmitterFactory>> serviceLoaders;
 
@@ -105,9 +103,9 @@ public class BatchEmitterServiceProvider {
                                         Iterable<BatchEmitterFactory> serviceLoader){
 
         for (BatchEmitterFactory factory : serviceLoader) {
-            LOG.info("BatchEmitterFactory class found {}", factory.getClass().getName());
+            getLogger().info("{} class found {}", BatchEmitterFactory.class.getSimpleName(), factory.getClass().getName());
             if (factory.accepts(clientObjectFactory.getClass())) {
-                LOG.info("Using {} as BatchEmitterFactoryProvider", factory);
+                getLogger().info("Using {} as {}", factory.getClass().getName(), getClass().getSimpleName());
                 return factory.createInstance(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
             }
         }

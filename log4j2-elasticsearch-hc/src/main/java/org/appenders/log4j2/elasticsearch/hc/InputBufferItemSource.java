@@ -30,7 +30,7 @@ import org.appenders.log4j2.elasticsearch.ReleaseCallback;
  */
 public class InputBufferItemSource implements ItemSource<SimpleInputBuffer> {
 
-    private SimpleInputBuffer source;
+    private final SimpleInputBuffer source;
     private final ReleaseCallback<SimpleInputBuffer> releaseCallback;
 
     public InputBufferItemSource(SimpleInputBuffer source, ReleaseCallback<SimpleInputBuffer> releaseCallback) {

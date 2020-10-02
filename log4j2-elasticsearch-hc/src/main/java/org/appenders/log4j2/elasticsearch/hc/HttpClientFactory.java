@@ -103,11 +103,11 @@ public class HttpClientFactory {
         if (pooledResponseBuffersEnabled) {
             return new PoolingAsyncResponseConsumerFactory(createPool());
         }
-        return () -> HttpAsyncMethods.createConsumer();
+        return HttpAsyncMethods::createConsumer;
     }
 
     private GenericItemSourcePool<SimpleInputBuffer> createPool() {
-        GenericItemSourcePool<SimpleInputBuffer> bufferPool = new GenericItemSourcePool<>(
+        return new GenericItemSourcePool<>(
                 "hc-responseBufferPool",
                 new SimpleInputBufferPooledObjectOps(
                         HeapByteBufferAllocator.INSTANCE,
@@ -119,7 +119,6 @@ public class HttpClientFactory {
                 30000,
                 maxTotalConnections
         );
-        return bufferPool;
     }
 
     protected HttpClient createConfiguredClient(
