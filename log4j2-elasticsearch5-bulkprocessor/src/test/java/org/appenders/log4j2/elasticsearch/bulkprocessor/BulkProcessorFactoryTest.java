@@ -27,12 +27,12 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.junit.Assert;
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import java.util.Collection;
 import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -85,7 +85,7 @@ public class BulkProcessorFactoryTest {
         listener.afterBulk(0, request, response);
 
         // then
-        verify(failureHandler, times(1)).apply(Matchers.eq(request));
+        verify(failureHandler, times(1)).apply(eq(request));
 
     }
 

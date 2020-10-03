@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static org.appenders.log4j2.elasticsearch.hc.JKSCertInfo.PLUGIN_NAME;
-import static org.mockito.Matchers.notNull;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 

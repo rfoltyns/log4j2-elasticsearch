@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.UUID;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;

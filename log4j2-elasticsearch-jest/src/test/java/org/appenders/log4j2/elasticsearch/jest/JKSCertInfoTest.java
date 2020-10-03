@@ -35,7 +35,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import static org.appenders.log4j2.elasticsearch.jest.JKSCertInfo.PLUGIN_NAME;
-import static org.mockito.Matchers.notNull;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;

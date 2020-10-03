@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class FailedItemMarshallerTest {
@@ -163,7 +163,7 @@ public class FailedItemMarshallerTest {
         failedItemMarshaller.readMarshallable(wireIn);
 
         // then
-        verifyZeroInteractions(wireIn);
+        verifyNoInteractions(wireIn);
 
     }
 
@@ -179,7 +179,7 @@ public class FailedItemMarshallerTest {
         failedItemMarshaller.writeMarshallable(wireOut);
 
         // then
-        verifyZeroInteractions(wireOut);
+        verifyNoInteractions(wireOut);
 
     }
 

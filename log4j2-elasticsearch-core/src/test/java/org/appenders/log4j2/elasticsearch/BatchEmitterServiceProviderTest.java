@@ -30,7 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
@@ -125,7 +125,7 @@ public class BatchEmitterServiceProviderTest {
 
         when(mockServiceLoader.iterator()).thenReturn(iterator);
 
-        when(emitterFactory.accepts(Matchers.<Class<TestHttpObjectFactory>>any())).thenReturn(false);
+        when(emitterFactory.accepts(ArgumentMatchers.<Class<TestHttpObjectFactory>>any())).thenReturn(false);
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage("No compatible BatchEmitter implementations");

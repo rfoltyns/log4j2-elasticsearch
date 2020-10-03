@@ -147,7 +147,7 @@ public class VirtualPropertiesWriterTest {
         // then
         assertArrayEquals(writer.virtualProperties, result.virtualProperties);
         assertEquals(writer.valueResolver, result.valueResolver);
-        assertEquals(writer.filters, result.filters);
+        assertArrayEquals(writer.filters, result.filters);
 
     }
 
