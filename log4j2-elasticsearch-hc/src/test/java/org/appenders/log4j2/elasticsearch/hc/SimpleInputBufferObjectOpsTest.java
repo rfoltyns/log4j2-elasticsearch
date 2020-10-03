@@ -33,7 +33,7 @@ import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAU
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_ITEM_SIZE_IN_BYTES;
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_MONITOR_TASK_INTERVAL;
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_RESIZE_TIMEOUT;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;

@@ -35,7 +35,7 @@ import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
