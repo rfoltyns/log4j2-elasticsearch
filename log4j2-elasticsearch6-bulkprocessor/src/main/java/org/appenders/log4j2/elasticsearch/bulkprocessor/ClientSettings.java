@@ -21,11 +21,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.apache.logging.log4j.core.Core;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.util.Builder;
 import org.elasticsearch.common.settings.Settings;
 
 import java.util.Arrays;

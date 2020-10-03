@@ -21,14 +21,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.elasticsearch.common.settings.Settings;
-import org.hamcrest.core.IsCollectionContaining;
 import org.junit.Test;
 
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.TEST_NAME;
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.TEST_VALUE;
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.createDefaultTestClientSettingBuilder;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class ClientSettingsTest {
 
