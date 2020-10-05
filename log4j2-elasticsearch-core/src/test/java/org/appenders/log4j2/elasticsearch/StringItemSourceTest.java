@@ -20,22 +20,25 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class StringItemSourceTest {
 
     @Test
     public void doesntChangeTheSource() {
+
         // given
         String expected = "expectedSource";
 
         // when
         ItemSource<String> itemSource = createTestStringItemSource(expected);
-        String actualSource = itemSource.getSource();
 
         // then
-        Assert.assertEquals(expected, actualSource);
+        assertEquals(expected, itemSource.getSource());
+        assertEquals(expected, itemSource.toString());
+
     }
 
     @Test
@@ -49,7 +52,7 @@ public class StringItemSourceTest {
         itemSource.release();
 
         // then
-        Assert.assertEquals(expected, itemSource.getSource());
+        assertEquals(expected, itemSource.getSource());
 
     }
 

@@ -319,7 +319,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
 
         ChronicleMapRetryFailoverPolicy failoverPolicy = builder.build();
 
-        ItemSource failedItemSource = mock(ItemSource.class);
+        FailedItemSource failedItemSource = mock(FailedItemSource.class);
 
         // when
         failoverPolicy.deliver(failedItemSource);

@@ -75,28 +75,6 @@ public class AppenderRefFailoverPolicyTest {
     }
 
     @Test
-    public void deliverItemSourceDelegates() {
-
-        // given
-        Appender appender = mock(Appender.class);
-        when(appender.isStarted()).thenReturn(true);
-        Configuration configuration = mock(Configuration.class);
-        String testAppenderRef = "testAppenderRef";
-        when(configuration.getAppender(testAppenderRef)).thenReturn(appender);
-
-        FailoverPolicy<String> failoverPolicy = spy(createTestFailoverPolicy(testAppenderRef, configuration));
-
-        String failedMessage = UUID.randomUUID().toString();
-        ItemSource<String> itemSource = createTestStringItemSource(failedMessage);
-
-        // when
-        failoverPolicy.deliver(itemSource);
-
-        // then
-        verify(failoverPolicy).deliver(eq(failedMessage));
-    }
-
-    @Test
     public void deliverFailedItemSourceDelegates() {
 
         // given

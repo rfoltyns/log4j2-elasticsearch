@@ -56,7 +56,7 @@ import java.util.function.Supplier;
  * Uses {@link RetryProcessor} to retry failed items.
  */
 @Plugin(name = ChronicleMapRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
-public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSource>, LifeCycle {
+public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedItemSource>, LifeCycle {
 
     public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
 
@@ -121,7 +121,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<ItemSourc
      * @param failedItemSource failed item
      */
     @Override
-    public void deliver(ItemSource failedItemSource) {
+    public void deliver(FailedItemSource failedItemSource) {
         CharSequence key = keySequenceSupplier.get().nextWriterKey();
         tryPut(key, failedItemSource);
     }

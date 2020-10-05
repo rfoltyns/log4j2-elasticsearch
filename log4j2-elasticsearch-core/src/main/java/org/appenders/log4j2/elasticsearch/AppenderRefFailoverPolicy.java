@@ -62,17 +62,12 @@ public class AppenderRefFailoverPolicy implements FailoverPolicy<String> {
     }
 
     @Override
-    public void deliver(ItemSource failedPayload) {
+    public void deliver(FailedItemSource failedPayload) {
 
         // Since Configuration is not complete during the startup, let's resolve lazily here
         this.resolveAppender();
 
         doDeliver(failedPayload.toString());
-    }
-
-    @Override
-    public void deliver(FailedItemSource failedPayload) {
-        deliver((ItemSource)failedPayload);
     }
 
     /**
