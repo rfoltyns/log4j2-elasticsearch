@@ -26,13 +26,13 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.lookup.Interpolator;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class IndexTemplateTest {
 
@@ -59,9 +59,9 @@ public class IndexTemplateTest {
         IndexTemplate indexTemplate = builder.build();
 
         // then
-        Assert.assertNotNull(indexTemplate);
-        Assert.assertNotNull(indexTemplate.getName());
-        Assert.assertNotNull(indexTemplate.getSource());
+        assertNotNull(indexTemplate);
+        assertNotNull(indexTemplate.getName());
+        assertNotNull(indexTemplate.getSource());
     }
 
     @Test
@@ -77,9 +77,9 @@ public class IndexTemplateTest {
         IndexTemplate indexTemplate = builder.build();
 
         // then
-        Assert.assertNotNull(indexTemplate);
-        Assert.assertNotNull(indexTemplate.getName());
-        Assert.assertNotNull(indexTemplate.getSource());
+        assertNotNull(indexTemplate);
+        assertNotNull(indexTemplate.getName());
+        assertNotNull(indexTemplate.getSource());
     }
 
     @Test(expected = ConfigurationException.class)
@@ -117,7 +117,7 @@ public class IndexTemplateTest {
         builder.build();
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void builderThrowsExceptionWhenClasspathResourceDoesntExist() {
 
         // given
@@ -128,8 +128,8 @@ public class IndexTemplateTest {
         builder.build();
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptionWhenFileDoesntExist() {
+    @Test(expected = IllegalArgumentException.class)
+    public void builderThrowsExceptionWhenFileDoesNotExist() {
 
         // given
         IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
@@ -139,7 +139,7 @@ public class IndexTemplateTest {
         builder.build();
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void builderThrowsExceptionOnInvalidProtocol() {
 
         // given

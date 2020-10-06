@@ -31,11 +31,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginValue;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 @Plugin(name = IndexTemplate.PLUGIN_NAME, category = Node.CATEGORY, elementType = IndexTemplate.ELEMENT_TYPE, printObject = true)
 public class IndexTemplate {
@@ -43,8 +38,8 @@ public class IndexTemplate {
     public static final String PLUGIN_NAME = "IndexTemplate";
     public static final String ELEMENT_TYPE = "indexTemplate";
 
-    private String name;
-    private String source;
+    private final String name;
+    private final String source;
 
     protected IndexTemplate(String name, String source) {
         this.name = name;
@@ -78,7 +73,6 @@ public class IndexTemplate {
         private String source;
 
         /**
-         * @param valueResolver variable resolver
          * @deprecated Added temporarily, solely to support variables in programmatic config.
          * Will be removed when SetupOps API is added.
          */
@@ -87,7 +81,6 @@ public class IndexTemplate {
         private Configuration configuration;
 
         /**
-         * @param valueResolver variable resolver
          * @deprecated Added temporarily, solely to support variables in programmatic config.
          * Will be removed when SetupOps API is added.
          */
@@ -103,9 +96,7 @@ public class IndexTemplate {
                 throw new ConfigurationException("Either path or source have to be provided for IndexTemplate");
             }
 
-            final String source = getValueResolver().resolve(loadSource());
-
-            return new IndexTemplate(name, source);
+            return new IndexTemplate(name, getValueResolver().resolve(loadSource()));
         }
 
         /* visible for testing */
@@ -132,11 +123,7 @@ public class IndexTemplate {
                 return source;
             }
 
-            if (path.contains(CLASSPATH_PREFIX)) {
-                return loadClasspathResource();
-            }
-
-            return loadFileSystemResource();
+            return ResourceUtil.loadResource(path);
 
         }
 
@@ -156,11 +143,11 @@ public class IndexTemplate {
         }
 
         /**
-         *
          * @param configuration Log4j2 StrSubstitutor provider
+         * @return this
+         *
          * @deprecated Added temporarily, solely to support variables in programmatic config.
          * Will be removed when SetupOps API is added.
-         * @return this
          */
         Builder withConfiguration(Configuration configuration) {
             this.configuration = configuration;
@@ -170,6 +157,7 @@ public class IndexTemplate {
         /**
          * @param valueResolver variable resolver
          * @return this
+         *
          * @deprecated Added temporarily, solely to support variables in programmatic config.
          * Will be removed when SetupOps API is added.
          */
@@ -177,32 +165,6 @@ public class IndexTemplate {
         public Builder withValueResolver(ValueResolver valueResolver) {
             this.valueResolver = valueResolver;
             return this;
-        }
-
-        private String loadClasspathResource() {
-            try {
-                BufferedReader br = new BufferedReader(new InputStreamReader(
-                        ClassLoader.getSystemClassLoader().getResourceAsStream(
-                                path.replace(CLASSPATH_PREFIX, "")),
-                        "UTF-8"));
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    sb.append('\n');
-                }
-                return sb.toString();
-            } catch (Exception e) {
-                throw new ConfigurationException(e.getMessage(), e);
-            }
-        }
-
-        private String loadFileSystemResource() {
-            try {
-                return new String(Files.readAllBytes(Paths.get(path)));
-            } catch (IOException e){
-                throw new ConfigurationException(e.getMessage(), e);
-            }
         }
 
     }
