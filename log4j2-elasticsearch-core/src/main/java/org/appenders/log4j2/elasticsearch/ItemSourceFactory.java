@@ -22,7 +22,12 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 
-public interface ItemSourceFactory extends LifeCycle {
+/**
+ * NOTE: As of 2.0, this interface will no longer extend {@link LifeCycle}.
+ * All existing implementations that use {@link LifeCycle} API should implement it directly and
+ * use {@link LifeCycle#of(Object)} instead to access the API.
+ */
+public interface ItemSourceFactory extends EmptyItemSourceFactory, LifeCycle {
 
     String ELEMENT_TYPE = "itemSourceFactory";
 
@@ -41,12 +46,5 @@ public interface ItemSourceFactory extends LifeCycle {
      * @return {@link ItemSource} containing serialized log
      */
     ItemSource create(Object source, ObjectWriter objectWriter);
-
-    /**
-     * Creates empty {@link ItemSource} container. Allows to serialize log items outside the scope of this factory
-     *
-     * @return empty {@link ItemSource}
-     */
-    ItemSource createEmptySource();
 
 }
