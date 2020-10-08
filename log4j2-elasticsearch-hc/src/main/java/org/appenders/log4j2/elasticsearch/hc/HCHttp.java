@@ -37,7 +37,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -60,6 +59,7 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.log4j2.elasticsearch.hc.HCHttp.PLUGIN_NAME;
 
 /**
@@ -70,8 +70,6 @@ import static org.appenders.log4j2.elasticsearch.hc.HCHttp.PLUGIN_NAME;
 public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
     public static final String PLUGIN_NAME = "HCHttp";
-
-    private static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -116,7 +114,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             long start = System.currentTimeMillis();
             int batchSize = batchRequest.getIndexRequests().size();
 
-            LOG.warn("BatchRequest of {} indexRequests failed. Redirecting to {}", batchSize, failover.getClass().getName());
+            getLogger().warn("BatchRequest of {} indexRequests failed. Redirecting to {}", batchSize, failover.getClass().getName());
 
             batchRequest.getIndexRequests().forEach(indexRequest -> {
                 // TODO: FailoverPolicyChain
@@ -124,11 +122,11 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                     failover.deliver(failedItemOps.createItem(indexRequest));
                 } catch (Exception e) {
                     // let's handle here as exception thrown at this stage will cause the client to shutdown
-                    LOG.error(e.getMessage(), e);
+                    getLogger().error(e.getMessage(), e);
                 }
             });
 
-            LOG.trace("BatchRequest of {} indexRequests redirected in {} ms", batchSize, System.currentTimeMillis() - start);
+            getLogger().trace("BatchRequest of {} indexRequests redirected in {} ms", batchSize, System.currentTimeMillis() - start);
 
             return true;
         };
@@ -160,7 +158,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             @Override
             public void completed(BatchResult result) {
 
-                LOG.debug("Cluster service time: {}", result.getTook());
+                getLogger().debug("Cluster service time: {}", result.getTook());
 
                 backoffPolicy.deregister(request);
 
@@ -176,7 +174,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             @Override
             public void failed(Exception ex) {
 
-                LOG.warn(ex.getMessage(), ex);
+                getLogger().warn(ex.getMessage(), ex);
 
                 backoffPolicy.deregister(request);
 
@@ -232,12 +230,12 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                         operations.remove().execute();
                     } catch (Exception e) {
                         // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
-                        InternalLogging.getLogger().error("before-batch failed: {}", e.getMessage());
+                        getLogger().error("before-batch failed: {}", e.getMessage());
                     }
                 }
 
                 if (backoffPolicy.shouldApply(request)) {
-                    LOG.warn("Backoff applied. Request rejected.");
+                    getLogger().warn("Backoff applied. Request rejected.");
                     failureHandler.apply(request);
                     request.completed();
                     return false;
@@ -274,7 +272,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
             Response result = createClient().execute(request, responseHandler);
             if (!result.isSucceeded()) {
-                LOG.error(result.getErrorMessage());
+                getLogger().error(result.getErrorMessage());
             }
         } finally {
             byteBuf.release();
@@ -465,7 +463,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             return;
         }
 
-        LOG.debug("Stopping {}", getClass().getSimpleName());
+        getLogger().debug("Stopping {}", getClass().getSimpleName());
 
         if (client != null) {
             client.stop();
@@ -474,7 +472,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         state = State.STOPPED;
 
-        LOG.debug("{} stopped", getClass().getSimpleName());
+        getLogger().debug("{} stopped", getClass().getSimpleName());
 
     }
 

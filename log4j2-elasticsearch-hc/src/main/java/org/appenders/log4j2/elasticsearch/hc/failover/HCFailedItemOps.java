@@ -20,17 +20,15 @@ package org.appenders.log4j2.elasticsearch.hc.failover;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.hc.IndexRequest;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 
 public class HCFailedItemOps implements FailedItemOps<IndexRequest> {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * @param failed failed request
@@ -40,7 +38,7 @@ public class HCFailedItemOps implements FailedItemOps<IndexRequest> {
     public FailedItemSource createItem(IndexRequest failed) {
 
         if (failed.getSource() instanceof FailedItemSource) {
-            LOG.trace("Reusing {}", FailedItemSource.class.getSimpleName());
+            getLogger().trace("Reusing {}", FailedItemSource.class.getSimpleName());
             return (FailedItemSource) failed.getSource();
         }
 

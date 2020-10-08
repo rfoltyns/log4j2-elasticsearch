@@ -29,6 +29,8 @@ import org.appenders.core.logging.Logger;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * Generic async callback for Apache HC {@link HttpResponse}s and failures.
  * Adapts {@link HttpResponse} to {@link Response}
@@ -36,8 +38,6 @@ import java.io.InputStream;
  * @param <T> Apache HC response type
  */
 public class HCResultCallback<T extends Response> implements FutureCallback<HttpResponse> {
-
-    private static final Logger log = InternalLogging.getLogger();
 
     private final ResponseHandler<T> responseHandler;
 
@@ -69,7 +69,7 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
                 try {
                     inputStream.close();
                 } catch (IOException e) {
-                    log.error("Problem closing response input stream", e);
+                    getLogger().error("Problem closing response input stream", e);
                 }
             }
             if (result != null) {
@@ -85,7 +85,7 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
             responseHandler.failed(ex);
         } catch (Exception e) {
             // uncaught exception may cause the client to shutdown
-            log.error("Callback failed", e);
+            getLogger().error("Callback failed", e);
         }
     }
 

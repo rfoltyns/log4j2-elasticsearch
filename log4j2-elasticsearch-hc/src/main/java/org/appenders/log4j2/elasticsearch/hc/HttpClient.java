@@ -26,18 +26,16 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 
 import java.io.IOException;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Apache HC based client with optional response buffer pooling
  */
 class HttpClient implements LifeCycle {
-
-    private final static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -150,7 +148,7 @@ class HttpClient implements LifeCycle {
             try {
                 asyncClient.close();
             } catch (IOException e) {
-                LOG.warn("Async client might not have been stopped properly. Cause: " + e.getMessage());
+                getLogger().warn("Async client might not have been stopped properly. Cause: " + e.getMessage());
             }
         }
 
