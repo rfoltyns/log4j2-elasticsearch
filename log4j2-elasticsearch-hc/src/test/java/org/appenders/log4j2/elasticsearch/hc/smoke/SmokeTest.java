@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.hc.smoke;
 
 
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
@@ -77,6 +78,8 @@ public class SmokeTest extends SmokeTestBase {
                         .build()
         );
 
+        Configuration configuration = LoggerContext.getContext(false).getConfiguration();
+
         httpObjectFactoryBuilder.withConnTimeout(500)
                 .withReadTimeout(20000)
                 .withIoThreadCount(4)
@@ -90,11 +93,10 @@ public class SmokeTest extends SmokeTestBase {
             httpObjectFactoryBuilder.withServerUris("http://localhost:9200");
         }
 
-        LoggerContext ctx = LoggerContext.getContext(false);
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
                 .withName("log4j2-elasticsearch-programmatic-test-template")
                 .withPath("classpath:indexTemplate-7.json")
-                .withValueResolver(new Log4j2Lookup(ctx.getConfiguration().getStrSubstitutor()))
+                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()))
                 .build();
 
         KeySequenceSelector keySequenceSelector =
@@ -109,7 +111,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withIndexTemplate(indexTemplate)
                 .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
                         .withKeySequenceSelector(keySequenceSelector)
-                        .withFileName("failedItems.chronicleMap")
+                        .withFileName(resolveChronicleMapFilePath("log4j2-elasticsearch-hc.chronicleMap"))
                         .withNumberOfEntries(1000000)
                         .withAverageValueSize(2048)
                         .withBatchSize(5000)
@@ -121,12 +123,12 @@ public class SmokeTest extends SmokeTestBase {
                 .build();
 
         IndexNameFormatter indexNameFormatter = RollingIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2_hc")
+                .withIndexName("log4j2-elasticsearch-hc")
                 .withPattern("yyyy-MM-dd-HH")
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
-                .setConfiguration(ctx.getConfiguration())
+                .setConfiguration(configuration)
                 .withVirtualProperties(
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)

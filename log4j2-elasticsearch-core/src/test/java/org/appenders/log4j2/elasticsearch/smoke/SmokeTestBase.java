@@ -58,6 +58,7 @@ public abstract class SmokeTestBase {
     public static final int MILLIS_BEFORE_SHUTDOWN = 60000;
     public static final int MILLIS_AFTER_SHUTDOWN = 60000;
     public static final int NUMBER_OF_PRODUCERS = 100;
+    public static final int LIMIT_PER_SEC = getInt("smokeTest.limitPerSec", 10000);
     public static final int LOG_SIZE = 300;
     protected boolean secure = false;
     private final AtomicInteger numberOfLogs = new AtomicInteger(1000000);
@@ -73,6 +74,20 @@ public abstract class SmokeTestBase {
         RANDOM.nextBytes(bytes);
 
         return new String(bytes);
+    }
+
+    protected String resolveChronicleMapFilePath(String fileName) {
+
+        String path = System.getProperty(
+                "appenders.failover.chroniclemap.dir",
+                "./");
+
+        if (!path.endsWith("/")) {
+            path += "/";
+        }
+
+        return path + fileName;
+
     }
 
     public final void createLoggerProgrammatically(Supplier<ElasticsearchAppender.Builder> appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
@@ -238,11 +253,10 @@ public abstract class SmokeTestBase {
             }).start();
         }
 
-        final int limitPerSec = getInt("smokeTest.limitPerSec", 10000);
         while (latch.getCount() != 0) {
             sleep(1000);
             int count = localCounter.getAndSet(0);
-            if (count > limitPerSec && sleepTime.get() != 1) {
+            if (count > LIMIT_PER_SEC && sleepTime.get() != 1) {
                 sleepTime.incrementAndGet();
             } else if (sleepTime.get() > 1) {
                 sleepTime.decrementAndGet();

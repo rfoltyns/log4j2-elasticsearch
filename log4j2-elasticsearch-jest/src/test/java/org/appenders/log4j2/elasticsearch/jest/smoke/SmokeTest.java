@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
 
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
@@ -85,6 +86,8 @@ public class SmokeTest extends SmokeTestBase {
             jestHttpObjectFactoryBuilder = JestHttpObjectFactory.newBuilder();
         }
 
+        Configuration configuration = LoggerContext.getContext(false).getConfiguration();
+
         jestHttpObjectFactoryBuilder.withConnTimeout(1000)
                 .withReadTimeout(10000)
                 .withIoThreadCount(8)
@@ -110,25 +113,25 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
+                .withIndexTemplate(indexTemplate)
                 .withFailoverPolicy(ChronicleMapRetryFailoverPolicy.newBuilder()
                         .withKeySequenceSelector(keySequenceSelector)
-                        .withFileName("failedItems.chronicleMap")
+                        .withFileName(resolveChronicleMapFilePath("log4j2-elasticsearch-jest.chronicleMap"))
                         .withAverageValueSize(2048)
                         .withNumberOfEntries(1000000)
                         .withBatchSize(5000)
                         .withRetryDelay(3000)
                         .withMonitored(true)
                         .build())
-                .withIndexTemplate(indexTemplate)
                 .build();
 
         IndexNameFormatter indexNameFormatter = RollingIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2_test_jest")
+                .withIndexName("log4j2-elasticsearch-jest")
                 .withPattern("yyyy-MM-dd-HH")
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
-                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
+                .setConfiguration(configuration)
                 .withVirtualProperties(
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
