@@ -32,8 +32,6 @@ import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -46,12 +44,12 @@ import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOp
 
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 @Plugin(name = BufferedJestHttpObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     public static final String PLUGIN_NAME = "JestBufferedHttp";
-
-    private static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -69,14 +67,14 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     public Function<Bulk, Boolean> createFailureHandler(FailoverPolicy failover) {
         return bulk -> {
             BufferedBulk bufferedBulk = (BufferedBulk)bulk;
-            LOG.warn(String.format("Batch of %s items failed. Redirecting to %s", bufferedBulk.getActions().size(), failover.getClass().getName()));
+            getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s", bufferedBulk.getActions().size(), failover.getClass().getName()));
             try {
                 bufferedBulk.getActions().stream()
                         .map(item -> failedItemOps.createItem(((BufferedIndex) item)))
                         .forEach(failover::deliver);
                 return true;
             } catch (Exception e) {
-                LOG.error("Unable to execute failover", e);
+                getLogger().error("Unable to execute failover", e);
                 return false;
             }
         };
@@ -96,7 +94,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
                 backoffPolicy.deregister(bulk);
 
                 if (!result.isSucceeded()) {
-                    LOG.warn(result.getErrorMessage());
+                    getLogger().warn(result.getErrorMessage());
                     // TODO: filter only failed items when retry is ready.
                     // failing whole bulk for now
                     failureHandler.apply(bulk);
@@ -106,7 +104,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
             @Override
             public void failed(Exception ex) {
-                LOG.warn(ex.getMessage(), ex);
+                getLogger().warn(ex.getMessage(), ex);
                 backoffPolicy.deregister(bulk);
                 failureHandler.apply(bulk);
                 ((BufferedBulk)bulk).completed();

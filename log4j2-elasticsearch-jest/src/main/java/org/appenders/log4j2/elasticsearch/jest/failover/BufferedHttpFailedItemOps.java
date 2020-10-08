@@ -22,22 +22,20 @@ package org.appenders.log4j2.elasticsearch.jest.failover;
 
 import io.searchbox.action.AbstractDocumentTargetedAction;
 import io.searchbox.core.DocumentResult;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.BufferedIndex;
 
-public class BufferedHttpFailedItemOps implements FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> {
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
-    private static final Logger LOG = InternalLogging.getLogger();
+public class BufferedHttpFailedItemOps implements FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> {
 
     @Override
     public FailedItemSource createItem(AbstractDocumentTargetedAction<DocumentResult> failed) {
         BufferedIndex failedRequest = (BufferedIndex) failed;
         if (failedRequest.getSource() instanceof FailedItemSource) {
-            LOG.trace("Reusing {}", FailedItemSource.class.getSimpleName());
+            getLogger().trace("Reusing {}", FailedItemSource.class.getSimpleName());
             return (FailedItemSource) failedRequest.getSource();
         }
         return new FailedItemSource<>(failedRequest.getSource(), createInfo(failed));

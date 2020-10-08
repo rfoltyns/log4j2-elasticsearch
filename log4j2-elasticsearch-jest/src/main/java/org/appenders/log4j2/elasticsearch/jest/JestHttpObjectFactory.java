@@ -41,8 +41,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -62,12 +60,11 @@ import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.log4j2.elasticsearch.jest.JestBulkOperations.DEFAULT_MAPPING_TYPE;
 
 @Plugin(name = "JestHttp", category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bulk> {
-
-    private static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -146,12 +143,12 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                         operations.remove().execute();
                     } catch (Exception e) {
                         // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
-                        LOG.error("Deferred operation failed: {}", e.getMessage());
+                        getLogger().error("Deferred operation failed: {}", e.getMessage());
                     }
                 }
 
                 if (backoffPolicy.shouldApply(bulk)) {
-                    LOG.warn("Backoff applied. Request rejected.");
+                    getLogger().warn("Backoff applied. Request rejected.");
                     failureHandler.apply(bulk);
                     return false;
                 } else {
@@ -177,7 +174,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
                 Collection items = introspector.items(bulk);
 
-                LOG.warn(String.format("Batch of %s items failed. Redirecting to %s",
+                getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s",
                         items.size(),
                         failover.getClass().getName()));
 
@@ -203,10 +200,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         try {
             JestResult result = createClient().execute(templateAction);
             if (!result.isSucceeded()) {
-                LOG.error("IndexTemplate not added: " + result.getErrorMessage());
+                getLogger().error("IndexTemplate not added: " + result.getErrorMessage());
             }
         } catch (IOException e) {
-            LOG.error("IndexTemplate not added: " + e.getMessage());
+            getLogger().error("IndexTemplate not added: " + e.getMessage());
         }
     }
 
@@ -223,13 +220,13 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 backoffPolicy.deregister(bulk);
 
                 if (!result.isSucceeded()) {
-                    LOG.warn(result.getErrorMessage());
+                    getLogger().warn(result.getErrorMessage());
                     failureHandler.apply(bulk);
                 }
             }
             @Override
             public void failed(Exception ex) {
-                LOG.warn(ex.getMessage(), ex);
+                getLogger().warn(ex.getMessage(), ex);
                 backoffPolicy.deregister(bulk);
                 failureHandler.apply(bulk);
             }
@@ -394,14 +391,14 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             return;
         }
 
-        LOG.debug("Stopping {}", getClass().getSimpleName());
+        getLogger().debug("Stopping {}", getClass().getSimpleName());
 
         if (client != null) {
             client.shutdownClient();
         }
         state = State.STOPPED;
 
-        LOG.debug("{} stopped", getClass().getSimpleName());
+        getLogger().debug("{} stopped", getClass().getSimpleName());
 
     }
 
