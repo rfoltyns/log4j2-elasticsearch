@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
-import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.UUID;

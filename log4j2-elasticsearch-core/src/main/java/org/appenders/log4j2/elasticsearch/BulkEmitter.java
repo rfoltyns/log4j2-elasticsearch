@@ -21,9 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
-
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -34,6 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * Time- and size-based batch scheduler. Uses provided {@link BatchOperations} implementation to produce batches and
  * delivers them to provided listener.
@@ -41,8 +40,6 @@ import java.util.function.Function;
  * @param <BATCH_TYPE> type of processed batches
  */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
-
-    protected static Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -58,7 +55,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private final Timer scheduler;
     private final DelayedShutdown delayedShutdown = new DelayedShutdown(this::doStop)
             .onDecrement(remaining -> {
-                LOG.info(
+                getLogger().info(
                         "Waiting for last items... {}s, {} items enqueued",
                         remaining / 1000,
                         size.get()
@@ -113,7 +110,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
                 // unless there's a huge chunk of work to do on apply(batch), it should exit after a couple of millis
                 latchHolder.get().await(1000, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                LOG.error("Interrupted while waiting for notification completion");
+                getLogger().error("Interrupted while waiting for notification completion");
                 Thread.currentThread().interrupt();
             }
         }
@@ -174,7 +171,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     private void doStop() {
         if (!isStopped()) {
-            LOG.debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
+            getLogger().debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
 
             notifyListener();
             scheduler.cancel();
@@ -182,7 +179,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
             state = State.STOPPED;
 
-            LOG.debug("{} stopped", getClass().getSimpleName());
+            getLogger().debug("{} stopped", getClass().getSimpleName());
         }
     }
 

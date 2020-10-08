@@ -20,10 +20,9 @@ package org.appenders.log4j2.elasticsearch.backoff;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
-
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Allows to apply a limit on number of batches delivered at the same time.
@@ -33,8 +32,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * number of items in each batch where totalItems or totalBatches are more or less important in {@link #shouldApply(Object)} call.
  */
 public class BatchLimitBackoffPolicy<T> implements BackoffPolicy<T> {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     private final AtomicInteger batchesInFlight = new AtomicInteger();
     private final int maxBatchesInFlight;
@@ -52,7 +49,7 @@ public class BatchLimitBackoffPolicy<T> implements BackoffPolicy<T> {
      */
     @Override
     public boolean shouldApply(T request) {
-        LOG.debug("batchesInFlight: {}, maxBatchesInFlight: {}", batchesInFlight.get(), maxBatchesInFlight);
+        getLogger().debug("batchesInFlight: {}, maxBatchesInFlight: {}", batchesInFlight.get(), maxBatchesInFlight);
         return batchesInFlight.get() >= maxBatchesInFlight;
     }
 

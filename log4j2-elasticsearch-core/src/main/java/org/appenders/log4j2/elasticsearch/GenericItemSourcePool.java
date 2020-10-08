@@ -20,9 +20,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
-
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * <p>Resizable pool of {@link ItemSource} elements.
  * <p>Automatically expands when it runs out of elements. Expansion size depends on {@link ResizePolicy} configuration.
@@ -45,8 +44,6 @@ import java.util.function.Supplier;
  * <p>NOTE: Consider this class <i>private</i>. Design may change before the code is stabilized.
  */
 public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
-
-    protected static final Logger LOGGER = InternalLogging.getLogger();
 
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
     // TODO: make configurable via system property
@@ -134,7 +131,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
             incrementPoolSize();
         }
 
-        LOGGER.info("Pool [{}] {} pooled elements added. Total pooled elements: {}. Took: {}ms",
+        getLogger().info("Pool [{}] {} pooled elements added. Total pooled elements: {}. Took: {}ms",
                 getName(),
                 delta,
                 getTotalSize(),
@@ -229,7 +226,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         boolean resized = false;
 
         try {
-            LOGGER.info("Pool [{}] attempting to resize using policy [{}]",
+            getLogger().info("Pool [{}] attempting to resize using policy [{}]",
                     getName(), resizePolicy.getClass().getName());
 
             resized = resizePolicy.increase(this);
@@ -277,14 +274,14 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     // TODO: add shutdown(timeout)
     public void shutdown() {
 
-        LOGGER.debug("{} shutting down. Releasing buffers..", poolName);
+        getLogger().debug("{} shutting down. Releasing buffers..", poolName);
         objectPool.forEach(pooled -> pooledObjectOps.purge(pooled));
         objectPool.clear();
 
-        LOGGER.debug("{} stopping internal threads..", poolName);
+        getLogger().debug("{} stopping internal threads..", poolName);
         executor.shutdown();
 
-        LOGGER.debug("{} shutdown complete", poolName);
+        getLogger().debug("{} shutdown complete", poolName);
 
     }
 
@@ -327,7 +324,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         MetricPrinter(String threadName, GenericItemSourcePool.PoolMetrics poolMetrics, Supplier<String> additionalMetricsSupplier) {
             super(threadName);
             this.additionalMetricsSupplier = additionalMetricsSupplier;
-            this.printer = additionalMetrics -> LOGGER.info(poolMetrics.formattedMetrics(additionalMetrics));
+            this.printer = additionalMetrics -> getLogger().info(poolMetrics.formattedMetrics(additionalMetrics));
         }
 
         @Override

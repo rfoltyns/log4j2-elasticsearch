@@ -20,12 +20,11 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
-
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Searches for available {@link KeySequence} with configured {@link #sequenceId} in provided {@link KeySequenceConfigRepository}.
@@ -41,8 +40,6 @@ import java.util.function.Supplier;
  * configure current {@link KeySequence}. {@link #currentKeySequence()} may be used afterwards.
  */
 public class SingleKeySequenceSelector implements KeySequenceSelector {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     private KeySequenceConfigRepository repository;
 
@@ -102,7 +99,7 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
         KeySequence keySequence = current.get();
         if (keySequence != null) {
 
-            LOG.debug("Reusing current key sequence: {}", keySequence.getConfig(true));
+            getLogger().debug("Reusing current key sequence: {}", keySequence.getConfig(true));
 
             // persist current state
             repository.persist(keySequence.getConfig(true));
@@ -117,7 +114,7 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
 
             KeySequenceConfig newConfig = createKeySequenceConfig(sequenceId);
 
-            LOG.info("No matching keys sequences found. Creating new {}", newConfig.getKey());
+            getLogger().info("No matching keys sequences found. Creating new {}", newConfig.getKey());
             setCurrent(newConfig);
 
             return current.get();
@@ -125,7 +122,7 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
 
         if (isExpired(existing) || isOwned(existing)) {
 
-            LOG.info("Reusing expired key sequence: {}", existing.getKey());
+            getLogger().info("Reusing expired key sequence: {}", existing.getKey());
             setCurrent(existing);
 
         }
@@ -164,12 +161,12 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
         repository.persist(config);
 
         if (repository.consistencyCheck(config)) {
-            LOG.info("Current key sequence: {}", config.getKey());
+            getLogger().info("Current key sequence: {}", config.getKey());
             current.set(createKeySequence(config));
             return;
         }
 
-        LOG.warn(String.format("Cannot reuse key sequence %s. Consistency check failed. It seems that other process is using this sequence right now.", config.getKey()));
+        getLogger().warn(String.format("Cannot reuse key sequence %s. Consistency check failed. It seems that other process is using this sequence right now.", config.getKey()));
 
     }
 

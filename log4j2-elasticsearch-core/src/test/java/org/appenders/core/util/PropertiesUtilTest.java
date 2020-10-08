@@ -20,8 +20,10 @@ package org.appenders.core.util;
  * #L%
  */
 
+import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.core.logging.Logger;
+import org.junit.After;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
@@ -37,6 +40,11 @@ import static org.mockito.Mockito.verify;
 public class PropertiesUtilTest {
 
     public static final int OFFSET = 1000;
+
+    @After
+    public void tearDown() {
+        InternalLogging.setLogger(null);
+    }
 
     @Test
     public void getIntReturnsValueIfPropertyIsSet() {
@@ -102,7 +110,7 @@ public class PropertiesUtilTest {
     public void getIntLogsIfDefaultIsReturned() {
 
         // given
-        Logger logger = InternalLoggingTest.mockTestLogger();
+        Logger logger = mockTestLogger();
         String propertyName = UUID.randomUUID().toString();
         System.setProperty(propertyName, "    ");
 
@@ -125,7 +133,7 @@ public class PropertiesUtilTest {
     public void getIntLogsIfValueCannotBeParsed() {
 
         // given
-        Logger logger = InternalLoggingTest.mockTestLogger();
+        Logger logger = mockTestLogger();
 
         String propertyName = UUID.randomUUID().toString();
         String nonIntegerValue = UUID.randomUUID().toString();

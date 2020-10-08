@@ -20,8 +20,6 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
 import java.util.ArrayList;
@@ -32,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * Retries items from given map. Next item key is determined by {@link KeySequence#nextReaderKey()}.
  * {@link KeySequence} instance is retrieved with {@link KeySequenceSelector#firstAvailable()}.
@@ -41,8 +41,6 @@ import java.util.concurrent.locks.LockSupport;
  * it SHOULD be put back to given map (outside of scope of this class) to be picked up again on next runs.
  */
 class RetryProcessor implements Runnable {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     private final long backoffMillis;
 
@@ -111,7 +109,7 @@ class RetryProcessor implements Runnable {
         long remaining = Math.min(maxRetryBatchSize, keysAvailable);
         Iterator<CharSequence> keys = keySequence.nextReaderKeys(remaining);
 
-        LOG.info("Retrying {} of {} items. Left behind: {}. Exceptions: {}",
+        getLogger().info("Retrying {} of {} items. Left behind: {}. Exceptions: {}",
                 remaining,
                 keysAvailable,
                 orphanedKeyCount.get(),
@@ -136,7 +134,7 @@ class RetryProcessor implements Runnable {
             }
         } catch (Exception e) {
             readFailureCount.incrementAndGet();
-            LOG.error("Retry failed. Item may be lost. Cause: {}", e.getMessage());
+            getLogger().error("Retry failed. Item may be lost. Cause: {}", e.getMessage());
         } finally {
             selectedKeysList.clear();
         }

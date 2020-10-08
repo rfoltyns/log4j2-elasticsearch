@@ -25,15 +25,13 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 @Plugin(name = StringItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
 public class StringItemSourceFactory implements ItemSourceFactory {
 
     static final String PLUGIN_NAME = "StringItemSourceAppender";
-
-    private static final Logger LOGGER = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -58,7 +56,7 @@ public class StringItemSourceFactory implements ItemSourceFactory {
             return new StringItemSource(objectWriter.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             // dev's error. returning null to resurface
-            LOGGER.error("Cannot write item source: " + e.getMessage());
+            getLogger().error("Cannot write item source: " + e.getMessage());
             return null;
         }
     }

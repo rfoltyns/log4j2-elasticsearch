@@ -29,8 +29,6 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -51,6 +49,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 /**
  * Uses Chronicle-Map (https://github.com/OpenHFT/Chronicle-Map) to store failed items.
  * Uses {@link RetryProcessor} to retry failed items.
@@ -59,8 +59,6 @@ import java.util.function.Supplier;
 public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedItemSource>, LifeCycle {
 
     public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
-
-    private static final Logger LOGGER = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -145,7 +143,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
         } catch (Exception e) {
             // TODO: add to metrics
             storeFailureCount.incrementAndGet();
-            LOGGER.error("Unable to store {}. Cause: {}", failedItem.getClass().getSimpleName(), e.getMessage());
+            getLogger().error("Unable to store {}. Cause: {}", failedItem.getClass().getSimpleName(), e.getMessage());
             return false;
         }
 
@@ -178,13 +176,13 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
 
     DelayedShutdown delayedShutdown() {
         return new DelayedShutdown(() -> executors.forEach(ExecutorService::shutdown))
-                .onDecrement(remaining -> LOGGER.warn("{} ms before proceeding", remaining))
+                .onDecrement(remaining -> getLogger().warn("{} ms before proceeding", remaining))
                 .afterDelay(() -> {
 
                     int totalKeys = failedItems.size();
                     long enqueuedKeys = keySequenceSelector.currentKeySequence().get().readerKeysAvailable();
 
-                    LOGGER.info(
+                    getLogger().info(
                             "sequenceId: {}, total: {}, enqueued: {}",
                             keySequenceSelector.currentKeySequence().get().getConfig(true).getSeqId(),
                             totalKeys,
@@ -432,9 +430,9 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
         @Override
         public void onCorruption(ChronicleHashCorruption corruption) {
             if (corruption.exception() != null) {
-                LOGGER.error(corruption.message(), corruption.exception());
+                getLogger().error(corruption.message(), corruption.exception());
             } else {
-                LOGGER.error(corruption.message());
+                getLogger().error(corruption.message());
             }
         }
 
@@ -448,7 +446,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
             int totalKeys = failedItems.size();
             long enqueuedKeys = keySequenceSelector.currentKeySequence().get().readerKeysAvailable();
 
-            LOGGER.info(
+            getLogger().info(
                     "sequenceId: {}, total: {}, enqueued: {}",
                     keySequenceSelector.currentKeySequence().get().getConfig(true).getSeqId(),
                     totalKeys,

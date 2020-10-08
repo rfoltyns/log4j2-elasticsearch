@@ -20,12 +20,9 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 public class NonEmptyFilter implements VirtualPropertyFilter {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     /**
      * Allows to determine inclusion based on presence and length of given value.
@@ -39,12 +36,12 @@ public class NonEmptyFilter implements VirtualPropertyFilter {
     public final boolean isIncluded(String fieldName, String resolvedValue) {
 
         if (resolvedValue == null) {
-            LOG.debug("VirtualProperty with excluded. Value was null. Name: {}", fieldName);
+            getLogger().debug("VirtualProperty with excluded. Value was null. Name: {}", fieldName);
             return false;
         }
 
         if (resolvedValue.isEmpty()) {
-            LOG.debug("VirtualProperty with excluded. Value was empty. Name: {}", fieldName);
+            getLogger().debug("VirtualProperty with excluded. Value was empty. Name: {}", fieldName);
             return false;
         }
 

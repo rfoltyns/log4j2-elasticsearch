@@ -28,11 +28,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.failover.RetryListener;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Uses {@link BatchEmitterFactory} SPI to get a {@link BatchEmitter} instance that will hold given items until interval
@@ -40,8 +40,6 @@ import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
  */
 @Plugin(name = "AsyncBatchDelivery", category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
 public class AsyncBatchDelivery implements BatchDelivery<String> {
-
-    private static final Logger LOG = InternalLogging.getLogger();
 
     private volatile State state = State.STOPPED;
 
@@ -211,7 +209,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
     @Override
     public void stop() {
 
-        LOG.debug("Stopping {}", getClass().getSimpleName());
+        getLogger().debug("Stopping {}", getClass().getSimpleName());
 
         if (!LifeCycle.of(failoverPolicy).isStopped()) {
             // Shutdown MUST happen in background to allow the execution to continue
@@ -230,7 +228,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
         state = State.STOPPED;
 
-        LOG.debug("{} stopped", getClass().getSimpleName());
+        getLogger().debug("{} stopped", getClass().getSimpleName());
 
     }
 

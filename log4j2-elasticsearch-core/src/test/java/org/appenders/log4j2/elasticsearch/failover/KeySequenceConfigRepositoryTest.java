@@ -32,7 +32,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createDefaultTestKeySequenceConfig;
-import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;

@@ -20,10 +20,9 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
-
 import java.util.function.Consumer;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Allows to define multi-phase shutdown procedures. Currently, 3 phases can be defined:
@@ -47,8 +46,6 @@ import java.util.function.Consumer;
  */
 public class DelayedShutdown extends Thread {
 
-    private static final Logger LOG = InternalLogging.getLogger();
-
     /**
      * Default: 1000
      */
@@ -60,7 +57,7 @@ public class DelayedShutdown extends Thread {
     private long decrementInMillis = DEFAULT_DECREMENT_IN_MILLIS;
     private Consumer<Long> onDecrement = remaining -> {};
     private Runnable afterDelay = () -> {};
-    private Consumer<Exception> onError = exception -> LOG.warn("Shutdown interrupted: {}", exception.getMessage());
+    private Consumer<Exception> onError = exception -> getLogger().warn("Shutdown interrupted: {}", exception.getMessage());
 
     /**
      * @param onStart Task to execute immediately after start

@@ -47,12 +47,12 @@ public final class InternalLogging {
             return logger;
         }
 
-        boolean throwOnNull = Boolean.valueOf(
+        boolean throwOnNull = Boolean.parseBoolean(
                 System.getProperty(THROW_ON_NULL_LOGGER, "false")
         );
 
         if (throwOnNull) {
-            throw new IllegalStateException("Logger cannot be null. Set Logger instance with InternalLogging.setLogger()()");
+            throw new IllegalStateException("Logger cannot be null. Set Logger instance with InternalLogging.setLogger()");
         } else {
             // TODO: should fallback to SLF4J wrapper (eventually, in future releases)
             logger = new Log4j2StatusLoggerWrapper();

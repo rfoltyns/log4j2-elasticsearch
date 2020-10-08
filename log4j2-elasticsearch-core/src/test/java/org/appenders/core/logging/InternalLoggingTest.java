@@ -38,7 +38,7 @@ public class InternalLoggingTest {
     public void allowsToSetLogger() {
 
         // given
-        Logger expectedLogger = mock(Logger.class);
+        Logger expectedLogger = mockTestLogger();
 
         // when
         InternalLogging.setLogger(expectedLogger);
@@ -74,7 +74,7 @@ public class InternalLoggingTest {
         InternalLogging.setLogger(null);
 
         expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("Logger cannot be null. Set Logger instance with InternalLogging.setLogger()()");
+        expectedException.expectMessage("Logger cannot be null. Set Logger instance with InternalLogging.setLogger()");
 
         // when
         InternalLogging.getLogger();
