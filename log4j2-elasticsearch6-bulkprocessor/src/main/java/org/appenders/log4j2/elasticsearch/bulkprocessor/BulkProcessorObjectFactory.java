@@ -28,8 +28,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -54,12 +52,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 @Plugin(name = BulkProcessorObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BulkProcessorObjectFactory implements ClientObjectFactory<TransportClient, BulkRequest> {
 
     static final String PLUGIN_NAME = "ElasticsearchBulkProcessor";
-
-    private static Logger LOG = InternalLogging.getLogger();
 
     private final Collection<String> serverUris;
     private final UriParser uriParser = new UriParser();
@@ -149,7 +147,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         try {
             operation.execute();
         } catch (Exception e) {
-            LOG.error("Operation failed: {}", e.getMessage());
+            getLogger().error("Operation failed: {}", e.getMessage());
         }
     }
 

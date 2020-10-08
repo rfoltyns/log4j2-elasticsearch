@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,6 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -51,10 +49,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+
 @Plugin(name = BulkProcessorObjectFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class BulkProcessorObjectFactory implements ClientObjectFactory<TransportClient, BulkRequest> {
-
-    private static Logger LOG = InternalLogging.getLogger();
 
     static final String PLUGIN_NAME = "ElasticsearchBulkProcessor";
 
@@ -146,7 +144,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         try {
             operation.execute();
         } catch (Exception e) {
-            LOG.error("Operation failed: {}", e.getMessage());
+            getLogger().error("Operation failed: {}", e.getMessage());
         }
     }
 
