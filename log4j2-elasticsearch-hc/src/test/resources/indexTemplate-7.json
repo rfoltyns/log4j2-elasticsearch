@@ -4,7 +4,9 @@
   ],
   "settings": {
     "index": {
-      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}"
+      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}",
+      "lifecycle.name": "log4j2-elasticsearch-hc-ilm-policy",
+      "lifecycle.rollover_alias": "log4j2-elasticsearch-hc"
     }
   },
   "mappings": {

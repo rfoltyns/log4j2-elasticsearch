@@ -20,47 +20,68 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.ILMPolicy;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.SetupOperationFactory;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.internal.verification.VerificationModeFactory;
+import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
+import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
@@ -90,6 +111,11 @@ public class HCHttpTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @After
+    public void tearDown() {
+        InternalLogging.setLogger(null);
+    }
 
     public static HCHttp.Builder createDefaultHttpObjectFactoryBuilder() {
 
@@ -236,6 +262,87 @@ public class HCHttpTest {
         //then
         verify(auth).configure(any());
     }
+
+    @Test
+    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided()
+    {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withValueResolver(null);
+
+        // when
+        HCHttp factory = builder.build();
+
+        // then
+        assertSame(ValueResolver.NO_OP, factory.valueResolver());
+
+    }
+
+    @Test
+    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided()
+    {
+
+        // given
+        Configuration configuration = mock(Configuration.class);
+        StrSubstitutor strSubstitutor = mock(StrSubstitutor.class);
+        when(strSubstitutor.replace((String)any())).thenReturn(UUID.randomUUID().toString());
+
+        when(configuration.getStrSubstitutor()).thenReturn(strSubstitutor);
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withValueResolver(null)
+                .withConfiguration(configuration);
+
+        HCHttp factory = builder.build();
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        assertTrue(factory.valueResolver() instanceof Log4j2Lookup);
+        verify(strSubstitutor).replace(eq(expectedSource));
+
+    }
+
+    @Test
+    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided()
+    {
+
+        // given
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(anyString())).thenReturn(UUID.randomUUID().toString());
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withConfiguration(mock(Configuration.class))
+                .withValueResolver(valueResolver);
+
+        HCHttp factory = builder.build();
+
+        assertEquals(valueResolver, factory.valueResolver());
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        verify(valueResolver).resolve(eq(expectedSource));
+
+    }
+
     @Test
     public void resultHandlerUsesGivenObjectReader() throws IOException {
 
@@ -611,6 +718,279 @@ public class HCHttpTest {
 
     }
 
+    @Test
+    public void passesIndexTemplateToClient() {
+
+        //given
+        HttpClient httpClient = mock(HttpClient.class);
+
+        HCHttp factory = Mockito.spy(createTestObjectFactory(httpClient));
+
+        AtomicReference<ByteBuf> argCaptor = new AtomicReference<>();
+        responseMock(httpClient, true, argCaptor);
+
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder()
+                .build());
+
+        String expectedPayload = indexTemplate.getSource();
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        ArgumentCaptor<IndexTemplateRequest> requestArgumentCaptor = ArgumentCaptor.forClass(IndexTemplateRequest.class);
+        verify(httpClient).execute(requestArgumentCaptor.capture(), any());
+
+        assertEquals(argCaptor.get().toString(StandardCharsets.UTF_8), expectedPayload);
+
+    }
+
+    @Test
+    public void executeLogsExceptions() {
+
+        //given
+        HttpClient httpClient = mock(HttpClient.class);
+        HCHttp factory = Mockito.spy(createTestObjectFactory(httpClient));
+
+        Logger logger = mockTestLogger();
+
+        String expectedErrorMessage = UUID.randomUUID().toString();
+        Exception testException = new IOException(expectedErrorMessage);
+
+        when(httpClient.execute(any(), any())).thenAnswer(
+                (Answer<Response>) invocationOnMock -> {
+                    throw testException;
+                });
+
+        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+                .withPath("classpath:indexTemplate-7.json")
+                .withName("testName")
+                .build());
+
+        factory.start();
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(logger).error(eq("IndexTemplate not added"), eq(testException));
+
+    }
+
+    @Test
+    public void errorMessageIsNotLoggedIfTemplateActionHasSucceeded() {
+
+        //given
+        HttpClient httpClient = mock(HttpClient.class);
+
+        HCHttp factory = createTestObjectFactory(httpClient);
+
+        Response responseMock = responseMock(httpClient, true);
+
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(responseMock, never()).getErrorMessage();
+
+    }
+
+    @Test
+    public void errorMessageIsRetrievedIfTemplateActionNotSucceeded() {
+
+        //given
+        HttpClient httpClient = mock(HttpClient.class);
+
+        HCHttp factory = createTestObjectFactory(httpClient);
+
+        Response responseMock = responseMock(httpClient, false);
+
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(responseMock).getErrorMessage();
+
+    }
+
+    @Test
+    public void executeDoesNotRethrowOnIndexTemplateOperationException() {
+
+        //given
+        HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
+
+        when(factory.setupOperationFactory()).thenReturn(new SetupOperationFactory() {
+            @Override
+            public Operation indexTemplate(IndexTemplate indexTemplate) {
+                return () -> {
+                    throw new RuntimeException("test exception");
+                };
+            }
+
+            @Override
+            public Operation ilmPolicy(ILMPolicy ilmPolicy) {
+                return null;
+            }
+        });
+
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
+
+        Logger logger = mockTestLogger();
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(logger).error(eq("IndexTemplate not added"), any());
+
+    }
+
+    @Test
+    public void executeUsesBlockingResponseHandler() {
+
+        //given
+        HttpClient httpClient = mock(HttpClient.class);
+
+        BlockingResponseHandler<BasicResponse> blockingResponseHandler = spy(new BlockingResponseHandler<>(
+                new ObjectMapper().readerFor(Response.class), response -> null));
+
+        HCHttp factory = createTestObjectFactory(httpClient, blockingResponseHandler);
+
+        Response responseMock = responseMock(httpClient, false);
+
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(httpClient).execute(any(), eq(blockingResponseHandler));
+
+    }
+
+    @Test
+    public void defaultBlockingResponseFallbackHandlerCreatesBasicResponseWithExceptionMessage() {
+
+        //given
+        HCHttp factory = createTestObjectFactory(mock(HttpClient.class));
+
+        Function<Exception, BasicResponse> blockingResponseExceptionHandler = factory.createBlockingResponseFallbackHandler();
+
+        String expectedMessage = UUID.randomUUID().toString();
+
+        // when
+        BasicResponse basicResponse = blockingResponseExceptionHandler.apply(new Exception(expectedMessage));
+
+        // then
+        assertEquals(expectedMessage, basicResponse.getErrorMessage());
+
+    }
+
+    @Test
+    public void defaultBlockingResponseFallbackHandlerCreatesBasicResponseWithNoExceptionMessage() {
+
+        //given
+        HCHttp factory = createTestObjectFactory(mock(HttpClient.class));
+
+        Function<Exception, BasicResponse> blockingResponseExceptionHandler = factory.createBlockingResponseFallbackHandler();
+
+        // when
+        BasicResponse basicResponse = blockingResponseExceptionHandler.apply(null);
+
+        // then
+        assertNull(basicResponse.getErrorMessage());
+
+    }
+
+    @Test
+    public void clientStartMayBeDeferredUntilFirstBatch() {
+
+        // given
+        HttpClient httpClient = mock(HttpClient.class);
+        HCHttp factory = createTestObjectFactory(httpClient);
+
+        factory.start();
+
+        /* sanity check */
+        assertTrue(mockingDetails(httpClient).getInvocations().isEmpty());
+
+        Function<BatchRequest, Boolean> batchListener = factory.createBatchListener(mock(FailoverPolicy.class));
+
+        // when
+        batchListener.apply(mock(BatchRequest.class));
+
+        // then
+        verify(httpClient, VerificationModeFactory.times(1)).start();
+
+    }
+
+    @Test
+    public void setupOpsReturnsTheSameInstance() {
+
+        // given
+        HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
+
+        // when
+        OperationFactory operationFactory1 = factory.setupOperationFactory();
+        OperationFactory operationFactory2 = factory.setupOperationFactory();
+
+        // then
+        assertSame(operationFactory1, operationFactory2);
+
+    }
+
+    private Response responseMock(HttpClient httpClient, boolean isSucceeded) {
+        return responseMock(httpClient, isSucceeded, new AtomicReference<>());
+    }
+
+    private Response responseMock(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) {
+        BatchResult result = mock(BatchResult.class);
+        when(httpClient.execute(any(), any())).thenAnswer(invocation -> {
+            GenericRequest request = invocation.getArgument(0);
+            argCaptor.set(((ByteBuf)request.serialize().getSource()).copy());
+            return result;
+        });
+        when(result.getErrorMessage()).thenReturn("IndexTemplate not added");
+
+        when(result.isSucceeded()).thenReturn(isSucceeded);
+        when(result.getResponseCode()).thenReturn(isSucceeded ? 200 : 0);
+
+        return result;
+    }
+
+    private HCHttp createTestObjectFactory(HttpClient httpClient, BlockingResponseHandler<BasicResponse> blockingResponseHandler) {
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withValueResolver(ValueResolver.NO_OP);
+
+        return Mockito.spy(new TestHCHttp(builder) {
+            @Override
+            public HttpClient createClient() {
+                return httpClient;
+            }
+
+            @Override
+            BlockingResponseHandler<BasicResponse> createBlockingResponseHandler() {
+                return blockingResponseHandler;
+            }
+        });
+    }
+
+    private HCHttp createTestObjectFactory(HttpClient httpClient) {
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withValueResolver(ValueResolver.NO_OP);
+
+        return Mockito.spy(new TestHCHttp(builder) {
+            @Override
+            public HttpClient createClient() {
+                return httpClient;
+            }
+        });
+    }
+
     private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
         CompositeByteBuf buffer = ByteBufItemSourceTest.createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
@@ -671,10 +1051,10 @@ public class HCHttpTest {
     public void lifecycleStartDoesntStartClient() {
 
         // given
-        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder().build());
+        HttpClient client = mock(HttpClient.class);
+        HCHttp objectFactory = createTestObjectFactory(client);
         when(objectFactory.isStarted()).thenAnswer(falseOnlyOnce());
 
-        HttpClient client = mock(HttpClient.class);
         when(objectFactory.createClient()).thenReturn(client);
 
         // when
@@ -791,4 +1171,11 @@ public class HCHttpTest {
         }
 
     }
+
+    private static class TestHCHttp extends HCHttp {
+        public TestHCHttp(Builder builder) {
+            super(builder);
+        }
+    }
+
 }

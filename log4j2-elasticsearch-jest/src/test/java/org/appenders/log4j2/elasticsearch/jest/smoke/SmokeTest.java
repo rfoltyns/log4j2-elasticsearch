@@ -30,11 +30,14 @@ import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.ILMPolicy;
+import org.appenders.log4j2.elasticsearch.ILMPolicyPlugin;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
+import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
-import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
@@ -66,6 +69,7 @@ public class SmokeTest extends SmokeTestBase {
         final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
         final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
+        final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-jest");
 
         JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
         if (buffered) {
@@ -93,7 +97,8 @@ public class SmokeTest extends SmokeTestBase {
                 .withIoThreadCount(8)
                 .withDefaultMaxTotalConnectionPerRoute(8)
                 .withMaxTotalConnection(8)
-                .withMappingType("_doc");
+                .withMappingType("_doc")
+                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
 
         if (secured) {
             jestHttpObjectFactoryBuilder.withServerUris("https://localhost:9200")
@@ -103,8 +108,14 @@ public class SmokeTest extends SmokeTestBase {
         }
 
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
-                .withName("log4j2-elasticsearch-programmatic-test-template")
+                .withName(indexName + "-index-template")
                 .withPath("classpath:indexTemplate-7.json")
+                .build();
+
+        ILMPolicy ilmPolicy = new ILMPolicyPlugin.Builder()
+                .withName(indexName + "-ilm-policy")
+                .withRolloverAlias(indexName)
+                .withPath("classpath:ilmPolicy-7.json")
                 .build();
 
         KeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(2);
@@ -113,21 +124,20 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
-                .withIndexTemplate(indexTemplate)
                 .withFailoverPolicy(ChronicleMapRetryFailoverPolicy.newBuilder()
                         .withKeySequenceSelector(keySequenceSelector)
-                        .withFileName(resolveChronicleMapFilePath("log4j2-elasticsearch-jest.chronicleMap"))
+                        .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))
                         .withAverageValueSize(2048)
                         .withNumberOfEntries(1000000)
                         .withBatchSize(5000)
                         .withRetryDelay(3000)
                         .withMonitored(true)
                         .build())
+                .withSetupOpSources(indexTemplate, ilmPolicy)
                 .build();
 
-        IndexNameFormatter indexNameFormatter = RollingIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2-elasticsearch-jest")
-                .withPattern("yyyy-MM-dd-HH")
+        IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
+                .withIndexName(indexName)
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()

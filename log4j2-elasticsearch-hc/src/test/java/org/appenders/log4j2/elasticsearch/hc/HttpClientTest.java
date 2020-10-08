@@ -38,8 +38,11 @@ import org.apache.http.nio.protocol.BasicAsyncResponseConsumer;
 import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.protocol.HttpContext;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,6 +59,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
@@ -93,6 +97,11 @@ public class HttpClientTest {
 
     @Captor
     private ArgumentCaptor<HttpAsyncResponseConsumer> asyncConsumerCaptor;
+
+    @After
+    public void tearDown() {
+        InternalLogging.setLogger(null);
+    }
 
     @Test
     public void createClientRequestCreatesPostRequest() throws IOException {
@@ -364,9 +373,11 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackDoesNotRethrowOnResponseHandlerExceptions() throws IOException {
+    public void executeAsyncCallbackDoesNotRethrowOnResponseHandlerExceptions() {
 
         // given
+        Logger logger = mockTestLogger();
+
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
         RuntimeException testException = spy(new RuntimeException("test exception"));
         doThrow(testException).when(responseHandler).failed(any(Exception.class));
@@ -379,7 +390,7 @@ public class HttpClientTest {
         asyncCallback.failed(exception);
 
         // then
-        verify(testException).getMessage();
+        verify(logger).error(eq("Callback failed"), eq(testException));
 
     }
 

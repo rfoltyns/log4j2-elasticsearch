@@ -21,14 +21,18 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory.Builder;
 import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -50,12 +54,16 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.function.Function;
 
+import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -71,10 +79,9 @@ public class BulkProcessorObjectFactoryTest {
 
 
     public static Builder createTestObjectFactoryBuilder() {
-        Builder builder = BulkProcessorObjectFactory.newBuilder()
+        return BulkProcessorObjectFactory.newBuilder()
                 .withServerUris(TEST_SERVER_URIS)
                 .withClientSettings(ClientSettings.newBuilder().build());
-        return builder;
     }
 
     @Test(expected = ConfigurationException.class)
@@ -322,7 +329,87 @@ public class BulkProcessorObjectFactoryTest {
         expectedException.expectMessage(expectedMessage);
 
         // when
-        factory.execute(mock(IndexTemplate.class));
+        factory.execute(IndexTemplateTest.createTestIndexTemplateBuilder().build());
+
+    }
+
+    @Test
+    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided()
+    {
+
+        // given
+        BulkProcessorObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withValueResolver(null);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        // when
+        factory.addOperation(factory.setupOperationFactory().create(IndexTemplateTest.createTestIndexTemplateBuilder()
+                .withSource("${unresolved}")
+                .withPath(null)
+                .build()));
+
+    }
+
+    @Test
+    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided()
+    {
+
+        // given
+        Configuration configuration = mock(Configuration.class);
+        StrSubstitutor strSubstitutor = mock(StrSubstitutor.class);
+        when(strSubstitutor.replace((String)any())).thenReturn(UUID.randomUUID().toString());
+
+        when(configuration.getStrSubstitutor()).thenReturn(strSubstitutor);
+
+        BulkProcessorObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withValueResolver(null)
+                .withConfiguration(configuration);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        verify(configuration).getStrSubstitutor();
+        verify(strSubstitutor).replace(eq(expectedSource));
+
+    }
+
+    @Test
+    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided()
+    {
+
+        // given
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(anyString())).thenReturn(UUID.randomUUID().toString());
+
+        BulkProcessorObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withConfiguration(mock(Configuration.class))
+                .withValueResolver(valueResolver);
+
+        BulkProcessorObjectFactory factory = builder.build();
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        verify(valueResolver).resolve(eq(expectedSource));
 
     }
 

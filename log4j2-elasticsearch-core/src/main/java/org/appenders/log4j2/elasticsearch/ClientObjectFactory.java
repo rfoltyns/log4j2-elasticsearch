@@ -30,6 +30,7 @@ import java.util.function.Function;
  * <li> the client itself
  * <li> batch items creators (client-specific batch objects)
  * <li> batch processing listeners
+ * <li> pre-batch setup operations (client-specific setup requests)
  * </ul>
  * <p>
  * Implementations of this class MUST provide a set of client- and {@link BatchEmitter}-compatible objects
@@ -73,7 +74,7 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle 
     /**
      * Updates target with index template
      * @param indexTemplate index template request
-     * @deprecated will be replaced by {@link #addOperation(Operation)} in future releases
+     * @deprecated As of 1.6, this method will be removed, use {@link #addOperation(Operation)} instead
      */
     @Deprecated
     void execute(IndexTemplate indexTemplate);
@@ -85,6 +86,15 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle 
      * @param operation operation to be executed
      */
     default void addOperation(Operation operation) {}
+
+    /**
+     * MUST return an instance of {@link OperationFactory}
+     *
+     * Since 1.5
+     *
+     * @return {@link OperationFactory} instance
+     */
+    OperationFactory setupOperationFactory();
 
     /*
      * LIFECYCLE
@@ -104,5 +114,4 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle 
 
     @Override
     default boolean isStopped() { return true; }
-
 }

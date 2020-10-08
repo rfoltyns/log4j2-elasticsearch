@@ -94,7 +94,7 @@ public class BlockingResponseHandlerTest {
     }
 
     @Test
-    public void deserializesResponseUsinGivenReader() throws IOException {
+    public void deserializesResponseUsingGivenReader() throws IOException {
 
         // given
         ObjectReader mockedObjectReader = mock(ObjectReader.class);
@@ -108,6 +108,23 @@ public class BlockingResponseHandlerTest {
 
         // then
         verify(mockedObjectReader).readValue(any(InputStream.class));
+
+    }
+
+    @Test
+    public void deserializeResponseFallsBackOnNoInputStream() throws IOException {
+
+        // given
+        ObjectReader mockedObjectReader = mock(ObjectReader.class);
+        Response expectedResponse = mock(Response.class);
+        BlockingResponseHandler<Response> handler = new BlockingResponseHandler<>(
+                mockedObjectReader, ex -> expectedResponse);
+
+        // when
+        Response response = handler.deserializeResponse(null);
+
+        // then
+        assertEquals(expectedResponse, response);
 
     }
 

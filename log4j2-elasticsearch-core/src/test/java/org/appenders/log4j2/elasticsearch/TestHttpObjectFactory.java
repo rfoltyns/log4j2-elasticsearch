@@ -29,6 +29,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Function;
 
 public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, BulkEmitterTest.TestBatch> {
@@ -101,6 +102,23 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
         }
     }
 
+    @Override
+    public OperationFactory setupOperationFactory() {
+        return new SetupOperationFactory() {
+            @Override
+            public Operation indexTemplate(IndexTemplate indexTemplate) {
+                SetupStep<Object, Object> dummySetupStep = new DummySetupStep();
+                return () -> Collections.singletonList(dummySetupStep);
+            }
+
+            @Override
+            public Operation ilmPolicy(ILMPolicy ilmPolicy) {
+                SetupStep<Object, Object> dummySetupStep = new DummySetupStep();
+                return () -> Collections.singletonList(dummySetupStep);
+            }
+        };
+    }
+
     protected TestResultHandler<Object> createResultHandler(BulkEmitterTest.TestBatch bulk, Function<BulkEmitterTest.TestBatch, Boolean> failureHandler) {
         return new TestResultHandler<Object>() {
         };
@@ -167,4 +185,16 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
 
     }
 
+    private class DummySetupStep extends SetupStep<Object, Object> {
+
+        @Override
+        public Object createRequest() {
+            return null;
+        }
+
+        @Override
+        public Result onResponse(Object response) {
+            return null;
+        }
+    }
 }

@@ -21,12 +21,15 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
-import io.searchbox.action.TemplateActionIntrospector;
+import io.searchbox.action.GenericJestRequestIntrospector;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
-import io.searchbox.indices.template.TemplateAction;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,7 +39,9 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactoryTest.createTestObjectFactoryBuilder;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,10 +49,15 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class AdminOperationsTest {
+public class OperationFactoryTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @After
+    public void tearDown() {
+        InternalLogging.setLogger(null);
+    }
 
     @Test
     public void passesIndexTemplateToClient() throws IOException {
@@ -66,11 +76,14 @@ public class AdminOperationsTest {
 
         String expectedPayload = indexTemplate.getSource();
 
+        OperationFactory operationFactory = factory.setupOperationFactory();
+        factory.addOperation(operationFactory.create(indexTemplate));
+
         // when
-        factory.execute(indexTemplate);
+        factory.executePreBatchOperations();
 
         // then
-        ArgumentCaptor<TemplateAction> requestArgumentCaptor = ArgumentCaptor.forClass(TemplateAction.class);
+        ArgumentCaptor<GenericJestRequest> requestArgumentCaptor = ArgumentCaptor.forClass(GenericJestRequest.class);
         verify(jestClient).execute(requestArgumentCaptor.capture());
 
         String actualPayload = extractPayload(requestArgumentCaptor.getValue());
@@ -94,8 +107,11 @@ public class AdminOperationsTest {
                 .withName("testName")
                 .build());
 
+        OperationFactory operationFactory = factory.setupOperationFactory();
+        factory.addOperation(operationFactory.create(indexTemplate));
+
         // when
-        factory.execute(indexTemplate);
+        factory.executePreBatchOperations();
 
         // then
         verify(mockedJestResult).getErrorMessage();
@@ -117,8 +133,11 @@ public class AdminOperationsTest {
                 .withName("testName")
                 .build());
 
+        OperationFactory operationFactory = factory.setupOperationFactory();
+        factory.addOperation(operationFactory.create(indexTemplate));
+
         // when
-        factory.execute(indexTemplate);
+        factory.executePreBatchOperations();
 
         // then
         verify(mockedJestResult, never()).getErrorMessage();
@@ -129,6 +148,9 @@ public class AdminOperationsTest {
     public void exceptionMessageIsRetrievedOnIndexTemplateIOException() {
 
         //given
+        Logger logger = mockTestLogger();
+        InternalLogging.setLogger(logger);
+
         JestHttpObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
 
         final String expectedMessage = "test-exception";
@@ -143,12 +165,16 @@ public class AdminOperationsTest {
                 .withName("testName")
                 .build());
 
+        OperationFactory operationFactory = factory.setupOperationFactory();
+        factory.addOperation(operationFactory.create(indexTemplate));
+
         // when
-        factory.execute(indexTemplate);
+        factory.executePreBatchOperations();
 
         // then
-        verify(testException).getMessage();
-
+        ArgumentCaptor<Object[]> captor = ArgumentCaptor.forClass(Object[].class);
+        verify(logger).error(any(), captor.capture());
+        assertTrue(captor.getAllValues().contains(expectedMessage));
     }
 
     private JestResult mockedJestResult(JestClient jestClient, boolean isSucceeded) throws IOException {
@@ -169,8 +195,8 @@ public class AdminOperationsTest {
         return jestClient;
     }
 
-    private String extractPayload(TemplateAction templateAction) {
-        return new TemplateActionIntrospector().getPayload(templateAction);
+    private String extractPayload(GenericJestRequest templateAction) {
+        return GenericJestRequestIntrospector.getPayload(templateAction);
     }
 
     private class TestException extends IOException {

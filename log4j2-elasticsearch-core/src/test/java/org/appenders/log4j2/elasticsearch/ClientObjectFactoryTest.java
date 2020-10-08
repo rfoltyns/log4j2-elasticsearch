@@ -63,6 +63,11 @@ public class ClientObjectFactoryTest {
 
             }
 
+            @Override
+            public OperationFactory setupOperationFactory() {
+                return null;
+            }
+
         };
 
         // when

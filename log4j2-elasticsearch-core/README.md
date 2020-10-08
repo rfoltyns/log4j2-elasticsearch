@@ -116,6 +116,45 @@ Since 1.4.2, template can include variables resolvable with [Log4j2 Lookups](htt
 
 NOTE: Be aware that template parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
 
+### Index lifecycle management
+Since 1.5, [ILM Policy](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/index-lifecycle-management.html) can be created during appender startup. Policy can be loaded from specified file or defined directly in the XML config:
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <ILMPolicy name="policy1" path="<absolute_path_or_classpath>" />
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+or
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <ILMPolicy name="policy1" rolloverAlias="alias1" >
+            {
+                // your ILM policy in JSON format
+            }
+            </ILMPolicy>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+Policy document can include variables resolvable with [Log4j2 Lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html) or progammatically provided [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java). See examples: [ILM policy](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/ilmPolicy-7.json), [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
+
+NOTE: This feature is supported by [log4j2-elasticsearch-jest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest) and [log4j2-elasticsearch-hc](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc) modules. ILM was introduced to Elasticsearch in version 7, so `log4j2-elasticsearch(x)-bulkprocessor` modules can't use this API.
+
+NOTE: Be aware that policy parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
+
 ### Message output
 
 There are numerous ways to generate JSON output:

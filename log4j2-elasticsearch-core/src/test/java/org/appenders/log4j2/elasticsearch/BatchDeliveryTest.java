@@ -36,8 +36,6 @@ import org.mockito.ArgumentCaptor;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_INDEX_TEMPLATE;
-import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.TEST_PATH;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,8 +72,7 @@ public class BatchDeliveryTest {
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
                 .withClientObjectFactory(createTestObjectFactoryBuilder().build()))
-                .withFailoverPolicy(new NoopFailoverPolicy())
-                .withIndexTemplate(new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH));
+                .withFailoverPolicy(new NoopFailoverPolicy());
     }
 
     @Test
@@ -124,6 +121,31 @@ public class BatchDeliveryTest {
         ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
         verify(LifeCycle.of(failoverPolicy)).stop(captor.capture(), anyBoolean());
         assertEquals((Long) expectedShutdownDelayMillis, captor.getValue());
+
+    }
+
+    @Test
+    public void builderConfiguresSetupOpSources() {
+
+        // given
+        ClientObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
+
+        OperationFactory operationFactory = mock(OperationFactory.class);
+        when(clientObjectFactory.setupOperationFactory()).thenReturn(operationFactory);
+
+        IndexTemplate indexTemplate = mock(IndexTemplate.class);
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withSetupOpSources(indexTemplate)
+                .withClientObjectFactory(clientObjectFactory);
+
+        AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+
+        // when
+        asyncBatchDelivery.start();
+
+        // then
+        verify(operationFactory).create(eq(indexTemplate));
+        verify(clientObjectFactory).addOperation(any());
 
     }
 
@@ -218,6 +240,7 @@ public class BatchDeliveryTest {
         TestHttpObjectFactory objectFactory = spy(createTestObjectFactoryBuilder().build());
 
         IndexTemplate indexTemplate = mock(IndexTemplate.class);
+        when(indexTemplate.getType()).thenReturn(IndexTemplate.TYPE_NAME);
 
         BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withClientObjectFactory(objectFactory)
@@ -328,7 +351,7 @@ public class BatchDeliveryTest {
                 TEST_DELIVERY_INTERVAL,
                 createTestObjectFactoryBuilder().build(),
                 new NoopFailoverPolicy(),
-                null) {
+                IndexTemplateTest.createTestIndexTemplateBuilder().build()) {
             @Override
             protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
                 return batchEmitterFactory;
@@ -519,7 +542,6 @@ public class BatchDeliveryTest {
         }
 
     }
-
 
     private class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
 

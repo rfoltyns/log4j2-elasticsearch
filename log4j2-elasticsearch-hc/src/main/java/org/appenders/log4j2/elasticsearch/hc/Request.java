@@ -24,7 +24,7 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 
 import java.io.IOException;
 
-public interface Request<T extends Response> {
+public interface Request {
 
     String getURI();
 

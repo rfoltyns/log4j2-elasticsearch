@@ -21,12 +21,11 @@ package io.searchbox.action;
  */
 
 
+import org.appenders.log4j2.elasticsearch.jest.GenericJestRequest;
 
-import io.searchbox.indices.template.TemplateAction;
+public class GenericJestRequestIntrospector {
 
-public class TemplateActionIntrospector {
-
-    public String getPayload(TemplateAction templateAction) {
+    public static String getPayload(GenericJestRequest templateAction) {
         return (String) templateAction.payload;
     }
 

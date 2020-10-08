@@ -4,7 +4,7 @@
 
     <Appenders>
         <Elasticsearch name="elasticsearchAsyncBatch">
-            <RollingIndexName indexName="log4j2_test" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
+            <IndexName indexName="log4j2-elasticsearch-hc" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
                 <NonEmptyFilter/>
@@ -17,7 +17,8 @@
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="10000" >
-                <IndexTemplate name="test_template" path="classpath:indexTemplate-7.json" />
+                <IndexTemplate name="log4j2-elasticsearch-hc" path="classpath:indexTemplate-7.json" />
+                <ILMPolicy name="log4j2-elasticsearch-hc-ilm-policy" rolloverAlias="log4j2-elasticsearch-hc" path="classpath:ilmPolicy-7.json" />
                 <HCHttp serverUris="http://localhost:9200"
                               connTimeout="500"
                               readTimeout="30000"

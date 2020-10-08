@@ -26,7 +26,7 @@
     <Appenders>
         <Console name="CONSOLE" />
         <Elasticsearch name="elasticsearchAsyncBatch">
-            <RollingIndexName indexName="log4j2_test_jest" pattern="yyyy-MM-dd-HH" timeZone="Europe/Warsaw" />
+            <IndexName indexName="log4j2-elasticsearch-jest" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
                 <VirtualProperty name="hostname" value="$${env:hostname:-undefined}" />
@@ -38,7 +38,8 @@
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="10000"
                                deliveryInterval="3000" >
-                <IndexTemplate name="test_template_jest" path="classpath:indexTemplate-7.json" />
+                <IndexTemplate name="log4j2-elasticsearch-jest-index-template" path="classpath:indexTemplate-7.json" />
+                <ILMPolicy name="log4j2-elasticsearch-jest-ilm-policy" rolloverAlias="log4j2-elasticsearch-jest" path="classpath:ilmPolicy-7.json" />
                 <JestBufferedHttp serverUris="https://localhost:9200"
                     connTimeout="500"
                     readTimeout="30000"

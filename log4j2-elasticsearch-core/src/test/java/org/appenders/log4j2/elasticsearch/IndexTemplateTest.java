@@ -62,6 +62,7 @@ public class IndexTemplateTest {
         assertNotNull(indexTemplate);
         assertNotNull(indexTemplate.getName());
         assertNotNull(indexTemplate.getSource());
+        assertEquals(IndexTemplate.TYPE_NAME, indexTemplate.getType());
     }
 
     @Test

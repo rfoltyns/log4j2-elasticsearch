@@ -32,24 +32,41 @@ import org.apache.logging.log4j.core.config.plugins.PluginValue;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
 
-@Plugin(name = IndexTemplate.PLUGIN_NAME, category = Node.CATEGORY, elementType = IndexTemplate.ELEMENT_TYPE, printObject = true)
-public class IndexTemplate {
+@Plugin(name = IndexTemplate.PLUGIN_NAME, category = Node.CATEGORY, elementType = "setupOperation", printObject = true)
+public class IndexTemplate implements OpSource {
 
+    public static final String TYPE_NAME = "IndexTemplate";
     public static final String PLUGIN_NAME = "IndexTemplate";
-    public static final String ELEMENT_TYPE = "indexTemplate";
 
     private final String name;
     private final String source;
 
+    /**
+     * @param name Index template name
+     * @param source Index template document
+     */
     protected IndexTemplate(String name, String source) {
         this.name = name;
         this.source = source;
     }
 
+    /**
+     * @return Index template name
+     */
     public String getName() {
         return name;
     }
 
+    @Override
+    public String getType() {
+        return TYPE_NAME;
+    }
+
+
+    /**
+     * @return Index template document
+     */
+    @Override
     public String getSource() {
         return this.source;
     }
@@ -61,7 +78,6 @@ public class IndexTemplate {
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<IndexTemplate> {
 
-        public static final String CLASSPATH_PREFIX = "classpath:";
         @PluginAttribute("name")
         @Required
         private String name;

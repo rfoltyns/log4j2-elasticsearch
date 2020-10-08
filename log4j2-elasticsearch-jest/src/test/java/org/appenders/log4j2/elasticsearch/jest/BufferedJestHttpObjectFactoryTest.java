@@ -273,7 +273,7 @@ public class BufferedJestHttpObjectFactoryTest {
 
         // given
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
-        ClientObjectFactory<JestClient, Bulk> config = spy(builder.build());
+        BufferedJestHttpObjectFactory config = spy(builder.build());
 
         JestClient mockedJestClient = mock(JestClient.class);
         when(config.createClient()).thenReturn(mockedJestClient);

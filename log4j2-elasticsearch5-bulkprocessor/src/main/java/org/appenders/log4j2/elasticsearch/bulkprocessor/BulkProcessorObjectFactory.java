@@ -21,11 +21,13 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -34,14 +36,15 @@ import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
-import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestIntrospector;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 
 import java.net.InetAddress;
@@ -63,6 +66,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     private final UriParser uriParser = new UriParser();
     private final Auth auth;
     private final ClientSettings clientSettings;
+    private final ValueResolver valueResolver;
 
     private TransportClient client;
 
@@ -71,9 +75,18 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     }
 
     protected BulkProcessorObjectFactory(Collection<String> serverUris, Auth auth, ClientSettings clientSettings) {
+        this(serverUris, auth, clientSettings, ValueResolver.NO_OP);
+    }
+
+    protected BulkProcessorObjectFactory(
+            Collection<String> serverUris,
+            Auth auth,
+            ClientSettings clientSettings,
+            ValueResolver valueResolver) {
         this.serverUris = serverUris;
         this.auth = auth;
         this.clientSettings = clientSettings;
+        this.valueResolver = valueResolver;
     }
 
     @Override
@@ -132,11 +145,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     @Override
     public void execute(IndexTemplate indexTemplate) {
         try {
-            createClient().admin().indices().putTemplate(
-                    new PutIndexTemplateRequest()
-                            .name(indexTemplate.getName())
-                            .source(indexTemplate.getSource(), XContentType.JSON)
-            );
+            setupOperationFactory().create(indexTemplate).execute();
         } catch (Exception e) {
             throw new ConfigurationException(e.getMessage(), e);
         }
@@ -149,6 +158,11 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         } catch (Exception e) {
             getLogger().error("Operation failed: {}", e.getMessage());
         }
+    }
+
+    @Override
+    public OperationFactory setupOperationFactory() {
+        return new BulkProcessorSetupOperationFactory(step -> step.execute(createClient()), valueResolver);
     }
 
     @PluginBuilderFactory
@@ -170,12 +184,36 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
         @PluginElement(ClientSettings.ELEMENT_TYPE)
         private ClientSettings clientSettings = DEFAULT_CLIENT_SETTINGS;
 
+        @PluginConfiguration
+        private Configuration configuration;
+
+        private ValueResolver valueResolver;
+
         @Override
         public BulkProcessorObjectFactory build() {
             if (serverUris == null) {
                 throw new ConfigurationException("No serverUris provided for " + PLUGIN_NAME);
             }
-            return new BulkProcessorObjectFactory(Arrays.asList(serverUris.split(";")), auth, clientSettings);
+            return new BulkProcessorObjectFactory(
+                    Arrays.asList(serverUris.split(";")),
+                    auth,
+                    clientSettings,
+                    getValueResolver());
+        }
+
+        private ValueResolver getValueResolver() {
+            // allow programmatic override
+            if (valueResolver != null) {
+                return valueResolver;
+            }
+
+            // handle XML config
+            if (configuration != null) {
+                return new Log4j2Lookup(configuration.getStrSubstitutor());
+            }
+
+            // fallback to no-op
+            return ValueResolver.NO_OP;
         }
 
         public Builder withServerUris(String serverUris) {
@@ -190,6 +228,16 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
 
         public Builder withClientSettings(ClientSettings clientSettings) {
             this.clientSettings = clientSettings;
+            return this;
+        }
+
+        public Builder withConfiguration(Configuration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public Builder withValueResolver(ValueResolver valueResolver) {
+            this.valueResolver = valueResolver;
             return this;
         }
 

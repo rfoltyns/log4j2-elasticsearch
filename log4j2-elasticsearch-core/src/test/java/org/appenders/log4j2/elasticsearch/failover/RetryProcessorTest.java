@@ -29,9 +29,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 
-import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequenceConfig;
 import static org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelectorTest.DEFAULT_TEST_SEQUENCE_ID;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
+import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequenceConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;

@@ -32,13 +32,13 @@ import io.searchbox.core.BulkResult;
 import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
-import io.searchbox.indices.template.PutTemplate;
-import io.searchbox.indices.template.TemplateAction;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -47,7 +47,12 @@ import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.appenders.log4j2.elasticsearch.Result;
+import org.appenders.log4j2.elasticsearch.SetupStep;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
@@ -77,12 +82,12 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final boolean discoveryEnabled;
     private final Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth;
     protected final String mappingType;
+    protected final FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps;
     protected final BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
-
-    protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps;
-
+    private final ValueResolver valueResolver;
+    private OperationFactory setupOps;
     private JestClient client;
 
     protected JestHttpObjectFactory(Builder builder) {
@@ -97,6 +102,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.mappingType = builder.mappingType;
         this.failedItemOps = builder.failedItemOps;
         this.backoffPolicy = builder.backoffPolicy;
+        this.valueResolver = builder.valueResolver;
     }
 
     @Override
@@ -138,14 +144,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             @Override
             public Boolean apply(Bulk bulk) {
 
-                while (!operations.isEmpty()) {
-                    try {
-                        operations.remove().execute();
-                    } catch (Exception e) {
-                        // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
-                        getLogger().error("Deferred operation failed: {}", e.getMessage());
-                    }
-                }
+                executePreBatchOperations();
 
                 if (backoffPolicy.shouldApply(bulk)) {
                     getLogger().warn("Backoff applied. Request rejected.");
@@ -161,6 +160,22 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             }
 
         };
+    }
+
+    /* visible for testing */
+    int executePreBatchOperations() {
+        int executionCount = 0;
+        while (!operations.isEmpty()) {
+            try {
+                operations.remove().execute();
+            } catch (Exception e) {
+                // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
+                getLogger().error("Deferred operation failed: {}", e.getMessage());
+            } finally {
+                executionCount++;
+            }
+        }
+        return executionCount;
     }
 
     @Override
@@ -196,20 +211,34 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     @Override
     public void execute(IndexTemplate indexTemplate) {
-        TemplateAction templateAction = new PutTemplate.Builder(indexTemplate.getName(), indexTemplate.getSource()).build();
         try {
-            JestResult result = createClient().execute(templateAction);
-            if (!result.isSucceeded()) {
-                getLogger().error("IndexTemplate not added: " + result.getErrorMessage());
-            }
+            setupOperationFactory().create(indexTemplate).execute();
+        } catch (Exception e) {
+            getLogger().error("IndexTemplate not added", e);
+        }
+    }
+
+    private Result executeOperation(SetupStep<GenericJestRequest, JestResult> operation) {
+        try {
+            JestResult result = createClient().execute(operation.createRequest());
+            return operation.onResponse(result);
         } catch (IOException e) {
-            getLogger().error("IndexTemplate not added: " + e.getMessage());
+            return operation.onException(e);
         }
     }
 
     @Override
     public void addOperation(Operation operation) {
         operations.add(operation);
+    }
+
+    @Override
+    public OperationFactory setupOperationFactory() {
+        // FIXME: move to constructor
+        if (setupOps == null) {
+            setupOps = new JestSetupOperationFactory(this::executeOperation, valueResolver);
+        }
+        return setupOps;
     }
 
     protected JestResultHandler<JestResult> createResultHandler(Bulk bulk, Function<Bulk, Boolean> failureHandler) {
@@ -238,6 +267,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         return new Builder();
     }
 
+    /* visible for testing */
+    ValueResolver valueResolver() {
+        return valueResolver;
+    }
+
     // visible for testing
     ClientProvider<JestClient> getClientProvider(WrappedHttpClientConfig.Builder clientConfigBuilder) {
         return new JestClientProvider(clientConfigBuilder);
@@ -247,6 +281,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         private static final BackoffPolicy<AbstractAction<BulkResult>> DEFAULT_BACKOFF_POLICY =
                 new NoopBackoffPolicy<>();
+
+        // TODO move to JestHttpPlugin
+        @PluginConfiguration
+        private Configuration configuration;
 
         @PluginBuilderAttribute
         @Required(message = "No serverUris provided for JestClientConfig")
@@ -274,9 +312,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         protected Auth auth;
 
         /**
-         * Since 1.3.5, index mapping type can be specified to ensure compatibility with ES 7 clusters
+         * Index mapping type can be specified to ensure compatibility with ES 7 clusters
+         * <br>
+         * {@code _doc} by default
          *
-         * By default, "index" until 1.4, then "_doc"
+         * Since 1.3.5
          */
         @PluginBuilderAttribute
         protected String mappingType = DEFAULT_MAPPING_TYPE;
@@ -286,12 +326,36 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps = failedItemOps();
 
+        protected ValueResolver valueResolver;
+
         @Override
         public JestHttpObjectFactory build() {
 
             validate();
 
+            resolveLazyProperties();
+
             return new JestHttpObjectFactory(this);
+        }
+
+        protected void resolveLazyProperties() {
+            this.valueResolver = getValueResolver();
+        }
+
+        private ValueResolver getValueResolver() {
+
+            // allow programmatic override
+            if (valueResolver != null) {
+                return valueResolver;
+            }
+
+            // handle XML config
+            if (configuration != null) {
+                return new Log4j2Lookup(configuration.getStrSubstitutor());
+            }
+
+            // fallback to no-op
+            return ValueResolver.NO_OP;
         }
 
         protected FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps() {
@@ -354,6 +418,16 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         public Builder withBackoffPolicy(BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy) {
             this.backoffPolicy = backoffPolicy;
+            return this;
+        }
+
+        public Builder withConfiguration(Configuration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public Builder withValueResolver(ValueResolver valueResolver) {
+            this.valueResolver = valueResolver;
             return this;
         }
 

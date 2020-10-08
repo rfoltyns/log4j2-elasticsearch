@@ -27,16 +27,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -44,8 +43,14 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.Result;
+import org.appenders.log4j2.elasticsearch.SetupStep;
+import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
@@ -88,7 +93,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     protected final BackoffPolicy<BatchRequest> backoffPolicy;
 
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
-
+    private final ValueResolver valueResolver;
+    private final PooledItemSourceFactory operationFactoryItemSourceFactory;
+    private final HCSetupOperationFactory setupOps;
     private HttpClient client;
 
     public HCHttp(Builder builder) {
@@ -105,6 +112,11 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         this.failedItemOps = builder.failedItemOps;
         this.objectReader = configuredReader();
         this.backoffPolicy = builder.backoffPolicy;
+
+        // FIXME: setupOps should be injected here..
+        this.valueResolver = builder.valueResolver;
+        this.operationFactoryItemSourceFactory = createSetupOpsItemSourceFactory();
+        this.setupOps = createSetupOps();
     }
 
     @Override
@@ -195,7 +207,6 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     ClientProvider<HttpClient> getClientProvider(HttpClientFactory.Builder httpClientFactoryBuilder) {
         return new HttpClientProvider(httpClientFactoryBuilder);
     }
-
     @Override
     public Collection<String> getServerList() {
         return new ArrayList<>(serverUris);
@@ -254,35 +265,68 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
     @Override
     public void execute(IndexTemplate indexTemplate) {
-
-        ByteBuf byteBuf = UnpooledByteBufAllocator.DEFAULT.buffer(4096)
-                .writeBytes(indexTemplate.getSource().getBytes());
-
-        IndexTemplateRequest request = new IndexTemplateRequest.Builder()
-                .withTemplateName(indexTemplate.getName())
-                .withSource(byteBuf)
-                .build();
-
         try {
-            Function<Exception, BasicResponse> errorResponseTemplate =
-                    (ex) -> new BasicResponse().withErrorMessage("IndexTemplate not added: " + ex.getMessage());
-
-            BlockingResponseHandler<BasicResponse> responseHandler =
-                    new BlockingResponseHandler<>(objectReader, errorResponseTemplate);
-
-            Response result = createClient().execute(request, responseHandler);
-            if (!result.isSucceeded()) {
-                getLogger().error(result.getErrorMessage());
-            }
-        } finally {
-            byteBuf.release();
+            setupOperationFactory().create(indexTemplate).execute();
+        } catch (Exception e) {
+            getLogger().error("IndexTemplate not added", e);
         }
-
     }
 
     @Override
     public void addOperation(Operation operation) {
         operations.add(operation);
+    }
+
+    @Override
+    public OperationFactory setupOperationFactory() {
+        return setupOps;
+    }
+
+    /* visible for testing */
+    ValueResolver valueResolver() {
+        return valueResolver;
+    }
+
+    /* visible for testing */
+    BlockingResponseHandler<BasicResponse> createBlockingResponseHandler() {
+        return new BlockingResponseHandler<>(
+                this.objectReader,
+                createBlockingResponseFallbackHandler()
+        );
+    }
+
+    /* visible for testing */
+    Function<Exception, BasicResponse> createBlockingResponseFallbackHandler() {
+        return (ex) -> {
+            BasicResponse basicResponse = new BasicResponse();
+            if (ex != null) {
+                basicResponse.withErrorMessage(ex.getMessage());
+            }
+            return basicResponse;
+        };
+    }
+
+    private HCSetupOperationFactory createSetupOps() {
+        return new HCSetupOperationFactory(this::execute, valueResolver, operationFactoryItemSourceFactory);
+    }
+
+    private Result execute(SetupStep<Request, Response> setupStep) {
+
+        Response response = createClient().execute(
+                setupStep.createRequest(),
+                createBlockingResponseHandler()
+        );
+
+        return setupStep.onResponse(response);
+
+    }
+
+    private PooledItemSourceFactory createSetupOpsItemSourceFactory() {
+        return PooledItemSourceFactory.newBuilder()
+                .withItemSizeInBytes(4096)
+                .withInitialPoolSize(1)
+                .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build())
+                .build();
     }
 
     /* extension point */
@@ -307,6 +351,10 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         public static final int DEFAULT_RESPONSE_BUFFER_SIZE = 1024 * 1024;
 
         private static final BackoffPolicy<BatchRequest> DEFAULT_BACKOFF_POLICY = new NoopBackoffPolicy<>();
+
+        // TODO move to HCHttpPlugin
+        @PluginConfiguration
+        protected Configuration configuration;
 
         @PluginBuilderAttribute
         @Required(message = "No serverUris provided for " + PLUGIN_NAME)
@@ -344,12 +392,20 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         protected FailedItemOps<IndexRequest> failedItemOps = createFailedItemOps();
 
+        protected ValueResolver valueResolver;
+
         @Override
         public HCHttp build() {
 
             validate();
 
+            resolveLazyProperties();
+
             return new HCHttp(this);
+        }
+
+        private void resolveLazyProperties() {
+            this.valueResolver = getValueResolver();
         }
 
         protected void validate() {
@@ -362,6 +418,22 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             if (backoffPolicy == null) {
                 throw new ConfigurationException("No BackoffPolicy provided for " + PLUGIN_NAME);
             }
+        }
+
+        private ValueResolver getValueResolver() {
+
+            // allow programmatic override
+            if (valueResolver != null) {
+                return valueResolver;
+            }
+
+            // handle XML config
+            if (configuration != null) {
+                return new Log4j2Lookup(configuration.getStrSubstitutor());
+            }
+
+            // fallback to no-op
+            return ValueResolver.NO_OP;
         }
 
         protected FailedItemOps<IndexRequest> createFailedItemOps() {
@@ -423,6 +495,15 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             return this;
         }
 
+        public Builder withConfiguration(Configuration configuration) {
+            this.configuration = configuration;
+            return this;
+        }
+
+        public Builder withValueResolver(ValueResolver valueResolver) {
+            this.valueResolver = valueResolver;
+            return this;
+        }
     }
 
     /**
@@ -448,6 +529,10 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         addOperation(() -> createClient().start());
 
+        if (!operationFactoryItemSourceFactory.isStarted()) {
+            operationFactoryItemSourceFactory.start();
+        }
+
         if (!itemSourceFactory.isStarted()) {
             itemSourceFactory.start();
         }
@@ -469,6 +554,8 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             client.stop();
         }
         itemSourceFactory.stop();
+
+        operationFactoryItemSourceFactory.stop();
 
         state = State.STOPPED;
 

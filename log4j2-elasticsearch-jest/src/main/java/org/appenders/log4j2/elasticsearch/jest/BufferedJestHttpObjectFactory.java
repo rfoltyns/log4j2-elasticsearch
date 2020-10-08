@@ -143,6 +143,8 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
             validate();
 
+            resolveLazyProperties(); // FIXME: this is just wrong.. but should be solved once Log4j2 annotations are pushed to Plugins
+
             return new BufferedJestHttpObjectFactory(this);
         }
 

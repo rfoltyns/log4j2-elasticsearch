@@ -26,11 +26,11 @@ public class BasicResponse implements Response {
     private String errorMessage;
 
     /**
-     * @return true, if {@link #responseCode} is less than 400, false otherwise
+     * @return true, if {@link #responseCode} is higher than 0 and less than 400, false otherwise
      */
     @Override
     public boolean isSucceeded() {
-        return responseCode < 400;
+        return responseCode > 0 && responseCode < 400;
     }
 
     @Override

@@ -32,6 +32,12 @@ import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.failover.RetryListener;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
@@ -46,26 +52,38 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
     private final BatchOperations batchOperations;
     private final BatchEmitter batchEmitter;
 
-    private final IndexTemplate indexTemplate;
     private final ClientObjectFactory<Object, Object> objectFactory;
     private final FailoverPolicy failoverPolicy;
-    private final long delayShutdownInMillis;
+    private final List<OpSource> setupOpSources = new ArrayList<>();
+
+    private final long shutdownDelayMillis;
+
+    protected AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, long shutdownDelayMillis, OpSource[] setupOpSources) {
+        this.batchOperations = objectFactory.createBatchOperations();
+        this.batchEmitter = createBatchEmitterServiceProvider()
+                .createInstance(
+                        batchSize,
+                        deliveryInterval,
+                        objectFactory,
+                        failoverPolicy);
+        this.objectFactory = objectFactory;
+        this.failoverPolicy = failoverPolicy;
+        this.shutdownDelayMillis = shutdownDelayMillis;
+        this.setupOpSources.addAll(Arrays.asList(setupOpSources));
+    }
 
     /**
      * @param builder {@link Builder} instance
      */
     protected AsyncBatchDelivery(Builder builder) {
-        this.batchOperations = builder.clientObjectFactory.createBatchOperations();
-        this.batchEmitter = createBatchEmitterServiceProvider()
-                .createInstance(
-                        builder.batchSize,
-                        builder.deliveryInterval,
-                        builder.clientObjectFactory,
-                        builder.failoverPolicy);
-        this.indexTemplate = builder.indexTemplate;
-        this.objectFactory = builder.clientObjectFactory;
-        this.failoverPolicy = builder.failoverPolicy;
-        this.delayShutdownInMillis = builder.shutdownDelayMillis;
+        this(
+                builder.batchSize,
+                builder.deliveryInterval,
+                builder.clientObjectFactory,
+                builder.failoverPolicy,
+                builder.shutdownDelayMillis,
+                builder.setupOpSources
+        );
     }
 
     /**
@@ -122,6 +140,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
          */
         public static final long DEFAULT_SHUTDOWN_DELAY = 5000L;
 
+
         @PluginElement("elasticsearchClientFactory")
         @Required(message = "No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
         private ClientObjectFactory clientObjectFactory;
@@ -135,11 +154,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         @PluginElement("failoverPolicy")
         private FailoverPolicy failoverPolicy = DEFAULT_FAILOVER_POLICY;
 
-        @PluginElement("indexTemplate")
-        private IndexTemplate indexTemplate;
-
         @PluginBuilderAttribute("shutdownDelayMillis")
         public long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
+
+        @PluginElement("setupOperation")
+        private OpSource[] setupOpSources = new OpSource[0];
 
         @Override
         public AsyncBatchDelivery build() {
@@ -169,8 +188,20 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             return this;
         }
 
+        /**
+         * @param indexTemplate index template to be configured before first batch
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withSetupOpSources(OpSource...)} instead
+         */
+        @Deprecated
         public Builder withIndexTemplate(IndexTemplate indexTemplate) {
-            this.indexTemplate = indexTemplate;
+            this.setupOpSources = addSetupOpSource(indexTemplate);
+            return this;
+        }
+
+        public Builder withSetupOpSources(OpSource... setupOpSources) {
+            this.setupOpSources = addSetupOpSource(setupOpSources);
             return this;
         }
 
@@ -178,8 +209,19 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             this.shutdownDelayMillis = shutdownDelayMillis;
             return this;
         }
-    }
 
+        private OpSource[] addSetupOpSource(OpSource... indexTemplates) {
+
+            List<OpSource> current = new ArrayList<>(Arrays.asList(setupOpSources));
+            current.addAll(Arrays.stream(indexTemplates)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList())
+            );
+
+            return current.toArray(new OpSource[0]);
+        }
+
+    }
     // ==========
     // LIFECYCLE
     // ==========
@@ -191,8 +233,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             objectFactory.start();
         }
 
-        if (indexTemplate != null) {
-            objectFactory.addOperation(() -> objectFactory.execute(indexTemplate));
+        for (OpSource setupOpSource : setupOpSources) {
+            objectFactory.addOperation(objectFactory.setupOperationFactory().create(setupOpSource));
         }
 
         batchEmitter.start();
@@ -215,11 +257,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             // Shutdown MUST happen in background to allow the execution to continue
             // and allow last items flushed by emitter to fail (in case of outage downstream)
             // and get handled properly
-            LifeCycle.of(failoverPolicy).stop(delayShutdownInMillis, true);
+            LifeCycle.of(failoverPolicy).stop(shutdownDelayMillis, true);
         }
 
         if (!batchEmitter.isStopped()) {
-            batchEmitter.stop(delayShutdownInMillis, false);
+            batchEmitter.stop(shutdownDelayMillis, false);
         }
 
         if (!objectFactory.isStopped()) {

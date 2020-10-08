@@ -28,35 +28,50 @@ import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.BulkResult;
 import io.searchbox.core.Index;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.lookup.StrSubstitutor;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
+import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
@@ -84,6 +99,11 @@ public class JestHttpObjectFactoryTest {
         Builder builder = JestHttpObjectFactory.newBuilder();
         builder.withServerUris(TEST_SERVER_URIS);
         return builder;
+    }
+
+    @After
+    public void tearDown() {
+        InternalLogging.setLogger(null);
     }
 
     @Test
@@ -195,6 +215,86 @@ public class JestHttpObjectFactoryTest {
 
         //then
         verify(auth).configure(any());
+    }
+
+    @Test
+    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided()
+    {
+
+        // given
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withValueResolver(null);
+
+        // when
+        JestHttpObjectFactory factory = builder.build();
+
+        // then
+        assertSame(ValueResolver.NO_OP, factory.valueResolver());
+
+    }
+
+    @Test
+    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided()
+    {
+
+        // given
+        Configuration configuration = mock(Configuration.class);
+        StrSubstitutor strSubstitutor = mock(StrSubstitutor.class);
+        when(strSubstitutor.replace((String)any())).thenReturn(UUID.randomUUID().toString());
+
+        when(configuration.getStrSubstitutor()).thenReturn(strSubstitutor);
+
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withValueResolver(null)
+                .withConfiguration(configuration);
+
+        JestHttpObjectFactory factory = builder.build();
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        assertTrue(factory.valueResolver() instanceof Log4j2Lookup);
+        verify(strSubstitutor).replace(eq(expectedSource));
+
+    }
+
+    @Test
+    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided()
+    {
+
+        // given
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(anyString())).thenReturn(UUID.randomUUID().toString());
+
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withConfiguration(mock(Configuration.class))
+                .withValueResolver(valueResolver);
+
+        JestHttpObjectFactory factory = builder.build();
+
+        assertEquals(valueResolver, factory.valueResolver());
+
+        String expectedSource = UUID.randomUUID().toString();
+        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
+                .withName(UUID.randomUUID().toString())
+                .withSource(expectedSource)
+                .withPath(null)
+                .build();
+
+        // when
+        factory.setupOperationFactory().create(indexTemplate);
+
+        // then
+        verify(valueResolver).resolve(eq(expectedSource));
+
     }
 
     @Test
@@ -507,6 +607,63 @@ public class JestHttpObjectFactoryTest {
 
     }
 
+    @Test
+    public void setupOpsReturnsTheSameInstance() {
+
+        // given
+        JestHttpObjectFactory factory = Mockito.spy(createTestObjectFactoryBuilder().build());
+
+        // when
+        OperationFactory operationFactory1 = factory.setupOperationFactory();
+        OperationFactory operationFactory2 = factory.setupOperationFactory();
+
+        // then
+        assertSame(operationFactory1, operationFactory2);
+
+    }
+
+    @Test
+    public void executeIndexTemplateExecutesImmediately() throws Exception {
+
+        // given
+        JestHttpObjectFactory factory = Mockito.spy(createTestObjectFactoryBuilder().build());
+
+        OperationFactory operationFactory = mock(OperationFactory.class);
+        IndexTemplate indexTemplate = mock(IndexTemplate.class);
+        Operation operation = mock(Operation.class);
+
+        when(operationFactory.create(eq(indexTemplate))).thenReturn(operation);
+        when(factory.setupOperationFactory()).thenReturn(operationFactory);
+
+        // when
+        factory.execute(indexTemplate);
+
+        // then
+        verify(operation).execute();
+
+    }
+
+    @Test
+    public void executeErrorsAreLogged() {
+
+        // given
+        JestHttpObjectFactory factory = Mockito.spy(createTestObjectFactoryBuilder().build());
+
+        Logger logger = mockTestLogger();
+
+        RuntimeException testException = spy(new RuntimeException("test exception"));
+        when(factory.setupOperationFactory()).thenAnswer((Answer<OperationFactory>) invocationOnMock -> {
+            throw testException;
+        });
+
+        // when
+        factory.execute(createTestIndexTemplateBuilder().build());
+
+        // then
+        verify(logger).error(eq("IndexTemplate not added"), eq(testException));
+
+    }
+
     // JestClient is started on first execution outside of LifeCycle scope
     // verify that no interactions took place
     @Test
@@ -602,4 +759,5 @@ public class JestHttpObjectFactoryTest {
         }
         return builder.build();
     }
+
 }

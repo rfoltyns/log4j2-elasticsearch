@@ -26,7 +26,9 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 
 /**
  * {@link ItemSource} based index template.
+ * @deprecated As of 2.0, this class will be replaced with {@link GenericRequest}
  */
+@Deprecated
 public class IndexTemplateRequest implements Request {
 
     public static final String HTTP_METHOD_NAME = "PUT";

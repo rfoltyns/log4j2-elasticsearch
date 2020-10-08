@@ -25,6 +25,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
 import org.elasticsearch.client.AdminClient;
 import org.elasticsearch.client.IndicesAdminClient;
@@ -35,20 +36,23 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.IOException;
 
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactoryTest.createTestObjectFactoryBuilder;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "org.w3c.dom.*"})
 @PrepareForTest(TransportClient.class)
 @RunWith(PowerMockRunner.class)
-public class AdminOperationsTest {
+public class OperationFactoryTest {
 
     @Test
     public void passesIndexTemplateToClient() throws IOException {
@@ -70,7 +74,7 @@ public class AdminOperationsTest {
 
         // then
         ArgumentCaptor<PutIndexTemplateRequest> requestArgumentCaptor = ArgumentCaptor.forClass(PutIndexTemplateRequest.class);
-        verify(indicesAdminClient).putTemplate(requestArgumentCaptor.capture());
+        verify(indicesAdminClient).putTemplate(requestArgumentCaptor.capture(), any(ActionListener.class));
 
         String actualPayload = extractPayload(requestArgumentCaptor.getValue());
 
@@ -101,4 +105,3 @@ public class AdminOperationsTest {
     }
 
 }
-

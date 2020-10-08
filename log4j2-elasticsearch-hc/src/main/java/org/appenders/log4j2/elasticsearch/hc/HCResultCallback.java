@@ -20,11 +20,10 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.concurrent.FutureCallback;
-import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +50,10 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
         InputStream inputStream = null;
         T result = null;
         try {
-            inputStream = response.getEntity().getContent();
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
+                inputStream = entity.getContent();
+            }
             result = responseHandler.deserializeResponse(inputStream);
 
             StatusLine statusLine = response.getStatusLine();

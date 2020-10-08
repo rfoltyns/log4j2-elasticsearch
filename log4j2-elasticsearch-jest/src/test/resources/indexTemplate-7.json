@@ -4,7 +4,9 @@
   ],
   "settings": {
     "index": {
-      "refresh_interval": "5s"
+      "refresh_interval": "5s",
+      "lifecycle.name": "log4j2-elasticsearch-jest-ilm-policy",
+      "lifecycle.rollover_alias": "log4j2-elasticsearch-jest"
     }
   },
   "mappings": {
