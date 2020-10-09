@@ -21,7 +21,6 @@ package org.appenders.core.util;
  */
 
 import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.core.logging.Logger;
 import org.junit.After;
 import org.junit.Test;
