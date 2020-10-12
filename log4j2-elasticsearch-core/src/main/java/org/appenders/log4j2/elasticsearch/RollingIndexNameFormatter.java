@@ -74,13 +74,12 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
         this.indexName = indexName;
         this.fastDateFormat = FastDateFormat.getInstance(pattern, timeZone);
         this.patternProcessor = createPatternProcessor(pattern);
-        this.currentName = doFormat(indexName, initTimeInMillis);
         this.separator = separator;
 
-        long previousTime = this.patternProcessor.getNextTime(initTimeInMillis, -1, false);
-        this.patternProcessor.setPrevFileTime(previousTime);
-        this.nextRolloverTime = this.patternProcessor.getNextTime(initTimeInMillis, 0, false);
-        this.currentFileTime = this.nextRolloverTime;
+        this.nextRolloverTime = this.patternProcessor.getNextTime(initTimeInMillis, 1, false);
+        this.currentFileTime = this.patternProcessor.getNextTime(nextRolloverTime, -1, false);
+
+        this.currentName = doFormat(indexName, currentFileTime);
     }
 
     protected PatternProcessor createPatternProcessor(String pattern) {
@@ -117,8 +116,8 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
     private void rollover(String indexName, long eventTimeInMillis) {
         nextRolloverTime = patternProcessor.getNextTime(eventTimeInMillis, 1, false);
-        currentFileTime = patternProcessor.getNextTime(eventTimeInMillis, 0, false);
-        currentName = doFormat(indexName, eventTimeInMillis);
+        currentFileTime = patternProcessor.getNextTime(nextRolloverTime, -1, false);
+        currentName = doFormat(indexName, currentFileTime);
     }
 
     private String doFormat(String indexName, long timeInMillis) {

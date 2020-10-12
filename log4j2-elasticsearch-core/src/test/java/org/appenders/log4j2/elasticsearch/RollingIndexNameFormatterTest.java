@@ -24,6 +24,7 @@ package org.appenders.log4j2.elasticsearch;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.rolling.PatternProcessor;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -71,6 +72,82 @@ public class RollingIndexNameFormatterTest {
     }
 
     @Test
+    public void testWeeklyRollingIndexPattern() {
+        String zoneId = "GMT";
+        Long thursday = getDateLong(zoneId, 15, 23, 59, 59);
+        Long friday = getDateLong(zoneId, 16, 23, 59, 59);
+        Long saturday = getDateLong(zoneId, 17, 23, 59, 59);
+        Long sunday = getDateLong(zoneId, 18, 0, 0, 1);
+        Long monday = getDateLong(zoneId, 19, 0, 0, 1);
+
+        RollingIndexNameFormatter.Builder builder = spy(RollingIndexNameFormatter.newBuilder());
+        RollingIndexNameFormatter formatter1 = getRollingIndexNameFormatter(zoneId, friday, builder, "YYYY-ww");
+
+        LogEvent thursdayLogEvent = getLogEvent(thursday);
+        LogEvent fridayLogEvent = getLogEvent(friday);
+        LogEvent saturdayLogEvent = getLogEvent(saturday);
+        LogEvent sundayLogEvent = getLogEvent(sunday);
+        LogEvent mondayLogEvent = getLogEvent(monday);
+
+        Assert.assertEquals("index-2020-42", formatter1.format(thursdayLogEvent));
+        Assert.assertEquals("index-2020-42", formatter1.format(saturdayLogEvent));
+        Assert.assertEquals("index-2020-43", formatter1.format(mondayLogEvent));
+
+        RollingIndexNameFormatter formatter2 = getRollingIndexNameFormatter(zoneId, friday, builder, "YYYY-ww");
+
+//        Assert.assertEquals("index-2020-42", formatter2.format(fridayLogEvent));
+        Assert.assertEquals("index-2020-43", formatter2.format(sundayLogEvent));
+        Assert.assertEquals("index-2020-43", formatter2.format(mondayLogEvent));
+
+        RollingIndexNameFormatter formatter3 = getRollingIndexNameFormatter(zoneId, friday, builder, "YYYY-ww"); // creating a new formatter instance
+        Assert.assertEquals("index-2020-43", formatter3.format(mondayLogEvent));
+    }
+
+    @Test
+    public void testDailyRollingIndexPattern() {
+        String zoneId = "GMT";
+        Long fridayBeforeMidnight = getDateLong(zoneId, 16, 23, 59, 59);
+        Long afterMidnight = getDateLong(zoneId, 18, 0, 0, 1);
+
+        RollingIndexNameFormatter.Builder builder = spy(RollingIndexNameFormatter.newBuilder());
+        RollingIndexNameFormatter formatter = getRollingIndexNameFormatter(zoneId, fridayBeforeMidnight, builder, "yyyy-MM-dd");
+
+        LogEvent logEvent = getLogEvent(fridayBeforeMidnight);
+        Assert.assertEquals("index-2020-10-16", formatter.format(logEvent));
+
+        LogEvent newWeekEvent = getLogEvent(afterMidnight);
+        Assert.assertEquals("index-2020-10-18", formatter.format(newWeekEvent)); // used to fail, but now it's producing correct index name
+
+        when(builder.getInitTimeInMillis()).thenReturn(afterMidnight);
+        formatter = builder.build(); // creating a new formatter instance
+
+        Assert.assertEquals("index-2020-10-18", formatter.format(newWeekEvent));
+    }
+
+    @NotNull
+    private LogEvent getLogEvent(Long fridayBeforeMidnight) {
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(fridayBeforeMidnight);
+        return logEvent;
+    }
+
+    private RollingIndexNameFormatter getRollingIndexNameFormatter(String zoneId, Long fridayBeforeMidnight, RollingIndexNameFormatter.Builder builder, String pattern) {
+        when(builder.getInitTimeInMillis()).thenReturn(fridayBeforeMidnight);
+        builder.withIndexName("index");
+        builder.withPattern(pattern);
+        builder.withSeparator("-");
+        builder.withTimeZone(zoneId);
+        return builder.build();
+    }
+
+    @NotNull
+    private Long getDateLong(String zoneId, int day, int hour, int minute, int second) {
+        return LocalDateTime.of(2020, 10, day, hour, minute, second)
+                .atZone(ZoneId.of(zoneId))
+                .toInstant().toEpochMilli();
+    }
+
+    @Test
     public void startsWithoutExceptionsIfSetupIsCorrect() {
 
         // when
@@ -107,8 +184,7 @@ public class RollingIndexNameFormatterTest {
     public void returnsCurrentTimeIfEventTimeIsBeforeRolloverTime() {
 
         // given
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS);
 
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
@@ -124,8 +200,7 @@ public class RollingIndexNameFormatterTest {
     public void returnsNextRolloverTimeIfEventTimeIsAfterRolloverTime() {
 
         // given
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.HOURS.toMillis(1));
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.HOURS.toMillis(1));
 
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
@@ -140,8 +215,7 @@ public class RollingIndexNameFormatterTest {
     public void returnsPreviousRolloverTimeIfEventTimeIsBeforeCurrentTime() {
 
         // given
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS - TimeUnit.HOURS.toMillis(1));
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS - TimeUnit.HOURS.toMillis(1));
 
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
@@ -156,8 +230,7 @@ public class RollingIndexNameFormatterTest {
     public void returnsCustomSeparatorFormattedIndexName() {
 
         // given
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS);
         RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
         builder.withSeparator(".");
         IndexNameFormatter formatter = builder.build();
@@ -173,8 +246,7 @@ public class RollingIndexNameFormatterTest {
     public void returnsDefaultSeparatorFormattedIndexNameWithoutCustomSeparator() {
 
         // given
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS);
         IndexNameFormatter formatter = new RollingIndexNameFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE);
 
         // when
@@ -195,7 +267,7 @@ public class RollingIndexNameFormatterTest {
             private int count = 0;
             @Override
             public Long answer(InvocationOnMock invocationOnMock) throws Throwable {
-                if (++count > 1) {
+                if (++count < 2) {
                     return (Long) invocationOnMock.callRealMethod();
                 }
                 Thread.sleep(100);
@@ -203,8 +275,7 @@ public class RollingIndexNameFormatterTest {
             }
         });
 
-        LogEvent logEvent = mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.MINUTES.toMillis(1));
+        LogEvent logEvent = getLogEvent(DEFAULT_TEST_TIME_IN_MILLIS + TimeUnit.MINUTES.toMillis(1));
 
         IndexNameFormatter formatter = new TestFormatter(TEST_INDEX_NAME, DATE_PATTERN_WITH_MINUTES, DEFAULT_TEST_TIME_IN_MILLIS, TEST_TIME_ZONE);
 
