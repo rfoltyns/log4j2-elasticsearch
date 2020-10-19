@@ -49,11 +49,9 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
-import org.junit.Ignore;
 
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
-@Ignore
 public class SmokeTest extends SmokeTestBase {
 
     @Override

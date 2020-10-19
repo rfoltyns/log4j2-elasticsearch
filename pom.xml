@@ -256,6 +256,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.18.1</version>
                 <configuration>
+                    <excludes>
+                        <exclude>%regex[.*smoke.*Test.*]</exclude>
+                    </excludes>
                     <systemPropertyVariables>
                         <jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
                     </systemPropertyVariables>

@@ -49,11 +49,9 @@ import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
-@Ignore
 public class SmokeTest extends SmokeTestBase {
 
     @BeforeClass

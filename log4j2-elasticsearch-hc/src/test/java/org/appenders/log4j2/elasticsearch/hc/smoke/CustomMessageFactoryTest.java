@@ -28,9 +28,8 @@ import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-@Ignore
+
 public class CustomMessageFactoryTest extends SmokeTest {
 
     @BeforeClass
