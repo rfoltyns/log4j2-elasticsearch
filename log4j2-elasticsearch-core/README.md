@@ -175,6 +175,7 @@ afterburner | Attribute | no | false | if `true`, `com.fasterxml.jackson.module:
 singleThread | Attribute | no | false | Use ONLY with `AsyncLogger`. If `true`, `com.fasterxml.jackson.core.JsonFactory` will be replaced with [SingleThreadJsonFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/SingleThreadJsonFactory.java) for `LogEvent` serialization. Offers slightly better serialization throughput.
 mixins | Element(s) | no | None | Array of `JacksonMixIn` elements. Can be used to override default serialization of LogEvent, Message and related objects
 virtualProperties (since 1.4) | Element(s) | no | None | Array of `VirtualProperty` elements. Similar to `KeyValuePair`, can be used to define properties resolvable on the fly, not available in LogEvent(s).
+virtualPropertiesFilter (since 1.4.3) | Element(s) | no | None | Array of `VirtualPropertyFilter` elements, can be used to include/exclude `VirtualProperty` dynamically.
 itemSourceFactory | Element | yes (since 1.4) | n/a | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available
 
 Default output:
@@ -189,7 +190,7 @@ Example with pooled buffers (pools must be configured for both `ClientObjectFact
         <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="1024" initialPoolSize="10000" />
         <JacksonMixIn mixInClass="foo.bar.CustomLogEventMixIn"
                       targetClass="org.apache.logging.log4j.core.LogEvent"/>
-        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"
+        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"/>
     </JacksonJsonLayout>
     ...
 </Elasticsearch>
@@ -203,7 +204,7 @@ Example with no pooled buffers:
     <JacksonJsonLayout afterburner="true">
         <JacksonMixIn mixInClass="foo.bar.CustomLogEventMixIn"
                       targetClass="org.apache.logging.log4j.core.LogEvent"/>
-        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"
+        <VirtualProperty name="hostname" value="$${env:hostname:-undefined}"/>
     </JacksonJsonLayout>
     ...
 </Elasticsearch>
