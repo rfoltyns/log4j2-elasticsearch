@@ -21,9 +21,9 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
+import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
 
 /**
  * Time- and size-based batch scheduler. Uses provided {@link BatchOperations} implementation to produce batches and
@@ -44,7 +45,12 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private volatile State state = State.STOPPED;
 
     private final AtomicInteger size = new AtomicInteger();
-    private final ConcurrentLinkedQueue<Object> items = new ConcurrentLinkedQueue<>();
+
+    // FIXME: Switch to MpSc after batch assembly refactoring
+    // FIXME: Current API makes initialSize difficult to inject
+    private final Queue<Object> items = getQueueFactoryInstance().tryCreateMpmcQueue(
+            BulkEmitter.class.getSimpleName(),
+            Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".initialSize", "65536")));
 
     private final AtomicBoolean notifying = new AtomicBoolean();
     private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));

@@ -55,6 +55,7 @@
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
         <httpcore.version>4.4.13</httpcore.version>
         <net.openhft.chroniclemap.version>3.19.40</net.openhft.chroniclemap.version>
+        <jctools.version>3.1.0</jctools.version>
         <junit.version>4.13.1</junit.version>
     </properties>
 
@@ -156,6 +157,13 @@
                 <groupId>net.openhft</groupId>
                 <artifactId>chronicle-map</artifactId>
                 <version>${net.openhft.chroniclemap.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.jctools</groupId>
+                <artifactId>jctools-core</artifactId>
+                <version>${jctools.version}</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

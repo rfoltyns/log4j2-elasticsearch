@@ -21,7 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
+import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
 
 /**
  * <p>Resizable pool of {@link ItemSource} elements.
@@ -52,7 +53,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     private volatile State state = State.STOPPED;
 
-    private final ConcurrentLinkedQueue<ItemSource<T>> objectPool = new ConcurrentLinkedQueue<>();
+    private final Queue<ItemSource<T>> objectPool;
 
     private final String poolName;
     private final PooledObjectOps<T> pooledObjectOps;
@@ -87,6 +88,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         this.initialPoolSize = initialPoolSize;
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
+        this.objectPool = getQueueFactoryInstance().tryCreateMpmcQueue(getClass().getSimpleName(), initialPoolSize);
     }
 
     private void startRecyclerTask() {
@@ -144,7 +146,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      */
     @Override
     public final void incrementPoolSize() {
-        objectPool.add(pooledObjectOps.createItemSource(releaseCallback));
+        objectPool.offer(pooledObjectOps.createItemSource(releaseCallback));
         totalPoolSize.getAndIncrement();
     }
 
@@ -275,8 +277,10 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     public void shutdown() {
 
         getLogger().debug("{} shutting down. Releasing buffers..", poolName);
-        objectPool.forEach(pooled -> pooledObjectOps.purge(pooled));
-        objectPool.clear();
+
+        while (!objectPool.isEmpty()) {
+            pooledObjectOps.purge(objectPool.remove());
+        }
 
         getLogger().debug("{} stopping internal threads..", poolName);
         executor.shutdown();
@@ -294,7 +298,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                 pooledObjectOps.purge(itemSource);
                 return;
             }
-            objectPool.add(itemSource);
+            objectPool.offer(itemSource);
         }
 
     }
@@ -368,7 +372,6 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
         if (!isStarted()) {
             incrementPoolSize(initialPoolSize);
-
             this.executor = createExecutor(poolName);
             startRecyclerTask();
             if (monitored) {

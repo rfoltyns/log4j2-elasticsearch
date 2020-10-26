@@ -51,7 +51,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class GenericItemSourcePoolTest {
+public abstract class GenericItemSourcePoolTest {
 
     public static final String DEFAULT_TEST_ITEM_POOL_NAME = "testPool";
     public static final int DEFAULT_TEST_INITIAL_POOL_SIZE = 10;
@@ -61,7 +61,7 @@ public class GenericItemSourcePoolTest {
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "2");
-    }
+   }
 
     public static UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
 

@@ -42,7 +42,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class BulkEmitterTest {
+public abstract class BulkEmitterTest {
 
     public static final int LARGE_TEST_INTERVAL = 10000;
     public static final int TEST_BATCH_SIZE = 2;

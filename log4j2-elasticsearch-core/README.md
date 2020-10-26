@@ -539,6 +539,20 @@ Example above will create 10000 pooled elements at startup. Then, if pool runs o
 ##### Considerations
 `UnlimitedResizePolicy` doesn't have any memory constraints and can lead to OOM and log loss if cluster can't index logs on time. Heavy load testing is encouraged before release.
 
+## Pluggable JCTools
+
+Since 1.5, if [org.jctools:jctools-core:3.x](https://mvnrepository.com/artifact/org.jctools/jctools-core) jar is present on the classpath, `java.util.concurrent.ConcurrentLinkedQueue` based classes will use JCTools unbounded arrays. `CLQ` creates Node internally on each offer() call. JCTools arrays, if used, reduce memory allocation.
+
+JVM params:
+
+Param | Type | Default
+------------ | ------------- | -------------
+-Dappenders.GenericItemSourcePool.jctools.enabled | boolean | true
+-Dappenders.BulkEmitter.jctools.enabled | boolean |  true
+-Dappenders.BulkEmitter.initialSize | int | 65536
+
+See submodules documentation for module-specific properties.
+
 ## Dependencies
 Be aware that Jackson FasterXML jars have to be provided by user for this library to work in default mode.
 See `pom.xml` or deps summary at [Maven Repository](https://mvnrepository.com/artifact/org.appenders.log4j/log4j2-elasticsearch-core/latest) for a list of dependencies.

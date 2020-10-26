@@ -53,6 +53,11 @@
             <artifactId>chronicle-map</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jctools</groupId>
+            <artifactId>jctools-core</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- TEST -->
         <dependency>
