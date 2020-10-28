@@ -246,6 +246,34 @@ Also, since `LogEvent.timeMillis` is not included in this layout, [IndexTemplate
 ...
 ```
 
+#### Elastic Common Schema
+
+ECS output can be configured with `JacksonMixIn`:
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JacksonJsonLayout>
+        <JacksonMixIn mixInClass="org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn"
+                      targetClass="org.apache.logging.log4j.core.LogEvent"/>
+        <VirtualProperty name="event.dataset" value="logs-java"/>
+    </JacksonJsonLayout>
+    ...
+</Elasticsearch>
+```
+
+At the moment, it provides only a minimal set of fields.
+
+##### ECSLayout
+
+Once [log4j2-ecs-layout](https://mvnrepository.com/artifact/co.elastic.logging/log4j2-ecs-layout) is provided, `ECSLayout` can be configured (`JestHttp` only):
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <ECSLayout/>
+    ...
+</Elasticsearch>
+```
+
 #### Raw log message
 `messageOnly="true"` can be configured for all layouts mentioned above to make use of user provided (or default) `org.apache.logging.log4j.message.Message.getFormattedMessage()` implementation.
 
