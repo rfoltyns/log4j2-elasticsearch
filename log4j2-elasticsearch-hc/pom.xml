@@ -139,6 +139,7 @@
                         <smokeTest.initialItemPoolSize>40000</smokeTest.initialItemPoolSize>
                         <smokeTest.initialItemBufferSizeInBytes>1024</smokeTest.initialItemBufferSizeInBytes>
                         <smokeTest.limitPerSec>10000</smokeTest.limitPerSec>
+                        <smokeTest.ecs.enabled>false</smokeTest.ecs.enabled>
                         <ilmPolicy.hot.maxSize>10gb</ilmPolicy.hot.maxSize>
                         <ilmPolicy.hot.maxAge>1h</ilmPolicy.hot.maxAge>
                         <ilmPolicy.cold.minAge>1h</ilmPolicy.cold.minAge>
