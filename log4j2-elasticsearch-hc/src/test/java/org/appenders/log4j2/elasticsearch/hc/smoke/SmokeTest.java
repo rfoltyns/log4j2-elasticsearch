@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc.smoke;
  */
 
 
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -31,12 +32,14 @@ import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
+import org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
@@ -61,6 +64,7 @@ public class SmokeTest extends SmokeTestBase {
         final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
         final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
+        final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
 
         HCHttp.Builder httpObjectFactoryBuilder;
         httpObjectFactoryBuilder = HCHttp.newBuilder();
@@ -93,7 +97,7 @@ public class SmokeTest extends SmokeTestBase {
         LoggerContext ctx = LoggerContext.getContext(false);
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
                 .withName("log4j2-elasticsearch-programmatic-test-template")
-                .withPath("classpath:indexTemplate-7.json")
+                .withPath(ecsEnabled ? "classpath:indexTemplate-7-ecs.json" : "classpath:indexTemplate-7.json")
                 .withValueResolver(new Log4j2Lookup(ctx.getConfiguration().getStrSubstitutor()))
                 .build();
 
@@ -132,6 +136,13 @@ public class SmokeTest extends SmokeTestBase {
                         new VirtualProperty("progField", "constantValue", false)
                 )
                 .withSingleThread(true);
+
+        if (ecsEnabled) {
+            layoutBuilder.withMixins(JacksonMixIn.newBuilder()
+                    .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
+                    .withTargetClass(LogEvent.class.getName())
+                    .build());
+        }
 
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
