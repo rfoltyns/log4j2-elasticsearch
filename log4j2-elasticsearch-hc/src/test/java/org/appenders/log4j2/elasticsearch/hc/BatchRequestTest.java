@@ -49,7 +49,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class BatchRequestTest {
+public abstract class BatchRequestTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -373,13 +373,13 @@ public class BatchRequestTest {
         ByteBufItemSource buffer = mock(ByteBufItemSource.class);
         builder.withBuffer(buffer);
 
-        BatchRequest request = builder.build();
-
         Collection<IndexRequest> actions = new ArrayList<>();
         IndexRequest indexRequest = spy(createIndexRequestBuilder(mock(ByteBufItemSource.class))
                 .build());
         actions.add(indexRequest);
         builder.add(actions);
+
+        BatchRequest request = builder.build();
 
         // when
         request.completed();

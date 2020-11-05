@@ -138,6 +138,17 @@ BasicCredentials | Yes | Yes | Yes| Yes
 JKS | Yes | Not tested | Not tested| Not tested
 PEM | Not tested | Yes | Yes| Yes
 
+## Pluggable JCTools
+
+See [Pluggable JCTools](../log4j2-elasticsearch-core#pluggable-jctools)
+
+JVM params:
+
+Param | Type | Default
+------------ | ------------- | -------------
+-Dappenders.BatchRequest.jctools.enabled | boolean | true
+-Dappenders.BatchRequest.initialSize | int | 10000
+
 ## Dependencies
 
 Be aware that following jars may have to be provided by user for this library to work:

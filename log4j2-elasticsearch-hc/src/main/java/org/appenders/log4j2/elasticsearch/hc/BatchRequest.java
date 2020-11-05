@@ -28,7 +28,8 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
 
 /**
  * {@link org.appenders.log4j2.elasticsearch.ByteBufItemSource}-backed /_bulk request.
@@ -46,7 +47,7 @@ public class BatchRequest implements Request {
     protected final Collection<IndexRequest> indexRequests;
 
     protected BatchRequest(Builder builder) {
-        this.indexRequests = builder.items;
+        this.indexRequests = getQueueFactoryInstance().toIterable(builder.items);
         this.objectWriter = builder.objectWriter;
         this.buffer = builder.buffer;
     }
@@ -136,7 +137,10 @@ public class BatchRequest implements Request {
 
     public static class Builder {
 
-        protected final Collection<IndexRequest> items = new ConcurrentLinkedQueue<>();
+        protected final Collection<IndexRequest> items = getQueueFactoryInstance().tryCreateMpscQueue(
+                BatchRequest.class.getSimpleName(),
+                Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "10000")));
+
         private ItemSource<ByteBuf> buffer;
         private ObjectWriter objectWriter;
 
