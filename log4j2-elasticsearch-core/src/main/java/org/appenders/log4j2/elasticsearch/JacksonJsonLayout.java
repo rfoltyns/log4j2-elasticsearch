@@ -151,6 +151,9 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         }
 
         /**
+         * @param mixins mixins to apply
+         * @return configured writer
+         *
          * @deprecated As of 1.6, this method will be removed, use {@link #createConfiguredWriter()} instead
           */
         @Deprecated
