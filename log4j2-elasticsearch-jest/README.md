@@ -135,6 +135,19 @@ BasicCredentials | Yes | Yes | Yes| Yes
 JKS | Yes | Not tested | Not tested| Not tested
 PEM | Not tested | Yes | Yes| Yes
 
+## Pluggable JCTools
+
+See [Pluggable JCTools](../log4j2-elasticsearch-core#pluggable-jctools)
+
+JVM params:
+
+Param | Type | Default
+------------ | ------------- | -------------
+-Dappenders.BufferedBulk.jctools.enabled | boolean | true
+-Dappenders.BufferedBulk.initialSize | int | 10000
+
+NOTE: `JestBufferedHttp` support only
+
 ## Dependencies
 
 Be aware that following jars have to be provided by user for this library to work in default mode:

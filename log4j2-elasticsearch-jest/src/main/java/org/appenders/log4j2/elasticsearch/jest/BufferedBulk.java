@@ -33,7 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
 
 /**
  * Extended Jest {@code io.searchbox.core.Bulk} using {@link ByteBufItemSource}
@@ -50,7 +51,7 @@ public class BufferedBulk extends Bulk {
 
     public BufferedBulk(BufferedBulk.Builder builder) {
         super(builder);
-        this.actions = builder.actions;
+        this.actions = getQueueFactoryInstance().toIterable(builder.actions);
         this.objectWriter = builder.objectWriter;
         this.objectReader = builder.objectReader;
         this.bulkSource = builder.bufferedSource;
@@ -138,7 +139,11 @@ public class BufferedBulk extends Bulk {
 
     public static class Builder extends Bulk.Builder {
 
-        protected final Collection<BulkableAction> actions = new ConcurrentLinkedQueue<>();
+        protected final Collection<BulkableAction> actions = getQueueFactoryInstance().tryCreateMpscQueue(
+                BufferedBulk.class.getSimpleName(),
+                Integer.parseInt(System.getProperty("appenders." + BufferedBulk.class.getSimpleName() + ".initialSize", "10000"))
+        );
+
         private ItemSource<ByteBuf> bufferedSource;
         private ObjectWriter objectWriter;
         private ObjectReader objectReader;

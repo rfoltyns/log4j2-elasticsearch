@@ -381,12 +381,13 @@ public class BufferedBulkTest {
         ByteBufItemSource buffer = mock(ByteBufItemSource.class);
         builder.withBuffer(buffer);
 
-        BufferedBulk bulk = builder.build();
 
         List<BulkableAction> actions = new ArrayList<>();
         BufferedIndex bufferedIndex = spy(new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build());
         actions.add(bufferedIndex);
         builder.addAction(actions);
+
+        BufferedBulk bulk = builder.build();
 
         // when
         bulk.completed();
