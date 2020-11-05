@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
 
 
 import io.searchbox.client.config.HttpClientConfig;
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -32,9 +33,11 @@ import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.RollingIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
+import org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelector;
@@ -65,6 +68,7 @@ public class SmokeTest extends SmokeTestBase {
         final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
         final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
+        final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
 
         JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
         if (buffered) {
@@ -101,7 +105,7 @@ public class SmokeTest extends SmokeTestBase {
 
         IndexTemplate indexTemplate = new IndexTemplate.Builder()
                 .withName("log4j2-elasticsearch-programmatic-test-template")
-                .withPath("classpath:indexTemplate-7.json")
+                .withPath(ecsEnabled ? "classpath:indexTemplate-7-ecs.json" : "classpath:indexTemplate-7.json")
                 .build();
 
         KeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(2);
@@ -133,6 +137,13 @@ public class SmokeTest extends SmokeTestBase {
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
                 );
+
+        if (ecsEnabled) {
+            layoutBuilder.withMixins(JacksonMixIn.newBuilder()
+                    .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
+                    .withTargetClass(LogEvent.class.getName())
+                    .build());
+        }
 
         if (buffered) {
             PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()

@@ -1,0 +1,18 @@
+{
+  "index_patterns": [
+    "log4j2*"
+  ],
+  "settings": {
+    "index": {
+      "refresh_interval": "5s"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date",
+        "format": "epoch_millis"
+      }
+    }
+  }
+}
