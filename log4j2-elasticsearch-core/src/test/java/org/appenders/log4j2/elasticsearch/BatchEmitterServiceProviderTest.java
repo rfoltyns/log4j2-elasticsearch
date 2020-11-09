@@ -42,7 +42,7 @@ import java.util.Iterator;
 import java.util.ServiceLoader;
 
 import static org.appenders.log4j2.elasticsearch.AppenderRefFailoverPolicyTest.createTestFailoverPolicy;
-import static org.appenders.log4j2.elasticsearch.BatchDeliveryTest.createTestObjectFactoryBuilder;
+import static org.appenders.log4j2.elasticsearch.AsyncBatchDeliveryTest.createTestObjectFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.LARGE_TEST_INTERVAL;
 import static org.appenders.log4j2.elasticsearch.BulkEmitterTest.TEST_BATCH_SIZE;
 import static org.mockito.ArgumentMatchers.any;

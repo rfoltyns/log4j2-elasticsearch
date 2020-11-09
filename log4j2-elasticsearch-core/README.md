@@ -19,6 +19,7 @@ However, direct use of this library is required only in case of Log4j2 configura
 Main parts of the skeleton are:
 * `ClientObjectFactory` - provider of client-specific request classes, factories and error handlers
 * `BatchEmitter` - intermediate log collector which will trigger batch delivery as configured (see below).
+* `AsyncBatchDelivery` - glues `ClientObjectFactory` and `BatchEmitter` together
 
 ### ItemSource API
 Since 1.3, `org.appenders.log4j2.elasticsearch.ItemSource` and a set of related interfaces are available.
@@ -34,20 +35,34 @@ Main parts of default implementation are:
 
 `AsyncBatchDelivery` uses `ClientObjectFactory` objects to produce client specific requests and deliver them to cluster via `BatchEmitter` implementations.
 
+Config property | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+clientObjectFactory | Element | yes | n/a | Provider of all client-specific objects: batch handlers, failover handlers, clients, setup operations, etc.
+batchSize | Attribute | no | 1000 | Maximum (rough) number of logs in one batch.
+deliveryInterval | Attribute | no | 1000 | Millis between deliveries, even if triggered by `batchSize` in the meantime.
+failoverPolicy | Element | no | NoopFailoverPolicy | Sink for failed batch items. By default, `NoopFailoverPolicy` drops failed batch items on the floor.
+shutdownDelayMillis| Attribute | no | 5000 | Millis before batch delivery is actually shutdown after Lifecycle.stop() call. This allow last batch items to be flushed and delivered to cluster or to configured `failoverPolicy`.
+setupOperation | Element[] | no | [] | List of operations to execute on before first batch. Exact moment of execution depends on client implementation.
+
+Delivery is triggered after `deliveryInterval` or when number of undelivered logs reached `batchSize`.
+
+`deliveryInterval` should be main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
+
+```xml
+<Appenders>
+    <Elasticsearch name="...">
+        <AsyncBatchDelivery batchSize="5000"
+                            deliveryInterval="3000"
+                            shutdownDelatMillis="10000">
+            ... clientObjectFactory, failoverPolicy and setupOperations
+        </AsyncBatchDelivery>
+    </Elasticsearch>
+</Appenders>
+```
+
 ### BatchEmitter
 
 `BatchEmitterFactory<T extends BatchEmitter>` implementations are located using `java.util.ServiceLoader`. `org.appenders.log4j2.elasticsearch.BulkEmitter` is the current default implementation.
-
-## Configuration
-
-### Delivery frequency
-Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
-* `deliveryInterval` - millis between deliveries
-* `batchSize` - maximum (rough) number of logs in one batch
-
-Delivery is triggered each `deliveryInterval` or when number of undelivered logs reached `batchSize`.
-
-`deliveryInterval` is the main driver of delivery. However, in high load scenarios, both parameters should be configured accordingly to prevent sub-optimal behaviour. See [Indexing performance tips](https://www.elastic.co/guide/en/elasticsearch/guide/current/indexing-performance.html) and [Performance Considerations](https://www.elastic.co/blog/performance-considerations-elasticsearch-indexing) for more info.
 
 ### Index name
 Since 1.1, index name can be defined using `IndexName` tag:

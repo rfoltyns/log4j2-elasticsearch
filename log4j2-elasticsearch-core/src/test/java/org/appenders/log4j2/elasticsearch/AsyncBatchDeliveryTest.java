@@ -51,7 +51,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BatchDeliveryTest {
+public class AsyncBatchDeliveryTest {
 
     private static final int TEST_BATCH_SIZE = 100;
     private static final int TEST_DELIVERY_INTERVAL = 100;
@@ -88,12 +88,75 @@ public class BatchDeliveryTest {
         Assert.assertNotNull(delivery);
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test
     public void builderFailsWhenClientObjectFactoryIsNull() {
 
         // given
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withClientObjectFactory(null);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " + AsyncBatchDelivery.class.getSimpleName());
+
+        // when
+        batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void builderFailsWhenBatchSizeIsZero() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withBatchSize(0);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName());
+
+        // when
+        batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void builderFailsWhenBatchSizeIsLowerThanZero() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withBatchSize(-1);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName());
+
+        // when
+        batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void builderFailsWhenDeliveryIntervalIsZero() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withDeliveryInterval(0);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
+
+        // when
+        batchDeliveryBuilder.build();
+
+    }
+
+    @Test
+    public void builderFailsWhenDeliveryIntervalIsLowerThanZero() {
+
+        // given
+        Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
+        batchDeliveryBuilder.withDeliveryInterval(-1);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
 
         // when
         batchDeliveryBuilder.build();
@@ -466,7 +529,7 @@ public class BatchDeliveryTest {
         FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
         BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withFailoverPolicy(failoverPolicy)
-                .withShutdownDelayMillis(0)
+                .withShutdownDelayMillis(0L)
                 .build();
 
         batchDelivery.start();
@@ -519,7 +582,7 @@ public class BatchDeliveryTest {
 
     private LifeCycle createLifeCycleTestObject() {
         return createTestBatchDeliveryBuilder()
-                .withShutdownDelayMillis(0)
+                .withShutdownDelayMillis(0L)
                 .build();
     }
 

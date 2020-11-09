@@ -21,13 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.failover.RetryListener;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
@@ -44,19 +37,18 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * Uses {@link BatchEmitterFactory} SPI to get a {@link BatchEmitter} instance that will hold given items until interval
  * or size conditions are met.
  */
-@Plugin(name = "AsyncBatchDelivery", category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
 public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     private volatile State state = State.STOPPED;
 
-    private final BatchOperations batchOperations;
-    private final BatchEmitter batchEmitter;
+    protected final BatchOperations batchOperations;
+    protected final BatchEmitter batchEmitter;
 
-    private final ClientObjectFactory<Object, Object> objectFactory;
-    private final FailoverPolicy failoverPolicy;
-    private final List<OpSource> setupOpSources = new ArrayList<>();
+    protected final ClientObjectFactory<Object, Object> objectFactory;
+    protected final FailoverPolicy failoverPolicy;
+    protected final List<OpSource> setupOpSources = new ArrayList<>();
 
-    private final long shutdownDelayMillis;
+    protected final long shutdownDelayMillis;
 
     protected AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, long shutdownDelayMillis, OpSource[] setupOpSources) {
         this.batchOperations = objectFactory.createBatchOperations();
@@ -113,12 +105,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         };
     }
 
-    @PluginBuilderFactory
     public static Builder newBuilder() {
         return new Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<AsyncBatchDelivery> {
+    public static class Builder {
 
         /**
          * Default: 1000
@@ -140,30 +131,28 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
          */
         public static final long DEFAULT_SHUTDOWN_DELAY = 5000L;
 
+        /**
+         * Default: []
+         */
+        public static final OpSource[] DEFAULT_OP_SOURCES = new OpSource[0];
 
-        @PluginElement("elasticsearchClientFactory")
-        @Required(message = "No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery")
-        private ClientObjectFactory clientObjectFactory;
+        protected ClientObjectFactory clientObjectFactory;
+        protected int deliveryInterval = DEFAULT_BATCH_SIZE;
+        protected int batchSize = DEFAULT_DELIVERY_INTERVAL;
+        protected FailoverPolicy failoverPolicy = DEFAULT_FAILOVER_POLICY;
+        protected Long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
+        protected OpSource[] setupOpSources = DEFAULT_OP_SOURCES;
 
-        @PluginBuilderAttribute
-        private int deliveryInterval = DEFAULT_BATCH_SIZE;
-
-        @PluginBuilderAttribute
-        private int batchSize = DEFAULT_DELIVERY_INTERVAL;
-
-        @PluginElement("failoverPolicy")
-        private FailoverPolicy failoverPolicy = DEFAULT_FAILOVER_POLICY;
-
-        @PluginBuilderAttribute("shutdownDelayMillis")
-        public long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
-
-        @PluginElement("setupOperation")
-        private OpSource[] setupOpSources = new OpSource[0];
-
-        @Override
         public AsyncBatchDelivery build() {
             if (clientObjectFactory == null) {
-                throw new ConfigurationException("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
+                throw new IllegalArgumentException("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " +
+                        AsyncBatchDelivery.class.getSimpleName());
+            }
+            if (batchSize <= 0) {
+                throw new IllegalArgumentException("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName());
+            }
+            if (deliveryInterval <= 0) {
+                throw new IllegalArgumentException("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
             }
             return new AsyncBatchDelivery(this);
         }
@@ -222,6 +211,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         }
 
     }
+
     // ==========
     // LIFECYCLE
     // ==========

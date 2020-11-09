@@ -50,6 +50,15 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
         this.discoveryEnabled = discoveryEnabled;
     }
 
+    protected TestHttpObjectFactory(Builder builder) {
+        this(Arrays.asList(builder.serverUris, builder.serverUris),
+                builder.connTimeout,
+                builder.readTimeout,
+                builder.maxTotalConnection,
+                builder.defaultMaxTotalConnectionPerRoute,
+                builder.discoveryEnabled);
+    }
+
     @Override
     public Collection<String> getServerList() {
         return new ArrayList<>(serverUris);

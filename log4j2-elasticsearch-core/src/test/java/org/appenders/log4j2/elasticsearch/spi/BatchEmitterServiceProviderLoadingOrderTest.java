@@ -37,7 +37,7 @@ import java.util.ServiceLoader;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
-import static org.appenders.log4j2.elasticsearch.BatchDeliveryTest.createTestObjectFactoryBuilder;
+import static org.appenders.log4j2.elasticsearch.AsyncBatchDeliveryTest.createTestObjectFactoryBuilder;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
