@@ -32,6 +32,7 @@ Add this snippet to `log4j2.xml` configuration:
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
         <IndexName indexName="log4j2" />
+        <JacksonJsonLayout />
         <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
             <JestHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>"/>

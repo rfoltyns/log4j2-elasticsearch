@@ -3,7 +3,7 @@ This log4j2 appender plugin uses Apache Async HTTP client to push logs in batche
 
 Netty buffer based API guarantees lower memory allocation than [log4j2-elasticsearch-jest](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-jest).
 
-By default, FasterXML is used generate output with [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java).
+Output is generated with FasterXML Jackson based [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java).
 
 ## Maven
 
