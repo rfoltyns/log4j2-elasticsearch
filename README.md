@@ -59,6 +59,7 @@ Ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependenc
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
         <IndexName indexName="log4j2" />
+        <JacksonJsonLayout />
         <AsyncBatchDelivery>
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
             <JestHttp serverUris="http://localhost:9200" />
