@@ -43,43 +43,45 @@ Project consists of:
 ## Usage
 
 1. Add this snippet to your `pom.xml` file:
-```xml
-<dependency>
-    <groupId>org.appenders.log4j</groupId>
-    <artifactId>log4j2-elasticsearch-jest</artifactId>
-    <version>1.4.4</version>
-</dependency>
-```
+    ```xml
+    <dependency>
+        <groupId>org.appenders.log4j</groupId>
+        <artifactId>log4j2-elasticsearch-jest</artifactId>
+        <version>1.4.4</version>
+    </dependency>
+    ```
 
-Ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below
+    Ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below
 
 2. Use simple `log4j2.xml` configuration:
-```xml
-<Appenders>
-    <Elasticsearch name="elasticsearchAsyncBatch">
-        <IndexName indexName="log4j2" />
-        <JacksonJsonLayout />
-        <AsyncBatchDelivery>
-            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <JestHttp serverUris="http://localhost:9200" />
-        </AsyncBatchDelivery>
-    </Elasticsearch>
-</Appenders>
-```
+    ```xml
+    <Appenders>
+        <Elasticsearch name="elasticsearchAsyncBatch">
+            <IndexName indexName="log4j2" />
+            <JacksonJsonLayout />
+            <AsyncBatchDelivery>
+                <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
+                <JestHttp serverUris="http://localhost:9200" />
+            </AsyncBatchDelivery>
+        </Elasticsearch>
+    </Appenders>
+    ```
 
-or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc)
+    or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc)
 
-or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
+    or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 
-or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
+    or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
+
+    NOTE: `indexTemplate.json` file is not a part of main jars. You have to create it on your own (because only YOU know which mapping you'd like to use). You can find a few basic ones in tests jars and [log4j2-elasticsearch-examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples).
 
 3. Start logging directly to Elasticsearch!
-```java
-Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
-log.info("Hello, World!");
-```
+    ```java
+    Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
+    log.info("Hello, World!");
+    ```
 
-Logs not arriving? Visit [examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples) and verify your config.
+    Logs not arriving? Visit [examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples) and verify your config.
 
 ## Dependencies
 
