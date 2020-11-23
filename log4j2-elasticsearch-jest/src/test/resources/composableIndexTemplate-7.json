@@ -1,0 +1,10 @@
+{
+  "index_patterns": [
+    "${sys:smokeTest.indexName}*"
+  ],
+  "composed_of": [
+    "${sys:smokeTest.indexName}-settings",
+    "${sys:smokeTest.indexName}-settings-ilm",
+    "${sys:smokeTest.indexName}-mappings"
+  ]
+}

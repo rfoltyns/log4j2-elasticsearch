@@ -34,7 +34,10 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import java.util.Collections;
 
 /**
- * {@inheritDoc}
+ * Index template setup operation factory.
+ *
+ * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
+ * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html">Deprecated index templates</a>
  */
 public class IndexTemplateSetupOp implements OperationFactory {
 
@@ -53,6 +56,10 @@ public class IndexTemplateSetupOp implements OperationFactory {
         this.itemSourceFactory = itemSourceFactory;
     }
 
+    /**
+     * @param opSource {@link IndexTemplate} definition
+     * @return {@link Operation} that executes given index template
+     */
     @SuppressWarnings("rawtypes")
     @Override
     public <T extends OpSource> Operation create(T opSource) {
@@ -61,6 +68,7 @@ public class IndexTemplateSetupOp implements OperationFactory {
         ItemSource emptySource = itemSourceFactory.createEmptySource();
 
         final SetupStep<Request, Response> putIndexTemplate = new PutIndexTemplate(
+                indexTemplate.getApiVersion(),
                 indexTemplate.getName(),
                 writer.write(emptySource, valueResolver.resolve(indexTemplate.getSource()).getBytes())
         );

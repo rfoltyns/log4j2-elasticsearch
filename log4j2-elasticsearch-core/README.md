@@ -95,7 +95,7 @@ Since 1.1, rolling index can be defined using `RollingIndexName` tag:
 `IndexName` and `RollingIndexName` are mutually exclusive. Only one per appender should be defined, otherwise they'll override each other.
 
 ### Index template
-Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be created during appender startup. Template can be loaded from specified file or defined directly in the XML config:
+Since 1.1, [Index templates](https://www.elastic.co/guide/en/elasticsearch/reference/5.0/indices-templates.html) can be configured with `IndexTemplate``. Template can be loaded from specified file or defined directly in the XML config:
 
 ```xml
 <Appenders>
@@ -128,6 +128,79 @@ or
 ```
 
 Since 1.4.2, template can include variables resolvable with [Log4j2 Lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html) or progammatically provided [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java). See examples: [index template](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/indexTemplate-7.json), [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
+
+NOTE: Be aware that template parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
+
+### Composable index template
+
+Since 1.5, [Composable index templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html) can be configured with `IndexTemplate`. Set `IndexTemplate.apiVersion` to 8 (or higher).
+
+By default, `apiversion=7` is used (creates non-composable index templates). Default will be changed to 8 after Elasticsearch 8.x release:
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <IndexTemplate apiVersion="8" name="template1" path="<absolute_path_or_classpath>" />
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+or
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <IndexTemplate apiVersion="8" name="template1" >
+            {
+                // your index template in JSON format
+            }
+            </IndexTemplate>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+### Component templates
+
+Since 1.5, [Component templates](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html) can be created with `ComponentTemplate`:
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <ComponentTemplate name="component-template1" path="<absolute_path_or_classpath>" />
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+or
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        ...
+        <AsyncBatchDelivery>
+            <ComponentTemplate name="component-template1" >
+            {
+                // your component template in JSON format
+            }
+            </ComponentTemplate>
+            ...
+        </AsyncBatchDelivery>
+        ...
+    </Elasticsearch>
+</Appenders>
+```
+
+Templates can include variables resolvable with [Log4j2 Lookups](https://logging.apache.org/log4j/2.x/manual/lookups.html) or progammatically provided [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java). See examples: [ILM settings component template](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/componentTemplate-7-settings-ilm.json), [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
 
 NOTE: Be aware that template parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
 

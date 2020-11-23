@@ -22,6 +22,8 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import io.searchbox.action.GenericJestRequestIntrospector;
 import io.searchbox.client.JestResult;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
+import org.appenders.log4j2.elasticsearch.ComponentTemplateTest;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -37,6 +39,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,6 +47,42 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class JestOperationFactoryDispatcherTest {
+
+    @Test
+    public void canProduceComponentTemplateSetupOp() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        String unresolvedSource = String.format("%s${unresolved}%s", "test", "componentTemplate");
+        ComponentTemplate componentTemplate = ComponentTemplateTest.createTestComponentTemplateBuilder()
+                .withName(expectedName)
+                .withSource(unresolvedSource)
+                .withPath(null)
+                .build();
+
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        String expectedResolvedValue = UUID.randomUUID().toString();
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"));
+
+        JestOperationFactoryDispatcher ops = new JestOperationFactoryDispatcher(stepProcessor, valueResolver);
+
+        // when
+        Operation result = ops.create(componentTemplate);
+        result.execute();
+
+        // then
+        SetupStep<GenericJestRequest, JestResult> request = assertSetupStep(
+                expectedName,
+                stepProcessor,
+                PutComponentTemplate.class,
+                setupStep -> ((PutComponentTemplate)setupStep).templateName);
+
+        String source = GenericJestRequestIntrospector.getPayload(request.createRequest());
+        assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"), source);
+
+    }
 
     @Test
     public void canProduceIndexTemplateSetupOp() throws Exception {
@@ -70,19 +109,15 @@ public class JestOperationFactoryDispatcherTest {
         result.execute();
 
         // then
-        SetupStep<GenericJestRequest, JestResult> request = assertSetupStep(expectedName, stepProcessor);
+        SetupStep<GenericJestRequest, JestResult> request = assertSetupStep(
+                expectedName,
+                stepProcessor,
+                PutIndexTemplate.class,
+                setupStep -> ((PutIndexTemplate)setupStep).name);
 
         String source = GenericJestRequestIntrospector.getPayload(request.createRequest());
         assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "indexTemplate"), source);
 
-    }
-
-    @NotNull
-    private SetupStep<GenericJestRequest, JestResult> assertSetupStep(String expectedName, CapturingStepProcessor stepProcessor) {
-        SetupStep<GenericJestRequest, JestResult> request = stepProcessor.requests.get(0);
-        assertTrue(request instanceof PutIndexTemplate);
-        assertEquals(expectedName, ((PutIndexTemplate) request).templateName);
-        return request;
     }
 
     @Test
@@ -135,6 +170,14 @@ public class JestOperationFactoryDispatcherTest {
         assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"), source);
         assertEquals("_ilm/policy/" + expectedName, putIlmPolicy.createRequest().buildURI());
 
+    }
+
+    @NotNull
+    private SetupStep<GenericJestRequest, JestResult> assertSetupStep(String expectedName, CapturingStepProcessor stepProcessor, Class clazz, Function<SetupStep, String> nameSupplier) {
+        SetupStep<GenericJestRequest, JestResult> request = stepProcessor.requests.get(0);
+        assertEquals(clazz, request.getClass());
+        assertEquals(expectedName, nameSupplier.apply(request));
+        return request;
     }
 
     private static class CapturingStepProcessor implements StepProcessor<SetupStep<GenericJestRequest, JestResult>> {

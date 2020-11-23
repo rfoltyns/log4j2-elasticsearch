@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2020 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,85 +26,62 @@ import org.junit.Test;
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class IndexTemplateTest {
+public class ComponentTemplateTest {
 
-    public static final String TEST_INDEX_TEMPLATE = "testIndexTemplate";
-    public static final String TEST_PATH = "classpath:indexTemplate.json";
+    public static final String TEST_TEMPLATE_NAME = "testComponentTemplate";
+    public static final String TEST_PATH = "classpath:componentTemplate.json";
     private static final String TEST_SOURCE = "{}";
 
-    public static IndexTemplate.Builder createTestIndexTemplateBuilder() {
-        IndexTemplate.Builder builder = new IndexTemplate.Builder();
-        builder.withName(TEST_INDEX_TEMPLATE)
+    public static ComponentTemplate.Builder createTestComponentTemplateBuilder() {
+        ComponentTemplate.Builder builder = new ComponentTemplate.Builder();
+        builder.withName(TEST_TEMPLATE_NAME)
                 .withPath(TEST_PATH);
         return builder;
-    }
-
-    @Test
-    public void startsWhenSetupCorrectlyWithNonDefaultApiVersion() {
-
-        // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withName(TEST_INDEX_TEMPLATE)
-                .withPath(TEST_PATH)
-                .withApiVersion(8);
-
-        // when
-        IndexTemplate indexTemplate = builder.build();
-
-        // then
-        assertNotNull(indexTemplate);
-        assertNotEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplate.getApiVersion());
-        assertEquals(8, indexTemplate.getApiVersion());
-        assertEquals(TEST_INDEX_TEMPLATE, indexTemplate.getName());
-        assertNotNull(indexTemplate.getSource());
-        assertEquals(IndexTemplate.TYPE_NAME, indexTemplate.getType());
     }
 
     @Test
     public void startsWhenSetupCorrectlyWithNameAndPath() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withName(TEST_INDEX_TEMPLATE)
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
+        builder.withName(TEST_TEMPLATE_NAME)
                 .withPath(TEST_PATH);
 
         // when
-        IndexTemplate indexTemplate = builder.build();
+        ComponentTemplate template = builder.build();
 
         // then
-        assertNotNull(indexTemplate);
-        assertEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplate.getApiVersion());
-        assertEquals(TEST_INDEX_TEMPLATE, indexTemplate.getName());
-        assertNotNull(indexTemplate.getSource());
-        assertEquals(IndexTemplate.TYPE_NAME, indexTemplate.getType());
+        assertNotNull(template);
+        assertNotNull(template.getName());
+        assertNotNull(template.getSource());
+        assertEquals(ComponentTemplate.TYPE_NAME, template.getType());
     }
 
     @Test
     public void startsWhenSetupCorrectlyWithNameAndSource() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withName(TEST_INDEX_TEMPLATE)
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
+        builder.withName(TEST_TEMPLATE_NAME)
                 .withPath(null)
                 .withSource(TEST_SOURCE);
 
         // when
-        IndexTemplate indexTemplate = builder.build();
+        ComponentTemplate template = builder.build();
 
         // then
-        assertNotNull(indexTemplate);
-        assertNotNull(indexTemplate.getName());
-        assertNotNull(indexTemplate.getSource());
+        assertNotNull(template);
+        assertNotNull(template.getName());
+        assertNotNull(template.getSource());
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void builderThrowsExceptionWhenNameIsNotSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withName(null);
 
         // when
@@ -115,7 +92,7 @@ public class IndexTemplateTest {
     public void builderThrowsExceptionWhenNeitherPathOrSourceIsSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath(null)
                 .withSource(null);
 
@@ -127,7 +104,7 @@ public class IndexTemplateTest {
     public void builderThrowsExceptionWhenBothPathAndSourceAreSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath(TEST_PATH)
                 .withSource(TEST_SOURCE);
 
@@ -139,7 +116,7 @@ public class IndexTemplateTest {
     public void builderThrowsExceptionWhenClasspathResourceDoesntExist() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("classpath:nonExistentFile");
 
         // when
@@ -150,7 +127,7 @@ public class IndexTemplateTest {
     public void builderThrowsExceptionWhenFileDoesNotExist() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("nonExistentFile");
 
         // when
@@ -161,7 +138,7 @@ public class IndexTemplateTest {
     public void builderThrowsExceptionOnInvalidProtocol() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("~/nonExistentFile");
 
         // when
@@ -172,8 +149,8 @@ public class IndexTemplateTest {
     public void builderDoesntThrowExceptionWhenFileExists() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withPath(new File(ClassLoader.getSystemClassLoader().getResource("indexTemplate.json").getFile()).getAbsolutePath());
+        ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
+        builder.withPath(new File(ClassLoader.getSystemClassLoader().getResource("componentTemplate.json").getFile()).getAbsolutePath());
 
         // when
         builder.build();

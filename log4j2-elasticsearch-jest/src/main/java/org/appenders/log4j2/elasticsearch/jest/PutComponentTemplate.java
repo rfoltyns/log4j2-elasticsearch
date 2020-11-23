@@ -21,50 +21,43 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import io.searchbox.client.JestResult;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
- * Creates or updates index template.
- * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
- * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html">Deprecated index templates</a>
+ * Creates or updates component template
+ * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html">Component templates</a>
+ * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
  */
-public class PutIndexTemplate extends SetupStep<GenericJestRequest, JestResult> {
+public class PutComponentTemplate extends SetupStep<GenericJestRequest, JestResult> {
 
-    protected final int apiVersion;
-    protected final String name;
+    protected final String templateName;
     protected final String source;
 
-    public PutIndexTemplate(String name, String source) {
-        this(IndexTemplate.DEFAULT_API_VERSION, name, source);
-    }
-
-    public PutIndexTemplate(int apiVersion, String name, String source) {
-        this.apiVersion = apiVersion;
-        this.name = name;
+    public PutComponentTemplate(String templateName, String source) {
+        this.templateName = templateName;
         this.source = source;
     }
 
     /**
      * @param response client response
-     * @return {@link Result#SUCCESS} if index template was processed successfully, {@link Result#FAILURE} otherwise
+     * @return {@link Result#SUCCESS} if component template was processed successfully, {@link Result#FAILURE} otherwise
      */
     @Override
     public Result onResponse(JestResult response) {
 
         if (response.isSucceeded()) {
 
-            getLogger().info("{}: Index template {} updated",
-                    getClass().getSimpleName(), name);
+            getLogger().info("{}: Component template {} updated",
+                    getClass().getSimpleName(), templateName);
 
             return Result.SUCCESS;
 
         }
 
-        getLogger().error("{}: Unable to update index template: {}",
+        getLogger().error("{}: Unable to update component template: {}",
                 getClass().getSimpleName(), response.getErrorMessage());
 
         return Result.FAILURE;
@@ -77,14 +70,7 @@ public class PutIndexTemplate extends SetupStep<GenericJestRequest, JestResult> 
         GenericJestRequest request = new GenericJestRequest("PUT", source) {
             @Override
             public String buildURI() {
-                return getVersionBasedUri();
-            }
-
-            private String getVersionBasedUri() {
-                if (apiVersion < 8) {
-                    return "_template/" + name;
-                }
-                return "_index_template/" + name;
+                return "_component_template/" + templateName;
             }
         };
 

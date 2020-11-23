@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.client.JestResult;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.After;
@@ -40,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 public class PutIndexTemplateTest {
 
-    public static final String TEST_TEMPLATE_NAME = "testRolloverAlias";
+    public static final String TEST_TEMPLATE_NAME = "testIndexTemplateName";
     private static final String TEST_SOURCE = UUID.randomUUID().toString();
 
     @After
@@ -142,7 +143,37 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void createsGenericJestRequest() {
+    public void createsGenericJestRequestIfComposable() {
+
+        // given
+        PutIndexTemplate setupStep = new PutIndexTemplate(8, TEST_TEMPLATE_NAME, TEST_SOURCE);
+
+        // when
+        GenericJestRequest request = setupStep.createRequest();
+
+        // then
+        assertEquals("PUT", request.getRestMethodName());
+        assertEquals("_index_template/" + TEST_TEMPLATE_NAME, request.buildURI());
+
+    }
+
+    @Test
+    public void createsGenericJestRequestIfNotComposable() {
+
+        // given
+        PutIndexTemplate setupStep = new PutIndexTemplate(7, TEST_TEMPLATE_NAME, TEST_SOURCE);
+
+        // when
+        GenericJestRequest request = setupStep.createRequest();
+
+        // then
+        assertEquals("PUT", request.getRestMethodName());
+        assertEquals("_template/" + TEST_TEMPLATE_NAME, request.buildURI());
+
+    }
+
+    @Test
+    public void defaultGenericJestRequestNotComposable() {
 
         // given
         PutIndexTemplate setupStep = new PutIndexTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);

@@ -139,6 +139,7 @@
                         <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
                         <indexTemplate.indexPatterns>log4j2*</indexTemplate.indexPatterns>
                         <indexTemplate.settings.index.refreshInterval>5s</indexTemplate.settings.index.refreshInterval>
+                        <smokeTest.indexName>${project.artifactId}</smokeTest.indexName>
                         <smokeTest.batchSize>10000</smokeTest.batchSize>
                         <smokeTest.initialBatchPoolSize>4</smokeTest.initialBatchPoolSize>
                         <smokeTest.initialItemPoolSize>40000</smokeTest.initialItemPoolSize>

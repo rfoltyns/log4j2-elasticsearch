@@ -36,6 +36,8 @@ Project consists of:
 * Pluggable [internal logging](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/core/logging/InternalLogging.java) (since 1.4.3)
 * (1.5) [ILM policy](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#index-lifecycle-management) configuration
 * Configurable [Jackson modules](log4j2-elasticsearch-core#jackson-modules) support
+* [Component templates](log4j2-elasticsearch-core#component-templates) configuration
+* [Composable index templates](log4j2-elasticsearch-core#composable-index-template) configuration
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 

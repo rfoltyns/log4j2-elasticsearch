@@ -29,6 +29,7 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
@@ -109,9 +110,25 @@ public class SmokeTest extends SmokeTestBase {
             jestHttpObjectFactoryBuilder.withServerUris("http://localhost:9200");
         }
 
-        IndexTemplate indexTemplate = new IndexTemplate.Builder()
-                .withName(indexName + "-index-template")
-                .withPath(ecsEnabled ? "classpath:indexTemplate-7-ecs.json" : "classpath:indexTemplate-7.json")
+        ComponentTemplate indexSettings = new ComponentTemplate.Builder()
+                .withName(indexName + "-settings")
+                .withPath("classpath:componentTemplate-7-settings.json")
+                .build();
+
+        ComponentTemplate indexSettingsIlm = new ComponentTemplate.Builder()
+                .withName(indexName + "-settings-ilm")
+                .withPath("classpath:componentTemplate-7-settings-ilm.json")
+                .build();
+
+        ComponentTemplate indexMappings = new ComponentTemplate.Builder()
+                .withName(indexName + "-mappings")
+                .withPath(ecsEnabled ? "classpath:componentTemplate-7-mappings-ecs.json": "classpath:componentTemplate-7-mappings.json")
+                .build();
+
+        IndexTemplate componentIndexTemplate = new IndexTemplate.Builder()
+                .withApiVersion(8)
+                .withName(indexName + "-composed-index-template")
+                .withPath("classpath:composableIndexTemplate-7.json")
                 .build();
 
         ILMPolicy ilmPolicy = new ILMPolicyPlugin.Builder()
@@ -135,7 +152,7 @@ public class SmokeTest extends SmokeTestBase {
                         .withRetryDelay(3000)
                         .withMonitored(true)
                         .build())
-                .withSetupOpSources(indexTemplate, ilmPolicy)
+                .withSetupOpSources(indexSettings, indexMappings, indexSettingsIlm, componentIndexTemplate, ilmPolicy)
                 .build();
 
         IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()

@@ -29,65 +29,50 @@ import java.io.File;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class IndexTemplatePluginTest {
+public class ComponentTemplatePluginTest {
 
-    public static final String TEST_INDEX_TEMPLATE = "testIndexTemplate";
-    public static final String TEST_PATH = "classpath:indexTemplate.json";
+    public static final String TEST_TEMPLATE_NAME = "testComponentTemplate";
+    public static final String TEST_PATH = "classpath:componentTemplate.json";
     private static final String TEST_SOURCE = "{}";
 
-    private IndexTemplatePlugin createTestIndexTemplate(String name, String path) {
-        return createTestIndexTemplate(name, path, null);
+    private ComponentTemplatePlugin createTestComponentTemplate(String name, String path) {
+        return createTestComponentTemplate(name, path, null);
     }
 
-    private IndexTemplatePlugin createTestIndexTemplate(String name, String path, String source) {
-        return createTestIndexTemplate(IndexTemplate.DEFAULT_API_VERSION, name, path, source);
-    }
-
-    private IndexTemplatePlugin createTestIndexTemplate(int apiVersion, String name, String path, String source) {
-        return IndexTemplatePlugin.createIndexTemplate(apiVersion, name, path, source);
+    private ComponentTemplatePlugin createTestComponentTemplate(String name, String path, String source) {
+        return ComponentTemplatePlugin.createComponentTemplate(name, path, source);
     }
 
     @Test
     public void startsWhenSetupCorrectlyWithNameAndPath() {
 
         // when
-        IndexTemplatePlugin indexTemplatePlugin = createTestIndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH);
+        ComponentTemplatePlugin plugin = createTestComponentTemplate(TEST_TEMPLATE_NAME, TEST_PATH);
 
         // then
-        assertNotNull(indexTemplatePlugin);
-        assertNotNull(indexTemplatePlugin.getName());
-        assertNotNull(indexTemplatePlugin.getSource());
-        assertEquals(IndexTemplatePlugin.TYPE_NAME, indexTemplatePlugin.getType());
+        assertNotNull(plugin);
+        assertNotNull(plugin.getName());
+        assertNotNull(plugin.getSource());
+        assertEquals(ComponentTemplatePlugin.TYPE_NAME, plugin.getType());
     }
 
     @Test
     public void startsWhenSetupCorrectlyWithNameAndSource() {
 
         // when
-        IndexTemplatePlugin indexTemplatePlugin= createTestIndexTemplate(TEST_INDEX_TEMPLATE, null, TEST_SOURCE);
+        ComponentTemplatePlugin plugin= createTestComponentTemplate(TEST_TEMPLATE_NAME, null, TEST_SOURCE);
 
         // then
-        assertNotNull(indexTemplatePlugin);
-        assertNotNull(indexTemplatePlugin.getName());
-        assertNotNull(indexTemplatePlugin.getSource());
-    }
-
-    @Test
-    public void setsDefaultApiVersionIfApiVersionIsZero() {
-
-        // when
-        IndexTemplatePlugin indexTemplatePlugin= createTestIndexTemplate(0, TEST_INDEX_TEMPLATE, null, TEST_SOURCE);
-
-        // then
-        assertNotNull(indexTemplatePlugin);
-        assertEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplatePlugin.getApiVersion());
+        assertNotNull(plugin);
+        assertNotNull(plugin.getName());
+        assertNotNull(plugin.getSource());
     }
 
     @Test(expected = ConfigurationException.class)
     public void throwsExceptionByDefaultWhenNameIsNotSet() {
 
         // when
-        createTestIndexTemplate(null, TEST_PATH);
+        createTestComponentTemplate(null, TEST_PATH);
 
     }
 
@@ -95,7 +80,7 @@ public class IndexTemplatePluginTest {
     public void throwsExceptionByDefaultWhenNeitherPathOrSourceIsSet() {
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, null, null);
+        createTestComponentTemplate(TEST_TEMPLATE_NAME, null, null);
 
     }
 
@@ -103,7 +88,7 @@ public class IndexTemplatePluginTest {
     public void throwsExceptionByDefaultWhenBothPathAndSourceAreSet() {
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH, TEST_SOURCE);
+        createTestComponentTemplate(TEST_TEMPLATE_NAME, TEST_PATH, TEST_SOURCE);
 
 
     }
@@ -112,7 +97,7 @@ public class IndexTemplatePluginTest {
     public void throwsExceptionByDefaultWhenClasspathResourceDoesntExist() {
 
         // when
-        createTestIndexTemplate(null, "classpath:nonExistentFile");
+        createTestComponentTemplate(null, "classpath:nonExistentFile");
 
     }
 
@@ -120,7 +105,7 @@ public class IndexTemplatePluginTest {
     public void throwsExceptionByDefaultWhenFileDoesNotExist() {
 
         // when
-        createTestIndexTemplate(null, "nonExistentFile");
+        createTestComponentTemplate(null, "nonExistentFile");
 
     }
 
@@ -128,7 +113,7 @@ public class IndexTemplatePluginTest {
     public void throwsExceptionByDefaultOnInvalidProtocol() {
 
         // when
-        createTestIndexTemplate(null, "~/nonExistentFile");
+        createTestComponentTemplate(null, "~/nonExistentFile");
 
     }
 
@@ -137,11 +122,11 @@ public class IndexTemplatePluginTest {
 
         // given
         String existingFile = new File(ClassLoader.getSystemClassLoader()
-                .getResource("indexTemplate.json").getFile())
+                .getResource("componentTemplate.json").getFile())
                 .getAbsolutePath();
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, existingFile);
+        createTestComponentTemplate(TEST_TEMPLATE_NAME, existingFile);
 
     }
 

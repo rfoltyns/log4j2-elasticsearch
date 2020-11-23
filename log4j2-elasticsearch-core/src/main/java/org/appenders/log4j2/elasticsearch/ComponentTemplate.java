@@ -21,46 +21,28 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 /**
- * Index template definition. Supports both composable index templates and templates deprecated in 7.8.
- * Set {@link #apiVersion} to 8 to indicate that this template is composable
- *
- * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
- * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html">Deprecated index templates</a>
+ * Component template definition. See
+ * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html">Component templates</a>
+ * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
  */
-public class IndexTemplate implements OpSource {
+public class ComponentTemplate implements OpSource {
 
-    public static final String TYPE_NAME = "IndexTemplate";
-    public static final int DEFAULT_API_VERSION = 7;
+    public static final String TYPE_NAME = "ComponentTemplate";
 
-    private final int apiVersion;
     private final String name;
     private final String source;
 
     /**
-     * @param name Index template name
-     * @param source Index template document
+     * @param name Component template name
+     * @param source Component template document
      */
-    public IndexTemplate(String name, String source) {
-        this(DEFAULT_API_VERSION, name, source);
-    }
-
-    /**
-     * @param apiVersion Elasticsearch Index Template API version
-     * @param name Index template name
-     * @param source Index template document
-     */
-    public IndexTemplate(int apiVersion, String name, String source) {
-        this.apiVersion = apiVersion;
+    protected ComponentTemplate(String name, String source) {
         this.name = name;
         this.source = source;
     }
 
-    public int getApiVersion() {
-        return apiVersion;
-    }
-
     /**
-     * @return Index template name
+     * @return Component template name
      */
     public String getName() {
         return name;
@@ -75,27 +57,26 @@ public class IndexTemplate implements OpSource {
     }
 
     /**
-     * @return Index template document
+     * @return Component template document
      */
     @Override
     public String getSource() {
         return this.source;
     }
 
-    public static IndexTemplate.Builder newBuilder() {
-        return new IndexTemplate.Builder();
+    public static ComponentTemplate.Builder newBuilder() {
+        return new ComponentTemplate.Builder();
     }
 
     public static class Builder {
 
-        protected int apiVersion = DEFAULT_API_VERSION;
         protected String name;
         protected String path;
         protected String source;
 
-        public IndexTemplate build() {
+        public ComponentTemplate build() {
             validate();
-            return new IndexTemplate(apiVersion, name, loadSource());
+            return new ComponentTemplate(name, loadSource());
         }
 
         void validate() {
@@ -121,41 +102,31 @@ public class IndexTemplate implements OpSource {
         }
 
         /**
-         * @param name Index template name
+         * @param name Component template name
          * @return this
          */
-        public Builder withName(String name) {
+        public ComponentTemplate.Builder withName(String name) {
             this.name = name;
             return this;
         }
 
         /**
-         * @param path {@code "classpath:<path>"} or file path of index template document
+         * @param path {@code "classpath:<path>"} or file path of component template document
          * @return this
          */
-        public Builder withPath(String path) {
+        public ComponentTemplate.Builder withPath(String path) {
             this.path = path;
             return this;
         }
 
         /**
-         * @param source Index template document
+         * @param source Component template document
          * @return this
          */
-        public Builder withSource(String source) {
+        public ComponentTemplate.Builder withSource(String source) {
             this.source = source;
             return this;
         }
-
-        /**
-         * @param apiVersion Elasticsearch API version
-         * @return this
-         */
-        public IndexTemplate.Builder withApiVersion(int apiVersion) {
-            this.apiVersion = apiVersion;
-            return this;
-        }
-
     }
 
 }

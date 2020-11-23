@@ -22,6 +22,8 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
+import org.appenders.log4j2.elasticsearch.ComponentTemplateTest;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -44,6 +46,39 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HCOperationFactoryDispatcherTest {
+
+    @Test
+    public void supportsComponentTemplate() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        String unresolvedSource = String.format("%s${unresolved}%s", "test", "componentTemplate");
+        ComponentTemplate componentTemplate = ComponentTemplateTest.createTestComponentTemplateBuilder()
+                .withName(expectedName)
+                .withSource(unresolvedSource)
+                .withPath(null)
+                .build();
+
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        String expectedResolvedValue = UUID.randomUUID().toString();
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"));
+
+        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+
+        // when
+        Operation result = ops.create(componentTemplate);
+        result.execute();
+
+        // then
+        SetupStep<Request, Response> request = stepProcessor.requests.get(0);
+        assertTrue(request instanceof PutComponentTemplate);
+        assertEquals(expectedName, ((PutComponentTemplate) request).name);
+        ByteBufItemSource source = (ByteBufItemSource) ((PutComponentTemplate) request).source;
+        assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"), source.getSource().toString(StandardCharsets.UTF_8));
+
+    }
 
     @Test
     public void supportsIndexTemplate() throws Exception {

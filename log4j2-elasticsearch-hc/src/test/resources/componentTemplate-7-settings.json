@@ -1,0 +1,7 @@
+{
+  "template": {
+    "settings": {
+      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}"
+    }
+  }
+}

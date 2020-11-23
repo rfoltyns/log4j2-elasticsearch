@@ -1,12 +1,12 @@
 {
   "index_patterns": [
-    "log4j2*"
+    "${sys:smokeTest.indexName}*"
   ],
   "settings": {
     "index": {
       "refresh_interval": "5s",
-      "lifecycle.name": "log4j2-elasticsearch-jest-ilm-policy",
-      "lifecycle.rollover_alias": "log4j2-elasticsearch-jest"
+      "lifecycle.name": "${sys:smokeTest.indexName}-ilm-policy",
+      "lifecycle.rollover_alias": "${sys:smokeTest.indexName}"
     }
   },
   "mappings": {

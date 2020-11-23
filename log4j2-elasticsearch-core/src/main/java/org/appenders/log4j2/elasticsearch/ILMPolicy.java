@@ -42,6 +42,9 @@ public class ILMPolicy implements OpSource {
         this.source = source;
     }
 
+    /**
+     * @return {@link #TYPE_NAME}
+     */
     @Override
     public final String getType() {
         return TYPE_NAME;

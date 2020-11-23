@@ -1,0 +1,8 @@
+{
+  "template": {
+    "settings": {
+      "lifecycle.name": "${sys:smokeTest.indexName}-ilm-policy",
+      "lifecycle.rollover_alias": "${sys:smokeTest.indexName}"
+    }
+  }
+}

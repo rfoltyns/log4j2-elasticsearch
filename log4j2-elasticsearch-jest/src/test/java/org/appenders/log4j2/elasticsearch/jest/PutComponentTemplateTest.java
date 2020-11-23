@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  * #L%
  */
 
-import com.google.gson.Gson;
 import io.searchbox.client.JestResult;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
@@ -29,18 +28,20 @@ import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CreateBootstrapIndexTest {
+public class PutComponentTemplateTest {
 
-    public static final String TEST_BOOTSTRAP_INDEX_NAME = "testBootstrapIndexName";
+    public static final String TEST_TEMPLATE_NAME = "testComponentTemplateName";
+    private static final String TEST_SOURCE = UUID.randomUUID().toString();
 
     @After
     public void tearDown() {
@@ -51,18 +52,14 @@ public class CreateBootstrapIndexTest {
     public void doesNotExecuteOnFailure() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
         SetupContext setupContext = new SetupContext(Result.FAILURE);
-
-        Logger logger = mockTestLogger();
 
         // when
         boolean result = setupStep.shouldProcess(setupContext);
 
         // then
         assertFalse(result);
-        verify(logger).info("{}: Skipping bootstrap index creation",
-                CreateBootstrapIndex.class.getSimpleName());
 
     }
 
@@ -70,37 +67,29 @@ public class CreateBootstrapIndexTest {
     public void executesOnSuccess() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
         SetupContext setupContext = new SetupContext(Result.SUCCESS);
-
-        Logger logger = mockTestLogger();
 
         // when
         boolean result = setupStep.shouldProcess(setupContext);
 
         // then
         assertTrue(result);
-        verify(logger, never()).info("{}: Skipping bootstrap index creation",
-                CreateBootstrapIndex.class.getSimpleName());
 
     }
 
     @Test
-    public void doesNotExecuteOnSkip() {
+    public void executesOnSkip() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
         SetupContext setupContext = new SetupContext(Result.SKIP);
-
-        Logger logger = mockTestLogger();
 
         // when
         boolean result = setupStep.shouldProcess(setupContext);
 
         // then
-        assertFalse(result);
-        verify(logger).info("{}: Skipping bootstrap index creation",
-                CreateBootstrapIndex.class.getSimpleName());
+        assertTrue(result);
 
     }
 
@@ -108,10 +97,10 @@ public class CreateBootstrapIndexTest {
     public void onResponseLogsOnSuccess() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
 
         JestResult jestResult = mock(JestResult.class);
-        when(jestResult.getResponseCode()).thenReturn(200);
+        when(jestResult.isSucceeded()).thenReturn(true);
 
         Logger logger = mockTestLogger();
 
@@ -121,9 +110,9 @@ public class CreateBootstrapIndexTest {
         // then
         assertEquals(Result.SUCCESS, result);
         verify(logger).info(
-                "{}: Bootstrap index {} created",
-                CreateBootstrapIndex.class.getSimpleName(),
-                TEST_BOOTSTRAP_INDEX_NAME + "-000001");
+                "{}: Component template {} updated",
+                PutComponentTemplate.class.getSimpleName(),
+                TEST_TEMPLATE_NAME);
 
     }
 
@@ -131,11 +120,11 @@ public class CreateBootstrapIndexTest {
     public void onResponseLogsOnNonSuccess() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
 
         JestResult jestResult = mock(JestResult.class);
-        when(jestResult.getResponseCode()).thenReturn(400);
-        String error = "test bootstrap index creation error";
+        when(jestResult.isSucceeded()).thenReturn(false);
+        String error = "test component template creation error";
         when(jestResult.getErrorMessage()).thenReturn(error);
 
         Logger logger = mockTestLogger();
@@ -146,8 +135,8 @@ public class CreateBootstrapIndexTest {
         // then
         assertEquals(Result.FAILURE, result);
         verify(logger).error(
-                "{}: Unable to create bootstrap index: {}",
-                CreateBootstrapIndex.class.getSimpleName(),
+                "{}: Unable to update component template: {}",
+                PutComponentTemplate.class.getSimpleName(),
                 error);
 
     }
@@ -156,14 +145,14 @@ public class CreateBootstrapIndexTest {
     public void createsGenericJestRequest() {
 
         // given
-        CreateBootstrapIndex setupStep = new CreateBootstrapIndex(TEST_BOOTSTRAP_INDEX_NAME);
+        PutComponentTemplate setupStep = new PutComponentTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
 
         // when
         GenericJestRequest request = setupStep.createRequest();
 
         // then
         assertEquals("PUT", request.getRestMethodName());
-        assertEquals(TEST_BOOTSTRAP_INDEX_NAME + "-000001", request.buildURI());
+        assertEquals("_component_template/" + TEST_TEMPLATE_NAME, request.buildURI());
 
     }
 

@@ -28,6 +28,7 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ExampleJacksonModule;
@@ -100,9 +101,25 @@ public class SmokeTest extends SmokeTestBase {
             httpObjectFactoryBuilder.withServerUris("http://localhost:9200");
         }
 
-        IndexTemplate indexTemplate = new IndexTemplate.Builder()
-                .withName(indexName + "-index-template")
-                .withPath(ecsEnabled ? "classpath:indexTemplate-7-ecs.json" : "classpath:indexTemplate-7.json")
+        ComponentTemplate indexSettings = new ComponentTemplate.Builder()
+                .withName(indexName + "-settings")
+                .withPath("classpath:componentTemplate-7-settings.json")
+                .build();
+
+        ComponentTemplate indexSettingsIlm = new ComponentTemplate.Builder()
+                .withName(indexName + "-settings-ilm")
+                .withPath("classpath:componentTemplate-7-settings-ilm.json")
+                .build();
+
+        ComponentTemplate indexMappings = new ComponentTemplate.Builder()
+                .withName(indexName + "-mappings")
+                .withPath(ecsEnabled ? "classpath:componentTemplate-7-mappings-ecs.json": "classpath:componentTemplate-7-mappings.json")
+                .build();
+
+        IndexTemplate componentIndexTemplate = new IndexTemplate.Builder()
+                .withApiVersion(8)
+                .withName(indexName + "-composed-index-template")
+                .withPath("classpath:composableIndexTemplate-7.json")
                 .build();
 
         ILMPolicy ilmPolicy = new ILMPolicy(
@@ -119,7 +136,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
-                .withSetupOpSources(indexTemplate, ilmPolicy)
+                .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy)
                 .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
                         .withKeySequenceSelector(keySequenceSelector)
                         .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))

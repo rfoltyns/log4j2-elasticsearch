@@ -1,0 +1,12 @@
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        }
+      }
+    }
+  }
+}

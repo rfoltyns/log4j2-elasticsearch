@@ -21,7 +21,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import io.searchbox.client.JestResult;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
@@ -33,18 +33,14 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import java.util.Collections;
 
 /**
- * Index template setup operation factory.
- *
- * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
- * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html">Deprecated index templates</a>
+ * Component template setup. See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-component-template.html">Component Templates</a>
  */
-
-public class IndexTemplateSetupOp implements OperationFactory {
+public class ComponentTemplateSetupOp implements OperationFactory {
 
     protected final StepProcessor<SetupStep<GenericJestRequest, JestResult>> stepProcessor;
     protected final ValueResolver valueResolver;
 
-    public IndexTemplateSetupOp(
+    public ComponentTemplateSetupOp(
             StepProcessor<SetupStep<GenericJestRequest, JestResult>> stepProcessor,
             ValueResolver valueResolver) {
         this.stepProcessor = stepProcessor;
@@ -52,21 +48,20 @@ public class IndexTemplateSetupOp implements OperationFactory {
     }
 
     /**
-     * @param opSource {@link IndexTemplate} definition
-     * @return {@link Operation} that executes given index template
+     * @param opSource {@link ComponentTemplate} definition
+     * @return {@link Operation} that executes given component template
      */
     @Override
     public <T extends OpSource> Operation create(T opSource) {
-        IndexTemplate indexTemplate = (IndexTemplate) opSource;
+        ComponentTemplate componentTemplate = (ComponentTemplate) opSource;
 
-        SetupStep<GenericJestRequest, JestResult> putIndexTemplate =
-                new PutIndexTemplate(
-                        indexTemplate.getApiVersion(),
-                        indexTemplate.getName(),
-                        valueResolver.resolve(indexTemplate.getSource())
+        SetupStep<GenericJestRequest, JestResult> putComponentTemplate =
+                new PutComponentTemplate(
+                        componentTemplate.getName(),
+                        valueResolver.resolve(componentTemplate.getSource())
                 );
 
-        return new SkippingSetupStepChain<>(Collections.singletonList(putIndexTemplate), stepProcessor);
+        return new SkippingSetupStepChain(Collections.singletonList(putComponentTemplate), stepProcessor);
     }
 
 }

@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import io.searchbox.client.JestResult;
+import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
@@ -40,6 +41,7 @@ class JestOperationFactoryDispatcher extends OperationFactoryDispatcher {
     public JestOperationFactoryDispatcher(
             StepProcessor<SetupStep<GenericJestRequest, JestResult>> stepProcessor,
             ValueResolver valueResolver) {
+        register(ComponentTemplate.TYPE_NAME, new ComponentTemplateSetupOp(stepProcessor, valueResolver));
         register(IndexTemplate.TYPE_NAME, new IndexTemplateSetupOp(stepProcessor, valueResolver));
         register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver));
     }

@@ -23,11 +23,14 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
+import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.After;
 import org.junit.Test;
+
+import java.io.IOException;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.Assert.assertEquals;
@@ -141,7 +144,39 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void createsActualRequest() {
+    public void createsActualRequestIfComposable() throws IOException {
+
+        // given
+        PutIndexTemplate setupStep = new PutIndexTemplate(IndexTemplate.DEFAULT_API_VERSION + 1, TEST_TEMPLATE_NAME, TEST_SOURCE);
+
+        // when
+        Request request = setupStep.createRequest();
+
+        // then
+        assertEquals("PUT", request.getHttpMethodName());
+        assertEquals("_index_template/" + TEST_TEMPLATE_NAME, request.getURI());
+        assertTrue(request.serialize() == TEST_SOURCE);
+
+    }
+
+    @Test
+    public void createsActualRequestIfNotComposable() throws IOException {
+
+        // given
+        PutIndexTemplate setupStep = new PutIndexTemplate(IndexTemplate.DEFAULT_API_VERSION, TEST_TEMPLATE_NAME, TEST_SOURCE);
+
+        // when
+        Request request = setupStep.createRequest();
+
+        // then
+        assertEquals("PUT", request.getHttpMethodName());
+        assertEquals("_template/" + TEST_TEMPLATE_NAME, request.getURI());
+        assertTrue(request.serialize() == TEST_SOURCE);
+
+    }
+
+    @Test
+    public void defaultRequestNotComposable() throws IOException {
 
         // given
         PutIndexTemplate setupStep = new PutIndexTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
@@ -152,6 +187,7 @@ public class PutIndexTemplateTest {
         // then
         assertEquals("PUT", request.getHttpMethodName());
         assertEquals("_template/" + TEST_TEMPLATE_NAME, request.getURI());
+        assertTrue(request.serialize() == TEST_SOURCE);
 
     }
 
