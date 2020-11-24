@@ -25,6 +25,7 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
 import org.elasticsearch.client.AdminClient;
@@ -62,9 +63,8 @@ public class OperationFactoryTest {
 
         IndicesAdminClient indicesAdminClient = mockedIndicesAdminClient(factory);
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate.json")
-                .withName("testName")
                 .build());
 
         String expectedPayload = indexTemplate.getSource().replaceAll("\\s+","");

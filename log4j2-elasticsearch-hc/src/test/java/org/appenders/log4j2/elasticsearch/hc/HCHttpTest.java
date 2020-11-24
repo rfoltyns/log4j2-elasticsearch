@@ -37,6 +37,7 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
@@ -762,9 +763,8 @@ public class HCHttpTest {
                     throw testException;
                 });
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-7.json")
-                .withName("testName")
                 .build());
 
         factory.start();

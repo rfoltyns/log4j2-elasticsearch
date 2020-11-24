@@ -28,6 +28,7 @@ import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.junit.After;
 import org.junit.Assert;
@@ -69,9 +70,8 @@ public class OperationFactoryTest {
 
         mockedJestResult(jestClient, true);
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-6.json")
-                .withName("testName")
                 .build());
 
         String expectedPayload = indexTemplate.getSource();
@@ -102,9 +102,8 @@ public class OperationFactoryTest {
 
         JestResult mockedJestResult = mockedJestResult(jestClient, false);
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-6.json")
-                .withName("testName")
                 .build());
 
         OperationFactory operationFactory = factory.setupOperationFactory();
@@ -128,9 +127,8 @@ public class OperationFactoryTest {
 
         JestResult mockedJestResult = mockedJestResult(jestClient, true);
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-6.json")
-                .withName("testName")
                 .build());
 
         OperationFactory operationFactory = factory.setupOperationFactory();
@@ -160,9 +158,8 @@ public class OperationFactoryTest {
             throw testException;
         });
 
-        IndexTemplate indexTemplate = spy(IndexTemplate.newBuilder()
+        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-6.json")
-                .withName("testName")
                 .build());
 
         OperationFactory operationFactory = factory.setupOperationFactory();
