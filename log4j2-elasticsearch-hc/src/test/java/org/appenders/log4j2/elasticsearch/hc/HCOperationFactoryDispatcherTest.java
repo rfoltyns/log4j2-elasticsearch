@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class HCSetupOperationFactoryTest {
+public class HCOperationFactoryDispatcherTest {
 
     @Test
     public void supportsIndexTemplate() throws Exception {
@@ -63,10 +63,10 @@ public class HCSetupOperationFactoryTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "indexTemplate"));
 
-        HCSetupOperationFactory ops = new HCSetupOperationFactory(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
-        Operation result = ops.indexTemplate(indexTemplate);
+        Operation result = ops.create(indexTemplate);
         result.execute();
 
         // then
@@ -99,10 +99,10 @@ public class HCSetupOperationFactoryTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
 
-        HCSetupOperationFactory ops = new HCSetupOperationFactory(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
-        Operation result = ops.ilmPolicy(ilmPolicy);
+        Operation result = ops.create(ilmPolicy);
         result.execute();
 
         // then

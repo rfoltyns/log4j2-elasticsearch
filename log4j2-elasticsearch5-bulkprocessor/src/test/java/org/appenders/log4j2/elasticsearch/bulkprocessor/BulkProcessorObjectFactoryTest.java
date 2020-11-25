@@ -428,7 +428,7 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @Test
-    public void addAdminOperationExecutesImediately() throws Exception {
+    public void addAdminOperationExecutesImmediately() throws Exception {
 
         // given
         BulkProcessorObjectFactory factory = createTestObjectFactoryBuilder().build();

@@ -26,9 +26,9 @@ import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
+import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
-import org.appenders.log4j2.elasticsearch.SkippingSetupStepChain;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.jetbrains.annotations.NotNull;
@@ -43,10 +43,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class JestSetupOperationFactoryTest {
+public class JestOperationFactoryDispatcherTest {
 
     @Test
-    public void canProduceIndexTemplateSetupOp() {
+    public void canProduceIndexTemplateSetupOp() throws Exception {
 
         // given
         String expectedName = UUID.randomUUID().toString();
@@ -63,10 +63,10 @@ public class JestSetupOperationFactoryTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "indexTemplate"));
 
-        JestSetupOperationFactory ops = new JestSetupOperationFactory(stepProcessor, valueResolver);
+        JestOperationFactoryDispatcher ops = new JestOperationFactoryDispatcher(stepProcessor, valueResolver);
 
         // when
-        SkippingSetupStepChain<SetupStep<GenericJestRequest, JestResult>> result = ops.indexTemplate(indexTemplate);
+        Operation result = ops.create(indexTemplate);
         result.execute();
 
         // then
@@ -86,7 +86,7 @@ public class JestSetupOperationFactoryTest {
     }
 
     @Test
-    public void canProduceILMPolicySetupOp() {
+    public void canProduceILMPolicySetupOp() throws Exception {
 
         // given
         String expectedName = UUID.randomUUID().toString();
@@ -106,10 +106,10 @@ public class JestSetupOperationFactoryTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
 
-        JestSetupOperationFactory ops = new JestSetupOperationFactory(stepProcessor, valueResolver);
+        JestOperationFactoryDispatcher ops = new JestOperationFactoryDispatcher(stepProcessor, valueResolver);
 
         // when
-        SkippingSetupStepChain<SetupStep<GenericJestRequest, JestResult>> result = ops.ilmPolicy(ilmPolicy);
+        Operation result = ops.create(ilmPolicy);
         result.execute();
 
         // then

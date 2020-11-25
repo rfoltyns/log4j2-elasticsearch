@@ -236,7 +236,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     public OperationFactory setupOperationFactory() {
         // FIXME: move to constructor
         if (setupOps == null) {
-            setupOps = new JestSetupOperationFactory(this::executeOperation, valueResolver);
+            setupOps = new JestOperationFactoryDispatcher(this::executeOperation, valueResolver);
         }
         return setupOps;
     }

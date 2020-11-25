@@ -160,7 +160,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
 
     @Override
     public OperationFactory setupOperationFactory() {
-        return new BulkProcessorSetupOperationFactory(step -> step.execute(createClient()), valueResolver);
+        return new BulkProcessorOperationFactoryDispatcher(step -> step.execute(createClient()), valueResolver);
     }
 
     @PluginBuilderFactory

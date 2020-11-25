@@ -46,6 +46,7 @@ import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
@@ -95,7 +96,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
     private final ValueResolver valueResolver;
     private final PooledItemSourceFactory operationFactoryItemSourceFactory;
-    private final HCSetupOperationFactory setupOps;
+    private final OperationFactoryDispatcher setupOps;
     private HttpClient client;
 
     public HCHttp(Builder builder) {
@@ -306,8 +307,11 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         };
     }
 
-    private HCSetupOperationFactory createSetupOps() {
-        return new HCSetupOperationFactory(this::execute, valueResolver, operationFactoryItemSourceFactory);
+    private HCOperationFactoryDispatcher createSetupOps() {
+        return new HCOperationFactoryDispatcher(
+                this::execute,
+                valueResolver,
+                operationFactoryItemSourceFactory);
     }
 
     private Result execute(SetupStep<Request, Response> setupStep) {

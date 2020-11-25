@@ -42,11 +42,12 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
-import org.appenders.log4j2.elasticsearch.SetupOperationFactory;
+import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
@@ -823,17 +824,16 @@ public class HCHttpTest {
         //given
         HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
 
-        when(factory.setupOperationFactory()).thenReturn(new SetupOperationFactory() {
-            @Override
-            public Operation indexTemplate(IndexTemplate indexTemplate) {
-                return () -> {
-                    throw new RuntimeException("test exception");
-                };
-            }
-
-            @Override
-            public Operation ilmPolicy(ILMPolicy ilmPolicy) {
-                return null;
+        when(factory.setupOperationFactory()).thenReturn(new OperationFactoryDispatcher() {
+            {
+                register(IndexTemplate.TYPE_NAME, new OperationFactory() {
+                    @Override
+                    public <T extends OpSource> Operation create(T opSource) {
+                        return () -> {
+                            throw new RuntimeException("test exception");
+                        };
+                    }
+                });
             }
         });
 

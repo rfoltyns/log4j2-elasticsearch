@@ -104,17 +104,16 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
 
     @Override
     public OperationFactory setupOperationFactory() {
-        return new SetupOperationFactory() {
-            @Override
-            public Operation indexTemplate(IndexTemplate indexTemplate) {
-                SetupStep<Object, Object> dummySetupStep = new DummySetupStep();
-                return () -> Collections.singletonList(dummySetupStep);
-            }
-
-            @Override
-            public Operation ilmPolicy(ILMPolicy ilmPolicy) {
-                SetupStep<Object, Object> dummySetupStep = new DummySetupStep();
-                return () -> Collections.singletonList(dummySetupStep);
+        return new OperationFactoryDispatcher() {
+            {
+                OperationFactory operationFactory = new OperationFactory() {
+                    @Override
+                    public <T extends OpSource> Operation create(T opSource) {
+                        return () -> Collections.singletonList(new DummySetupStep());
+                    }
+                };
+                register(IndexTemplate.TYPE_NAME, operationFactory);
+                register(ILMPolicy.TYPE_NAME, operationFactory);
             }
         };
     }
@@ -185,16 +184,4 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
 
     }
 
-    private class DummySetupStep extends SetupStep<Object, Object> {
-
-        @Override
-        public Object createRequest() {
-            return null;
-        }
-
-        @Override
-        public Result onResponse(Object response) {
-            return null;
-        }
-    }
 }
