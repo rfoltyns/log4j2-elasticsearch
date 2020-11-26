@@ -90,7 +90,7 @@ Feature Requests welcome!
 
 ## Dependencies
 
-Be aware that Jackson FasterXML jars that has to be provided by user for this library to work in default mode.
+Be aware that Jackson FasterXML, Log4j2, Apache HC, Netty, Chronicle or JCTools jars may need to be provided for this library to work. By design, you can choose which jars you'd like to have on your classpath.
 Please visit [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for an overview of provided and compile dependencies
 
 ## Released to [Sonatype OSS repos](https://oss.sonatype.org/content/repositories/releases/org/appenders/log4j/)
