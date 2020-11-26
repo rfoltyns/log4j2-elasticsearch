@@ -107,7 +107,7 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
     <XPackAuth>
         <BasicCredentials username="admin" password="changeme" />
         <PEM keyPath="${sys:pemCertInfo.keyPath}"
-             keyPassphrase="${sys:pemCertInfo.keyPassphrase}" <!-- optional -->
+             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
              clientCertPath="${sys:pemCertInfo.clientCertPath}"
              caPath="${sys:pemCertInfo.caPath}" />
     </XPackAuth>
@@ -120,9 +120,9 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
     <XPackAuth>
         <BasicCredentials username="admin" password="changeme" />
         <JKS keystorePath="${sys:jksCertInfo.keystorePath}"
-             keystorePassword="${sys:jksCertInfo.keystorePassword}" <!-- optional -->
+             keystorePassword="${sys:jksCertInfo.keystorePassword}"
              truststorePath="${sys:jksCertInfo.truststorePath}"
-             truststorePassword="${sys:jksCertInfo.truststorePassword}" /> <!-- optional -->
+             truststorePassword="${sys:jksCertInfo.truststorePassword}" />
     </XPackAuth>
 </JestHttp>
 ```

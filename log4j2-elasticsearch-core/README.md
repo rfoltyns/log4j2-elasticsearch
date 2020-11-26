@@ -309,18 +309,16 @@ Example:
 
 Also, since `LogEvent.timeMillis` is not included in this layout, [IndexTemplate](#index-template) must include mappings for `instant.epochSeconds`:
 ```json
-...
-"mappings": {
-  "properties": {
-  ...
-    "instant.epochSecond": {
-      "type": "date",
-      "format": "epoch_second"
-    },
-  ...
+{
+  "mappings": {
+    "properties": {
+      "instant.epochSecond": {
+        "type": "date",
+        "format": "epoch_second"
+      }
+    }
   }
 }
-...
 ```
 
 #### Elastic Common Schema
@@ -376,18 +374,20 @@ appenderRef | Attribute | yes | n/a | Name of appender available in current conf
 
 Example:
 ```xml
-<Console name="CONSOLE" />
-<Elasticsearch name="elasticsearchAsyncBatch">
-    ...
-    <AsyncBatchDelivery ...>
+<Appenders>
+  <Console name="CONSOLE" />
+  <Elasticsearch name="elasticsearchAsyncBatch">
+      ...
+      <AsyncBatchDelivery>
         ...
         <AppenderRefFailoverPolicy>
-            <AppenderRef ref="CONSOLE" />
-        </AppenderRefFailoverPolicy>
-        ...
-    </AsyncBatchDelivery>
-    ...
-</Elasticsearch>
+              <AppenderRef ref="CONSOLE" />
+          </AppenderRefFailoverPolicy>
+          ...
+      </AsyncBatchDelivery>
+      ...
+  </Elasticsearch>
+</Appenders>
 ```
 
 #### ChronicleMapRetryFailoverPolicy
@@ -433,7 +433,7 @@ Example:
 ```xml
 <Elasticsearch>
     ...
-    <AsyncBatchDelivery ...>
+    <AsyncBatchDelivery>
         ...
         <ChronicleMapRetryFailoverPolicy fileName="failedItems.chronicleMap"
                                       numberOfEntries="1000000"
@@ -459,9 +459,9 @@ Example:
 ```xml
 <Elasticsearch>
     ...
-    <AsyncBatchDelivery ...>
+    <AsyncBatchDelivery>
         ...
-        <ChronicleMapRetryFailoverPolicy ...>
+        <ChronicleMapRetryFailoverPolicy>
             <SingleKeySequenceSelector sequenceId="1"/>
         </ChronicleMapRetryFailoverPolicy>
         ...
