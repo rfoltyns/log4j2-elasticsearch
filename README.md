@@ -37,9 +37,13 @@ Project consists of:
 * (1.5) [ILM policy](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#index-lifecycle-management) configuration
 * Configurable [Jackson modules](log4j2-elasticsearch-core#jackson-modules) support
 
-### Roadmap
+### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
+* Service Discovery for HC module
 * Metrics
+* More Elasticsearch API integrations
+
+Feature Requests welcome!
 
 ## Usage
 
