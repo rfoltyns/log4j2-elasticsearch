@@ -23,13 +23,17 @@ package org.appenders.log4j2.elasticsearch.failover;
 import net.openhft.chronicle.hash.ChronicleHashCorruption;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.jetbrains.annotations.NotNull;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -75,6 +79,16 @@ public class ChronicleMapRetryFailoverPolicyTest {
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+
+    @BeforeClass
+    public static void globalSetup() {
+        InternalLoggingTest.mockTestLogger();
+    }
+
+    @AfterClass
+    public static void globalTeardown() {
+        InternalLogging.setLogger(null);
+    }
 
     @Before
     public void setup() {

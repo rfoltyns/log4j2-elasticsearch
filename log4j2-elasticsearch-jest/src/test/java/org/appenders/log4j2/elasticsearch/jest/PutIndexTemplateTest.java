@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.client.JestResult;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.After;

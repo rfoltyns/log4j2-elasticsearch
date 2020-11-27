@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  * #L%
  */
 
-import com.google.gson.Gson;
 import io.searchbox.client.JestResult;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;

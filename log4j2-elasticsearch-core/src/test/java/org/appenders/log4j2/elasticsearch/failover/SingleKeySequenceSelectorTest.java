@@ -295,7 +295,6 @@ public class SingleKeySequenceSelectorTest {
         KeySequenceConfigRepository repository = new KeySequenceConfigRepository(map, 0) {
             @Override
             boolean consistencyCheck(KeySequenceConfig config) {
-                System.out.println("!!! Consistency check failed");
                 return false;
             }
         };

@@ -151,7 +151,6 @@ public abstract class BulkEmitterTest {
 
         // then
         verify(listener, times(1)).apply(any());
-        System.out.println(end - start);
         assertTrue(end - start >= slackTime);
 
     }

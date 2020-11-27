@@ -20,10 +20,8 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import io.netty.buffer.ByteBuf;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
-import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;

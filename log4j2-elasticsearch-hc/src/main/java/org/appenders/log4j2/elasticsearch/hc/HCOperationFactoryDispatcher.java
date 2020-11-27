@@ -24,17 +24,10 @@ import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
-import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.SetupStep;
-import org.appenders.log4j2.elasticsearch.SkippingSetupStepChain;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
-
-import java.util.Arrays;
-
-import static org.appenders.log4j2.elasticsearch.hc.CreateBootstrapIndex.BOOTSTRAP_TEMPLATE;
 
 /**
  * {@inheritDoc}

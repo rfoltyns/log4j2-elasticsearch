@@ -20,15 +20,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.ILMPolicy;
-import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,10 +33,8 @@ import org.junit.rules.ExpectedException;
 import java.util.UUID;
 
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 
 public class BulkProcessorOperationFactoryDispatcherTest {
 

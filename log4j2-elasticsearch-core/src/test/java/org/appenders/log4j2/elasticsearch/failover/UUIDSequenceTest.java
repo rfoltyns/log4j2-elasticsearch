@@ -571,11 +571,6 @@ public class UUIDSequenceTest {
 
     }
 
-    @Test
-    public void keyToUUID() {
-        System.out.println(UUID.fromString("00000000-0000-0003-0000-000000014b63").getLeastSignificantBits());
-    }
-
     public long getSequenceIndex(CharSequence expectedReaderKey1) {
         return UUID.fromString((String) expectedReaderKey1).getLeastSignificantBits();
     }
