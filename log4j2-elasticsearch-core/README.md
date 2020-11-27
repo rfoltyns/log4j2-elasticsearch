@@ -64,6 +64,11 @@ Delivery is triggered after `deliveryInterval` or when number of undelivered log
 
 `BatchEmitterFactory<T extends BatchEmitter>` implementations are located using `java.util.ServiceLoader`. `org.appenders.log4j2.elasticsearch.BulkEmitter` is the current default implementation.
 
+Since 1.5.2, each factory has it's `loadingOrder` to make extensions easier. Default loading order of each of your extensions is `100`. Loading order of all provided implementations is and always will be higher than `100` and can be overridden with `appenders.<FACTORY_CLASS_SIMPLE_NAME>.loadingOrder` property, e.g.
+```
+-Dappenders.BulkEmitterFactory.loadingOrder=90
+```
+
 ### Index name
 Since 1.1, index name can be defined using `IndexName` tag:
 

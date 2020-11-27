@@ -26,7 +26,10 @@ import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import java.util.Random;
+
 import static org.appenders.log4j2.elasticsearch.hc.HCHttpTest.createDefaultHttpObjectFactoryBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 
@@ -87,6 +90,41 @@ public class BulkEmitterFactoryTest {
 
         // then
         Mockito.verify(clientObjectFactory).createBatchOperations();
+
+    }
+
+    @Test
+    public void loadingOrderCanBeOverriddenWithProperty() {
+
+        // given
+        BulkEmitterFactory factory = new BulkEmitterFactory();
+
+        int expectedLoadingOrder = new Random().nextInt(100) + 1;
+        System.setProperty("appenders." + BulkEmitterFactory.class.getSimpleName() + ".loadingOrder", Integer.toString(expectedLoadingOrder));
+
+        // when
+        int loadingOrder = factory.loadingOrder();
+
+        // then
+        assertEquals(expectedLoadingOrder, loadingOrder);
+
+    }
+
+    @Test
+    public void defaultLoadingOrderIsReturnedIfPropertyNotSet() {
+
+        // given
+        int expectedLoadingOrder = BatchEmitterFactory.DEFAULT_LOADING_ORDER + 10;
+
+        BulkEmitterFactory factory = new BulkEmitterFactory();
+
+        System.clearProperty("appenders." + BulkEmitterFactory.class.getSimpleName() + ".loadingOrder");
+
+        // when
+        int loadingOrder = factory.loadingOrder();
+
+        // then
+        assertEquals(expectedLoadingOrder, loadingOrder);
 
     }
 

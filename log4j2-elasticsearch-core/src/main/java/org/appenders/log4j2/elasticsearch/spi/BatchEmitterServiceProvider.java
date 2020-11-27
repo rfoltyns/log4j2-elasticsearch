@@ -27,11 +27,16 @@ import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -40,6 +45,8 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * {@link BatchEmitterFactory} SPI loader.
  */
 public class BatchEmitterServiceProvider {
+
+    private static final Comparator<BatchEmitterFactory> LOADING_ORDER = new NaturalLoadingOrder();
 
     private final Collection<Iterable<BatchEmitterFactory>> serviceLoaders;
 
@@ -77,44 +84,63 @@ public class BatchEmitterServiceProvider {
                                        ClientObjectFactory clientObjectFactory,
                                        FailoverPolicy failoverPolicy) {
 
+        final Set<BatchEmitterFactory> batchEmitterFactories = new TreeSet<>(LOADING_ORDER);
+
         for (Iterable<BatchEmitterFactory> serviceLoader : serviceLoaders) {
 
-            BatchEmitter batchEmitter = createInstance(
-                    batchSize,
-                    deliveryInterval,
+            batchEmitterFactories.addAll(getCompatibleFactories(
                     clientObjectFactory,
-                    failoverPolicy,
-                    serviceLoader);
+                    serviceLoader));
 
+        }
+
+        for (BatchEmitterFactory factory : batchEmitterFactories) {
+
+            BatchEmitter batchEmitter = factory.createInstance(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
             if (batchEmitter != null) {
+                getLogger().info("Using {} as {}", factory.getClass().getName(), getClass().getSimpleName());
                 return batchEmitter;
             }
 
         }
+
         throw new ConfigurationException(String.format(
                 "No compatible BatchEmitter implementations for %s found",
                 clientObjectFactory.getClass().getName()));
     }
 
-    private BatchEmitter createInstance(int batchSize,
-                                        int deliveryInterval,
-                                        ClientObjectFactory clientObjectFactory,
-                                        FailoverPolicy failoverPolicy,
-                                        Iterable<BatchEmitterFactory> serviceLoader){
+    private List<BatchEmitterFactory> getCompatibleFactories(
+            ClientObjectFactory clientObjectFactory,
+            Iterable<BatchEmitterFactory> serviceLoader){
+
+        final List<BatchEmitterFactory> factories = new ArrayList<>();
 
         for (BatchEmitterFactory factory : serviceLoader) {
             getLogger().info("{} class found {}", BatchEmitterFactory.class.getSimpleName(), factory.getClass().getName());
             if (factory.accepts(clientObjectFactory.getClass())) {
-                getLogger().info("Using {} as {}", factory.getClass().getName(), getClass().getSimpleName());
-                return factory.createInstance(batchSize, deliveryInterval, clientObjectFactory, failoverPolicy);
+                factories.add(factory);
             }
         }
 
-        return null;
+        return factories;
     }
 
     private static Iterable<BatchEmitterFactory> serviceLoader(ClassLoader classLoader) {
         return ServiceLoader.load(BatchEmitterFactory.class, classLoader);
     }
 
+    private static class NaturalLoadingOrder implements Comparator<BatchEmitterFactory> {
+
+        @Override
+        public int compare(BatchEmitterFactory o1, BatchEmitterFactory o2) {
+
+            if (o1.loadingOrder() == o2.loadingOrder()) {
+                return 0;
+            }
+
+            return o1.loadingOrder() > o2.loadingOrder() ? 1 : -1;
+
+        }
+
+    }
 }

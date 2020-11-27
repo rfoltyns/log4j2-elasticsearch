@@ -27,12 +27,17 @@ package org.appenders.log4j2.elasticsearch;
  * Instances of implementing classes are created by {@link org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider}
  * using {@link java.util.ServiceLoader}.
  * <p>
- * Given that multiple factories might be available in runtime, {@link BatchEmitterFactory#accepts accepts()} can
- * validate compatibility with {@link ClientObjectFactory}.
+ * Given that multiple factories might be available in runtime:
+ * <ul>
+ * <li>{@link BatchEmitterFactory#accepts accepts()} can validate compatibility with {@link ClientObjectFactory}.</li>
+ * <li>{@link BatchEmitterFactory#loadingOrder loadingOrder()} can determine which compatible factory takes precedence</li>
+ * </ul>
  *
  * @param <T> return type
  */
 public interface BatchEmitterFactory<T extends BatchEmitter> {
+
+    int DEFAULT_LOADING_ORDER = 100;
 
     /**
      * Validates given {@link ClientObjectFactory} class
@@ -42,6 +47,15 @@ public interface BatchEmitterFactory<T extends BatchEmitter> {
      * ClientObjectFactory}, false otherwise
      */
     boolean accepts(Class<? extends ClientObjectFactory> clientObjectFactoryClass);
+
+    /**
+     * Determines loading priority. Factories with lower order SHOULD be loaded before factories with higher order
+     *
+     * @return loading order of this factory
+     */
+    default int loadingOrder() {
+        return DEFAULT_LOADING_ORDER;
+    }
 
     /**
      * Creates an instance of {@link BatchEmitter}
