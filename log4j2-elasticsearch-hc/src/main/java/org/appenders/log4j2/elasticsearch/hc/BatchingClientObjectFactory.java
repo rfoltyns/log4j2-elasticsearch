@@ -120,6 +120,8 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
                     backoffPolicy.register(request);
                 }
 
+                getLogger().info("Sending batch of {} items", request.getItems().size());
+
                 ResponseHandler<BatchResult> responseHandler = createResultHandler(request, failureHandler);
                 // FIXME: Batch interface shouldn't extend Request!
                 createClient().executeAsync(request, responseHandler);
