@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.ServiceLoader;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
@@ -39,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,24 +45,118 @@ import static org.mockito.Mockito.verify;
 public class BatchEmitterServiceProviderLoadingOrderTest {
 
     @Test
-    public void firstServiceLoaderWins() {
+    public void factoryWithLowestLoadingOrderWins() {
 
         // given
-        Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable());
-
-        Iterable<BatchEmitterFactory> serviceLoader2 = ServiceLoader.load(
-                BatchEmitterFactory.class,
-                TestBatchEmitterFactory.class.getClassLoader());
-
-
+        BatchEmitter expected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory1 = new TestBatchEmitterFactory(1) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return expected;
+            }
+        };
         BatchEmitter notExpected = mock(BatchEmitter.class);
-        TestBatchEmitterFactory factory = new TestBatchEmitterFactory() {
+        TestBatchEmitterFactory factory2 = new TestBatchEmitterFactory(2) {
             @Override
             public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
                 return notExpected;
             }
         };
-        Iterable<BatchEmitterFactory> serviceLoader3 = spy(createTestIterable(factory));
+
+        Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable(factory1, factory2));
+
+        BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
+                Arrays.asList(serviceLoader1));
+
+        // when
+        BatchEmitter instance = serviceProvider.createInstance(
+                0,
+                0,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy());
+
+        assertSame(expected, instance);
+
+    }
+
+    @Test
+    public void firstFactoryWithDefaultPriorityWinsIfAllFactoriesHaveDefaultPriority() {
+
+        // given
+        BatchEmitter expected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory1 = new TestBatchEmitterFactory() {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return expected;
+            }
+        };
+        BatchEmitter notExpected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory2 = new TestBatchEmitterFactory() {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return notExpected;
+            }
+        };
+
+        assertSame(new BatchEmitterFactory<BatchEmitter>() {
+            @Override
+            public boolean accepts(Class<? extends ClientObjectFactory> clientObjectFactoryClass) {
+                return false;
+            }
+
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return null;
+            }
+        }.loadingOrder(), factory1.loadingOrder());
+        assertSame(factory1.loadingOrder(), factory2.loadingOrder());
+
+        Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable(factory1, factory2));
+
+        BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
+                Arrays.asList(serviceLoader1));
+
+        // when
+        BatchEmitter instance = serviceProvider.createInstance(
+                0,
+                0,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy());
+
+        assertSame(expected, instance);
+
+    }
+
+    @Test
+    public void firstServiceLoaderWinsIfAllFactoriesHaveTheSamePriority() {
+
+        // given
+        Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable());
+
+        BatchEmitter expected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory1 = new TestBatchEmitterFactory(1) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return expected;
+            }
+        };
+
+        BatchEmitter notExpected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory2 = new TestBatchEmitterFactory(1) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return notExpected;
+            }
+        };
+        Iterable<BatchEmitterFactory> serviceLoader2 = spy(createTestIterable(factory1, factory2));
+
+        TestBatchEmitterFactory factory3 = new TestBatchEmitterFactory(1) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return notExpected;
+            }
+        };
+        Iterable<BatchEmitterFactory> serviceLoader3 = spy(createTestIterable(factory3));
 
         BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
                 Arrays.asList(serviceLoader1, serviceLoader2, serviceLoader3));
@@ -81,7 +173,8 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
         assertNotSame(notExpected, instance);
 
         verify(serviceLoader1, times(1)).iterator();
-        verify(serviceLoader3, never()).iterator();
+        verify(serviceLoader2, times(1)).iterator();
+        verify(serviceLoader3, times(1)).iterator();
 
     }
 
@@ -111,9 +204,61 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
                 createTestObjectFactoryBuilder().build(),
                 new NoopFailoverPolicy());
 
-        verify(serviceLoader1, times(1)).iterator();
         assertSame(expected, instance);
 
+        verify(serviceLoader1, times(1)).iterator();
+        verify(serviceLoader2, times(1)).iterator();
+    }
+
+    @Test
+    public void checksUntilLastIfPreviousFactoryReturnsNull() {
+
+        // given
+        TestBatchEmitterFactory factory1 = new TestBatchEmitterFactory(1) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return null;
+            }
+        };
+
+        BatchEmitter expected = mock(BatchEmitter.class);
+        TestBatchEmitterFactory factory2 = new TestBatchEmitterFactory(2) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return expected;
+            }
+        };
+        Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable(factory1, factory2));
+
+        TestBatchEmitterFactory factory3 = new TestBatchEmitterFactory(3) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return null;
+            }
+        };
+
+        TestBatchEmitterFactory factory4 = new TestBatchEmitterFactory(4) {
+            @Override
+            public BatchEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
+                return null;
+            }
+        };
+        Iterable<BatchEmitterFactory> serviceLoader2 = spy(createTestIterable(factory4, factory3));
+
+        BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
+                Arrays.asList(serviceLoader2, serviceLoader1));
+
+        // when
+        BatchEmitter instance = serviceProvider.createInstance(
+                0,
+                0,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy());
+
+        assertSame(expected, instance);
+
+        verify(serviceLoader1, times(1)).iterator();
+        verify(serviceLoader2, times(1)).iterator();
     }
 
     @Test
@@ -138,7 +283,7 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
 
     }
 
-    private Iterable<BatchEmitterFactory> createTestIterable(TestBatchEmitterFactory testBatchEmitterFactory) {
+    private Iterable<BatchEmitterFactory> createTestIterable(TestBatchEmitterFactory... testBatchEmitterFactory) {
         return new TestIterable(testBatchEmitterFactory);
     }
 
@@ -148,10 +293,11 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
 
     private class TestIterable implements Iterable<BatchEmitterFactory> {
 
-        private final BatchEmitterFactory value;
+        private int currentIndex = 0;
+        private final BatchEmitterFactory[] values;
 
-        public TestIterable(BatchEmitterFactory value) {
-            this.value = value;
+        public TestIterable(BatchEmitterFactory... values) {
+            this.values = values;
         }
 
         @NotNull
@@ -159,16 +305,17 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
         public Iterator<BatchEmitterFactory> iterator() {
             return new Iterator<BatchEmitterFactory>() {
 
-                int left = value != null ? 1 : 0;
-
                 @Override
                 public boolean hasNext() {
-                    return left-- > 0;
+                    if (values == null) {
+                        return false;
+                    }
+                    return currentIndex < values.length;
                 }
 
                 @Override
                 public BatchEmitterFactory next() {
-                    return value;
+                    return values[currentIndex++];
                 }
             };
         }

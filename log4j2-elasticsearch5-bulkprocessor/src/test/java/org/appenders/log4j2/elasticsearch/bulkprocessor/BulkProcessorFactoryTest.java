@@ -23,14 +23,17 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Random;
 import java.util.function.Function;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -109,6 +112,41 @@ public class BulkProcessorFactoryTest {
 
         // then
         verify(failureHandler, times(0)).apply(any());
+
+    }
+
+    @Test
+    public void loadingOrderCanBeOverriddenWithProperty() {
+
+        // given
+        BulkProcessorFactory factory = new BulkProcessorFactory();
+
+        int expectedLoadingOrder = new Random().nextInt(100) + 1;
+        System.setProperty("appenders." + BulkProcessorFactory.class.getSimpleName() + ".loadingOrder", Integer.toString(expectedLoadingOrder));
+
+        // when
+        int loadingOrder = factory.loadingOrder();
+
+        // then
+        assertEquals(expectedLoadingOrder, loadingOrder);
+
+    }
+
+    @Test
+    public void defaultLoadingOrderIsReturnedIfPropertyNotSet() {
+
+        // given
+        int expectedLoadingOrder = BatchEmitterFactory.DEFAULT_LOADING_ORDER + 10;
+
+        BulkProcessorFactory factory = new BulkProcessorFactory();
+
+        System.clearProperty("appenders." + BulkProcessorFactory.class.getSimpleName() + ".loadingOrder");
+
+        // when
+        int loadingOrder = factory.loadingOrder();
+
+        // then
+        assertEquals(expectedLoadingOrder, loadingOrder);
 
     }
 

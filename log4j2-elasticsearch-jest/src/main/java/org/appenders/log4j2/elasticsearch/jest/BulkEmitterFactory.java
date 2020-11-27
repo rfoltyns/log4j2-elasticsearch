@@ -34,6 +34,18 @@ public class BulkEmitterFactory implements BatchEmitterFactory<BulkEmitter> {
         return JestHttpObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
     }
 
+    /**
+     * @return By default, {@link BatchEmitterFactory#DEFAULT_LOADING_ORDER} + 10. Can be overridden with {@code -Dappenders.BulkEmitterFactory.loadingOrder}
+     */
+    @Override
+    public int loadingOrder() {
+        String priority = System.getProperty("appenders." + BulkEmitterFactory.class.getSimpleName() + ".loadingOrder");
+        if (priority == null) {
+            return DEFAULT_LOADING_ORDER + 10;
+        }
+        return Integer.parseInt(priority);
+    }
+
     @Override
     public BulkEmitter createInstance(int batchSize, int deliveryInterval, ClientObjectFactory clientObjectFactory, FailoverPolicy failoverPolicy) {
         BulkEmitter bulkEmitter = new BulkEmitter(batchSize, deliveryInterval, clientObjectFactory.createBatchOperations());

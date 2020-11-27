@@ -21,23 +21,34 @@ package org.appenders.log4j2.elasticsearch.spi;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.BulkEmitter;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.TestHttpObjectFactory;
-import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.mockito.Mockito;
 
 public class TestBatchEmitterFactory extends BatchEmitterServiceProvider implements BatchEmitterFactory<BatchEmitter> {
 
     BatchEmitter spiedEmitter;
+    private int loadingOrder = DEFAULT_LOADING_ORDER;
+
+    public TestBatchEmitterFactory() {
+    }
+
+    public TestBatchEmitterFactory(int loadingOrder) {
+        this.loadingOrder = loadingOrder;
+    }
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {
         return TestHttpObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
+    }
+
+    @Override
+    public int loadingOrder() {
+        return loadingOrder;
     }
 
     @Override

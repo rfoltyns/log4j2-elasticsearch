@@ -33,11 +33,23 @@ import org.elasticsearch.common.unit.TimeValue;
 
 import java.util.function.Function;
 
-public class BulkProcessorFactory implements BatchEmitterFactory {
+public class BulkProcessorFactory implements BatchEmitterFactory<BatchEmitter> {
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {
         return BulkProcessorObjectFactory.class.isAssignableFrom(clientObjectFactoryClass);
+    }
+
+    /**
+     * @return By default, {@link BatchEmitterFactory#DEFAULT_LOADING_ORDER} + 10. Can be overridden with {@code -Dappenders.BulkProcessorFactory.loadingOrder}
+     */
+    @Override
+    public int loadingOrder() {
+        String priority = System.getProperty("appenders." + BulkProcessorFactory.class.getSimpleName() + ".loadingOrder");
+        if (priority == null) {
+            return DEFAULT_LOADING_ORDER + 10;
+        }
+        return Integer.parseInt(priority);
     }
 
     @Override
