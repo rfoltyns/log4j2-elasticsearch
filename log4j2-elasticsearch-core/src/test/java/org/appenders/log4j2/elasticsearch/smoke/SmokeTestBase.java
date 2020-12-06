@@ -141,7 +141,7 @@ public abstract class SmokeTestBase {
 
         System.setProperty("log4j2.enable.threadlocals", "true");
         System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("log4j2.garbagefreeThreadContextMap", "true");
+        System.setProperty("log4j2.garbagefree.threadContextMap", "true");
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
         System.setProperty("AsyncLogger.RingBufferSize", "16384");
         System.setProperty("AsyncLoggerConfig.RingBufferSize", "16384");
@@ -163,7 +163,7 @@ public abstract class SmokeTestBase {
 
         System.setProperty("log4j2.enable.threadlocals", "true");
         System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("log4j2.garbagefreeThreadContextMap", "true");
+        System.setProperty("log4j2.garbagefree.threadContextMap", "true");
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         System.setProperty("AsyncLogger.RingBufferSize", "16384");
