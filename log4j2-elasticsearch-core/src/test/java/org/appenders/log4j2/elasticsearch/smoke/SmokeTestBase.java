@@ -201,7 +201,8 @@ public abstract class SmokeTestBase {
         context.setConfigLocation(uri);
 
         Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> "Message " + counter.incrementAndGet());
+        final String log = createLog();
+        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> log);
     }
 
     @Test

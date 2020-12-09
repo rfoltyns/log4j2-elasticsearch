@@ -138,6 +138,7 @@ public class SmokeTest extends SmokeTestBase {
                     .withPoolName("itemPool")
                     .withInitialPoolSize(initialItemPoolSize)
                     .withItemSizeInBytes(initialItemBufferSizeInBytes)
+                    .withMaxItemSizeInBytes(initialItemBufferSizeInBytes * 2)
                     .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
                     .withMonitored(true)
                     .withMonitorTaskInterval(10000)
