@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.core.JsonStreamContext;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.json.JsonWriteContextAccessor;
 import com.fasterxml.jackson.core.json.UTF8JsonGenerator;
 
 import java.io.IOException;

@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.core.io.IOContext;
-import com.fasterxml.jackson.core.json.JsonWriteContextAccessor;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 
 import java.io.DataOutput;

@@ -1,4 +1,4 @@
-package com.fasterxml.jackson.core.json;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
@@ -20,12 +20,12 @@ package com.fasterxml.jackson.core.json;
  * #L%
  */
 
+import com.fasterxml.jackson.core.json.JsonWriteContext;
 import org.junit.Test;
 
-import static com.fasterxml.jackson.core.JsonStreamContextAccessor.TYPE_ROOT;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class JsonWriteContextAccessorTest {
 
@@ -34,14 +34,14 @@ public class JsonWriteContextAccessorTest {
 
         // given
         JsonWriteContextAccessor ctxAccess = new JsonWriteContextAccessor();
-        JsonWriteContext context = new JsonWriteContext(TYPE_ROOT, null, null);
+        JsonWriteContext context = JsonWriteContext.createRootContext(null);
 
         // when
         JsonWriteContext ctxAfterReset = ctxAccess.reset(context);
 
         // then
         assertSame(context, ctxAfterReset);
-        assertEquals(ctxAccess.getType(ctxAfterReset), TYPE_ROOT);
+        assertTrue(ctxAccess.inRoot(ctxAfterReset));
 
     }
 
@@ -50,21 +50,18 @@ public class JsonWriteContextAccessorTest {
 
         // given
         JsonWriteContextAccessor ctxAccess = new JsonWriteContextAccessor();
-        JsonWriteContext grandpaContext = new JsonWriteContext(TYPE_ROOT, null, null);
+        JsonWriteContext grandpaContext = JsonWriteContext.createRootContext(null);
         JsonWriteContext parentContext = grandpaContext.createChildObjectContext();
         JsonWriteContext childContext = parentContext.createChildObjectContext();
 
-        int childContextType = ctxAccess.getType(childContext);
-
-        assertNotEquals(ctxAccess.getType(childContext), TYPE_ROOT);
+        assertFalse(ctxAccess.inRoot(childContext));
 
         // when
         JsonWriteContext ctxAfterReset = ctxAccess.reset(childContext);
 
         // then
         assertSame(grandpaContext, ctxAfterReset);
-        assertEquals(TYPE_ROOT, ctxAccess.getType(ctxAfterReset));
-        assertEquals(childContextType, ctxAccess.getType(childContext));
+        assertTrue(ctxAccess.inRoot(ctxAfterReset));
 
     }
 

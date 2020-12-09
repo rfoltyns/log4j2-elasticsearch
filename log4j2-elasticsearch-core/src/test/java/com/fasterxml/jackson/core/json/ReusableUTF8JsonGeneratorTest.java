@@ -23,6 +23,7 @@ package com.fasterxml.jackson.core.json;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.util.BufferRecycler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.appenders.log4j2.elasticsearch.JsonWriteContextAccessor;
 import org.appenders.log4j2.elasticsearch.OutputStreamDelegate;
 import org.appenders.log4j2.elasticsearch.ReusableIOContext;
 import org.appenders.log4j2.elasticsearch.ReusableUTF8JsonGenerator;

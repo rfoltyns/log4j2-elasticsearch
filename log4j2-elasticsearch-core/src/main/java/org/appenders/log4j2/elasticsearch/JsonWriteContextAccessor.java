@@ -1,4 +1,4 @@
-package com.fasterxml.jackson.core.json;
+package org.appenders.log4j2.elasticsearch;
 
 /*-
  * #%L
@@ -20,16 +20,14 @@ package com.fasterxml.jackson.core.json;
  * #L%
  */
 
-import com.fasterxml.jackson.core.JsonStreamContextAccessor;
+import com.fasterxml.jackson.core.json.JsonWriteContext;
 
-import static com.fasterxml.jackson.core.JsonStreamContextAccessor.TYPE_ROOT;
+import static com.fasterxml.jackson.core.JsonStreamContext.TYPE_ROOT;
 
 /**
  * Helper class to allow {@code com.fasterxml.jackson.core.json.JsonWriteContext} state access.
  */
 public class JsonWriteContextAccessor {
-
-    private final JsonStreamContextAccessor streamCtxAccess = new JsonStreamContextAccessor();
 
     public JsonWriteContext reset(JsonWriteContext ctx) {
 
@@ -46,8 +44,8 @@ public class JsonWriteContextAccessor {
         return parent.reset(TYPE_ROOT);
     }
 
-    int getType(JsonWriteContext ctx) {
-        return streamCtxAccess.getType(ctx);
+    /* visible for testing */
+    boolean inRoot(JsonWriteContext ctxAfterReset) {
+        return ctxAfterReset.inRoot();
     }
-
 }
