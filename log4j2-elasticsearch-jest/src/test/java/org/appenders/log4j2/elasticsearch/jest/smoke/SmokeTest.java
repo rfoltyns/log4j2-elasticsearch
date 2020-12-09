@@ -54,6 +54,7 @@ import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.junit.BeforeClass;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public class SmokeTest extends SmokeTestBase {
@@ -73,6 +74,14 @@ public class SmokeTest extends SmokeTestBase {
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
         final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-jest");
         final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
+
+        getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
+                "batchSize", batchSize,
+                "initialBatchPoolSize", initialBatchPoolSize,
+                "initialItemBufferSizeInBytes", initialItemBufferSizeInBytes,
+                "initialBatchPoolSize", initialBatchPoolSize,
+                "indexName", indexName,
+                "ecsEnabled", ecsEnabled);
 
         JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
         if (buffered) {
