@@ -132,6 +132,9 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         @PluginBuilderAttribute
         protected long resizeTimeout = DEFAULT_RESIZE_TIMEOUT;
 
+        @PluginBuilderAttribute
+        protected int maxItemSizeInBytes = Integer.MAX_VALUE;
+
         @Override
         public PooledItemSourceFactory build() {
 
@@ -140,6 +143,12 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
             }
             if (itemSizeInBytes <= 0) {
                 throw new ConfigurationException("itemSizeInBytes must be higher than 0 for " + PLUGIN_NAME);
+            }
+            if (maxItemSizeInBytes <= 0) {
+                throw new ConfigurationException("maxItemSizeInBytes must be higher than 0 for " + PLUGIN_NAME);
+            }
+            if (maxItemSizeInBytes < itemSizeInBytes) {
+                throw new ConfigurationException("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes for " + PLUGIN_NAME);
             }
 
             if (poolName == null) {
@@ -176,7 +185,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
             UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
             ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
                     byteBufAllocator,
-                    itemSizeInBytes);
+                    new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, maxItemSizeInBytes));
 
             return new GenericItemSourcePool<>(
                     poolName,
@@ -190,11 +199,20 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         }
 
         /**
-         * @param itemSizeInBytes estimated pooled item size
+         * @param itemSizeInBytes initial pooled item size
          * @return this
          */
         public Builder withItemSizeInBytes(int itemSizeInBytes) {
             this.itemSizeInBytes = itemSizeInBytes;
+            return this;
+        }
+
+        /**
+         * @param maxItemSizeInBytes maximum pooled item size (target size if oversized in runtime)
+         * @return this
+         */
+        public Builder withMaxItemSizeInBytes(int maxItemSizeInBytes) {
+            this.maxItemSizeInBytes = maxItemSizeInBytes;
             return this;
         }
 

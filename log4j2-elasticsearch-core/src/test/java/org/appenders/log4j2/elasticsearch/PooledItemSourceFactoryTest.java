@@ -72,7 +72,8 @@ public class PooledItemSourceFactoryTest {
     public static PooledItemSourceFactory.Builder createDefaultTestSourceFactoryConfig() {
         return PooledItemSourceFactory.newBuilder()
                 .withInitialPoolSize(DEFAULT_TEST_POOL_SIZE)
-                .withItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+                .withItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES)
+                .withMaxItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
     }
 
     @Test
@@ -146,6 +147,55 @@ public class PooledItemSourceFactoryTest {
 
         expectedException.expect(ConfigurationException.class);
         expectedException.expectMessage("itemSizeInBytes must be higher than 0");
+        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
+
+        // when
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsOnMaxItemSizeInBytesZero() {
+
+        // given
+        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+                .withMaxItemSizeInBytes(0);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("maxItemSizeInBytes must be higher than 0");
+        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
+
+        // when
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsOnMaxItemSizeInBytesLessThanZero() {
+
+        // given
+        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+                .withMaxItemSizeInBytes(-1);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("maxItemSizeInBytes must be higher than 0");
+        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
+
+        // when
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsOnMaxItemSizeInBytesLowerThanItemSizeInBytes() {
+
+        // given
+        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+                .withMaxItemSizeInBytes(1)
+                .withItemSizeInBytes(2);
+
+        expectedException.expect(ConfigurationException.class);
+        expectedException.expectMessage("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes");
         expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
 
         // when
@@ -310,6 +360,7 @@ public class PooledItemSourceFactoryTest {
                 .withResizeTimeout(resizeTimeout)
                 .withInitialPoolSize(initialPoolSize)
                 .withItemSizeInBytes(itemSizeInBytes)
+                .withMaxItemSizeInBytes(itemSizeInBytes * 2)
                 .withPoolName(poolName);
 
         GenericItemSourcePool pool = GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(DEFAULT_TEST_POOL_SIZE, monitored);

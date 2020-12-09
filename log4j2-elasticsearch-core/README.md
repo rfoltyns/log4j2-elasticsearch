@@ -558,6 +558,7 @@ Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
 initialPoolSize | Attribute | Yes | None | Number of pooled elements created at startup
 itemSizeInBytes | Attribute | Yes | None | Initial size of single buffer instance
+maxItemSizeInBytes | Attribute | No | Integer.MAX_VALUE | Since 1.4.5. Maximum size of single buffer instance when added to the pool. Pooled item size can still exceed this value in runtime if needed, but eventually it will be reduced on `ByteBufItemSource.release()`
 resizePolicy | Element | No | `UnlimitedReizePolicy` | `ResizePolicy` used whem pool resizing is triggered
 resizeTimeout | Attribute | No | 1000 | When multiple threads try to get a pooled element and pool is empty, only the first thread will trigger resizing. This attribute configures maximum interval in milliseconds between two consecutive attempts to get a pooled element by other threads.
 monitored | Attribute | No | false | If `true`, pool metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly
@@ -568,7 +569,7 @@ Example:
 ``` xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     <JacksonJsonLayout>
-        <PooledItemSourceFactory itemSizeInBytes="1024" initialPoolSize="20000" />
+        <PooledItemSourceFactory itemSizeInBytes="1024" maxItemSizeInBytes="16384" initialPoolSize="20000" />
     </JacksonJsonLayout>
     <AsyncBatchDelivery batchSize="5000" deliveryInterval="20000" >
         ...
