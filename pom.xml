@@ -3,7 +3,7 @@
     <groupId>org.appenders.log4j</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
-    <version>1.4.5</version>
+    <version>1.4.6-SNAPSHOT</version>
     <name>appenders.org Parent</name>
     <description>appenders.org Parent POM</description>
 
@@ -29,7 +29,7 @@
         <url>https://github.com/rfoltyns/log4j2-elasticsearch</url>
         <connection>scm:git:https://github.com/rfoltyns/log4j2-elasticsearch.git</connection>
         <developerConnection>scm:git:git@github.com:rfoltyns/log4j2-elasticsearch.git</developerConnection>
-      <tag>1.4.5</tag>
+      <tag>HEAD</tag>
     </scm>
 
     <distributionManagement>
