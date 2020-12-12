@@ -42,6 +42,7 @@ import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
@@ -67,16 +68,16 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     /**
      * This constructor is deprecated and will be removed in 1.5.
      *
-     * @param serverUris
-     * @param connTimeout
-     * @param readTimeout
-     * @param maxTotalConnections
-     * @param defaultMaxTotalConnectionPerRoute
-     * @param discoveryEnabled
-     * @param bufferedSourceFactory
-     * @param auth
+     * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
+     * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
+     * @param readTimeout Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes
+     * @param maxTotalConnections Number of connections available
+     * @param defaultMaxTotalConnectionPerRoute Number of connections available per Apache CPool
+     * @param discoveryEnabled If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes
+     * @param bufferedSourceFactory Pooled {@link ClientObjectFactory} implementation to use
+     * @param auth Security configuration
+     * @deprecated As of 1.5, this constructor wil be removed. Use {@link #BufferedJestHttpObjectFactory(Builder)} instead.
      *
-     * @deprecated As of 1.5, this constructor will be removed. Use {@link #BufferedJestHttpObjectFactory(Builder)} instead
      */
     @Deprecated
     protected BufferedJestHttpObjectFactory(

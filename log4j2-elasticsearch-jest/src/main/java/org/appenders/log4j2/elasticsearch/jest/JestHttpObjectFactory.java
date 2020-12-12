@@ -90,7 +90,6 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     /**
      * This constructor is deprecated and will be removed in 1.5.
-     * Use {@link #JestHttpObjectFactory(Collection, int, int, int, int, int, boolean, Auth, String, BackoffPolicy)} instead.
      *
      * @param serverUris List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes
      * @param connTimeout Number of milliseconds before ConnectException is thrown while attempting to connect
@@ -132,6 +131,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
      * @param ioThreadCount number of 'I/O Dispatcher' threads started by Apache HC `IOReactor`
      * @param auth Security configuration
      * @param mappingType Elasticsearch mapping type name. MAY be set to '_doc' for Elasticsearch 7.x compatibility
+     * @param backoffPolicy Backoff policy to be applied on bulk if needed
      * @deprecated As of 1.5, this constructor will be removed. Use {@link #JestHttpObjectFactory(Builder)} instead
      */
     @Deprecated

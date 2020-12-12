@@ -53,7 +53,14 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
     private final FailoverPolicy failoverPolicy;
     private final long delayShutdownInMillis;
 
+
     /**
+     * @param batchSize number of elements in a current batch that should trigger a delivery, regardless of the deliveryInterval
+     * @param deliveryInterval number of millis between two time-triggered deliveries, regardless of the batchSize
+     * @param objectFactory client-specific objects provider
+     * @param failoverPolicy sink for failed batch items
+     * @param indexTemplate index template to be setup before first batch
+     *
      * @deprecated As of 1.5, this constructor will be removed. Use {@link Builder} instead.
      */
     @Deprecated
