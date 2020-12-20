@@ -42,6 +42,7 @@ import org.apache.http.nio.reactor.ConnectingIOReactor;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.apache.http.nio.util.HeapByteBufferAllocator;
 import org.apache.http.nio.util.SimpleInputBuffer;
+import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 
@@ -202,9 +203,21 @@ public class HttpClientFactory {
         protected SchemeIOSessionStrategy httpsIOSessionStrategy;
         protected boolean pooledResponseBuffersEnabled;
         protected int pooledResponseBuffersSizeInBytes;
+        protected Auth<Builder> auth;
 
         public HttpClientFactory build() {
+            return new HttpClientFactory(lazyInit());
+        }
 
+        /**
+         * Initializes Apache HC factories.
+         * MUST be called by extending classes before {@link #build()} call if all factories not set explicitly.
+         */
+        protected Builder lazyInit() {
+
+            if (this.auth != null) {
+                this.auth.configure(this);
+            }
             if (this.sslSocketFactory == null) {
                 this.sslSocketFactory = SSLConnectionSocketFactory.getSocketFactory();
             }
@@ -218,7 +231,8 @@ public class HttpClientFactory {
                 this.httpsIOSessionStrategy = SSLIOSessionStrategy.getSystemDefaultStrategy();
             }
 
-            return new HttpClientFactory(this);
+            return this;
+
         }
 
         public Builder withServerList(Collection<String> serverList) {
@@ -246,6 +260,21 @@ public class HttpClientFactory {
             return this;
         }
 
+        public Builder withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
+            this.pooledResponseBuffersEnabled = pooledResponseBuffersEnabled;
+            return this;
+        }
+
+        public Builder withPooledResponseBuffersSizeInBytes(int pooledResponseBuffersSizeInBytes) {
+            this.pooledResponseBuffersSizeInBytes = pooledResponseBuffersSizeInBytes;
+            return this;
+        }
+
+        public Builder withAuth(Auth<Builder> auth) {
+            this.auth = auth;
+            return this;
+        }
+
         public Builder withDefaultCredentialsProvider(CredentialsProvider credentialsProvider) {
             this.defaultCredentialsProvider = credentialsProvider;
             return this;
@@ -268,16 +297,6 @@ public class HttpClientFactory {
 
         public Builder withHttpsIOSessionStrategy(SchemeIOSessionStrategy httpsIOSessionStrategy) {
             this.httpsIOSessionStrategy = httpsIOSessionStrategy;
-            return this;
-        }
-
-        public Builder withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
-            this.pooledResponseBuffersEnabled = pooledResponseBuffersEnabled;
-            return this;
-        }
-
-        public Builder withPooledResponseBuffersSizeInBytes(int pooledResponseBuffersSizeInBytes) {
-            this.pooledResponseBuffersSizeInBytes = pooledResponseBuffersSizeInBytes;
             return this;
         }
 

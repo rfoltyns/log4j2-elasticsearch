@@ -51,9 +51,13 @@ import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelect
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
+import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+
+import java.util.Collections;
+import java.util.List;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
@@ -79,8 +83,13 @@ public class SmokeTest extends SmokeTestBase {
                 "indexName", indexName,
                 "ecsEnabled", ecsEnabled);
 
-        HCHttp.Builder httpObjectFactoryBuilder;
-        httpObjectFactoryBuilder = HCHttp.newBuilder();
+        Configuration configuration = LoggerContext.getContext(false).getConfiguration();
+
+        HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder();
+
+        httpObjectFactoryBuilder
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4))
+                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
 
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
 
@@ -94,20 +103,17 @@ public class SmokeTest extends SmokeTestBase {
                         .build()
         );
 
-        Configuration configuration = LoggerContext.getContext(false).getConfiguration();
-
-        httpObjectFactoryBuilder.withConnTimeout(500)
-                .withReadTimeout(20000)
+        HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder();
+        httpClientFactoryBuilder.withConnTimeout(500)
+                .withReadTimeout(2000)
                 .withIoThreadCount(4)
-                .withMaxTotalConnections(8)
-                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4))
-                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
+                .withMaxTotalConnections(4);
 
+        httpObjectFactoryBuilder.withClientProvider(new HttpClientProvider(httpClientFactoryBuilder));
+
+        httpClientFactoryBuilder.withServerList(getServerList(secured));
         if (secured) {
-            httpObjectFactoryBuilder.withServerUris("https://localhost:9200")
-                    .withAuth(getAuth());
-        } else {
-            httpObjectFactoryBuilder.withServerUris("http://localhost:9200");
+            httpClientFactoryBuilder.withAuth(getAuth());
         }
 
         ComponentTemplate indexSettings = new ComponentTemplate.Builder()
@@ -199,6 +205,10 @@ public class SmokeTest extends SmokeTestBase {
                 .withIndexNameFormatter(indexNameFormatter)
                 .withLayout(layoutBuilder.build())
                 .withIgnoreExceptions(false);
+    }
+
+    private List<String> getServerList(boolean secured) {
+        return Collections.singletonList((secured ? "https" : "http") + "://localhost:9200");
     }
 
     private static Auth<HttpClientFactory.Builder> getAuth() {

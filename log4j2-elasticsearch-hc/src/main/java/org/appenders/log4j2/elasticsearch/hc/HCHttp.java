@@ -27,23 +27,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
-import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
-import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
@@ -66,30 +56,19 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
-import static org.appenders.log4j2.elasticsearch.hc.HCHttp.PLUGIN_NAME;
 
 /**
  * {@link PooledItemSourceFactory}-based {@link ClientObjectFactory}. {@link PooledItemSourceFactory} MUST be configured.
  * Produces {@link HttpClient} and related objects.
  */
-@Plugin(name = PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
-public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
-
-    public static final String PLUGIN_NAME = "HCHttp";
+public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
     private volatile State state = State.STOPPED;
 
-    private final Collection<String> serverUris;
-    protected final int connTimeout;
-    protected final int readTimeout;
-    protected final int maxTotalConnections;
-    protected final int ioThreadCount;
-    protected final Auth<HttpClientFactory.Builder> auth;
+    protected final HttpClientProvider clientProvider;
     protected final PooledItemSourceFactory itemSourceFactory;
     protected final ObjectReader objectReader;
     protected final String mappingType;
-    protected final boolean pooledResponseBuffers;
-    protected final int pooledResponseBuffersSizeInBytes;
     protected final FailedItemOps<IndexRequest> failedItemOps;
     protected final BackoffPolicy<BatchRequest> backoffPolicy;
 
@@ -97,19 +76,11 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     private final ValueResolver valueResolver;
     private final PooledItemSourceFactory operationFactoryItemSourceFactory;
     private final OperationFactoryDispatcher setupOps;
-    private HttpClient client;
 
     public HCHttp(Builder builder) {
-        this.serverUris = Arrays.asList(builder.serverUris.split(";"));
-        this.connTimeout = builder.connTimeout;
-        this.readTimeout = builder.readTimeout;
-        this.maxTotalConnections = builder.maxTotalConnections;
-        this.ioThreadCount = builder.ioThreadCount;
-        this.auth = builder.auth;
+        this.clientProvider = builder.clientProvider;
         this.itemSourceFactory = builder.pooledItemSourceFactory;
         this.mappingType = builder.mappingType;
-        this.pooledResponseBuffers = builder.pooledResponseBuffers;
-        this.pooledResponseBuffersSizeInBytes = builder.pooledResponseBuffersSizeInBytes;
         this.failedItemOps = builder.failedItemOps;
         this.objectReader = configuredReader();
         this.backoffPolicy = builder.backoffPolicy;
@@ -204,28 +175,14 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         };
     }
 
-    // visible for testing
-    ClientProvider<HttpClient> getClientProvider(HttpClientFactory.Builder httpClientFactoryBuilder) {
-        return new HttpClientProvider(httpClientFactoryBuilder);
-    }
     @Override
     public Collection<String> getServerList() {
-        return new ArrayList<>(serverUris);
+        return new ArrayList<>(clientProvider.getHttpClientFactoryBuilder().serverList);
     }
 
     @Override
     public HttpClient createClient() {
-        if (client == null) {
-
-            HttpClientFactory.Builder builder = createHttpClientFactoryBuilder();
-
-            if (this.auth != null) {
-                auth.configure(builder);
-            }
-
-            client = getClientProvider(builder).createClient();
-        }
-        return client;
+        return clientProvider.createClient();
     }
 
     @Override
@@ -333,139 +290,51 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                 .build();
     }
 
-    /* extension point */
-    protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {
-        return new HttpClientFactory.Builder()
-                .withServerList(serverUris)
-                .withConnTimeout(connTimeout)
-                .withReadTimeout(readTimeout)
-                .withMaxTotalConnections(maxTotalConnections)
-                .withIoThreadCount(ioThreadCount)
-                .withPooledResponseBuffers(pooledResponseBuffers)
-                .withPooledResponseBuffersSizeInBytes(pooledResponseBuffersSizeInBytes);
-    }
+    public static class Builder {
 
-    @PluginBuilderFactory
-    public static HCHttp.Builder newBuilder() {
-        return new HCHttp.Builder();
-    }
+        public static final BackoffPolicy<BatchRequest> DEFAULT_BACKOFF_POLICY = new NoopBackoffPolicy<>();
+        public static final String DEFAULT_MAPPING_TYPE = "_doc";
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<HCHttp> {
-
-        public static final int DEFAULT_RESPONSE_BUFFER_SIZE = 1024 * 1024;
-
-        private static final BackoffPolicy<BatchRequest> DEFAULT_BACKOFF_POLICY = new NoopBackoffPolicy<>();
-
-        // TODO move to HCHttpPlugin
-        @PluginConfiguration
-        protected Configuration configuration;
-
-        @PluginBuilderAttribute
-        @Required(message = "No serverUris provided for " + PLUGIN_NAME)
-        protected String serverUris;
-
-        @PluginBuilderAttribute
-        protected int connTimeout = 1000;
-
-        @PluginBuilderAttribute
-        protected int readTimeout = 0;
-
-        @PluginBuilderAttribute
-        protected int maxTotalConnections = 8;
-
-        @PluginBuilderAttribute
-        protected int ioThreadCount = Runtime.getRuntime().availableProcessors();
-
-        @PluginBuilderAttribute
-        protected boolean pooledResponseBuffers = true;
-
-        @PluginBuilderAttribute
-        protected int pooledResponseBuffersSizeInBytes = DEFAULT_RESPONSE_BUFFER_SIZE;
-
-        @PluginElement("auth")
-        protected Auth auth;
-
-        @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
+        protected HttpClientProvider clientProvider = new HttpClientProvider(new HttpClientFactory.Builder());
         protected PooledItemSourceFactory pooledItemSourceFactory;
-
-        @PluginBuilderAttribute
-        protected String mappingType = "_doc";
-
-        @PluginElement(BackoffPolicy.NAME)
         protected BackoffPolicy<BatchRequest> backoffPolicy = DEFAULT_BACKOFF_POLICY;
-
+        protected String mappingType = DEFAULT_MAPPING_TYPE;
         protected FailedItemOps<IndexRequest> failedItemOps = createFailedItemOps();
+        protected ValueResolver valueResolver = ValueResolver.NO_OP;
 
-        protected ValueResolver valueResolver;
-
-        @Override
         public HCHttp build() {
-
-            validate();
-
-            resolveLazyProperties();
-
-            return new HCHttp(this);
+            return new HCHttp(validate());
         }
 
-        private void resolveLazyProperties() {
-            this.valueResolver = getValueResolver();
-        }
+        protected Builder validate() {
 
-        protected void validate() {
-            if (serverUris == null) {
-                throw new ConfigurationException("No serverUris provided for " + PLUGIN_NAME);
+            if (valueResolver == null) {
+                throw new IllegalArgumentException(nullValidationExceptionMessage(ValueResolver.class.getSimpleName()));
+            }
+            if (clientProvider == null) {
+                throw new IllegalArgumentException(nullValidationExceptionMessage(ClientProvider.class.getSimpleName()));
             }
             if (pooledItemSourceFactory == null) {
-                throw new ConfigurationException("No PooledItemSourceFactory provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException(nullValidationExceptionMessage(PooledItemSourceFactory.class.getSimpleName()));
             }
             if (backoffPolicy == null) {
-                throw new ConfigurationException("No BackoffPolicy provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException(nullValidationExceptionMessage(BackoffPolicy.class.getSimpleName()));
             }
+
+            return this;
+
         }
 
-        private ValueResolver getValueResolver() {
-
-            // allow programmatic override
-            if (valueResolver != null) {
-                return valueResolver;
-            }
-
-            // handle XML config
-            if (configuration != null) {
-                return new Log4j2Lookup(configuration.getStrSubstitutor());
-            }
-
-            // fallback to no-op
-            return ValueResolver.NO_OP;
+        private String nullValidationExceptionMessage(final String className) {
+            return String.format("No %s provided for %s", className, HCHttp.class.getSimpleName());
         }
 
         protected FailedItemOps<IndexRequest> createFailedItemOps() {
             return new HCFailedItemOps();
         }
 
-        public Builder withServerUris(String serverUris) {
-            this.serverUris = serverUris;
-            return this;
-        }
-
-        public Builder withMaxTotalConnections(int maxTotalConnections) {
-            this.maxTotalConnections = maxTotalConnections;
-            return this;
-        }
-
-        public Builder withConnTimeout(int connTimeout) {
-            this.connTimeout = connTimeout;
-            return this;
-        }
-
-        public Builder withReadTimeout(int readTimeout) {
-            this.readTimeout = readTimeout;
-            return this;
-        }
-
-        public Builder withIoThreadCount(int ioThreadCount) {
-            this.ioThreadCount = ioThreadCount;
+        public Builder withClientProvider(HttpClientProvider clientProvider) {
+            this.clientProvider = clientProvider;
             return this;
         }
 
@@ -479,28 +348,8 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             return this;
         }
 
-        public Builder withAuth(Auth auth) {
-            this.auth = auth;
-            return this;
-        }
-
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
-            return this;
-        }
-
-        public Builder withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
-            this.pooledResponseBuffers = pooledResponseBuffersEnabled;
-            return this;
-        }
-
-        public Builder withPooledResponseBuffersSizeInBytes(int estimatedResponseSizeInBytes) {
-            this.pooledResponseBuffersSizeInBytes = estimatedResponseSizeInBytes;
-            return this;
-        }
-
-        public Builder withConfiguration(Configuration configuration) {
-            this.configuration = configuration;
             return this;
         }
 
@@ -508,22 +357,104 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             this.valueResolver = valueResolver;
             return this;
         }
-    }
 
-    /**
-     * Consider this class <i>private</i>.
-     */
-    class HttpClientProvider implements ClientProvider<HttpClient> {
-
-        private final HttpClientFactory.Builder httpClientFactoryBuilder;
-
-        public HttpClientProvider(HttpClientFactory.Builder httpClientFactoryBuilder) {
-            this.httpClientFactoryBuilder = httpClientFactoryBuilder;
+        /**
+         * @param serverUris semicolon-separated list of target addresses
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withServerUris(String serverUris) {
+            this.clientProvider.getHttpClientFactoryBuilder().withServerList(Arrays.asList(serverUris.split(";")));
+            return this;
         }
 
-        @Override
-        public HttpClient createClient() {
-            return httpClientFactoryBuilder.build().createInstance();
+        /**
+         * @param maxTotalConnections maximum number of available HTTP connections
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withMaxTotalConnections(int maxTotalConnections) {
+            this.clientProvider.getHttpClientFactoryBuilder().withMaxTotalConnections(maxTotalConnections);
+            return this;
+        }
+
+        /**
+         * @param connTimeout connection timeout
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withConnTimeout(int connTimeout) {
+            this.clientProvider.getHttpClientFactoryBuilder().withConnTimeout(connTimeout);
+            return this;
+        }
+
+        /**
+         * @param readTimeout read timeout
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withReadTimeout(int readTimeout) {
+            this.clientProvider.getHttpClientFactoryBuilder().withReadTimeout(readTimeout);
+            return this;
+        }
+
+        /**
+         * @param ioThreadCount number of 'IO Dispatcher' threads
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withIoThreadCount(int ioThreadCount) {
+            this.clientProvider.getHttpClientFactoryBuilder().withIoThreadCount(ioThreadCount);
+            return this;
+        }
+
+        /**
+         * @param auth Credentials and SSL/TLS config
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withAuth(Auth auth) {
+            // Special treatment here
+            if (auth != null) {
+                auth.configure(this.clientProvider.getHttpClientFactoryBuilder());
+            }
+            return this;
+        }
+
+        /**
+         * @param pooledResponseBuffersEnabled if <i>true</i>, pooled response buffers will be used while processing response, false otherwise
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
+            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffers(pooledResponseBuffersEnabled);
+            return this;
+        }
+
+        /**
+         * @param estimatedResponseSizeInBytes initial size of response buffer if response buffers enabled (see {@link #withPooledResponseBuffers(boolean)}), ignored otherwise
+         * @return this
+         *
+         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         */
+        @Deprecated
+        public Builder withPooledResponseBuffersSizeInBytes(int estimatedResponseSizeInBytes) {
+            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffersSizeInBytes(estimatedResponseSizeInBytes);
+            return this;
         }
 
     }
@@ -554,9 +485,8 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
         getLogger().debug("Stopping {}", getClass().getSimpleName());
 
-        if (client != null) {
-            client.stop();
-        }
+        LifeCycle.of(clientProvider).stop();
+
         itemSourceFactory.stop();
 
         operationFactoryItemSourceFactory.stop();

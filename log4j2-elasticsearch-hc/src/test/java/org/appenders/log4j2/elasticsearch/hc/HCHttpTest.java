@@ -24,9 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -39,7 +36,6 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
-import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
@@ -63,7 +59,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Random;
+import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,16 +69,23 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_CONNECTION_TIMEOUT;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_IO_THREAD_COUNT;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_MAX_TOTAL_CONNECTIONS;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_ENABLED;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_READ_TIMEOUT;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_SERVER_URIS;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
@@ -94,21 +97,11 @@ import static org.mockito.Mockito.when;
 
 public class HCHttpTest {
 
+    private static final String TEST_MAPPING_TYPE = "_test_mapping";
+
     static {
         System.setProperty("io.netty.allocator.maxOrder", "1");
     }
-
-    private static final Random RANDOM = new Random();
-
-    private static final int TEST_CONNECTION_TIMEOUT = RANDOM.nextInt(1000) + 10;
-    private static final int TEST_READ_TIMEOUT = RANDOM.nextInt(1000) + 10;
-
-    public static final String TEST_SERVER_URIS = "http://localhost:9200";
-    private static final int TEST_MAX_TOTAL_CONNECTIONS = RANDOM.nextInt(1000) + 10;
-    private static final int TEST_IO_THREAD_COUNT = RANDOM.nextInt(1000) + 10;
-    private static final String TEST_MAPPING_TYPE = UUID.randomUUID().toString();
-    private static final boolean TEST_POOLED_RESPONSE_BUFFERS_ENABLED = true;
-    private static final int TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES = 34;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -124,10 +117,44 @@ public class HCHttpTest {
                 .createDefaultTestSourceFactoryConfig()
                 .build();
 
-        HCHttp.Builder builder = HCHttp.newBuilder()
+        return new HCHttp.Builder()
                 .withItemSourceFactory(itemSourceFactory)
-                .withServerUris(TEST_SERVER_URIS);
-        return builder;
+                .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
+
+    }
+
+    @Test
+    public void deprecatedBuilderSettersDelegateToClientProvider() {
+
+        // given
+        PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest
+                .createDefaultTestSourceFactoryConfig()
+                .build();
+
+        HCHttp.Builder builder = new HCHttp.Builder()
+                .withItemSourceFactory(itemSourceFactory)
+                .withServerUris(TEST_SERVER_URIS)
+                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
+                .withReadTimeout(TEST_READ_TIMEOUT)
+                .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
+                .withIoThreadCount(TEST_IO_THREAD_COUNT)
+                .withPooledResponseBuffers(TEST_POOLED_RESPONSE_BUFFERS_ENABLED)
+                .withPooledResponseBuffersSizeInBytes(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES);
+
+        // when
+        HCHttp factory = builder.build();
+
+        // then
+        HttpClientFactory.Builder httpClientFactoryBuilder = factory.clientProvider.getHttpClientFactoryBuilder();
+
+        assertEquals(Collections.singletonList(TEST_SERVER_URIS), httpClientFactoryBuilder.serverList);
+        assertEquals(TEST_CONNECTION_TIMEOUT, httpClientFactoryBuilder.connTimeout);
+        assertEquals(TEST_READ_TIMEOUT, httpClientFactoryBuilder.readTimeout);
+        assertEquals(TEST_MAX_TOTAL_CONNECTIONS, httpClientFactoryBuilder.maxTotalConnections);
+        assertEquals(TEST_IO_THREAD_COUNT, httpClientFactoryBuilder.ioThreadCount);
+        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_ENABLED, httpClientFactoryBuilder.pooledResponseBuffersEnabled);
+        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES, httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes);
+
     }
 
     @Test
@@ -137,7 +164,7 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         builder.withItemSourceFactory(null);
 
-        expectedException.expect(ConfigurationException.class);
+        expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " provided");
 
         // when
@@ -152,7 +179,7 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         builder.withBackoffPolicy(null);
 
-        expectedException.expect(ConfigurationException.class);
+        expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("No " + BackoffPolicy.NAME + " provided");
 
         // when
@@ -160,15 +187,32 @@ public class HCHttpTest {
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderFailsIfServerUrisStringIsNull() {
+    @Test
+    public void builderThrowsIfClientProviderIsNull() {
 
         // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        String serverUris = null;
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(null);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No " + ClientProvider.class.getSimpleName() + " provided");
 
         // when
-        builder.withServerUris(serverUris);
+        builder.build();
+
+    }
+
+    @Test
+    public void builderThrowsIfValueResolverIsNotProvided() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withValueResolver(null);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("No " + ValueResolver.class.getSimpleName() + " provided");
+
+        // when
         builder.build();
 
     }
@@ -183,10 +227,9 @@ public class HCHttpTest {
 
         // when
         Collection<String> serverUrisList = config.getServerList();
-        serverUrisList.add("test");
 
         // then
-        assertNotEquals(serverUrisList, config.getServerList());
+        assertNotSame(serverUrisList, config.getServerList());
 
     }
 
@@ -221,29 +264,34 @@ public class HCHttpTest {
     }
 
     @Test
-    public void httpParamsArePassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
+    public void clientProviderIsPassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
+
+        // given
+        HttpClientProvider expectedClientProvider = HttpClientProviderTest.createDefaultTestClientProvider();
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(expectedClientProvider);
+
+        // when
+        HCHttp objectFactory = builder.build();
+
+        // then
+        assertEquals(expectedClientProvider, objectFactory.clientProvider);
+
+    }
+
+    @Test
+    public void mappingTypeIsPassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
-                .withReadTimeout(TEST_READ_TIMEOUT)
-                .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
-                .withIoThreadCount(TEST_IO_THREAD_COUNT)
-                .withMappingType(TEST_MAPPING_TYPE)
-                .withPooledResponseBuffers(TEST_POOLED_RESPONSE_BUFFERS_ENABLED)
-                .withPooledResponseBuffersSizeInBytes(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES);
+                .withMappingType(TEST_MAPPING_TYPE);
 
         // when
-        HCHttp config = builder.build();
+        HCHttp objectFactory = builder.build();
 
         // then
-        assertEquals(TEST_CONNECTION_TIMEOUT, config.connTimeout);
-        assertEquals(TEST_READ_TIMEOUT, config.readTimeout);
-        assertEquals(TEST_MAX_TOTAL_CONNECTIONS, config.maxTotalConnections);
-        assertEquals(TEST_IO_THREAD_COUNT, config.ioThreadCount);
-        assertEquals(TEST_MAPPING_TYPE, config.mappingType);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_ENABLED, config.pooledResponseBuffers);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES, config.pooledResponseBuffersSizeInBytes);
+        assertEquals(TEST_MAPPING_TYPE, objectFactory.mappingType);
 
     }
 
@@ -251,7 +299,7 @@ public class HCHttpTest {
     public void authIsAppliedIfConfigured() {
 
         // given
-        Auth auth = mock(Auth.class);
+        Auth auth = new Security(new BasicCredentials("admin", "changeme"), null);
 
         HCHttp factory = createDefaultHttpObjectFactoryBuilder()
                 .withAuth(auth)
@@ -261,86 +309,29 @@ public class HCHttpTest {
         factory.createClient();
 
         //then
-        verify(auth).configure(any());
-    }
-
-    @Test
-    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided()
-    {
-
-        // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withValueResolver(null);
-
-        // when
-        HCHttp factory = builder.build();
-
-        // then
-        assertSame(ValueResolver.NO_OP, factory.valueResolver());
+        assertNotNull(factory.clientProvider.getHttpClientFactoryBuilder().defaultCredentialsProvider);
 
     }
 
     @Test
-    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided()
-    {
+    public void authIsNotAppliedIfNull() {
 
         // given
-        Configuration configuration = mock(Configuration.class);
-        StrSubstitutor strSubstitutor = mock(StrSubstitutor.class);
-        when(strSubstitutor.replace((String)any())).thenReturn(UUID.randomUUID().toString());
-
-        when(configuration.getStrSubstitutor()).thenReturn(strSubstitutor);
+        Auth auth = mock(Auth.class);
 
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withValueResolver(null)
-                .withConfiguration(configuration);
+                .withAuth(null);
+
 
         HCHttp factory = builder.build();
 
-        String expectedSource = UUID.randomUUID().toString();
-        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
-                .withName(UUID.randomUUID().toString())
-                .withSource(expectedSource)
-                .withPath(null)
-                .build();
+        assertNull(builder.clientProvider.getHttpClientFactoryBuilder().defaultCredentialsProvider);
 
         // when
-        factory.setupOperationFactory().create(indexTemplate);
+        factory.createClient();
 
-        // then
-        assertTrue(factory.valueResolver() instanceof Log4j2Lookup);
-        verify(strSubstitutor).replace(eq(expectedSource));
-
-    }
-
-    @Test
-    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided()
-    {
-
-        // given
-        ValueResolver valueResolver = mock(ValueResolver.class);
-        when(valueResolver.resolve(anyString())).thenReturn(UUID.randomUUID().toString());
-
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withConfiguration(mock(Configuration.class))
-                .withValueResolver(valueResolver);
-
-        HCHttp factory = builder.build();
-
-        assertEquals(valueResolver, factory.valueResolver());
-
-        String expectedSource = UUID.randomUUID().toString();
-        IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
-                .withName(UUID.randomUUID().toString())
-                .withSource(expectedSource)
-                .withPath(null)
-                .build();
-
-        // when
-        factory.setupOperationFactory().create(indexTemplate);
-
-        // then
-        verify(valueResolver).resolve(eq(expectedSource));
+        //then
+        assertNull(factory.clientProvider.getHttpClientFactoryBuilder().defaultCredentialsProvider);
 
     }
 
@@ -1026,11 +1017,9 @@ public class HCHttpTest {
         when(itemSourceFactory.isStopped()).thenAnswer(falseOnlyOnce());
 
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
-                .withItemSourceFactory(itemSourceFactory).build());
-
-        HttpClient client = mock(HttpClient.class);
-        ClientProvider<HttpClient> clientProvider = () -> client;
-        when(objectFactory.getClientProvider(any())).thenReturn(clientProvider);
+                .withItemSourceFactory(itemSourceFactory)
+                .withClientProvider(mock(HttpClientProvider.class))
+                .build());
 
         objectFactory.start();
         objectFactory.createClient();
@@ -1069,14 +1058,12 @@ public class HCHttpTest {
     public void lifecycleStopStopsClientOnlyOnce() {
 
         // given
-        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder().build());
-
-        HttpClient client = mock(HttpClient.class);
-        ClientProvider<HttpClient> clientProvider = () -> client;
-        when(objectFactory.getClientProvider(any())).thenReturn(clientProvider);
+        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
+        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(clientProvider)
+                .build());
 
         objectFactory.start();
-
         objectFactory.createClient();
 
         // when
@@ -1084,7 +1071,7 @@ public class HCHttpTest {
         objectFactory.stop();
 
         // then
-        verify(client).stop();
+        verify(clientProvider).stop();
 
     }
 
@@ -1092,11 +1079,18 @@ public class HCHttpTest {
     public void lifecycleStopDoesNotStopClientIfClientNotCreated() {
 
         // given
-        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder().build());
-
         HttpClient client = mock(HttpClient.class);
-        ClientProvider<HttpClient> clientProvider = () -> client;
-        when(objectFactory.getClientProvider(any())).thenReturn(clientProvider);
+        HttpClientProvider clientProvider = new HttpClientProvider(new HttpClientFactory.Builder()) {
+            @Override
+            public HttpClient createClient() {
+                return client;
+            }
+        };
+
+        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(clientProvider)
+                .build());
+
 
         objectFactory.start();
 

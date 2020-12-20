@@ -30,7 +30,7 @@
                     </PooledItemSourceFactory>
                     <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
 <!--                    <Security>-->
-<!--                        <BasicCredentials username="admin" password="changeme" useAuthToken="true"/>-->
+<!--                        <BasicCredentials username="admin" password="changeme" />-->
 <!--                        &lt;!&ndash;<JKS keystorePath="${sys:jksCertInfo.keystorePath}"&ndash;&gt;-->
 <!--                             &lt;!&ndash;keystorePassword="${sys:jksCertInfo.keystorePassword}"&ndash;&gt;-->
 <!--                             &lt;!&ndash;truststorePath="${sys:jksCertInfo.truststorePath}"&ndash;&gt;-->

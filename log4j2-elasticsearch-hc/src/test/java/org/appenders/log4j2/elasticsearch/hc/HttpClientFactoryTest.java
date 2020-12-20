@@ -42,6 +42,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -76,6 +77,7 @@ public class HttpClientFactoryTest {
     @Test
     public void builderSetsAllFields() {
 
+        // given
         HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
 
         ConnectionSocketFactory plainSocketFactory = mock(ConnectionSocketFactory.class);
@@ -119,6 +121,24 @@ public class HttpClientFactoryTest {
     @Test
     public void builderSetsDefaultFields() {
 
+        // given
+        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+
+        // when
+        HttpClientFactory httpClientFactory = builder.build();
+
+        // then
+        assertNotNull(httpClientFactory.plainSocketFactory);
+        assertNotNull(httpClientFactory.sslSocketFactory);
+        assertNotNull(httpClientFactory.httpIOSessionStrategy);
+        assertNotNull(httpClientFactory.httpsIOSessionStrategy);
+
+    }
+
+    @Test
+    public void builderAppliesAuthIfConfigured() {
+
+        // given
         HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
 
         ConnectionSocketFactory plainSocketFactory = mock(ConnectionSocketFactory.class);
@@ -127,13 +147,9 @@ public class HttpClientFactoryTest {
         SchemeIOSessionStrategy httpsIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
         CredentialsProvider credentialsProvider = mock(CredentialsProvider.class);
 
-        builder.withServerList(TEST_SERVER_LIST)
-                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
-                .withReadTimeout(TEST_READ_TIMEOUT)
-                .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
-                .withIoThreadCount(TEST_IO_THREAD_COUNT)
-                .withPooledResponseBuffers(TEST_POOLED_RESPONSE_BUFFERS_ENABLED)
-                .withPooledResponseBuffersSizeInBytes(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES)
+        Security security = spy(SecurityTest.createTestBuilder().build());
+
+        builder.withAuth(security)
                 .withPlainSocketFactory(plainSocketFactory)
                 .withSslSocketFactory(sslSocketFactory)
                 .withHttpIOSessionStrategy(httpIOSessionStrategy)
@@ -144,18 +160,13 @@ public class HttpClientFactoryTest {
         HttpClientFactory httpClientFactory = builder.build();
 
         // then
-        assertEquals(TEST_SERVER_LIST, httpClientFactory.serverList);
-        assertEquals(TEST_CONNECTION_TIMEOUT, httpClientFactory.connTimeout);
-        assertEquals(TEST_READ_TIMEOUT, httpClientFactory.readTimeout);
-        assertEquals(TEST_MAX_TOTAL_CONNECTIONS, httpClientFactory.maxTotalConnections);
-        assertEquals(TEST_IO_THREAD_COUNT, httpClientFactory.ioThreadCount);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_ENABLED, httpClientFactory.pooledResponseBuffersEnabled);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES, httpClientFactory.pooledResponseBuffersSizeInBytes);
-        assertNotNull(httpClientFactory.plainSocketFactory);
-        assertNotNull(httpClientFactory.sslSocketFactory);
-        assertNotNull(httpClientFactory.httpIOSessionStrategy);
-        assertNotNull(httpClientFactory.httpsIOSessionStrategy);
-        assertNotNull(httpClientFactory.defaultCredentialsProvider);
+        verify(security).configure(builder);
+
+        assertEquals(plainSocketFactory, httpClientFactory.plainSocketFactory);
+        assertNotEquals(sslSocketFactory, httpClientFactory.sslSocketFactory);
+        assertEquals(httpIOSessionStrategy, httpClientFactory.httpIOSessionStrategy);
+        assertNotEquals(httpsIOSessionStrategy, httpClientFactory.httpsIOSessionStrategy);
+        assertNotEquals(credentialsProvider, httpClientFactory.defaultCredentialsProvider);
 
     }
 
