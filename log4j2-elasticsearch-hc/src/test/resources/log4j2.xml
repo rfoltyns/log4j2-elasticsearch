@@ -20,8 +20,7 @@
                                deliveryInterval="10000" >
                 <IndexTemplate name="log4j2-elasticsearch-hc" path="classpath:indexTemplate-7.json" />
                 <ILMPolicy name="log4j2-elasticsearch-hc-ilm-policy" rolloverAlias="log4j2-elasticsearch-hc" path="classpath:ilmPolicy-7.json" />
-                <HCHttp serverUris="http://localhost:9200"
-                              connTimeout="500"
+                <HCHttp connTimeout="500"
                               readTimeout="30000"
                               maxTotalConnections="8">
                     <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="5120000" initialPoolSize="3"
@@ -29,6 +28,9 @@
                         <UnlimitedResizePolicy resizeFactor="0.70" />
                     </PooledItemSourceFactory>
                     <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
+                    <ServiceDiscovery serverUris="http://localhost:9200"
+                                      refreshInterval="5000"
+                                      configPolicies="none" />
 <!--                    <Security>-->
 <!--                        <BasicCredentials username="admin" password="changeme" />-->
 <!--                        &lt;!&ndash;<JKS keystorePath="${sys:jksCertInfo.keystorePath}"&ndash;&gt;-->

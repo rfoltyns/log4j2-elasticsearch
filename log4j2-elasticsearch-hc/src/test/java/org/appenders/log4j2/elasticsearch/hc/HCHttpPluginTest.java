@@ -30,6 +30,8 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -47,6 +49,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -186,6 +189,27 @@ public class HCHttpPluginTest {
 
         // then
         assertEquals(ValueResolver.NO_OP, factory.valueResolver());
+
+    }
+
+    @Test
+    public void serviceDiscoveryIsUsedIfConfigured() {
+
+        // given
+        ServiceDiscovery serviceDiscovery = mock(ServiceDiscovery.class);
+
+        ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = mock(ServiceDiscoveryFactory.class);
+        when(serviceDiscoveryFactory.create(any())).thenReturn(serviceDiscovery);
+
+        HCHttpPlugin.Builder builder = spy(createDefaultHttpObjectFactoryBuilder())
+                .withServiceDiscoveryFactory(serviceDiscoveryFactory);
+
+        // when
+        HCHttpPlugin plugin = builder.build();
+
+        // then
+        verify(serviceDiscoveryFactory).create(any());
+        assertEquals(serviceDiscovery, plugin.clientProvider.getHttpClientFactoryBuilder().serviceDiscovery);
 
     }
 

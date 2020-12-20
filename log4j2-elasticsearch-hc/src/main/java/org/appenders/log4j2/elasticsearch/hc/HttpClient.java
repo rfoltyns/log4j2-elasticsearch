@@ -27,6 +27,7 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 
 import java.io.IOException;
 
@@ -35,7 +36,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 /**
  * Apache HC based client with optional response buffer pooling
  */
-class HttpClient implements LifeCycle {
+public class HttpClient implements LifeCycle {
 
     private volatile State state = State.STOPPED;
 
@@ -79,7 +80,7 @@ class HttpClient implements LifeCycle {
         HttpUriRequest clientRequest;
         try {
             clientRequest = createClientRequest(request);
-        } catch (IOException e) {
+        } catch (Exception e) {
             responseHandler.failed(e);
             return;
         }
@@ -124,6 +125,7 @@ class HttpClient implements LifeCycle {
 
     @Override
     public void start() {
+
         if (isStarted()) {
             return;
         }
@@ -135,6 +137,9 @@ class HttpClient implements LifeCycle {
         asyncClient.start();
 
         state = State.STARTED;
+
+        getLogger().debug("{}: Started", HttpClient.class.getSimpleName());
+
     }
 
     @Override
@@ -143,6 +148,8 @@ class HttpClient implements LifeCycle {
         if (isStopped()) {
             return;
         }
+
+        getLogger().debug("{}: Stopping client", HttpClient.class.getSimpleName());
 
         if (asyncClient.isRunning()) {
             try {
@@ -157,6 +164,8 @@ class HttpClient implements LifeCycle {
         }
 
         state = State.STOPPED;
+
+        getLogger().debug("{}: Stopping client", HttpClient.class.getSimpleName());
 
     }
 

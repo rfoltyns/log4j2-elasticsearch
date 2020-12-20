@@ -20,16 +20,24 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
 
+import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class HttpClientProviderTest {
 
@@ -129,6 +137,85 @@ public class HttpClientProviderTest {
         // then
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
+
+    }
+
+    @Test
+    public void lifecycleStartStartsComponentsOnlyOnce() {
+
+        // given
+        HttpClient client = mock(HttpClient.class);
+        when(client.isStarted()).thenAnswer(falseOnlyOnce());
+
+        HCServiceDiscovery<HttpClient> serviceDiscovery = mock(HCServiceDiscovery.class);
+        when(serviceDiscovery.isStarted()).thenAnswer(falseOnlyOnce());
+
+        HttpClientFactory.Builder clientFactoryBuilder = createDefaultTestBuilder()
+                .withServiceDiscovery(serviceDiscovery);
+
+        LifeCycle lifeCycle = new HttpClientProvider(clientFactoryBuilder) {
+            @Override
+            public HttpClient createClient() {
+                return client;
+            }
+        };
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+        verify(serviceDiscovery).start();
+        verify(client).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsComponentsOnlyOnce() {
+
+        // given
+        HttpClient httpClient = mock(HttpClient.class);
+
+        HttpClientFactory.Builder clientFactoryBuilder = new HttpClientFactory.Builder() {
+            @Override
+            public HttpClientFactory build() {
+                super.build();
+                return new HttpClientFactory(this) {
+                    @Override
+                    protected HttpClient createConfiguredClient(
+                            CloseableHttpAsyncClient asyncHttpClient,
+                            ServerPool serverPool,
+                            RequestFactory requestFactory,
+                            HttpAsyncResponseConsumerFactory asyncResponseConsumerFactory) {
+                        return httpClient;
+                    }
+                };
+            }
+        };
+
+        HCServiceDiscovery<HttpClient> serviceDiscovery = mock(HCServiceDiscovery.class);
+        clientFactoryBuilder.withServiceDiscovery(serviceDiscovery);
+
+        LifeCycle lifeCycle = new HttpClientProvider(clientFactoryBuilder);
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+        lifeCycle.stop();
+
+        // then
+        assertTrue(lifeCycle.isStopped());
+        assertFalse(lifeCycle.isStarted());
+
+        verify(serviceDiscovery).stop();
+        verify(httpClient).stop();
 
     }
 

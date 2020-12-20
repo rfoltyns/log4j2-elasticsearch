@@ -45,6 +45,7 @@ import org.apache.http.nio.util.SimpleInputBuffer;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,8 +67,9 @@ public class HttpClientFactory {
     protected final SchemeIOSessionStrategy httpsIOSessionStrategy;
     protected final boolean pooledResponseBuffersEnabled;
     protected final int pooledResponseBuffersSizeInBytes;
+    protected final ServiceDiscovery serviceDiscovery;
 
-    public HttpClientFactory(HttpClientFactory.Builder httpClientFactoryBuilder) {
+    HttpClientFactory(HttpClientFactory.Builder httpClientFactoryBuilder) {
         this.serverList = httpClientFactoryBuilder.serverList;
         this.connTimeout = httpClientFactoryBuilder.connTimeout;
         this.readTimeout = httpClientFactoryBuilder.readTimeout;
@@ -80,6 +82,7 @@ public class HttpClientFactory {
         this.httpsIOSessionStrategy = httpClientFactoryBuilder.httpsIOSessionStrategy;
         this.pooledResponseBuffersEnabled = httpClientFactoryBuilder.pooledResponseBuffersEnabled;
         this.pooledResponseBuffersSizeInBytes = httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes;
+        this.serviceDiscovery = httpClientFactoryBuilder.serviceDiscovery;
     }
 
     public HttpClient createInstance() {
@@ -90,7 +93,10 @@ public class HttpClientFactory {
         HttpAsyncResponseConsumerFactory httpAsyncResponseConsumerFactory =
                 createHttpAsyncResponseConsumerFactory();
 
-        ServerPool serverPool = new ServerPool(new ArrayList<>(serverList));
+        final ServerPool serverPool = new ServerPool(new ArrayList<>(serverList));
+        if (serviceDiscovery != null) {
+            serviceDiscovery.addListener(serverPool);
+        }
 
         return createConfiguredClient(
                 asyncHttpClient,
@@ -107,32 +113,35 @@ public class HttpClientFactory {
         return HttpAsyncMethods::createConsumer;
     }
 
-    private GenericItemSourcePool<SimpleInputBuffer> createPool() {
-        return new GenericItemSourcePool<>(
-                "hc-responseBufferPool",
-                new SimpleInputBufferPooledObjectOps(
-                        HeapByteBufferAllocator.INSTANCE,
-                        pooledResponseBuffersSizeInBytes
-                ),
-                new UnlimitedResizePolicy.Builder().withResizeFactor(0.5).build(),
-                1000L,
-                false,
-                30000,
-                maxTotalConnections
+    protected HttpClient createConfiguredClient(
+            CloseableHttpAsyncClient asyncHttpClient,
+            ServerPool serverPool,
+            HttpAsyncResponseConsumerFactory asyncResponseConsumerFactory
+    ) {
+        return createConfiguredClient(
+                asyncHttpClient,
+                serverPool,
+                createRequestFactory(),
+                asyncResponseConsumerFactory
         );
     }
 
     protected HttpClient createConfiguredClient(
             CloseableHttpAsyncClient asyncHttpClient,
             ServerPool serverPool,
+            RequestFactory requestFactory,
             HttpAsyncResponseConsumerFactory asyncResponseConsumerFactory
     ) {
         return new HttpClient(
                 asyncHttpClient,
                 serverPool,
-                new HCRequestFactory(),
+                requestFactory,
                 asyncResponseConsumerFactory
         );
+    }
+
+    protected RequestFactory createRequestFactory() {
+        return new HCRequestFactory();
     }
 
     protected CloseableHttpAsyncClient createAsyncHttpClient(NHttpClientConnectionManager connectionManager) {
@@ -189,13 +198,29 @@ public class HttpClientFactory {
         return new DefaultConnectingIOReactor(createIOReactorConfig());
     }
 
+
+    private GenericItemSourcePool<SimpleInputBuffer> createPool() {
+        return new GenericItemSourcePool<>(
+                "hc-responseBufferPool",
+                new SimpleInputBufferPooledObjectOps(
+                        HeapByteBufferAllocator.INSTANCE,
+                        pooledResponseBuffersSizeInBytes
+                ),
+                new UnlimitedResizePolicy.Builder().withResizeFactor(0.5).build(),
+                1000L,
+                false,
+                30000,
+                maxTotalConnections
+        );
+    }
+
     public static class Builder {
 
-        protected Collection<String> serverList;
-        protected int connTimeout;
-        protected int readTimeout;
-        protected int maxTotalConnections;
-        protected int ioThreadCount = Runtime.getRuntime().availableProcessors();
+        protected Collection<String> serverList = new ArrayList<>();
+        protected int connTimeout = 1000;
+        protected int readTimeout = 1000;
+        protected int maxTotalConnections = 1;
+        protected int ioThreadCount = maxTotalConnections;
         protected CredentialsProvider defaultCredentialsProvider;
         protected LayeredConnectionSocketFactory sslSocketFactory;
         protected ConnectionSocketFactory plainSocketFactory;
@@ -204,6 +229,7 @@ public class HttpClientFactory {
         protected boolean pooledResponseBuffersEnabled;
         protected int pooledResponseBuffersSizeInBytes;
         protected Auth<Builder> auth;
+        protected ServiceDiscovery serviceDiscovery;
 
         public HttpClientFactory build() {
             return new HttpClientFactory(lazyInit());
@@ -212,6 +238,8 @@ public class HttpClientFactory {
         /**
          * Initializes Apache HC factories.
          * MUST be called by extending classes before {@link #build()} call if all factories not set explicitly.
+         *
+         * @return this
          */
         protected Builder lazyInit() {
 
@@ -298,6 +326,26 @@ public class HttpClientFactory {
         public Builder withHttpsIOSessionStrategy(SchemeIOSessionStrategy httpsIOSessionStrategy) {
             this.httpsIOSessionStrategy = httpsIOSessionStrategy;
             return this;
+        }
+
+        public Builder withServiceDiscovery(final ServiceDiscovery serviceDiscovery) {
+            this.serviceDiscovery = serviceDiscovery;
+            return this;
+        }
+
+        @Override
+        public String toString() {
+            return "Builder{" +
+                    "serverList=" + serverList +
+                    ", connTimeout=" + connTimeout +
+                    ", readTimeout=" + readTimeout +
+                    ", maxTotalConnections=" + maxTotalConnections +
+                    ", ioThreadCount=" + ioThreadCount +
+                    ", pooledResponseBuffersEnabled=" + pooledResponseBuffersEnabled +
+                    ", pooledResponseBuffersSizeInBytes=" + pooledResponseBuffersSizeInBytes +
+                    ", auth=" + (auth != null) +
+                    ", serviceDiscovery=" + (serviceDiscovery != null) +
+                    '}';
         }
 
     }

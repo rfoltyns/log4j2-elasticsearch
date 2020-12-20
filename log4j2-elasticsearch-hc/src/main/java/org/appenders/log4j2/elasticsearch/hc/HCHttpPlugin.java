@@ -35,13 +35,15 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import static org.appenders.log4j2.elasticsearch.hc.HCHttp.Builder.DEFAULT_BACKOFF_POLICY;
 
 /**
- * {@link PooledItemSourceFactory}-based {@link ClientObjectFactory}. {@link PooledItemSourceFactory} MUST be configured.
- * Produces {@link HttpClient} and related objects.
+ * {@inheritDoc}
+ *
+ * Extension for Log4j2.
  */
 @Plugin(name = HCHttpPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class HCHttpPlugin extends HCHttp {
@@ -65,7 +67,6 @@ public class HCHttpPlugin extends HCHttp {
         protected Configuration configuration;
 
         @PluginBuilderAttribute
-        @Required(message = "No serverUris provided for " + PLUGIN_NAME)
         protected String serverUris;
 
         @PluginBuilderAttribute
@@ -98,20 +99,21 @@ public class HCHttpPlugin extends HCHttp {
         @PluginElement(BackoffPolicy.NAME)
         protected BackoffPolicy<BatchRequest> backoffPolicy = DEFAULT_BACKOFF_POLICY;
 
+        @PluginElement("serviceDiscovery")
+        protected ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory;
+
         protected ValueResolver valueResolver;
 
         @Override
         public HCHttpPlugin build() {
 
-            HCHttp.Builder builder = new HCHttp.Builder()
-                    .withClientProvider(createClientProvider(createHttpClientFactoryBuilder()))
+            return new HCHttpPlugin(new HCHttp.Builder()
+                    .withClientProvider(createClientProvider())
                     .withMappingType(mappingType)
                     .withItemSourceFactory(pooledItemSourceFactory)
-                    .withValueResolver(getValueResolver())
                     .withBackoffPolicy(backoffPolicy)
-                    .validate();
-
-            return new HCHttpPlugin(builder);
+                    .withValueResolver(getValueResolver())
+                    .validate());
 
         }
 
@@ -143,8 +145,16 @@ public class HCHttpPlugin extends HCHttp {
                     .withAuth(auth);
         }
 
-        protected HttpClientProvider createClientProvider(HttpClientFactory.Builder httpClientFactoryBuilder) {
-            return new HttpClientProvider(httpClientFactoryBuilder);
+        protected HttpClientProvider createClientProvider() {
+
+            HttpClientFactory.Builder mainClientFactoryBuilder = createHttpClientFactoryBuilder();
+            HttpClientProvider mainClientProvider = new HttpClientProvider(mainClientFactoryBuilder);
+
+            if (this.serviceDiscoveryFactory != null) {
+                mainClientFactoryBuilder.withServiceDiscovery(serviceDiscoveryFactory.create(mainClientProvider));
+            }
+
+            return mainClientProvider;
         }
 
         public Builder withServerUris(String serverUris) {
@@ -182,7 +192,7 @@ public class HCHttpPlugin extends HCHttp {
             return this;
         }
 
-        public Builder withAuth(Auth auth) {
+        public Builder withAuth(Auth<HttpClientFactory.Builder> auth) {
             this.auth = auth;
             return this;
         }
@@ -209,6 +219,11 @@ public class HCHttpPlugin extends HCHttp {
 
         public Builder withValueResolver(ValueResolver valueResolver) {
             this.valueResolver = valueResolver;
+            return this;
+        }
+
+        public Builder withServiceDiscoveryFactory(ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory) {
+            this.serviceDiscoveryFactory = serviceDiscoveryFactory;
             return this;
         }
 

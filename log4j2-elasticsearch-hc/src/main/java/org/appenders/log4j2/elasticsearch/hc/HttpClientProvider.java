@@ -22,6 +22,9 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle {
 
@@ -37,10 +40,13 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
 
     @Override
     public HttpClient createClient() {
+
         if (httpClient == null) {
             httpClient = httpClientFactoryBuilder.build().createInstance();
         }
+
         return httpClient;
+
     }
 
     public HttpClientFactory.Builder getHttpClientFactoryBuilder() {
@@ -50,6 +56,18 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
     @Override
     public void start() {
 
+        if (!LifeCycle.of(getHttpClientFactoryBuilder().serviceDiscovery).isStarted()) {
+            LifeCycle.of(getHttpClientFactoryBuilder().serviceDiscovery).start();
+        }
+
+        HttpClient httpClient = createClient();
+        if (httpClient.isStarted()) {
+            getLogger().debug("{}: HTTP client already started", HCServiceDiscovery.class.getSimpleName());
+        } else {
+            getLogger().debug("{}: Starting HTTP client", HCServiceDiscovery.class.getSimpleName());
+            httpClient.start();
+        }
+
         state = State.STARTED;
 
     }
@@ -57,7 +75,13 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
     @Override
     public void stop() {
 
+        if (isStopped()) {
+            return;
+        }
+
+        LifeCycle.of(getHttpClientFactoryBuilder().serviceDiscovery).stop();
         LifeCycle.of(httpClient).stop();
+        httpClient = null;
 
         state = State.STOPPED;
 

@@ -38,10 +38,10 @@ Project consists of:
 * Configurable [Jackson modules](log4j2-elasticsearch-core#jackson-modules) support
 * [Component templates](log4j2-elasticsearch-core#component-templates) configuration
 * [Composable index templates](log4j2-elasticsearch-core#composable-index-template) configuration
+* [Service Discovery](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#service-discovery) for HC module
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
-* Service Discovery for HC module
 * Metrics
 * More Elasticsearch API integrations
 

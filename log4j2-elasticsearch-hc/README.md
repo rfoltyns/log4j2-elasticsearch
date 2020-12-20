@@ -41,11 +41,10 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 </Appenders>
 ```
 
-### Properties
-
+### HCHttp Properties
 Name | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
-serverUris | Attribute | yes | None | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Since there's no service discovery available in this module yet, this is the final list of available nodes.
+serverUris | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.
 connTimeout | Attribute | no | 1000 | Number of milliseconds before ConnectException is thrown while attempting to connect.
 readTimeout | Attribute | no | 0 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
 maxTotalConnections | Attribute | no | 8 | Number of connections available.
@@ -54,6 +53,72 @@ itemSourceFactory | Element | yes | None | `ItemSourceFactory` used to create wr
 mappingType | Attribute | no | `_doc` | Name of index mapping type to use in ES cluster. `_doc` is used by default for compatibility with Elasticsearch 7.x.
 pooledResponseBuffers | Attribute | no | yes | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response.
 pooledResponseBuffersSizeInBytes | Attribute | no | 1MB (1048756 bytes) | Single response buffer size.
+
+### Service Discovery
+
+Since 1.5, service discovery can be configured using `ServiceDiscovery` tag. Once defined, batches and setup operations will be executed against addresses retrieved from [Nodes API](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-info.html).
+
+Supported across all versions of Elasticsearch.
+
+Custom [`ServiceDiscoveryFactory`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/discovery/ServiceDiscoveryFactory.java) can be defined to integrate with other address sources.
+
+Name | Type | Required | Default | Description
+------------ | ------------- | ------------- | ------------- | -------------
+serverUris | Attribute | no | inherited from HCHttp | List of semicolon-separated address sources.
+connTimeout | Attribute | no | 500 | Number of milliseconds before ConnectException is thrown while attempting to connect.
+readTimeout | Attribute | no | 1000 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
+pooledResponseBuffersSizeInBytes | Attribute | no | 32KB (32768 bytes) | Single response buffer size.
+targetScheme | Attribute | no | http | Scheme of resolved addresses passed to HCHttp client.
+refreshInterval | Attribute | no | 30000 | Number of milliseconds between the end of previous request and start of new one.
+configPolicies | Attribute | no | serverList,security | List of comma-separated config policies to apply. Available policies: `shared`, `none`, `serverList`, `security`. See [Config Policies](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#config-policies) for more details.
+
+Example:
+```xml
+<Elasticsearch ...>
+    <AsyncBatchDelivery ... >
+        ...
+        <HCHttp ...>
+            ...
+            <ServiceDiscovery serverUris="http://localhost:9250"
+                              refreshInterval="10000" />
+            ...
+        </HCHttp>
+    </AsyncBatchDelivery>
+</Elasticsearch>
+```
+
+#### Config policies
+
+`ServiceDiscovery` can inherit parts of HCHttp client config or even reuse whole client. By default, `HCHttp.serverUris` and `Security` settings are reused during creation of new `ServiceDiscovery` HTTP client. Following policies are available:
+* `serverList` - create a new client, inherit HCHttp.serverUris
+* `security` - create a new client, inherit HCHttp.auth
+* `shared` - reuse HCHttp client
+* `none` - create a new client, don't inherit anything
+
+`serverList` and `security` can be used together. New client will inherit both config elements.
+
+`shared` and `none` can only be used individually. They can't be mixed with other policies.
+
+Example:
+```xml
+<Elasticsearch ...>
+    <AsyncBatchDelivery ... >
+        ...
+        <HCHttp>
+            ...
+            <Security .../>
+            <ServiceDiscovery serverUris="https://localhost:9200"
+                              refreshInterval="10000"
+                              targetScheme="https"
+                              configPolicies="security" />
+            ...
+        </HCHttp>
+    </AsyncBatchDelivery>
+</Elasticsearch>
+```
+
+NOTE: Config policies were added for convenience. Recommended configuration should contain `configPolices=none`, `serverUris` configured ONLY for `ServiceDiscovery` and separate `Security` configs if needed.
+
 ### Programmatic config
 See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java).
 

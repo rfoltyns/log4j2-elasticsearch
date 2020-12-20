@@ -20,34 +20,77 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServerInfo;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServerInfoListener;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+
+import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Stores a list of target nodes.
  */
-public class ServerPool {
+public class ServerPool implements ServerInfoListener {
 
-    private final AtomicReference<List<String>> serverListRef;
-    private final AtomicInteger currentIndex;
+    private final int waitForHostsInterval = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.interval", "500"));
+    private final int waitForHostsRetries = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.retries", "5"));
 
-    public ServerPool(List<String> serverList) {
-        if (serverList == null || serverList.isEmpty()) {
-            throw new ConfigurationException("Initial server list must not be empty or null");
+    private final AtomicInteger currentIndex = new AtomicInteger();
+    private final AtomicReference<List<ServerInfo>> ref;
+
+    public ServerPool(List<String> addresses) {
+
+        if (addresses == null) {
+            throw new IllegalArgumentException("Initial addresses cannot be null");
         }
-        this.serverListRef = new AtomicReference<>(serverList);
-        this.currentIndex = new AtomicInteger();
+
+        List<ServerInfo> resolved = new ArrayList<>(addresses.size());
+        for (String initial : addresses) {
+            ServerInfo serverInfo = new ServerInfo(initial);
+            resolved.add(serverInfo);
+        }
+
+        this.ref = new AtomicReference<>(resolved);
+
     }
 
     /**
-     * @return next target server
+     * This method will return next address from the list of last updated hosts
+     *
+     * @return next target server regardless of availability
      */
     public String getNext() {
-        List<String> current = serverListRef.get();
-        return current.get(currentIndex.getAndIncrement() % current.size());
+
+        int retries = waitForHostsRetries;
+        while (ref.get().size() == 0 && retries-- > 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(waitForHostsInterval));
+            getLogger().warn("No servers available");
+        }
+
+        List<ServerInfo> serverInfos = ref.get();
+
+        if (serverInfos.size() == 0) {
+            throw new IllegalStateException("No servers available after " + waitForHostsRetries + " retries");
+        }
+
+        int next = Math.abs(currentIndex.getAndIncrement() % serverInfos.size());
+
+        String resolvedAddress = serverInfos.get(next).getResolvedAddress();
+        getLogger().debug("{}: Returning {}", ServerPool.class.getSimpleName(), resolvedAddress);
+
+        return resolvedAddress;
+
+    }
+
+    @Override
+    public boolean onServerInfo(List<ServerInfo> serverInfos) {
+        ref.set(serverInfos);
+        return true;
     }
 
 }

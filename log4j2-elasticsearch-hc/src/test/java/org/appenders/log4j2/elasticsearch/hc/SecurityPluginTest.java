@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2020 - 2021 Rafal Foltynski
+ * Copyright (C) 2020 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.

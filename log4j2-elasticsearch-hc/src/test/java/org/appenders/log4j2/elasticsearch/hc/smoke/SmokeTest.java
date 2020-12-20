@@ -49,14 +49,22 @@ import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPoli
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
+import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
+import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.Security;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -74,6 +82,7 @@ public class SmokeTest extends SmokeTestBase {
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
         final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc");
         final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
+        final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
 
         getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
                 "batchSize", batchSize,
@@ -85,35 +94,52 @@ public class SmokeTest extends SmokeTestBase {
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 
-        HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder();
-
-        httpObjectFactoryBuilder
-                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4))
-                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
-
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
+        PooledItemSourceFactory pooledItemSourceFactory = PooledItemSourceFactory.newBuilder()
+                .withPoolName("batchPool")
+                .withInitialPoolSize(initialBatchPoolSize)
+                .withItemSizeInBytes(estimatedBatchSizeInBytes)
+                .withMonitored(true)
+                .withMonitorTaskInterval(10000)
+                .build();
 
-        httpObjectFactoryBuilder.withItemSourceFactory(
-                PooledItemSourceFactory.newBuilder()
-                        .withPoolName("batchPool")
-                        .withInitialPoolSize(initialBatchPoolSize)
-                        .withItemSizeInBytes(estimatedBatchSizeInBytes)
-                        .withMonitored(true)
-                        .withMonitorTaskInterval(10000)
-                        .build()
-        );
-
-        HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder();
-        httpClientFactoryBuilder.withConnTimeout(500)
+        HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
+                .withServerList(new ArrayList<>())
+                .withConnTimeout(500)
                 .withReadTimeout(2000)
                 .withIoThreadCount(4)
-                .withMaxTotalConnections(4);
+                .withMaxTotalConnections(4)
+                .withAuth(secured ? getAuth() : null);
 
-        httpObjectFactoryBuilder.withClientProvider(new HttpClientProvider(httpClientFactoryBuilder));
+        HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
-        httpClientFactoryBuilder.withServerList(getServerList(secured));
-        if (secured) {
-            httpClientFactoryBuilder.withAuth(getAuth());
+        HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
+                .withClientProvider(clientProvider)
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4))
+                .withItemSourceFactory(pooledItemSourceFactory)
+                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
+
+        if (serviceDiscoveryEnabled) {
+
+            HttpClientProvider serviceDiscoveryClientProvider = new HttpClientProvider(new HttpClientFactory.Builder()
+                    .withServerList(getServerList(secured))
+                    .withReadTimeout(1000)
+                    .withConnTimeout(500)
+                    .withMaxTotalConnections(1)
+                    .withIoThreadCount(1));
+
+            ClientProviderPolicy<HttpClient> clientProviderPolicy = new ClientProviderPoliciesRegistry().get(
+                    new HashSet<>(Arrays.asList("none")),
+                    serviceDiscoveryClientProvider);
+
+            ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(
+                    clientProviderPolicy,
+                    new ElasticsearchNodesQuery(secured ? "https" : "http"),
+                    5000L
+            );
+
+            httpConfig.withServiceDiscovery(serviceDiscoveryFactory.create(clientProvider));
+
         }
 
         ComponentTemplate indexSettings = new ComponentTemplate.Builder()

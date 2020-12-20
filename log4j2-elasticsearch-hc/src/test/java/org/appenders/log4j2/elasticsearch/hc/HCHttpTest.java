@@ -54,7 +54,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.internal.verification.VerificationModeFactory;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
@@ -664,8 +663,12 @@ public class HCHttpTest {
             }
         });
 
+        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
+        when(clientProvider.createClient()).thenReturn(mock(HttpClient.class));
+
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBackoffPolicy(backoffPolicy);
+                .withBackoffPolicy(backoffPolicy)
+                .withClientProvider(clientProvider);
 
         FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
         Function<BatchRequest, Boolean> failoverHandler = mock(Function.class);
@@ -912,16 +915,20 @@ public class HCHttpTest {
     }
 
     @Test
-    public void clientStartMayBeDeferredUntilFirstBatch() {
+    public void clientProviderStartMayBeDeferredUntilFirstBatch() {
 
         // given
-        HttpClient httpClient = mock(HttpClient.class);
-        HCHttp factory = createTestObjectFactory(httpClient);
+        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
+        when(clientProvider.createClient()).thenReturn(mock(HttpClient.class));
+
+        HCHttp factory = createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(clientProvider)
+                .build();
 
         factory.start();
 
         /* sanity check */
-        assertTrue(mockingDetails(httpClient).getInvocations().isEmpty());
+        assertTrue(mockingDetails(clientProvider).getInvocations().isEmpty());
 
         Function<BatchRequest, Boolean> batchListener = factory.createBatchListener(mock(FailoverPolicy.class));
 
@@ -929,7 +936,7 @@ public class HCHttpTest {
         batchListener.apply(mock(BatchRequest.class));
 
         // then
-        verify(httpClient, VerificationModeFactory.times(1)).start();
+        verify(clientProvider, times(1)).start();
 
     }
 
