@@ -40,6 +40,7 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkRequestIntrospector;
 import org.elasticsearch.client.transport.TransportClient;
@@ -50,7 +51,6 @@ import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
@@ -195,7 +195,7 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
                 throw new ConfigurationException("No serverUris provided for " + PLUGIN_NAME);
             }
             return new BulkProcessorObjectFactory(
-                    Arrays.asList(serverUris.split(";")),
+                    SplitUtil.split(serverUris, ";"),
                     auth,
                     clientSettings,
                     getValueResolver());

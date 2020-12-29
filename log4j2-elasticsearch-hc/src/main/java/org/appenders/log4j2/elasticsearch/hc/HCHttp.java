@@ -46,11 +46,11 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -366,7 +366,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
          */
         @Deprecated
         public Builder withServerUris(String serverUris) {
-            this.clientProvider.getHttpClientFactoryBuilder().withServerList(Arrays.asList(serverUris.split(";")));
+            this.clientProvider.getHttpClientFactoryBuilder().withServerList(SplitUtil.split(serverUris, ";"));
             return this;
         }
 

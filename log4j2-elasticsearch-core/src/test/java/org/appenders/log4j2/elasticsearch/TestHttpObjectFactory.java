@@ -25,6 +25,7 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -163,7 +164,7 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
             if (serverUris == null) {
                 throw new ConfigurationException("No serverUris provided for JestClientConfig");
             }
-            return new TestHttpObjectFactory(Arrays.asList(serverUris.split(";")), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled);
+            return new TestHttpObjectFactory(SplitUtil.split(serverUris, ";"), connTimeout, readTimeout, maxTotalConnection, defaultMaxTotalConnectionPerRoute, discoveryEnabled);
         }
 
         public Builder withServerUris(String serverUris) {

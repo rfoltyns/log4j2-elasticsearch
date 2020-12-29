@@ -57,10 +57,10 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.JestHttpFailedItemOps;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -91,7 +91,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private JestClient client;
 
     protected JestHttpObjectFactory(Builder builder) {
-        this.serverUris = Arrays.asList(builder.serverUris.split(";"));
+        this.serverUris = SplitUtil.split(builder.serverUris, ";");
         this.connTimeout = builder.connTimeout;
         this.readTimeout = builder.readTimeout;
         this.maxTotalConnections = builder.maxTotalConnection;

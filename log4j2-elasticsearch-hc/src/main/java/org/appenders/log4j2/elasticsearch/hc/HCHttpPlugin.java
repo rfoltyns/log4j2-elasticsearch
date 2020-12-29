@@ -35,6 +35,7 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import static org.appenders.log4j2.elasticsearch.hc.HCHttp.Builder.DEFAULT_BACKOFF_POLICY;
 
@@ -132,7 +133,7 @@ public class HCHttpPlugin extends HCHttp {
 
         protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {
             return new HttpClientFactory.Builder()
-                    .withServerList(Arrays.asList(serverUris.split(";")))
+                    .withServerList(SplitUtil.split(serverUris, ";"))
                     .withConnTimeout(connTimeout)
                     .withReadTimeout(readTimeout)
                     .withMaxTotalConnections(maxTotalConnections)
