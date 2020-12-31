@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2020 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,13 +33,13 @@ import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class BasicCredentialsTest {
+public class BasicCredentialsPluginTest {
 
     private static final String TEST_USER = "test_user";
     private static final String TEST_PASSWORD = "changeme";
 
-    public static BasicCredentials.Builder createTestBuilder() {
-        return BasicCredentials.newBuilder()
+    public static BasicCredentialsPlugin.Builder createTestBuilder() {
+        return BasicCredentialsPlugin.newBuilder()
                 .withUsername(TEST_USER)
                 .withPassword(TEST_PASSWORD);
     }
@@ -47,10 +48,10 @@ public class BasicCredentialsTest {
     public void minimalBuilderTest() {
 
         // given
-        BasicCredentials.Builder builder = createTestBuilder();
+        BasicCredentialsPlugin.Builder builder = createTestBuilder();
 
         // when
-        BasicCredentials certInfo = builder.build();
+        BasicCredentialsPlugin certInfo = builder.build();
 
         // then
         Assert.assertNotNull(certInfo);
@@ -61,11 +62,11 @@ public class BasicCredentialsTest {
     public void throwsWhenUsernameIsNull() {
 
         // given
-        BasicCredentials.Builder builder = createTestBuilder()
+        BasicCredentialsPlugin.Builder builder = createTestBuilder()
                 .withUsername(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("username"));
@@ -76,22 +77,23 @@ public class BasicCredentialsTest {
     public void throwsWhenPasswordIsNull() {
 
         // given
-        BasicCredentials.Builder builder = createTestBuilder()
+        BasicCredentialsPlugin.Builder builder = createTestBuilder()
                 .withPassword(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("password"));
 
     }
 
+
     @Test
     public void objectIsConfiguredWhenAllParamsAreSet() {
 
         // given
-        BasicCredentials BasicCredentials = createTestBuilder()
+        BasicCredentialsPlugin plugin = createTestBuilder()
                 .withUsername(TEST_USER)
                 .withPassword(TEST_PASSWORD)
                 .build();
@@ -99,10 +101,11 @@ public class BasicCredentialsTest {
         HttpClientFactory.Builder settings = spy(createDefaultTestObjectBuilder());
 
         // when
-        BasicCredentials.applyTo(settings);
+        plugin.applyTo(settings);
 
         // then
         verify(settings).withDefaultCredentialsProvider(notNull());
 
     }
+
 }

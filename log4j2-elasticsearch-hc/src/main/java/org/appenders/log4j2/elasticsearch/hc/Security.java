@@ -21,25 +21,14 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAliases;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 
-@PluginAliases("XPackAuth")
-@Plugin(name = Security.PLUGIN_NAME, category = Node.CATEGORY, elementType = Auth.ELEMENT_TYPE)
 public class Security implements Auth<HttpClientFactory.Builder> {
 
-    static final String PLUGIN_NAME = "Security";
-
-    private final Credentials credentials;
-    private final CertInfo certInfo;
+    private final Credentials<HttpClientFactory.Builder> credentials;
+    private final CertInfo<HttpClientFactory.Builder> certInfo;
 
     protected Security(Credentials<HttpClientFactory.Builder> credentials, CertInfo<HttpClientFactory.Builder> certInfo){
         this.credentials = credentials;
@@ -57,37 +46,27 @@ public class Security implements Auth<HttpClientFactory.Builder> {
 
     }
 
-    @PluginBuilderFactory
-    public static Security.Builder newBuilder() {
-        return new Security.Builder();
-    }
+    public static class Builder {
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<Security> {
+        private Credentials<HttpClientFactory.Builder> credentials;
+        private CertInfo<HttpClientFactory.Builder> certInfo;
 
-        @PluginElement("credentials")
-        @Required(message = "No credentials provided for " + Security.PLUGIN_NAME)
-        private Credentials credentials;
-
-        @PluginElement("certInfo")
-        private CertInfo certInfo;
-
-        @Override
         public Security build() {
 
             if (credentials == null) {
-                throw new ConfigurationException("No credentials provided for " + Security.PLUGIN_NAME);
+                throw new IllegalArgumentException("No credentials provided for " + Security.class.getSimpleName());
             }
 
             return new Security(credentials, certInfo);
 
         }
 
-        public Builder withCredentials(Credentials credentials) {
+        public Builder withCredentials(Credentials<HttpClientFactory.Builder> credentials) {
             this.credentials = credentials;
             return this;
         }
 
-        public Builder withCertInfo(CertInfo certInfo) {
+        public Builder withCertInfo(CertInfo<HttpClientFactory.Builder> certInfo) {
             this.certInfo = certInfo;
             return this;
         }

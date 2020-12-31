@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2020 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class PEMCertInfoTest {
+public class PEMCertInfoPluginTest {
 
     public static final String TEST_KEY_PATH = System.getProperty("pemCertInfo.keyPath");
     public static final String TEST_KEY_PATH_WITH_PASSPHRASE = System.getProperty("pemCertInfo.keyPathWithPassphrase");
@@ -43,8 +44,8 @@ public class PEMCertInfoTest {
     public static final String TEST_CA_PATH = System.getProperty("pemCertInfo.caPath");
     public static final String TEST_KEY_PASSPHRASE = System.getProperty("pemCertInfo.keyPassphrase");
 
-    public static PEMCertInfo.Builder createTestCertInfoBuilder() {
-        return PEMCertInfo.newBuilder()
+    public static PEMCertInfoPlugin.Builder createTestCertInfoBuilder() {
+        return PEMCertInfoPlugin.newBuilder()
                 .withKeyPath(TEST_KEY_PATH_WITH_PASSPHRASE)
                 .withKeyPassphrase(TEST_KEY_PASSPHRASE)
                 .withClientCertPath(TEST_CLIENT_CERT_PATH)
@@ -55,7 +56,7 @@ public class PEMCertInfoTest {
     public void minimalBuilderTest() {
 
         // given
-        PEMCertInfo.Builder builder = createTestCertInfoBuilder();
+        PEMCertInfoPlugin.Builder builder = createTestCertInfoBuilder();
 
         // when
         CertInfo<HttpClientFactory.Builder> certInfo = builder.build();
@@ -69,7 +70,7 @@ public class PEMCertInfoTest {
     public void paramsArePassedToConfiguredObject() {
 
         // given
-        PEMCertInfo certInfo = createTestCertInfoBuilder()
+        PEMCertInfoPlugin certInfo = createTestCertInfoBuilder()
                 .withKeyPath(TEST_KEY_PATH)
                 .withKeyPassphrase(TEST_KEY_PASSPHRASE)
                 .withClientCertPath(TEST_CLIENT_CERT_PATH)
@@ -91,11 +92,11 @@ public class PEMCertInfoTest {
     public void keyPathIsNotAppliedIfNotConfigured() {
 
         // given
-        PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+        PEMCertInfoPlugin.Builder builder = createTestCertInfoBuilder()
                 .withKeyPath(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("keyPath"));
@@ -106,11 +107,11 @@ public class PEMCertInfoTest {
     public void builderThrowsIfClientCertPathIsNotConfigured() {
 
         // given
-        PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+        PEMCertInfoPlugin.Builder builder = createTestCertInfoBuilder()
                 .withClientCertPath(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("clientCertPath"));
@@ -121,11 +122,11 @@ public class PEMCertInfoTest {
     public void builderThrowsIfCaPathIsNotConfigured() {
 
         // given
-        PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+        PEMCertInfoPlugin.Builder builder = createTestCertInfoBuilder()
                 .withCaPath(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("caPath"));
@@ -136,12 +137,13 @@ public class PEMCertInfoTest {
     public void builderThrowsIfCantReadKey() {
 
         // given
-        PEMCertInfo testCertInfo = createTestCertInfoBuilder()
+        PEMCertInfoPlugin testCertInfo = createTestCertInfoBuilder()
                 .withKeyPath(TEST_KEY_PATH_WITH_PASSPHRASE)
                 .withKeyPassphrase("")
                 .build();
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        // when
+        ConfigurationException exception = assertThrows(ConfigurationException.class,
                 () -> testCertInfo.applyTo(mock(HttpClientFactory.Builder.class)));
 
         // then

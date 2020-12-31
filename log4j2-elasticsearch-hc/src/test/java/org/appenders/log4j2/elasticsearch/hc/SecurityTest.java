@@ -21,36 +21,34 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import static org.appenders.log4j2.elasticsearch.hc.PEMCertInfoTest.createTestCertInfoBuilder;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SecurityTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Captor
     private ArgumentCaptor<HttpClientFactory.Builder> builderArgumentCaptor;
 
     public static Security.Builder createTestBuilder() {
-        return Security.newBuilder()
+        return new Security.Builder()
                 .withCredentials(BasicCredentialsTest.createTestBuilder().build())
-                .withCertInfo(PEMCertInfoTest.createTestCertInfoBuilder().build());
+                .withCertInfo(createTestCertInfoBuilder().build());
     }
 
     public static HttpClientFactory.Builder createDefaultTestObjectBuilder() {
@@ -75,7 +73,7 @@ public class SecurityTest {
     public void appliesCredentialsIfConfigured() {
 
         // given
-        Credentials<HttpClientFactory.Builder> credentials = Mockito.mock(Credentials.class);
+        Credentials<HttpClientFactory.Builder> credentials = spy(new DummyCredentials());
 
         HttpClientFactory.Builder settingsBuilder = createDefaultTestObjectBuilder();
 
@@ -99,11 +97,11 @@ public class SecurityTest {
         Security.Builder builder = createTestBuilder()
                 .withCredentials(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("credentials");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("credentials"));
 
     }
 
@@ -111,7 +109,7 @@ public class SecurityTest {
     public void appliesCertInfoIfConfigured() {
 
         // given
-        CertInfo<HttpClientFactory.Builder> certInfo = Mockito.mock(CertInfo.class);
+        CertInfo<HttpClientFactory.Builder> certInfo = spy(new DummyCertInfo());
 
         HttpClientFactory.Builder settingsBuilder = createDefaultTestObjectBuilder();
 
@@ -136,7 +134,7 @@ public class SecurityTest {
                 .withCertInfo(null)
                 .build();
 
-        HttpClientFactory.Builder settingsBuilder = Mockito.spy(createDefaultTestObjectBuilder());
+        HttpClientFactory.Builder settingsBuilder = spy(createDefaultTestObjectBuilder());
 
         // when
         auth.configure(settingsBuilder);
@@ -144,6 +142,19 @@ public class SecurityTest {
         // then
         verify(settingsBuilder, never()).withSslSocketFactory(any());
         verify(settingsBuilder, never()).withHttpsIOSessionStrategy(any());
+    }
+
+    private static class DummyCredentials implements Credentials<HttpClientFactory.Builder> {
+        @Override
+        public void applyTo(HttpClientFactory.Builder clientSettings) {
+        }
+    }
+
+    private static class DummyCertInfo implements CertInfo<HttpClientFactory.Builder> {
+        @Override
+        public void applyTo(HttpClientFactory.Builder clientConfig) {
+        }
+
     }
 
 }

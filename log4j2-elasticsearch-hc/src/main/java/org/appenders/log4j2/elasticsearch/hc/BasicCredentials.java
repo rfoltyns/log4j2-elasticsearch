@@ -24,15 +24,8 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Credentials;
 
-@Plugin(name = BasicCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = Credentials.ELEMENT_TYPE)
 public final class BasicCredentials implements Credentials<HttpClientFactory.Builder> {
 
     static final String PLUGIN_NAME = "BasicCredentials";
@@ -40,7 +33,7 @@ public final class BasicCredentials implements Credentials<HttpClientFactory.Bui
     private final String username;
     private final String password;
 
-    protected BasicCredentials(String username, String password) {
+    public BasicCredentials(String username, String password) {
         this.username = username;
         this.password = password;
     }
@@ -58,28 +51,21 @@ public final class BasicCredentials implements Credentials<HttpClientFactory.Bui
 
     }
 
-    @PluginBuilderFactory
     public static BasicCredentials.Builder newBuilder() {
         return new BasicCredentials.Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<BasicCredentials> {
+    public static class Builder {
 
-        @PluginBuilderAttribute
-        @Required(message = "No username provided for " + BasicCredentials.PLUGIN_NAME)
         private String username;
-
-        @PluginBuilderAttribute
-        @Required(message = "No password provided for " + BasicCredentials.PLUGIN_NAME)
         private String password;
 
-        @Override
         public BasicCredentials build() {
             if (username == null) {
-                throw new ConfigurationException("No username provided for " + BasicCredentials.PLUGIN_NAME);
+                throw new IllegalArgumentException("No username provided for " + BasicCredentials.PLUGIN_NAME);
             }
             if (password == null) {
-                throw new ConfigurationException("No password provided for " + BasicCredentials.PLUGIN_NAME);
+                throw new IllegalArgumentException("No password provided for " + BasicCredentials.PLUGIN_NAME);
             }
             return new BasicCredentials(username, password);
         }
@@ -95,4 +81,5 @@ public final class BasicCredentials implements Credentials<HttpClientFactory.Bui
         }
 
     }
+
 }

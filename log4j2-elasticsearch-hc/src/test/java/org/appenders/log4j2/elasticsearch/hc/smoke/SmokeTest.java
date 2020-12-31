@@ -212,7 +212,7 @@ public class SmokeTest extends SmokeTestBase {
     }
 
     private static Auth<HttpClientFactory.Builder> getAuth() {
-        CertInfo certInfo = PEMCertInfo.newBuilder()
+        CertInfo<HttpClientFactory.Builder> certInfo = PEMCertInfo.newBuilder()
                 .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
                 .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
                 .withClientCertPath(System.getProperty("pemCertInfo.clientCertPath"))
@@ -226,12 +226,12 @@ public class SmokeTest extends SmokeTestBase {
 //                .withTruststorePassword(System.getProperty("jksCertInfo.truststorePassword"))
 //                .build();
 
-        Credentials credentials = BasicCredentials.newBuilder()
+        Credentials<HttpClientFactory.Builder> credentials = BasicCredentials.newBuilder()
                 .withUsername("admin")
                 .withPassword("changeme")
                 .build();
 
-        return Security.newBuilder()
+        return new Security.Builder()
                 .withCertInfo(certInfo)
                 .withCredentials(credentials)
                 .build();

@@ -24,13 +24,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginAliases;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.hc.thirdparty.PemReader;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -45,17 +38,14 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Optional;
 
-@Plugin(name = PEMCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)
-public class PEMCertInfo implements CertInfo<HttpClientFactory.Builder> {
+public final class PEMCertInfo implements CertInfo<HttpClientFactory.Builder> {
 
-    static final String PLUGIN_NAME = "PEM";
+    static final String configExceptionMessage = "Failed to apply SSL/TLS settings";
 
     private final String keyPath;
     private final String keyPassphrase;
     private final String clientCertPath;
     private final String caPath;
-
-    static final String configExceptionMessage = "Failed to apply SSL/TLS settings";
 
     protected PEMCertInfo(String keyPath, String keyPassphrase, String clientCertPath, String caPath) {
         this.keyPath = keyPath;
@@ -93,44 +83,32 @@ public class PEMCertInfo implements CertInfo<HttpClientFactory.Builder> {
             builder.withHttpsIOSessionStrategy(new SSLIOSessionStrategy(sslContext, new NoopHostnameVerifier()));
 
         } catch (IOException | GeneralSecurityException e) {
-            throw new ConfigurationException(configExceptionMessage, e);
+            throw new IllegalArgumentException(configExceptionMessage, e);
         }
 
     }
 
-    @PluginBuilderFactory
     public static PEMCertInfo.Builder newBuilder() {
         return new PEMCertInfo.Builder();
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<PEMCertInfo> {
 
-        @PluginBuilderAttribute
-        @Required(message = "No keyPath provided for " + PLUGIN_NAME)
         private String keyPath;
-
-        @PluginBuilderAttribute
-        @Required(message = "No clientCertPath provided for " + PLUGIN_NAME)
         private String clientCertPath;
-
-        @PluginBuilderAttribute
-        @Required(message = "No caPath provided for " + PLUGIN_NAME)
         private String caPath;
-
-        @PluginBuilderAttribute
-        @PluginAliases({"keyPassword"})
         private String keyPassphrase;
 
         @Override
         public PEMCertInfo build() {
             if (keyPath == null) {
-                throw new ConfigurationException("No keyPath provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("No keyPath provided for " + getClass().getSimpleName());
             }
             if (clientCertPath == null) {
-                throw new ConfigurationException("No clientCertPath provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("No clientCertPath provided for " + getClass().getSimpleName());
             }
             if (caPath == null) {
-                throw new ConfigurationException("No caPath provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("No caPath provided for " + getClass().getSimpleName());
             }
             return new PEMCertInfo(keyPath, keyPassphrase, clientCertPath, caPath);
         }
