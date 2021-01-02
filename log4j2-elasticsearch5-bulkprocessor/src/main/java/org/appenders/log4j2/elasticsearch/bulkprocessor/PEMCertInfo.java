@@ -29,7 +29,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
 
-@Plugin(name = "PEM", category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)
+@Plugin(name = "PEM", category = Node.CATEGORY, elementType = "certInfo")
 public class PEMCertInfo implements CertInfo<Settings.Builder> {
 
     static final String XPACK_SECURITY_TRANSPORT_SSL_ENABLED = "xpack.security.transport.ssl.enabled";

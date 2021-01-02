@@ -29,7 +29,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
 
-@Plugin(name = JKSCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)
+@Plugin(name = JKSCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = "certInfo")
 public class JKSCertInfo implements CertInfo<Settings.Builder> {
 
     static final String PLUGIN_NAME = "JKS";
