@@ -23,6 +23,10 @@ package org.appenders.log4j2.elasticsearch;
 
 public interface CertInfo<T> {
 
+    /**
+     * @deprecated As of 2.0, this constant will be removed.
+     */
+    @Deprecated
     String ELEMENT_TYPE = "certInfo";
 
     void applyTo(T clientConfig);
