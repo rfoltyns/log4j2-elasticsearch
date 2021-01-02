@@ -22,16 +22,14 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 import io.searchbox.client.config.HttpClientConfig;
-import org.apache.http.client.CredentialsProvider;
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.hamcrest.core.AnyOf;
-import org.hamcrest.core.StringContains;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static org.appenders.log4j2.elasticsearch.jest.XPackAuthTest.createDefaultClientConfigBuilder;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -40,9 +38,6 @@ public class BasicCredentialsTest {
 
     private static final String TEST_USER = "test_user";
     private static final String TEST_PASSWORD = "changeme";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static BasicCredentials.Builder createTestBuilder() {
         return BasicCredentials.newBuilder()
@@ -64,26 +59,6 @@ public class BasicCredentialsTest {
 
     }
 
-
-    @Test
-    public void throwsWhenBothParamsAreNull() {
-
-        // given
-        BasicCredentials.Builder builder = createTestBuilder()
-                .withUsername(null)
-                .withPassword(null);
-
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(AnyOf.anyOf(
-                StringContains.containsString("username"),
-                StringContains.containsString("password"))
-        );
-
-        // when
-        builder.build();
-
-    }
-
     @Test
     public void throwsWhenUsernameIsNull() {
 
@@ -91,11 +66,11 @@ public class BasicCredentialsTest {
         BasicCredentials.Builder builder = createTestBuilder()
                 .withUsername(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("username");
-
         // when
-        builder.build();
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("username"));
 
     }
 
@@ -106,11 +81,11 @@ public class BasicCredentialsTest {
         BasicCredentials.Builder builder = createTestBuilder()
                 .withPassword(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("password");
-
         // when
-        builder.build();
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("password"));
 
     }
 
@@ -130,7 +105,7 @@ public class BasicCredentialsTest {
         BasicCredentials.applyTo(settings);
 
         // then
-        verify(settings).credentialsProvider((CredentialsProvider) notNull());
+        verify(settings).credentialsProvider(notNull());
 
     }
 }

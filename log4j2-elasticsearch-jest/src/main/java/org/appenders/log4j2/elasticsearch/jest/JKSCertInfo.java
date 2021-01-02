@@ -41,7 +41,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 
-@Plugin(name = JKSCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)
+@Plugin(name = JKSCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = "certInfo")
 public class JKSCertInfo implements CertInfo<HttpClientConfig.Builder> {
 
     static final String PLUGIN_NAME = "JKS";

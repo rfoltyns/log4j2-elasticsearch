@@ -46,7 +46,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.util.Optional;
 
-@Plugin(name = PEMCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = CertInfo.ELEMENT_TYPE)
+@Plugin(name = PEMCertInfo.PLUGIN_NAME, category = Node.CATEGORY, elementType = "certInfo")
 public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
 
     static final String PLUGIN_NAME = "PEM";

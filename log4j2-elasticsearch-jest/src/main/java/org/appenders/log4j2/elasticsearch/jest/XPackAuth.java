@@ -32,7 +32,7 @@ import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 
-@Plugin(name = XPackAuth.PLUGIN_NAME, category = Node.CATEGORY, elementType = Auth.ELEMENT_TYPE)
+@Plugin(name = XPackAuth.PLUGIN_NAME, category = Node.CATEGORY, elementType = "auth")
 public class XPackAuth implements Auth<HttpClientConfig.Builder> {
 
     static final String PLUGIN_NAME = "XPackAuth";

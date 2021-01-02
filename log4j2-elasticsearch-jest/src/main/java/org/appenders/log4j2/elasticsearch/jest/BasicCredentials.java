@@ -33,7 +33,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.Credentials;
 
-@Plugin(name = BasicCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = Credentials.ELEMENT_TYPE)
+@Plugin(name = BasicCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = "credentials")
 public final class BasicCredentials implements Credentials<HttpClientConfig.Builder> {
 
     static final String PLUGIN_NAME = "BasicCredentials";
