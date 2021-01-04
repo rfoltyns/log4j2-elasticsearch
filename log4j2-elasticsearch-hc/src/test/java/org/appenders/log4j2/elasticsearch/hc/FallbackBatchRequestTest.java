@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 public class FallbackBatchRequestTest extends BatchRequestTest {
 
     static {
-        System.setProperty("org.appenders." + BatchRequest.class.getSimpleName() + ".jctools.enabled", "false");
+        System.setProperty("appenders." + BatchRequest.class.getSimpleName() + ".jctools.enabled", "false");
     }
 
 }

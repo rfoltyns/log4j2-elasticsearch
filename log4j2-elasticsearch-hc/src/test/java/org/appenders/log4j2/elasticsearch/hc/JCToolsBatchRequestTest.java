@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 public class JCToolsBatchRequestTest extends BatchRequestTest {
 
     static {
-        System.setProperty("org.appenders." + BatchRequest.class.getSimpleName() + ".jctools.enabled", "true");
+        System.setProperty("appenders." + BatchRequest.class.getSimpleName() + ".jctools.enabled", "true");
     }
 
 }
