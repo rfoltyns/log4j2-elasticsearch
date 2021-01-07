@@ -37,17 +37,18 @@ import static org.mockito.Mockito.when;
 public class BlockingResponseHandlerTest {
 
     @Test
-    public void canBeInterrupted() {
+    public void canBeInterrupted() throws InterruptedException {
 
         // given
         final BlockingResponseHandler<Response> handler = new BlockingResponseHandler<>(
                 mock(ObjectReader.class),
                 ex -> null);
 
-        Thread thread = new Thread(() -> handler.getResult());
+        Thread thread = new Thread(handler::getResult);
 
         // when
         thread.start();
+        Thread.sleep(100);
         thread.interrupt();
 
         // then
