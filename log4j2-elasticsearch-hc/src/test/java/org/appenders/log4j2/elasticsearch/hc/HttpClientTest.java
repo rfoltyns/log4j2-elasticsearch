@@ -38,7 +38,6 @@ import org.apache.http.nio.protocol.BasicAsyncResponseConsumer;
 import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
 import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.protocol.HttpContext;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
@@ -59,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
@@ -100,7 +100,7 @@ public class HttpClientTest {
 
     @After
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test
@@ -344,8 +344,12 @@ public class HttpClientTest {
         HttpResponse httpResponse = createDefaultTestHttpResponse(200, UUID.randomUUID().toString());
         when(httpResponse.getEntity()).thenReturn(entity);
 
+        mockTestLogger(); // reduce noise
+
         // when
         asyncCallback.completed(httpResponse);
+
+        setLogger(null); // bring back the noise
 
         // then
         verify(responseHandler, times(1)).completed(any());

@@ -47,6 +47,8 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -65,6 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
@@ -108,7 +111,7 @@ public class HCHttpTest {
 
     @After
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     public static HCHttp.Builder createDefaultHttpObjectFactoryBuilder() {
@@ -452,7 +455,7 @@ public class HCHttpTest {
     }
 
     @Test
-    public void batchListenerOperationExceptionIsNotPropagated() throws Exception {
+    public void batchListenerOperationExceptionIsNotPropagated() {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
@@ -480,8 +483,12 @@ public class HCHttpTest {
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest request = createTestBatch(batchBuilder, payload1, payload2);
 
+        mockTestLogger();
+
         // when
         listener.apply(request);
+
+        setLogger(null);
 
         // then
         assertEquals(1, callCount.get());
@@ -558,8 +565,12 @@ public class HCHttpTest {
         Function<BatchRequest, Boolean> failoverHandler = mock(Function.class);
         ResponseHandler<BatchResult> responseHandler = config.createResultHandler(batchRequest, failoverHandler);
 
+        mockTestLogger();
+
         // when
         responseHandler.failed(new IOException());
+
+        setLogger(null);
 
         // then
         ArgumentCaptor<BatchRequest> captor = ArgumentCaptor.forClass(BatchRequest.class);
@@ -591,8 +602,12 @@ public class HCHttpTest {
         BatchResult result = mock(BatchResult.class);
         when(result.isSucceeded()).thenReturn(false);
 
+        mockTestLogger();
+
         // when
         responseHandler.completed(result);
+
+        setLogger(null);
 
         // then
         verify(batchRequest, times(1)).completed();
