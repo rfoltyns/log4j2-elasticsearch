@@ -61,7 +61,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * {@link PooledItemSourceFactory}-based {@link ClientObjectFactory}. {@link PooledItemSourceFactory} MUST be configured.
  * Produces {@link HttpClient} and related objects.
  */
-public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
+public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
     private volatile State state = State.STOPPED;
 
@@ -189,7 +189,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     public Function<BatchRequest, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
         return new Function<BatchRequest, Boolean>() {
 
-            private Function<BatchRequest, Boolean> failureHandler = createFailureHandler(failoverPolicy);
+            private final Function<BatchRequest, Boolean> failureHandler = createFailureHandler(failoverPolicy);
 
             @Override
             public Boolean apply(BatchRequest request) {
@@ -199,7 +199,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
                         operations.remove().execute();
                     } catch (Exception e) {
                         // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
-                        getLogger().error("before-batch failed: {}", e.getMessage());
+                        getLogger().error("before-batch failed: " + e.getMessage(), e);
                     }
                 }
 
@@ -285,7 +285,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     private PooledItemSourceFactory createSetupOpsItemSourceFactory() {
         return PooledItemSourceFactory.newBuilder()
                 .withItemSizeInBytes(4096)
-                .withInitialPoolSize(1)
+                .withInitialPoolSize(4)
                 .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build())
                 .build();
     }
@@ -425,7 +425,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
          * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
          */
         @Deprecated
-        public Builder withAuth(Auth auth) {
+        public Builder withAuth(Auth<HttpClientFactory.Builder> auth) {
             // Special treatment here
             if (auth != null) {
                 auth.configure(this.clientProvider.getHttpClientFactoryBuilder());
@@ -462,7 +462,7 @@ public class  HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     @Override
     public void start() {
 
-        addOperation(() -> createClient().start());
+        addOperation(() -> LifeCycle.of(clientProvider).start());
 
         if (!operationFactoryItemSourceFactory.isStarted()) {
             operationFactoryItemSourceFactory.start();
