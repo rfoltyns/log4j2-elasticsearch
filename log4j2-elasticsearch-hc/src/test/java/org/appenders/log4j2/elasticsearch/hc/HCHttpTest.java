@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
@@ -47,8 +46,6 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -374,8 +371,8 @@ public class HCHttpTest {
 
         String payload1 = "test1";
         String payload2 = "test2";
-        ItemSource<ByteBuf> source1 = createDefaultTestBuffereItemSource(payload1);
-        ItemSource<ByteBuf> source2 = createDefaultTestBuffereItemSource(payload2);
+        ItemSource<ByteBuf> source1 = createDefaultTestItemSource(payload1);
+        ItemSource<ByteBuf> source2 = createDefaultTestItemSource(payload2);
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest request = createTestBatch(batchBuilder, source1, source2);
 
@@ -403,8 +400,8 @@ public class HCHttpTest {
         FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
         Function<BatchRequest, Boolean> listener = config.createBatchListener(failoverPolicy);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1, payload2);
@@ -440,8 +437,8 @@ public class HCHttpTest {
 
         config.addOperation(operation);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest request = createTestBatch(batchBuilder, payload1, payload2);
 
@@ -477,8 +474,8 @@ public class HCHttpTest {
 
         config.addOperation(operation);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest request = createTestBatch(batchBuilder, payload1, payload2);
 
@@ -501,8 +498,8 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         HCHttp config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest request = createTestBatch(batchBuilder, payload1, payload2);
 
@@ -530,8 +527,8 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         HCHttp config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1, payload2);
 
@@ -555,8 +552,8 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         HCHttp config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource("test2");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1, payload2);
@@ -587,7 +584,7 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         HCHttp objectFactory = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
@@ -633,7 +630,7 @@ public class HCHttpTest {
         HCHttp config = spy(builder.build());
         when(config.createFailureHandler(eq(failoverPolicy))).thenReturn(failoverHandler);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
@@ -676,7 +673,7 @@ public class HCHttpTest {
         HCHttp config = spy(builder.build());
         when(config.createFailureHandler(eq(failoverPolicy))).thenReturn(failoverHandler);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
@@ -707,7 +704,7 @@ public class HCHttpTest {
                 .withBackoffPolicy(backoffPolicy)
                 .build();
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource("test1");
 
         BatchRequest.Builder batchBuilder = spy(new BatchRequest.Builder());
         BatchRequest batchRequest = createTestBatch(batchBuilder, payload1);
@@ -1003,7 +1000,7 @@ public class HCHttpTest {
         });
     }
 
-    private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
+    private ItemSource<ByteBuf> createDefaultTestItemSource(String payload) {
         CompositeByteBuf buffer = ByteBufItemSourceTest.createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
         return createTestItemSource(buffer, source -> {});
