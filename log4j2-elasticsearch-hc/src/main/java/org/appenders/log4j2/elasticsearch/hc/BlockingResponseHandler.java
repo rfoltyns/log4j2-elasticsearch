@@ -35,7 +35,7 @@ import java.util.function.Function;
  */
 public class BlockingResponseHandler<T extends Response> implements ResponseHandler<T> {
 
-    protected CountDownLatch countDownLatch = new CountDownLatch(1);
+    protected final CountDownLatch countDownLatch = new CountDownLatch(1);
     protected final ObjectReader objectReader;
     protected final Function<Exception, T> fallbackResponseTemplate;
     protected T result;

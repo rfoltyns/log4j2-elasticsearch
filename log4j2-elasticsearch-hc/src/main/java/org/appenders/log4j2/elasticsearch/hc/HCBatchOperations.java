@@ -27,9 +27,12 @@ import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
-public class HCBatchOperations implements BatchOperations<BatchRequest> {
+public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCycle {
+
+    private volatile State state = State.STOPPED;
 
     private final PooledItemSourceFactory pooledItemSourceFactory;
     private final String mappingType;
@@ -39,6 +42,14 @@ public class HCBatchOperations implements BatchOperations<BatchRequest> {
         this.pooledItemSourceFactory = pooledItemSourceFactory;
         this.mappingType = mappingType;
         this.objectWriter = configuredWriter();
+    }
+
+    public HCBatchOperations(PooledItemSourceFactory pooledItemSourceFactory) {
+        this(pooledItemSourceFactory, "_doc");
+    }
+
+    public String getMappingType() {
+        return mappingType;
     }
 
     @Override
@@ -84,6 +95,42 @@ public class HCBatchOperations implements BatchOperations<BatchRequest> {
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
                 .writerFor(IndexRequest.class);
+    }
+
+    @Override
+    public void start() {
+
+        if (isStarted()) {
+            return;
+        }
+
+        pooledItemSourceFactory.start();
+
+        state = State.STARTED;
+
+    }
+
+    @Override
+    public void stop() {
+
+        if (isStopped()) {
+            return;
+        }
+
+        pooledItemSourceFactory.stop();
+
+        state = State.STOPPED;
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

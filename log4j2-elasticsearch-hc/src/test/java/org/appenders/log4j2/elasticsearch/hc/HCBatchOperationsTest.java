@@ -30,6 +30,7 @@ import org.apache.logging.log4j.message.ObjectMessage;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.junit.Assert;
@@ -42,8 +43,12 @@ import java.util.Scanner;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class HCBatchOperationsTest {
 
@@ -55,7 +60,7 @@ public class HCBatchOperationsTest {
 
         // given
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
-        HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, null);
+        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, null);
 
         String indexName = UUID.randomUUID().toString();
         String source = UUID.randomUUID().toString();
@@ -68,12 +73,20 @@ public class HCBatchOperationsTest {
 
     }
 
+    private HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory) {
+        return createDefaultBatchOperations(itemSourceFactory, "_doc");
+    }
+
+    private HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory, String mappingType) {
+        return new HCBatchOperations(itemSourceFactory, mappingType);
+    }
+
     @Test
     public void createsBatchBuilder() {
 
         // given
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
-        BatchBuilder<BatchRequest> builder = new HCBatchOperations(itemSourceFactory, null).createBatchBuilder();
+        BatchBuilder<BatchRequest> builder = createDefaultBatchOperations(itemSourceFactory, null).createBatchBuilder();
 
         // when
         BatchRequest request = builder.build();
@@ -87,7 +100,7 @@ public class HCBatchOperationsTest {
 
         // given
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
-        HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, null);
+        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, null);
 
         // when
         ObjectWriter writer = batchOperations.configuredWriter();
@@ -104,7 +117,7 @@ public class HCBatchOperationsTest {
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
 
         String expectedType = UUID.randomUUID().toString();
-        HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, expectedType);
+        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, expectedType);
 
         JacksonJsonLayout layout = createDefaultTestJacksonJsonLayout(itemSourceFactory);
 
@@ -142,6 +155,77 @@ public class HCBatchOperationsTest {
 
     }
 
+    @Test
+    public void lifecycleStartStartItemSourceFactoryOnlyOnce() {
+
+        // given
+        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory);
+
+        // when
+        batchOperations.start();
+        batchOperations.start();
+
+        // then
+        verify(itemSourceFactory).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
+
+        // given
+        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory);
+
+        batchOperations.start();
+
+        // when
+        batchOperations.stop();
+        batchOperations.stop();
+
+        // then
+        verify(itemSourceFactory).stop();
+
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
     private JacksonJsonLayout createDefaultTestJacksonJsonLayout(PooledItemSourceFactory itemSourceFactory) {
 
         JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder()
@@ -150,6 +234,10 @@ public class HCBatchOperationsTest {
         );
 
         return builder.build();
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createDefaultBatchOperations(mock(PooledItemSourceFactory.class), null);
     }
 
 }

@@ -24,7 +24,6 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
-import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
@@ -93,7 +92,7 @@ public class HCHttpPluginTest {
         HCHttpPlugin plugin = builder.build();
 
         // then
-        assertEquals(TEST_MAPPING_TYPE, plugin.mappingType);
+        assertEquals(TEST_MAPPING_TYPE, ((HCBatchOperations)plugin.batchOperations).getMappingType());
         assertEquals(backoffPolicy, plugin.backoffPolicy);
 
         HttpClientFactory.Builder httpClientFactoryBuilder = plugin.clientProvider.getHttpClientFactoryBuilder();
@@ -137,7 +136,6 @@ public class HCHttpPluginTest {
         factory.setupOperationFactory().create(indexTemplate);
 
         // then
-        assertTrue(factory.valueResolver() instanceof Log4j2Lookup);
         verify(strSubstitutor).replace(eq(expectedSource));
 
     }
@@ -156,7 +154,6 @@ public class HCHttpPluginTest {
 
         HCHttp factory = builder.build();
 
-        assertEquals(valueResolver, factory.valueResolver());
 
         String expectedSource = UUID.randomUUID().toString();
         IndexTemplate indexTemplate = createTestIndexTemplateBuilder()
@@ -183,10 +180,10 @@ public class HCHttpPluginTest {
                 .withValueResolver(null);
 
         // when
-        HCHttp factory = builder.build();
+        ValueResolver valueResolver = builder.getValueResolver();
 
         // then
-        assertEquals(ValueResolver.NO_OP, factory.valueResolver());
+        assertEquals(ValueResolver.NO_OP, valueResolver);
 
     }
 

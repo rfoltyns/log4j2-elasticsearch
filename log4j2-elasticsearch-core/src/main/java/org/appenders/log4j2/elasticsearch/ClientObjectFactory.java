@@ -21,9 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import java.util.Collection;
-import java.util.function.Function;
-
 /**
  * Factory for client-specific objects:
  * <ul>
@@ -38,33 +35,9 @@ import java.util.function.Function;
  * @param <CLIENT_TYPE> type of client object produced by this factory
  * @param <BATCH_TYPE> type of batch objects handled by the client
  */
-public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle {
+public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle, BatchListenerFactory<BATCH_TYPE>, ClientFactory<CLIENT_TYPE> {
 
     String ELEMENT_TYPE = "objectFactory";
-
-    /**
-     * @return Collection of configured addresses
-     */
-    Collection<String> getServerList();
-
-    /**
-     * @return CLIENT_TYPE Fully configured client
-     */
-    CLIENT_TYPE createClient();
-
-    /**
-     * Listener that MUST accept and send prepared batch and handle the exceptions
-     * @param failoverPolicy sink for failed batch items
-     * @return prepared batch handler
-     */
-    Function<BATCH_TYPE, Boolean> createBatchListener(FailoverPolicy failoverPolicy);
-
-    /**
-     * Failed batch handler. SHOULD deliver the batch to alternate target or provided failover policy
-     * @param failover optional failover strategy
-     * @return prepared failed batch handler
-     */
-    Function<BATCH_TYPE, Boolean> createFailureHandler(FailoverPolicy failover);
 
     /**
      * @return batch items creator
@@ -84,7 +57,9 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle 
      *
      * NOTE: {@code default} added for backwards compatibility. {@code default} will be removed future releases
      * @param operation operation to be executed
+     * @deprecated As of 1.6, this method will be wrapped by batch-phase-based queue
      */
+    @Deprecated
     default void addOperation(Operation operation) {}
 
     /**

@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
@@ -42,25 +41,23 @@ import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.setLogger;
@@ -75,14 +72,16 @@ import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_READ_TIMEOUT;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_SERVER_URIS;
-import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -96,14 +95,9 @@ import static org.mockito.Mockito.when;
 
 public class HCHttpTest {
 
-    private static final String TEST_MAPPING_TYPE = "_test_mapping";
-
     static {
         System.setProperty("io.netty.allocator.maxOrder", "1");
     }
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @After
     public void tearDown() {
@@ -117,7 +111,8 @@ public class HCHttpTest {
                 .build();
 
         return new HCHttp.Builder()
-                .withItemSourceFactory(itemSourceFactory)
+                .withOperationFactory(new HCOperationFactoryDispatcher(step -> Result.SUCCESS, ValueResolver.NO_OP))
+                .withBatchOperations(new HCBatchOperations(itemSourceFactory))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
 
     }
@@ -126,12 +121,8 @@ public class HCHttpTest {
     public void deprecatedBuilderSettersDelegateToClientProvider() {
 
         // given
-        PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest
-                .createDefaultTestSourceFactoryConfig()
-                .build();
-
-        HCHttp.Builder builder = new HCHttp.Builder()
-                .withItemSourceFactory(itemSourceFactory)
+        HCHttp.Builder builder = (HCHttp.Builder) createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(new HttpClientProvider(new HttpClientFactory.Builder()))
                 .withServerUris(TEST_SERVER_URIS)
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
@@ -157,17 +148,118 @@ public class HCHttpTest {
     }
 
     @Test
-    public void builderThrowsIfSourceFactoryIsNotProvided() {
+    public void builderThrowsIfBatchOperationsIsNotProvidedAndItemSourceFactoryIsNotProvided() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(null)
+                .withItemSourceFactory(null)
+                .withMappingType("_doc");
+
+        // when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + BatchOperations.class.getSimpleName() + " provided"));
+
+    }
+
+    @Test
+    public void builderThrowsIfBatchOperationsIsNotProvidedAndMappingTypeIsNotProvided() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(null)
+                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
+                .withMappingType(null);
+
+        // when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + BatchOperations.class.getSimpleName() + " provided"));
+
+    }
+
+    @Test
+    public void builderWarnsIfBatchOperationsIsProvidedAndMappingTypeIsProvidedAndItemSourceFactoryIsNotProvided() {
+
+        // given
+        BatchOperations batchOperations = mock(BatchOperations.class);
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(batchOperations)
+                .withItemSourceFactory(null)
+                .withMappingType("_doc");
+
+        Logger logger = mockTestLogger();
+
+        // when
+        HCHttp objectFactory = builder.build();
+
+        // then
+        assertEquals(batchOperations, objectFactory.batchOperations);
+
+        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
+                HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
+
+    }
+
+    @Test
+    public void builderWarnsIfBatchOperationsIsProvidedAndMappingTypeIsNotProvidedAndItemSourceFactoryIsProvided() {
+
+        // given
+        BatchOperations batchOperations = mock(BatchOperations.class);
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(batchOperations)
+                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
+                .withMappingType(null);
+
+        Logger logger = mockTestLogger();
+
+        // when
+        HCHttp objectFactory = builder.build();
+
+        // then
+        assertEquals(batchOperations, objectFactory.batchOperations);
+
+        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
+                HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
+
+    }
+
+    @Test
+    public void builderWarnsIfBatchOperationsIsNotProvidedAndMappingTypeIsProvidedAndItemSourceFactoryIsProvided() {
+
+        // given
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(null)
+                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
+                .withMappingType("_doc");
+
+        Logger logger = mockTestLogger();
+
+        // when
+        HCHttp objectFactory = builder.build();
+
+        // then
+        assertTrue(objectFactory.batchOperations instanceof HCBatchOperations);
+        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated. Use {} instead",
+                HCHttp.class.getSimpleName(), "mappingType", "itemSourceFactory", "batchOperations");
+
+    }
+
+    @Test
+    public void builderThrowsIfBatchOperationsIsNotProvided() {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        builder.withItemSourceFactory(null);
-
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " provided");
+        builder.withBatchOperations(null);
 
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + BatchOperations.class.getSimpleName() + " provided"));
 
     }
 
@@ -176,13 +268,13 @@ public class HCHttpTest {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        builder.withBackoffPolicy(null);
-
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No " + BackoffPolicy.NAME + " provided");
+        builder.withBackoffPolicy((BackoffPolicy<BatchRequest>)null);
 
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + BackoffPolicy.NAME + " provided"));
 
     }
 
@@ -193,26 +285,61 @@ public class HCHttpTest {
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
                 .withClientProvider(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No " + ClientProvider.class.getSimpleName() + " provided");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + ClientProvider.class.getSimpleName() + " provided"));
 
     }
 
     @Test
-    public void builderThrowsIfValueResolverIsNotProvided() {
+    public void builderThrowsIfOperationFactoryIsNotProvided() {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withValueResolver(null);
+                .withOperationFactory(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No " + ValueResolver.class.getSimpleName() + " provided");
+        // when
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + OperationFactory.class.getSimpleName() + " provided"));
+
+    }
+
+    @Test
+    public void builderFallsBackToDefaultIfFailedItemOpsIsNull() {
+
+        // given
+        HCHttp.Builder builder = spy(createDefaultHttpObjectFactoryBuilder());
+        builder.withFailedItemOps(null);
+
+        verify(builder, never()).createFailedItemOps();
 
         // when
         builder.build();
+
+        // then
+        verify(builder).createFailedItemOps();
+
+    }
+
+    @Test
+    public void builderUsesProvidedFailedItemOpsIfNotNull() {
+
+        // given
+        HCHttp.Builder builder = spy(createDefaultHttpObjectFactoryBuilder());
+        FailedItemOps<IndexRequest> failedItemOps = new HCFailedItemOps();
+        builder.withFailedItemOps(failedItemOps);
+
+        verify(builder, never()).createFailedItemOps();
+
+        // when
+        HCHttp objectFactory = builder.build();
+
+        // then
+        assertSame(failedItemOps, objectFactory.failedItemOps);
 
     }
 
@@ -232,38 +359,25 @@ public class HCHttpTest {
 
     }
 
-
     @Test
-    public void createsHCBatchOperationsByDefault() {
+    public void returnsConfiguredBatchOperations() {
 
         // given
-        HCHttp factory = spy(createDefaultHttpObjectFactoryBuilder().build());
+        BatchOperations<BatchRequest> expectedBatchOperations = mock(BatchOperations.class);
+        HCHttp factory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(expectedBatchOperations)
+                .build());
 
         // when
         BatchOperations<BatchRequest> batchOperation = factory.createBatchOperations();
 
         // then
-        assertEquals(HCBatchOperations.class, batchOperation.getClass());
+        assertSame(expectedBatchOperations, batchOperation);
 
     }
 
     @Test
-    public void clientIsInitializedOnlyOnce() {
-
-        // given
-        HCHttp factory = spy(createDefaultHttpObjectFactoryBuilder().build());
-
-        // when
-        HttpClient client1 = factory.createClient();
-        HttpClient client2 = factory.createClient();
-
-        // then
-        assertEquals(client1, client2);
-
-    }
-
-    @Test
-    public void clientProviderIsPassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
+    public void clientProviderIsPassedToCreatedObject() throws IllegalArgumentException {
 
         // given
         HttpClientProvider expectedClientProvider = HttpClientProviderTest.createDefaultTestClientProvider();
@@ -280,27 +394,12 @@ public class HCHttpTest {
     }
 
     @Test
-    public void mappingTypeIsPassedToCreatedObject() throws IllegalArgumentException, IllegalAccessException {
-
-        // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withMappingType(TEST_MAPPING_TYPE);
-
-        // when
-        HCHttp objectFactory = builder.build();
-
-        // then
-        assertEquals(TEST_MAPPING_TYPE, objectFactory.mappingType);
-
-    }
-
-    @Test
     public void authIsAppliedIfConfigured() {
 
         // given
         Auth auth = new Security(new BasicCredentials("admin", "changeme"), null);
 
-        HCHttp factory = createDefaultHttpObjectFactoryBuilder()
+        HCHttp factory = (HCHttp) createDefaultHttpObjectFactoryBuilder()
                 .withAuth(auth)
                 .build();
 
@@ -316,9 +415,7 @@ public class HCHttpTest {
     public void authIsNotAppliedIfNull() {
 
         // given
-        Auth auth = mock(Auth.class);
-
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
+        HCHttp.Builder builder = (HCHttp.Builder) createDefaultHttpObjectFactoryBuilder()
                 .withAuth(null);
 
 
@@ -357,7 +454,7 @@ public class HCHttpTest {
         resultHandler.deserializeResponse(inputStream);
 
         // then
-        verify(mockedObjectReader).readValue(any(InputStream.class));
+        verify(mockedObjectReader).readValue(eq(inputStream), eq(BatchResult.class));
     }
 
     @Test
@@ -726,54 +823,57 @@ public class HCHttpTest {
     }
 
     @Test
-    public void passesIndexTemplateToClient() {
+    public void passesIndexTemplateToOperationFactory() {
 
         //given
-        HttpClient httpClient = mock(HttpClient.class);
+        OperationFactory operationFactory = spy(new OperationFactory() {
+            @Override
+            public <T extends OpSource> Operation create(T opSource) {
+                return () -> {};
+            }
+        });
 
-        HCHttp factory = Mockito.spy(createTestObjectFactory(httpClient));
+        HCHttp factory = createDefaultHttpObjectFactoryBuilder()
+                .withOperationFactory(operationFactory)
+                .build();
 
-        AtomicReference<ByteBuf> argCaptor = new AtomicReference<>();
-        responseMock(httpClient, true, argCaptor);
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder()
-                .build());
-
-        String expectedPayload = indexTemplate.getSource();
+        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
 
         // when
         factory.execute(indexTemplate);
 
         // then
-        ArgumentCaptor<IndexTemplateRequest> requestArgumentCaptor = ArgumentCaptor.forClass(IndexTemplateRequest.class);
-        verify(httpClient).execute(requestArgumentCaptor.capture(), any());
-
-        assertEquals(argCaptor.get().toString(StandardCharsets.UTF_8), expectedPayload);
+        verify(operationFactory).create(eq(indexTemplate));
 
     }
 
     @Test
-    public void executeLogsExceptions() {
+    public void deprecatedExecuteLogsExceptions() {
 
         //given
-        HttpClient httpClient = mock(HttpClient.class);
-        HCHttp factory = Mockito.spy(createTestObjectFactory(httpClient));
+        HCHttp factory = Mockito.spy(createDefaultHttpObjectFactoryBuilder().build());
 
         Logger logger = mockTestLogger();
 
         String expectedErrorMessage = UUID.randomUUID().toString();
         Exception testException = new IOException(expectedErrorMessage);
 
-        when(httpClient.execute(any(), any())).thenAnswer(
-                (Answer<Response>) invocationOnMock -> {
-                    throw testException;
+        when(factory.setupOperationFactory()).thenReturn(new OperationFactoryDispatcher() {
+            {
+                register(IndexTemplate.TYPE_NAME, new OperationFactory() {
+                    @Override
+                    public <T extends OpSource> Operation create(T opSource) {
+                        return () -> {
+                            throw testException;
+                        };
+                    }
                 });
+            }
+        });
 
         IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
                 .withPath("classpath:indexTemplate-7.json")
                 .build());
-
-        factory.start();
 
         // when
         factory.execute(indexTemplate);
@@ -784,47 +884,7 @@ public class HCHttpTest {
     }
 
     @Test
-    public void errorMessageIsNotLoggedIfTemplateActionHasSucceeded() {
-
-        //given
-        HttpClient httpClient = mock(HttpClient.class);
-
-        HCHttp factory = createTestObjectFactory(httpClient);
-
-        Response responseMock = responseMock(httpClient, true);
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(responseMock, never()).getErrorMessage();
-
-    }
-
-    @Test
-    public void errorMessageIsRetrievedIfTemplateActionNotSucceeded() {
-
-        //given
-        HttpClient httpClient = mock(HttpClient.class);
-
-        HCHttp factory = createTestObjectFactory(httpClient);
-
-        Response responseMock = responseMock(httpClient, false);
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(responseMock).getErrorMessage();
-
-    }
-
-    @Test
-    public void executeDoesNotRethrowOnIndexTemplateOperationException() {
+    public void deprecatedExecuteDoesNotRethrowOnIndexTemplateOperationException() {
 
         //given
         HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
@@ -855,63 +915,6 @@ public class HCHttpTest {
     }
 
     @Test
-    public void executeUsesBlockingResponseHandler() {
-
-        //given
-        HttpClient httpClient = mock(HttpClient.class);
-
-        BlockingResponseHandler<BasicResponse> blockingResponseHandler = spy(new BlockingResponseHandler<>(
-                new ObjectMapper().readerFor(Response.class), response -> null));
-
-        HCHttp factory = createTestObjectFactory(httpClient, blockingResponseHandler);
-
-        Response responseMock = responseMock(httpClient, false);
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(httpClient).execute(any(), eq(blockingResponseHandler));
-
-    }
-
-    @Test
-    public void defaultBlockingResponseFallbackHandlerCreatesBasicResponseWithExceptionMessage() {
-
-        //given
-        HCHttp factory = createTestObjectFactory(mock(HttpClient.class));
-
-        Function<Exception, BasicResponse> blockingResponseExceptionHandler = factory.createBlockingResponseFallbackHandler();
-
-        String expectedMessage = UUID.randomUUID().toString();
-
-        // when
-        BasicResponse basicResponse = blockingResponseExceptionHandler.apply(new Exception(expectedMessage));
-
-        // then
-        assertEquals(expectedMessage, basicResponse.getErrorMessage());
-
-    }
-
-    @Test
-    public void defaultBlockingResponseFallbackHandlerCreatesBasicResponseWithNoExceptionMessage() {
-
-        //given
-        HCHttp factory = createTestObjectFactory(mock(HttpClient.class));
-
-        Function<Exception, BasicResponse> blockingResponseExceptionHandler = factory.createBlockingResponseFallbackHandler();
-
-        // when
-        BasicResponse basicResponse = blockingResponseExceptionHandler.apply(null);
-
-        // then
-        assertNull(basicResponse.getErrorMessage());
-
-    }
-
-    @Test
     public void clientProviderStartMayBeDeferredUntilFirstBatch() {
 
         // given
@@ -938,7 +941,7 @@ public class HCHttpTest {
     }
 
     @Test
-    public void setupOpsReturnsTheSameInstance() {
+    public void setupOperationFactoryReturnsTheSameInstance() {
 
         // given
         HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
@@ -952,54 +955,6 @@ public class HCHttpTest {
 
     }
 
-    private Response responseMock(HttpClient httpClient, boolean isSucceeded) {
-        return responseMock(httpClient, isSucceeded, new AtomicReference<>());
-    }
-
-    private Response responseMock(HttpClient httpClient, boolean isSucceeded, AtomicReference<ByteBuf> argCaptor) {
-        BatchResult result = mock(BatchResult.class);
-        when(httpClient.execute(any(), any())).thenAnswer(invocation -> {
-            GenericRequest request = invocation.getArgument(0);
-            argCaptor.set(((ByteBuf)request.serialize().getSource()).copy());
-            return result;
-        });
-        when(result.getErrorMessage()).thenReturn("IndexTemplate not added");
-
-        when(result.isSucceeded()).thenReturn(isSucceeded);
-        when(result.getResponseCode()).thenReturn(isSucceeded ? 200 : 0);
-
-        return result;
-    }
-
-    private HCHttp createTestObjectFactory(HttpClient httpClient, BlockingResponseHandler<BasicResponse> blockingResponseHandler) {
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withValueResolver(ValueResolver.NO_OP);
-
-        return Mockito.spy(new TestHCHttp(builder) {
-            @Override
-            public HttpClient createClient() {
-                return httpClient;
-            }
-
-            @Override
-            BlockingResponseHandler<BasicResponse> createBlockingResponseHandler() {
-                return blockingResponseHandler;
-            }
-        });
-    }
-
-    private HCHttp createTestObjectFactory(HttpClient httpClient) {
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withValueResolver(ValueResolver.NO_OP);
-
-        return Mockito.spy(new TestHCHttp(builder) {
-            @Override
-            public HttpClient createClient() {
-                return httpClient;
-            }
-        });
-    }
-
     private ItemSource<ByteBuf> createDefaultTestItemSource(String payload) {
         CompositeByteBuf buffer = ByteBufItemSourceTest.createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
@@ -1007,14 +962,16 @@ public class HCHttpTest {
     }
 
     @Test
-    public void lifecycleStartStartItemSourceFactoryOnlyOnce() {
+    public void lifecycleStartStartBatchOperationsOnlyOnce() {
 
         // given
-        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
-        when(itemSourceFactory.isStarted()).thenAnswer(trueOnlyOnce());
+        HCBatchOperations batchOperations = mock(HCBatchOperations.class);
+        when(batchOperations.isStarted()).thenAnswer(trueOnlyOnce());
 
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
-                .withItemSourceFactory(itemSourceFactory).build());
+                .withBatchOperations(batchOperations)
+                .build()
+        );
 
         HttpClient client = mock(HttpClient.class);
         when(objectFactory.createClient()).thenReturn(client);
@@ -1024,44 +981,44 @@ public class HCHttpTest {
         objectFactory.start();
 
         // then
-        verify(itemSourceFactory).start();
+        verify(batchOperations).start();
 
     }
 
     @Test
-    public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
+    public void lifecycleStopStopsBatchOperationsOnlyOnce() {
 
         // given
-        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
-        when(itemSourceFactory.isStopped()).thenAnswer(falseOnlyOnce());
+        HCBatchOperations batchOperations = mock(HCBatchOperations.class);
 
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
-                .withItemSourceFactory(itemSourceFactory)
-                .withClientProvider(mock(HttpClientProvider.class))
+                .withBatchOperations(batchOperations)
                 .build());
 
         objectFactory.start();
-        objectFactory.createClient();
 
         // when
         objectFactory.stop();
         objectFactory.stop();
 
         // then
-        verify(itemSourceFactory).stop();
+        verify(batchOperations).stop();
 
     }
 
-    // HttpClient is started on first execution outside of LifeCycle scope
-    // verify that no interactions took place
     @Test
-    public void lifecycleStartDoesntStartClient() {
+    public void lifecycleStartStartOperationFactoryOnlyOnce() {
 
         // given
-        HttpClient client = mock(HttpClient.class);
-        HCHttp objectFactory = createTestObjectFactory(client);
-        when(objectFactory.isStarted()).thenAnswer(falseOnlyOnce());
+        HCOperationFactoryDispatcher operationFactory = mock(HCOperationFactoryDispatcher.class);
+        when(operationFactory.isStarted()).thenAnswer(trueOnlyOnce());
 
+        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withOperationFactory(operationFactory)
+                .build()
+        );
+
+        HttpClient client = mock(HttpClient.class);
         when(objectFactory.createClient()).thenReturn(client);
 
         // when
@@ -1069,28 +1026,29 @@ public class HCHttpTest {
         objectFactory.start();
 
         // then
-        assertEquals(0, mockingDetails(client).getInvocations().size());
+        verify(operationFactory).start();
 
     }
 
     @Test
-    public void lifecycleStopStopsClientOnlyOnce() {
+    public void lifecycleStopStopsOperationFactoryOnlyOnce() {
 
         // given
-        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
+        HCOperationFactoryDispatcher operationFactory = mock(HCOperationFactoryDispatcher.class);
+        when(operationFactory.isStarted()).thenAnswer(trueOnlyOnce());
+
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
-                .withClientProvider(clientProvider)
+                .withOperationFactory(operationFactory)
                 .build());
 
         objectFactory.start();
-        objectFactory.createClient();
 
         // when
         objectFactory.stop();
         objectFactory.stop();
 
         // then
-        verify(clientProvider).stop();
+        verify(operationFactory).stop();
 
     }
 
@@ -1129,30 +1087,40 @@ public class HCHttpTest {
     }
 
     @Test
-    public void lifecycleStopDoesNotStopClientIfClientNotCreated() {
+    public void lifecycleStartDoesntStartClientProvider() {
 
         // given
-        HttpClient client = mock(HttpClient.class);
-        HttpClientProvider clientProvider = new HttpClientProvider(new HttpClientFactory.Builder()) {
-            @Override
-            public HttpClient createClient() {
-                return client;
-            }
-        };
+        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
+        HCHttp objectFactory = createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(clientProvider)
+                .build();
 
+        // when
+        objectFactory.start();
+        objectFactory.start();
+
+        // then
+        assertEquals(0, mockingDetails(clientProvider).getInvocations().size());
+
+    }
+
+    @Test
+    public void lifecycleStopStopsClientProviderOnlyOnce() {
+
+        // given
+        HttpClientProvider clientProvider = mock(HttpClientProvider.class);
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
                 .withClientProvider(clientProvider)
                 .build());
-
 
         objectFactory.start();
 
         // when
         objectFactory.stop();
+        objectFactory.stop();
 
         // then
-        verify(objectFactory, never()).createClient();
-        verify(client, never()).stop();
+        verify(clientProvider).stop();
 
     }
 
@@ -1216,12 +1184,6 @@ public class HCHttpTest {
 
         }
 
-    }
-
-    private static class TestHCHttp extends HCHttp {
-        public TestHCHttp(Builder builder) {
-            super(builder);
-        }
     }
 
 }

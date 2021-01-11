@@ -21,6 +21,13 @@ package org.appenders.log4j2.elasticsearch.hc.smoke;
  */
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
@@ -49,14 +56,23 @@ import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPoli
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.hc.BatchItemResult;
+import org.appenders.log4j2.elasticsearch.hc.BatchItemResultMixIn;
+import org.appenders.log4j2.elasticsearch.hc.BatchResult;
+import org.appenders.log4j2.elasticsearch.hc.BatchResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
+import org.appenders.log4j2.elasticsearch.hc.Error;
+import org.appenders.log4j2.elasticsearch.hc.ErrorMixIn;
+import org.appenders.log4j2.elasticsearch.hc.HCBatchOperations;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
+import org.appenders.log4j2.elasticsearch.hc.HCOperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.Security;
+import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
@@ -101,13 +117,7 @@ public class SmokeTest extends SmokeTestBase {
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
-        PooledItemSourceFactory pooledItemSourceFactory = PooledItemSourceFactory.newBuilder()
-                .withPoolName("batchPool")
-                .withInitialPoolSize(initialBatchPoolSize)
-                .withItemSizeInBytes(estimatedBatchSizeInBytes)
-                .withMonitored(true)
-                .withMonitorTaskInterval(10000)
-                .build();
+        PooledItemSourceFactory pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes).build();
 
         HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
                 .withServerList(new ArrayList<>())
@@ -122,10 +132,9 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
+                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory))
                 .withClientProvider(clientProvider)
-                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4))
-                .withItemSourceFactory(pooledItemSourceFactory)
-                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4));
 
         if (serviceDiscoveryEnabled) {
 
@@ -151,6 +160,13 @@ public class SmokeTest extends SmokeTestBase {
             httpConfig.withServiceDiscovery(serviceDiscoveryFactory.create(clientProvider));
 
         }
+
+        httpObjectFactoryBuilder
+                .withClientProvider(clientProvider)
+                .withOperationFactory(new HCOperationFactoryDispatcher(
+                        new SyncStepProcessor(clientProvider, configuredReader()),
+                        new Log4j2Lookup(configuration.getStrSubstitutor())));
+
 
         ComponentTemplate indexSettings = new ComponentTemplate.Builder()
                 .withName(indexName + "-settings")
@@ -243,10 +259,31 @@ public class SmokeTest extends SmokeTestBase {
                 .withIgnoreExceptions(false);
     }
 
+    private PooledItemSourceFactory.Builder batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
+        return PooledItemSourceFactory.newBuilder()
+                .withPoolName("batchPool")
+                .withInitialPoolSize(initialBatchPoolSize)
+                .withItemSizeInBytes(estimatedBatchSizeInBytes)
+                .withMonitored(true)
+                .withMonitorTaskInterval(10000);
+    }
+
     private List<String> getServerList(boolean secured, String hostPortList) {
         return SplitUtil.split(hostPortList, ";").stream()
                 .map(uri -> String.format("%s://%s", (secured ? "https" : "http"), uri))
                 .collect(Collectors.toList());
+    }
+
+    private ObjectReader configuredReader() {
+        return new ObjectMapper()
+                .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
+                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
+                .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+                .addMixIn(BatchResult.class, BatchResultMixIn.class)
+                .addMixIn(Error.class, ErrorMixIn.class)
+                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
+                .readerFor(BatchResult.class);
     }
 
     private static Auth<HttpClientFactory.Builder> getAuth() {

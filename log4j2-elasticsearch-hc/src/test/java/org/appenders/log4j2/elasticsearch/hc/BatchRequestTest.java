@@ -389,6 +389,19 @@ public abstract class BatchRequestTest {
 
     }
 
+    @Test
+    public void deprecatedGetIndexRequestsDelegatesToGetItems() {
+
+        // given
+        BatchRequest request = spy(createDefaultTestObjectBuilder().build());
+
+        // when
+        request.getIndexRequests();
+
+        // then
+        verify(request).getItems();
+    }
+
     public static BatchRequest.Builder createDefaultTestObjectBuilder() {
         return new BatchRequest.Builder()
                 .withObjectWriter(mock(ObjectWriter.class))

@@ -24,25 +24,83 @@ import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
+import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
+import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 
 /**
  * {@inheritDoc}
  */
-class HCOperationFactoryDispatcher extends OperationFactoryDispatcher {
+public class HCOperationFactoryDispatcher extends OperationFactoryDispatcher implements LifeCycle {
+
+    private volatile State state = State.STOPPED;
+
+    private final EmptyItemSourceFactory itemSourceFactory;
 
     public HCOperationFactoryDispatcher(
             StepProcessor<SetupStep<Request, Response>> stepProcessor,
             ValueResolver valueResolver,
             EmptyItemSourceFactory itemSourceFactory) {
         super();
-        // FIXME: register in HCHttp.createSetupOps(?)
-        register(ComponentTemplate.TYPE_NAME, new ComponentTemplateSetupOp(stepProcessor, valueResolver, itemSourceFactory));
-        register(IndexTemplate.TYPE_NAME, new IndexTemplateSetupOp(stepProcessor, valueResolver, itemSourceFactory));
-        register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver, itemSourceFactory));
+        this.itemSourceFactory = itemSourceFactory;
+        register(ComponentTemplate.TYPE_NAME, new ComponentTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
+        register(IndexTemplate.TYPE_NAME, new IndexTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
+        register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
     }
 
+    public HCOperationFactoryDispatcher(
+            StepProcessor<SetupStep<Request, Response>> stepProcessor,
+            ValueResolver valueResolver) {
+        this(stepProcessor, valueResolver, createSetupOpsItemSourceFactory());
+    }
+
+    private static PooledItemSourceFactory createSetupOpsItemSourceFactory() {
+        return PooledItemSourceFactory.newBuilder()
+                .withItemSizeInBytes(4096)
+                .withMaxItemSizeInBytes(4096)
+                .withInitialPoolSize(1)
+                .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build())
+                .build();
+    }
+
+
+    @Override
+    public void start() {
+
+        if (isStarted()) {
+            return;
+        }
+
+        LifeCycle.of(itemSourceFactory).start();
+
+        state = State.STARTED;
+
+    }
+
+    @Override
+    public void stop() {
+
+        if (isStopped()) {
+            return;
+        }
+
+        LifeCycle.of(itemSourceFactory).stop();
+
+        state = State.STOPPED;
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
+    }
 }

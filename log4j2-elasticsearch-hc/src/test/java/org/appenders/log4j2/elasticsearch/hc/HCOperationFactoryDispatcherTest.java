@@ -24,15 +24,19 @@ import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.ComponentTemplateTest;
+import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
+import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.Operation;
+import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -41,8 +45,10 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HCOperationFactoryDispatcherTest {
@@ -65,7 +71,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"));
 
-        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(componentTemplate);
@@ -78,6 +84,11 @@ public class HCOperationFactoryDispatcherTest {
         ByteBufItemSource source = (ByteBufItemSource) ((PutComponentTemplate) request).source;
         assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"), source.getSource().toString(StandardCharsets.UTF_8));
 
+    }
+
+    @NotNull
+    private HCOperationFactoryDispatcher createDefaultTestOperationsFactoryDispatcher(CapturingStepProcessor stepProcessor, ValueResolver valueResolver, EmptyItemSourceFactory createTestItemSource) {
+        return new HCOperationFactoryDispatcher(stepProcessor, valueResolver, createTestItemSource);
     }
 
     @Test
@@ -98,7 +109,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "indexTemplate"));
 
-        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(indexTemplate);
@@ -134,7 +145,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
 
-        HCOperationFactoryDispatcher ops = new HCOperationFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(ilmPolicy);
@@ -164,6 +175,93 @@ public class HCOperationFactoryDispatcherTest {
         assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"), source.getSource().toString(StandardCharsets.UTF_8));
         assertEquals("_ilm/policy/" + expectedName, putIlmPolicy.createRequest().getURI());
 
+    }
+
+
+    @Test
+    public void lifecycleStartStartItemSourceFactoryOnlyOnce() {
+
+        // given
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+        ValueResolver valueResolver = mock(ValueResolver.class);
+
+        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        LifeCycle operationFactory = createDefaultTestOperationsFactoryDispatcher(
+                stepProcessor, valueResolver, itemSourceFactory);
+
+        // when
+        operationFactory.start();
+        operationFactory.start();
+
+        // then
+        verify(itemSourceFactory).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
+
+        // given
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+        ValueResolver valueResolver = mock(ValueResolver.class);
+
+        PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        LifeCycle operationFactory = createDefaultTestOperationsFactoryDispatcher(
+                stepProcessor, valueResolver, itemSourceFactory);
+
+        operationFactory.start();
+
+        // when
+        operationFactory.stop();
+        operationFactory.stop();
+
+        // then
+        verify(itemSourceFactory).stop();
+
+    }
+
+    @Test
+    public void lifecycleStart() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        // when
+        lifeCycle.start();
+
+        // then
+        assertFalse(lifeCycle.isStopped());
+        assertTrue(lifeCycle.isStarted());
+
+    }
+
+    @Test
+    public void lifecycleStop() {
+
+        // given
+        LifeCycle lifeCycle = createLifeCycleTestObject();
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+
+        // then
+        assertFalse(lifeCycle.isStarted());
+        assertTrue(lifeCycle.isStopped());
+
+    }
+
+    private LifeCycle createLifeCycleTestObject() {
+        return createDefaultTestOperationsFactoryDispatcher(
+                new CapturingStepProcessor(),
+                mock(ValueResolver.class),
+                mock(PooledItemSourceFactory.class));
     }
 
     private static class CapturingStepProcessor implements StepProcessor<SetupStep<Request, Response>> {

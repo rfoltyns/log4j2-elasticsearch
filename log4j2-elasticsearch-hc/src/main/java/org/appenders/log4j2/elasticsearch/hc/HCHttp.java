@@ -27,104 +27,55 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
-import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
-import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
-import org.appenders.log4j2.elasticsearch.ClientProvider;
-import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
-import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
-import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
-import org.appenders.log4j2.elasticsearch.Result;
-import org.appenders.log4j2.elasticsearch.SetupStep;
-import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
-import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
-import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
-import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
- * {@link PooledItemSourceFactory}-based {@link ClientObjectFactory}. {@link PooledItemSourceFactory} MUST be configured.
- * Produces {@link HttpClient} and related objects.
+ * Creates {@link HttpClient} and batch handlers.
  */
-public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
+public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexRequest> {
 
-    private volatile State state = State.STOPPED;
+    protected final BatchOperations<BatchRequest> batchOperations;
+    protected final OperationFactory operationFactory;
 
-    protected final HttpClientProvider clientProvider;
-    protected final PooledItemSourceFactory itemSourceFactory;
-    protected final ObjectReader objectReader;
-    protected final String mappingType;
-    protected final FailedItemOps<IndexRequest> failedItemOps;
-    protected final BackoffPolicy<BatchRequest> backoffPolicy;
-
-    private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
-    private final ValueResolver valueResolver;
-    private final PooledItemSourceFactory operationFactoryItemSourceFactory;
-    private final OperationFactoryDispatcher setupOps;
+    private final ObjectReader objectReader;
 
     public HCHttp(Builder builder) {
-        this.clientProvider = builder.clientProvider;
-        this.itemSourceFactory = builder.pooledItemSourceFactory;
-        this.mappingType = builder.mappingType;
-        this.failedItemOps = builder.failedItemOps;
+        super(builder);
+        this.batchOperations = builder.batchOperations;
+        this.operationFactory = builder.operationFactory;
         this.objectReader = configuredReader();
-        this.backoffPolicy = builder.backoffPolicy;
-
-        // FIXME: setupOps should be injected here..
-        this.valueResolver = builder.valueResolver;
-        this.operationFactoryItemSourceFactory = createSetupOpsItemSourceFactory();
-        this.setupOps = createSetupOps();
-    }
-
-    @Override
-    public Function<BatchRequest, Boolean> createFailureHandler(FailoverPolicy failover) {
-        return batchRequest -> {
-
-            long start = System.currentTimeMillis();
-            int batchSize = batchRequest.getIndexRequests().size();
-
-            getLogger().warn("BatchRequest of {} indexRequests failed. Redirecting to {}", batchSize, failover.getClass().getName());
-
-            batchRequest.getIndexRequests().forEach(indexRequest -> {
-                // TODO: FailoverPolicyChain
-                try {
-                    failover.deliver(failedItemOps.createItem(indexRequest));
-                } catch (Exception e) {
-                    // let's handle here as exception thrown at this stage will cause the client to shutdown
-                    getLogger().error(e.getMessage(), e);
-                }
-            });
-
-            getLogger().trace("BatchRequest of {} indexRequests redirected in {} ms", batchSize, System.currentTimeMillis() - start);
-
-            return true;
-        };
     }
 
     @Override
     public BatchOperations<BatchRequest> createBatchOperations() {
-        return new HCBatchOperations(itemSourceFactory, mappingType);
+        return batchOperations;
+    }
+
+    @Override
+    public OperationFactory setupOperationFactory() {
+        return operationFactory;
     }
 
     /**
      * @return {@code com.fasterxml.jackson.databind.ObjectReader} to deserialize {@link BatchResult}
+     * @deprecated This method will be removed in future releases (not earlier than 1.6)
      */
+    @Deprecated
     protected ObjectReader configuredReader() {
+        // TODO: Inject..?
         return new ObjectMapper()
                 .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
@@ -169,53 +120,7 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
             @Override
             public BatchResult deserializeResponse(InputStream responseBody) throws IOException {
-                return objectReader.readValue(responseBody);
-            }
-
-        };
-    }
-
-    @Override
-    public Collection<String> getServerList() {
-        return new ArrayList<>(clientProvider.getHttpClientFactoryBuilder().serverList);
-    }
-
-    @Override
-    public HttpClient createClient() {
-        return clientProvider.createClient();
-    }
-
-    @Override
-    public Function<BatchRequest, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
-        return new Function<BatchRequest, Boolean>() {
-
-            private final Function<BatchRequest, Boolean> failureHandler = createFailureHandler(failoverPolicy);
-
-            @Override
-            public Boolean apply(BatchRequest request) {
-
-                while (!operations.isEmpty()) {
-                    try {
-                        operations.remove().execute();
-                    } catch (Exception e) {
-                        // TODO: redirect to failover (?) retry with exp. backoff (?) multiple options here
-                        getLogger().error("before-batch failed: " + e.getMessage(), e);
-                    }
-                }
-
-                if (backoffPolicy.shouldApply(request)) {
-                    getLogger().warn("Backoff applied. Request rejected.");
-                    failureHandler.apply(request);
-                    request.completed();
-                    return false;
-                } else {
-                    backoffPolicy.register(request);
-                }
-
-                ResponseHandler<BatchResult> responseHandler = createResultHandler(request, failureHandler);
-                createClient().executeAsync(request, responseHandler);
-
-                return true;
+                return objectReader.readValue(responseBody, BatchResult.class);
             }
 
         };
@@ -230,99 +135,54 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         }
     }
 
-    @Override
-    public void addOperation(Operation operation) {
-        operations.add(operation);
-    }
+    public static class Builder extends BatchingClientObjectFactory.Builder<BatchRequest, IndexRequest> {
 
-    @Override
-    public OperationFactory setupOperationFactory() {
-        return setupOps;
-    }
+        protected BatchOperations<BatchRequest> batchOperations;
+        protected OperationFactory operationFactory;
 
-    /* visible for testing */
-    ValueResolver valueResolver() {
-        return valueResolver;
-    }
+        /**
+         * @deprecated As of 1.6, this field will be removed. Use {@link #batchOperations} instead.
+         */
+        @Deprecated
+        protected String mappingType;
 
-    /* visible for testing */
-    BlockingResponseHandler<BasicResponse> createBlockingResponseHandler() {
-        return new BlockingResponseHandler<>(
-                this.objectReader,
-                createBlockingResponseFallbackHandler()
-        );
-    }
-
-    /* visible for testing */
-    Function<Exception, BasicResponse> createBlockingResponseFallbackHandler() {
-        return (ex) -> {
-            BasicResponse basicResponse = new BasicResponse();
-            if (ex != null) {
-                basicResponse.withErrorMessage(ex.getMessage());
-            }
-            return basicResponse;
-        };
-    }
-
-    private HCOperationFactoryDispatcher createSetupOps() {
-        return new HCOperationFactoryDispatcher(
-                this::execute,
-                valueResolver,
-                operationFactoryItemSourceFactory);
-    }
-
-    private Result execute(SetupStep<Request, Response> setupStep) {
-
-        Response response = createClient().execute(
-                setupStep.createRequest(),
-                createBlockingResponseHandler()
-        );
-
-        return setupStep.onResponse(response);
-
-    }
-
-    private PooledItemSourceFactory createSetupOpsItemSourceFactory() {
-        return PooledItemSourceFactory.newBuilder()
-                .withItemSizeInBytes(4096)
-                .withInitialPoolSize(4)
-                .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build())
-                .build();
-    }
-
-    public static class Builder {
-
-        public static final BackoffPolicy<BatchRequest> DEFAULT_BACKOFF_POLICY = new NoopBackoffPolicy<>();
-        public static final String DEFAULT_MAPPING_TYPE = "_doc";
-
-        protected HttpClientProvider clientProvider = new HttpClientProvider(new HttpClientFactory.Builder());
+        /**
+         * @deprecated As of 1.6, this field will be removed. Use {@link #batchOperations} instead.
+         */
+        @Deprecated
         protected PooledItemSourceFactory pooledItemSourceFactory;
-        protected BackoffPolicy<BatchRequest> backoffPolicy = DEFAULT_BACKOFF_POLICY;
-        protected String mappingType = DEFAULT_MAPPING_TYPE;
-        protected FailedItemOps<IndexRequest> failedItemOps = createFailedItemOps();
-        protected ValueResolver valueResolver = ValueResolver.NO_OP;
 
+        @Override
         public HCHttp build() {
             return new HCHttp(validate());
         }
 
         protected Builder validate() {
+            super.validate();
 
-            if (valueResolver == null) {
-                throw new IllegalArgumentException(nullValidationExceptionMessage(ValueResolver.class.getSimpleName()));
+            if (operationFactory == null) {
+                throw new IllegalArgumentException(nullValidationExceptionMessage(OperationFactory.class.getSimpleName()));
             }
-            if (clientProvider == null) {
-                throw new IllegalArgumentException(nullValidationExceptionMessage(ClientProvider.class.getSimpleName()));
-            }
-            if (pooledItemSourceFactory == null) {
-                throw new IllegalArgumentException(nullValidationExceptionMessage(PooledItemSourceFactory.class.getSimpleName()));
-            }
-            if (backoffPolicy == null) {
-                throw new IllegalArgumentException(nullValidationExceptionMessage(BackoffPolicy.class.getSimpleName()));
+
+            handleDeprecations();
+
+            if (batchOperations == null) {
+                throw new IllegalArgumentException(nullValidationExceptionMessage(BatchOperations.class.getSimpleName()));
             }
 
             return this;
 
+        }
+
+        private void handleDeprecations() {
+            if (batchOperations != null && (mappingType != null || pooledItemSourceFactory != null)) {
+                getLogger().warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
+                        HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
+            } else if (mappingType != null && pooledItemSourceFactory != null) {
+                getLogger().warn("{}: DEPRECATION! {} and {} fields are deprecated. Use {} instead",
+                        HCHttp.class.getSimpleName(), "mappingType", "itemSourceFactory", "batchOperations");
+                batchOperations = new HCBatchOperations(pooledItemSourceFactory, mappingType);
+            }
         }
 
         private String nullValidationExceptionMessage(final String className) {
@@ -333,183 +193,61 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             return new HCFailedItemOps();
         }
 
-        public Builder withClientProvider(HttpClientProvider clientProvider) {
-            this.clientProvider = clientProvider;
+        @Override
+        public final Builder withClientProvider(HttpClientProvider clientProvider) {
+            return (Builder) super.withClientProvider(clientProvider);
+        }
+
+        @Override
+        public final Builder withBackoffPolicy(BackoffPolicy<BatchRequest> backoffPolicy) {
+            return (Builder) super.withBackoffPolicy(backoffPolicy);
+        }
+
+        @Override
+        public final Builder withFailedItemOps(FailedItemOps<IndexRequest> failedItemOps) {
+            return (Builder) super.withFailedItemOps(failedItemOps);
+        }
+
+        public Builder withBatchOperations(BatchOperations<BatchRequest> batchOperations) {
+            this.batchOperations = batchOperations;
             return this;
         }
 
-        public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {
-            this.pooledItemSourceFactory = pooledItemSourceFactory;
+        public Builder withOperationFactory(OperationFactory operationFactory) {
+            this.operationFactory = operationFactory;
             return this;
         }
 
-        public Builder withBackoffPolicy(BackoffPolicy<BatchRequest> backoffPolicy) {
-            this.backoffPolicy = backoffPolicy;
-            return this;
-        }
-
+        /**
+         * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
+         */
+        @Deprecated
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
             return this;
         }
 
-        public Builder withValueResolver(ValueResolver valueResolver) {
-            this.valueResolver = valueResolver;
-            return this;
-        }
-
         /**
-         * @param serverUris semicolon-separated list of target addresses
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
+         * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
          */
         @Deprecated
-        public Builder withServerUris(String serverUris) {
-            this.clientProvider.getHttpClientFactoryBuilder().withServerList(SplitUtil.split(serverUris, ";"));
-            return this;
-        }
-
-        /**
-         * @param maxTotalConnections maximum number of available HTTP connections
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withMaxTotalConnections(int maxTotalConnections) {
-            this.clientProvider.getHttpClientFactoryBuilder().withMaxTotalConnections(maxTotalConnections);
-            return this;
-        }
-
-        /**
-         * @param connTimeout connection timeout
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withConnTimeout(int connTimeout) {
-            this.clientProvider.getHttpClientFactoryBuilder().withConnTimeout(connTimeout);
-            return this;
-        }
-
-        /**
-         * @param readTimeout read timeout
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withReadTimeout(int readTimeout) {
-            this.clientProvider.getHttpClientFactoryBuilder().withReadTimeout(readTimeout);
-            return this;
-        }
-
-        /**
-         * @param ioThreadCount number of 'IO Dispatcher' threads
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withIoThreadCount(int ioThreadCount) {
-            this.clientProvider.getHttpClientFactoryBuilder().withIoThreadCount(ioThreadCount);
-            return this;
-        }
-
-        /**
-         * @param auth Credentials and SSL/TLS config
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withAuth(Auth<HttpClientFactory.Builder> auth) {
-            // Special treatment here
-            if (auth != null) {
-                auth.configure(this.clientProvider.getHttpClientFactoryBuilder());
-            }
-            return this;
-        }
-
-        /**
-         * @param pooledResponseBuffersEnabled if <i>true</i>, pooled response buffers will be used while processing response, false otherwise
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
-            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffers(pooledResponseBuffersEnabled);
-            return this;
-        }
-
-        /**
-         * @param estimatedResponseSizeInBytes initial size of response buffer if response buffers enabled (see {@link #withPooledResponseBuffers(boolean)}), ignored otherwise
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder withPooledResponseBuffersSizeInBytes(int estimatedResponseSizeInBytes) {
-            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffersSizeInBytes(estimatedResponseSizeInBytes);
+        public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {
+            this.pooledItemSourceFactory = pooledItemSourceFactory;
             return this;
         }
 
     }
 
-
     @Override
-    public final void start() {
-
-        addOperation(() -> LifeCycle.of(clientProvider).start());
-
-        if (!operationFactoryItemSourceFactory.isStarted()) {
-            operationFactoryItemSourceFactory.start();
-        }
-
-        if (!itemSourceFactory.isStarted()) {
-            itemSourceFactory.start();
-        }
-
-        startExtensions();
-
-        state = State.STARTED;
-
+    public void startExtensions() {
+        LifeCycle.of(batchOperations).start();
+        LifeCycle.of(operationFactory).start();
     }
 
     @Override
-    public final void stop() {
-
-        if (isStopped()) {
-            return;
-        }
-
-        getLogger().debug("Stopping {}", getClass().getSimpleName());
-
-        LifeCycle.of(clientProvider).stop();
-
-        itemSourceFactory.stop();
-
-        operationFactoryItemSourceFactory.stop();
-
-        stopExtensions();
-
-        state = State.STOPPED;
-
-        getLogger().debug("{} stopped", getClass().getSimpleName());
-
-    }
-
-    @Override
-    public boolean isStarted() {
-        return state == State.STARTED;
-    }
-
-    @Override
-    public boolean isStopped() {
-        return state == State.STOPPED;
+    public void stopExtensions() {
+        LifeCycle.of(batchOperations).stop();
+        LifeCycle.of(operationFactory).stop();
     }
 
 }

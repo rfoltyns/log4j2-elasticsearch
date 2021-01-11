@@ -20,6 +20,13 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -34,10 +41,9 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
+import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
-
-import static org.appenders.log4j2.elasticsearch.hc.HCHttp.Builder.DEFAULT_BACKOFF_POLICY;
 
 /**
  * {@inheritDoc}
@@ -96,7 +102,7 @@ public class HCHttpPlugin extends HCHttp {
         protected String mappingType = "_doc";
 
         @PluginElement(BackoffPolicy.NAME)
-        protected BackoffPolicy<BatchRequest> backoffPolicy = DEFAULT_BACKOFF_POLICY;
+        protected BackoffPolicy<BatchRequest> backoffPolicy;
 
         @PluginElement("serviceDiscovery")
         protected ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory;
@@ -106,17 +112,19 @@ public class HCHttpPlugin extends HCHttp {
         @Override
         public HCHttpPlugin build() {
 
+            HttpClientProvider clientProvider = createClientProvider();
+
             return new HCHttpPlugin(new HCHttp.Builder()
-                    .withClientProvider(createClientProvider())
-                    .withMappingType(mappingType)
-                    .withItemSourceFactory(pooledItemSourceFactory)
-                    .withBackoffPolicy(backoffPolicy)
-                    .withValueResolver(getValueResolver())
+                    .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType))
+                    .withOperationFactory(createOperationFactory(clientProvider))
+                    .withClientProvider(clientProvider)
+                    .withBackoffPolicy(backoffPolicy == null ? new NoopBackoffPolicy<>() : backoffPolicy)
                     .validate());
 
         }
 
-        private ValueResolver getValueResolver() {
+        /* visible for testing */
+        ValueResolver getValueResolver() {
 
             // allow programmatic override
             if (valueResolver != null) {
@@ -130,6 +138,25 @@ public class HCHttpPlugin extends HCHttp {
 
             // fallback to no-op
             return ValueResolver.NO_OP;
+        }
+
+        protected HCOperationFactoryDispatcher createOperationFactory(HttpClientProvider clientProvider) {
+
+            final ObjectReader objectReader = new ObjectMapper()
+                    .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
+                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                    .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
+                    .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+                    .addMixIn(BatchResult.class, BatchResultMixIn.class)
+                    .addMixIn(Error.class, ErrorMixIn.class)
+                    .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
+                    .readerFor(BatchResult.class);
+
+            final ValueResolver valueResolver = getValueResolver();
+
+            return new HCOperationFactoryDispatcher(
+                    new SyncStepProcessor(clientProvider, objectReader),
+                    valueResolver);
         }
 
         protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {

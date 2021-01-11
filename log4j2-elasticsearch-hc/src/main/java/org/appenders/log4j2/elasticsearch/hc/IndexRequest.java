@@ -23,19 +23,11 @@ package org.appenders.log4j2.elasticsearch.hc;
 import io.netty.buffer.ByteBuf;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-
 /**
  * {@link ItemSource} based document to be indexed.
  * When it's no longer needed, {@link #release()} MUST be called to release underlying resources.
  */
-public class IndexRequest implements Request {
-
-    private static final String CHARSET = "utf-8";
-    public static final String HTTP_METHOD_NAME = "POST";
-    public static final int ESTIMATED_URI_LENGTH = 64;
-    public static final String FORWARD_SLASH = "/";
+public class IndexRequest implements Item<ItemSource<ByteBuf>> {
 
     protected final String id;
     protected final String type;
@@ -61,47 +53,23 @@ public class IndexRequest implements Request {
         return type;
     }
 
+    @Override
     public final ItemSource<ByteBuf> getSource() {
         return this.source;
     }
 
     @Override
-    public String getURI() {
-
-        StringBuilder sb = new StringBuilder(ESTIMATED_URI_LENGTH);
-
-        try {
-
-            sb.append(encode(index))
-                    .append(FORWARD_SLASH)
-                    .append(encode(type));
-
-            if (id != null) {
-                sb.append(FORWARD_SLASH).append(encode(id));
-            }
-
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalArgumentException(e.getMessage());
-        }
-
-        return sb.toString();
-
+    public void completed() {
+        this.source.release();
     }
 
-    @Override
-    public String getHttpMethodName() {
-        return HTTP_METHOD_NAME;
-    }
-
-    @Override
-    public ItemSource serialize() {
-        return source;
-    }
-
+    /**
+     * @deprecated As of 1.6, this method will be removed. Use {@link #completed()} insatead.
+     */
+    @Deprecated
     public void release() {
-        source.release();
+        completed();
     }
-
 
     public static class Builder {
 
@@ -142,11 +110,6 @@ public class IndexRequest implements Request {
             }
             return new IndexRequest(this);
         }
-    }
-
-    /* visible for testing */
-    String encode(String s) throws UnsupportedEncodingException {
-        return URLEncoder.encode(s, CHARSET);
     }
 
 }

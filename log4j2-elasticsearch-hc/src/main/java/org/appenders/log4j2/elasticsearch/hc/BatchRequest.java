@@ -36,7 +36,7 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
  * Allows to index multiple {@link org.appenders.log4j2.elasticsearch.hc.IndexRequest} documents
  * in a single request.
  */
-public class BatchRequest implements Request {
+public class BatchRequest implements Batch<IndexRequest> {
 
     public static final String HTTP_METHOD_NAME = "POST";
     public static final char LINE_SEPARATOR = '\n';
@@ -121,8 +121,21 @@ public class BatchRequest implements Request {
 
     }
 
-    public Collection<IndexRequest> getIndexRequests() {
+    /**
+     * @return collection of batch items
+     */
+    @Override
+    public Collection<IndexRequest> getItems() {
         return indexRequests;
+    }
+
+    /**
+     * @return collection of batch items
+     * @deprecated As of 1.6, this method will be removed. Use {@link #getItems()} instead
+     */
+    @Deprecated
+    public Collection<IndexRequest> getIndexRequests() {
+        return getItems();
     }
 
     @Override
