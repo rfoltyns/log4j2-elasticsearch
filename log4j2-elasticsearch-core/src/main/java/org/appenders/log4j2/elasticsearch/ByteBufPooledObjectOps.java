@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
 
     private static final int NAX_NUM_COMPONENTS = Integer.parseInt(
-            System.getProperty("appenders.io.netty.buffer.CompositeByteBuf.naxNumComponents", "2"));
+            System.getProperty("appenders.io.netty.buffer.CompositeByteBuf.maxNumComponents", "2"));
 
     private final UnpooledByteBufAllocator byteBufAllocator;
     private final SizeLimitPolicy<ByteBuf> sizeLimitPolicy;
