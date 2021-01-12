@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2019 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.hash.ChronicleHashCorruption;
 import net.openhft.chronicle.map.ChronicleMap;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
@@ -34,9 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -50,9 +47,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequence;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -76,9 +76,6 @@ public class ChronicleMapRetryFailoverPolicyTest {
     public static final int TEST_NUMBER_OF_ENTRIES = 100;
     public static final long DEFAULT_TEST_MONITOR_TASK_INTERVAL = random.nextInt(100) + 100;
     public static final int DEFAULT_TEST_RETRY_INTERVAL = random.nextInt(100) + 200;
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void globalSetup() {
@@ -116,11 +113,11 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withFileName(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("fileName was not provided");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("fileName was not provided"));
 
     }
 
@@ -131,11 +128,11 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withAverageValueSize(511);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("averageValueSize must be higher than or equal 1024");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("averageValueSize must be higher than or equal 1024"));
 
     }
 
@@ -146,11 +143,11 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withNumberOfEntries(2);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("numberOfEntries must be higher than 2");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("numberOfEntries must be higher than 2"));
 
     }
 
@@ -161,11 +158,11 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withBatchSize(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("batchSize must be higher than 0");
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("batchSize must be higher than 0"));
 
     }
 
@@ -177,12 +174,12 @@ public class ChronicleMapRetryFailoverPolicyTest {
         IOException testException = spy(new IOException("test exception"));
         doThrow(testException).when(builder).createChronicleMap();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Could not initialize");
-        expectedException.expectCause(new ExceptionCauseMatcher(testException));
-
         // when
-        builder.build();
+        IllegalStateException exception = assertThrows(IllegalStateException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Could not initialize"));
+        assertThat(exception.getCause(), new ExceptionCauseMatcher(testException));
 
     }
 
@@ -193,12 +190,12 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withKeySequenceSelector(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(KeySequenceSelector.class.getSimpleName() + " was not provided for " +
-                ChronicleMapRetryFailoverPolicy.class.getSimpleName());
-
         // when
-        builder.build();
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(KeySequenceSelector.class.getSimpleName() + " was not provided for " +
+                ChronicleMapRetryFailoverPolicy.class.getSimpleName()));
 
     }
 
@@ -212,12 +209,13 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy.Builder builder = createDefaultTestFailoverPolicyBuilder()
                 .withKeySequenceSelector(keySequenceSelector);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Could not initialize " +
-                ChronicleMapRetryFailoverPolicy.class.getSimpleName());
-        expectedException.expectCause(new ExceptionMatcher(IllegalStateException.class, "Failed to find a valid key sequence for ChronicleMapRetryFailoverPolicy"));
         // when
-        builder.build();
+        IllegalStateException exception = assertThrows(IllegalStateException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Could not initialize " +
+                ChronicleMapRetryFailoverPolicy.class.getSimpleName()));
+        assertThat(exception.getCause(), new ExceptionMatcher(IllegalStateException.class, "Failed to find a valid key sequence for ChronicleMapRetryFailoverPolicy"));
 
     }
 
@@ -326,7 +324,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
         when(keySequenceSelector.currentKeySequence()).thenReturn(() -> keySequence);
 
         String fileName = createTempFile().getAbsolutePath();
-        ChronicleMapRetryFailoverPolicy.Builder builder = ChronicleMapRetryFailoverPolicy.newBuilder()
+        ChronicleMapRetryFailoverPolicy.Builder builder = new ChronicleMapRetryFailoverPolicy.Builder()
                 .withKeySequenceSelector(keySequenceSelector)
                 .withFileName(fileName)
                 .withNumberOfEntries(TEST_NUMBER_OF_ENTRIES);
@@ -444,15 +442,14 @@ public class ChronicleMapRetryFailoverPolicyTest {
         // given
         ChronicleMapRetryFailoverPolicy failoverPolicy = createDefaultTestFailoverPolicyBuilder().build();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(
-                RetryListener.class.getSimpleName()
-                        + " was not provided for "
-                        + ChronicleMapRetryFailoverPolicy.class.getSimpleName()
-        );
-
         // when
-        failoverPolicy.start();
+        IllegalStateException exception = assertThrows(IllegalStateException.class, failoverPolicy::start);
+
+        // then
+        assertThat(exception.getMessage(), containsString(RetryListener.class.getSimpleName()
+                + " was not provided for "
+                + ChronicleMapRetryFailoverPolicy.class.getSimpleName()
+        ));
 
     }
 
@@ -581,7 +578,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
         ChronicleMapRetryFailoverPolicy failoverPolicy = spy((ChronicleMapRetryFailoverPolicy)lifeCycle);
 
         InvocationCounter counter = new InvocationCounter();
-        DelayedShutdown delayedShutdown = spy(new DelayedShutdown(() -> counter.increment()));
+        DelayedShutdown delayedShutdown = spy(new DelayedShutdown(counter::increment));
         // Design is a bit dodgy, Mockito doesn't like it
         // InvocationCount helps to prove that it's still ok
         when(failoverPolicy.delayedShutdown()).thenReturn(delayedShutdown);
@@ -716,7 +713,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
 
     public ChronicleMapRetryFailoverPolicy.Builder createDefaultTestFailoverPolicyBuilder() throws IOException {
         File tempFile = createTempFile();
-        return ChronicleMapRetryFailoverPolicy.newBuilder()
+        return new ChronicleMapRetryFailoverPolicy.Builder()
                 .withKeySequenceSelector(createDefaultTestKeySequenceSelector())
                 .withFileName(tempFile.getAbsolutePath())
                 .withNumberOfEntries(TEST_NUMBER_OF_ENTRIES);
@@ -745,9 +742,9 @@ public class ChronicleMapRetryFailoverPolicyTest {
         return tempFile;
     }
 
-    private class InvocationCounter {
+    private static class InvocationCounter {
 
-        private AtomicInteger count = new AtomicInteger();
+        private final AtomicInteger count = new AtomicInteger();
 
         public void increment() {
             count.incrementAndGet();
@@ -779,18 +776,20 @@ public class ChronicleMapRetryFailoverPolicyTest {
         private final String expectedMessage;
 
         public ExceptionMatcher(Class expectedType, String expectedMessage) {
-
             this.expectedType = expectedType;
             this.expectedMessage = expectedMessage;
         }
 
         @Override
         public boolean matches(Object item) {
-            return expectedType == item.getClass();
+            return expectedType == item.getClass() && expectedMessage.equals(((Exception)item).getMessage());
         }
 
         @Override
         public void describeTo(Description description) {
+            description.appendText(expectedType.getName());
+            description.appendText(":");
+            description.appendText(expectedMessage);
         }
     }
 

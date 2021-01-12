@@ -23,12 +23,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 import net.openhft.chronicle.hash.ChronicleHashCorruption;
 import net.openhft.chronicle.map.ChronicleMap;
 import net.openhft.chronicle.map.ChronicleMapBuilder;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -55,7 +49,6 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * Uses Chronicle-Map (https://github.com/OpenHFT/Chronicle-Map) to store failed items.
  * Uses {@link RetryProcessor} to retry failed items.
  */
-@Plugin(name = ChronicleMapRetryFailoverPolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
 public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedItemSource>, LifeCycle {
 
     public static final String PLUGIN_NAME = "ChronicleMapRetryFailoverPolicy";
@@ -205,7 +198,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
 
     private void validateSetup() {
         if (retryListeners.length == 0) {
-            throw new ConfigurationException(String.format(
+            throw new IllegalStateException(String.format(
                     "%s was not provided for %s",
                     RetryListener.class.getSimpleName(),
                     ChronicleMapRetryFailoverPolicy.class.getSimpleName())
@@ -213,12 +206,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
         }
     }
 
-    @PluginBuilderFactory
-    public static ChronicleMapRetryFailoverPolicy.Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<ChronicleMapRetryFailoverPolicy> {
+    public static class Builder {
 
         /**
          * Default entry size: 1024 bytes
@@ -238,68 +226,60 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
          */
         public static final int DEFAULT_RETRY_DELAY = 10000;
 
-
-        @PluginBuilderAttribute("fileName")
         protected String fileName;
-
-        @PluginBuilderAttribute("numberOfEntries")
         protected long numberOfEntries;
-
-        @PluginBuilderAttribute(value = "averageValueSize")
         protected int averageValueSize = DEFAULT_AVERAGE_VALUE_SIZE;
-
-        @PluginBuilderAttribute(value = "batchSize")
         protected int batchSize = DEFAULT_BATCH_SIZE;
-
-        @PluginBuilderAttribute(value = "retryDelay")
         protected long retryDelay = DEFAULT_RETRY_DELAY;
-
-        @PluginElement("keySequenceSelector")
         protected KeySequenceSelector keySequenceSelector;
-
-        @PluginBuilderAttribute("monitored")
         protected boolean monitored;
-
-        @PluginBuilderAttribute(value = "monitorTaskInterval")
         protected long monitorTaskInterval = DEFAULT_RETRY_DELAY;
 
         private MapProxy<CharSequence, ItemSource> mapProxy;
 
-        @Override
         public final ChronicleMapRetryFailoverPolicy build() {
+            return new ChronicleMapRetryFailoverPolicy(this.validate().lazyInit());
+        }
+
+        public Builder validate() {
 
             if (keySequenceSelector == null) {
-                throw new ConfigurationException(
+                throw new IllegalArgumentException(
                         KeySequenceSelector.class.getSimpleName() + " was not provided for " + ChronicleMapRetryFailoverPolicy.class.getSimpleName()
                 );
             }
 
             if (fileName == null) {
-                throw new ConfigurationException(String.format("fileName was not provided for %s",
+                throw new IllegalArgumentException(String.format("fileName was not provided for %s",
                         ChronicleMapRetryFailoverPolicy.class.getSimpleName()));
             }
 
             if (averageValueSize < 1024) {
-                throw new ConfigurationException("averageValueSize must be higher than or equal 1024");
+                throw new IllegalArgumentException("averageValueSize must be higher than or equal 1024");
             }
 
             if (numberOfEntries <= 2) {
-                throw new ConfigurationException("numberOfEntries must be higher than 2");
+                throw new IllegalArgumentException("numberOfEntries must be higher than 2");
             }
 
             if (batchSize <= 0) {
-                throw new ConfigurationException("batchSize must be higher than 0");
+                throw new IllegalArgumentException("batchSize must be higher than 0");
             }
+
+            return this;
+        }
+
+        protected Builder lazyInit() {
 
             try {
                 this.mapProxy = new ChronicleMapProxy(createChronicleMap());
                 this.keySequenceSelector = configuredKeySequenceSelector();
             } catch (Exception e) {
-                throw new ConfigurationException("Could not initialize " +
+                throw new IllegalStateException("Could not initialize " +
                         ChronicleMapRetryFailoverPolicy.class.getSimpleName(), e);
             }
 
-            return new ChronicleMapRetryFailoverPolicy(this);
+            return this;
 
         }
 
@@ -312,7 +292,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
             if (keySequence == null) {
                 // Lack of key sequence in this spot should be terminal
                 // invalid config/storage issues/concurrent updates -> it won't work properly -> just throw..
-                throw new IllegalStateException("Failed to find a valid key sequence for " + ChronicleMapRetryFailoverPolicy.class);
+                throw new IllegalStateException("Failed to find a valid key sequence for " + ChronicleMapRetryFailoverPolicy.class.getSimpleName());
             }
 
             return keySequenceSelector;
@@ -422,7 +402,6 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
             this.keySequenceSelector = keySequenceSelector;
             return this;
         }
-
     }
 
     static class HashCorruptionListener implements ChronicleHashCorruption.Listener {

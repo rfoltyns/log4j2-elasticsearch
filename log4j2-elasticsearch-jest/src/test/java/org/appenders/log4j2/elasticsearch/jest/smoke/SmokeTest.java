@@ -152,7 +152,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
-                .withFailoverPolicy(ChronicleMapRetryFailoverPolicy.newBuilder()
+                .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
                         .withKeySequenceSelector(keySequenceSelector)
                         .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))
                         .withAverageValueSize(2048)
