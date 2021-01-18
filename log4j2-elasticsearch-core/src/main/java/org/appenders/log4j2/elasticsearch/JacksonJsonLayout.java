@@ -113,7 +113,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
         private ItemSourceFactory itemSourceFactory = DEFAULT_SOURCE_FACTORY;
 
-        @PluginElement(JacksonMixIn.ELEMENT_TYPE)
+        @PluginElement(JacksonMixInPlugin.ELEMENT_TYPE)
         private JacksonMixIn[] mixins = new JacksonMixIn[0];
 
         @PluginElement("JacksonModule")

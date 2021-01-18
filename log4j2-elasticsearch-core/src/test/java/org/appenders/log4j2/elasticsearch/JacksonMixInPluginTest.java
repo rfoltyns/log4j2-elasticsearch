@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
-import org.appenders.log4j2.elasticsearch.thirdparty.LogEventJacksonJsonMixIn;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -30,20 +31,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JacksonMixInTest {
+public class JacksonMixInPluginTest {
 
-    public static JacksonMixIn.Builder createDefaultTestBuilder() {
-        return new JacksonMixIn.Builder()
-                .withMixInClass(LogEventJacksonJsonMixIn.class.getName())
+    public static JacksonMixInPlugin.Builder createDefaultTestBuilder() {
+        return JacksonMixInPlugin.newBuilder()
+                .withMixInClass(ExtendedLogEventJacksonJsonMixIn.class.getName())
                 .withTargetClass(Log4jLogEvent.class.getName());
     }
-
 
     @Test
     public void builderSucceedsOnValidConfig() {
 
         // given
-        JacksonMixIn.Builder builder = createDefaultTestBuilder();
+        JacksonMixInPlugin.Builder builder = createDefaultTestBuilder();
 
         // when
         JacksonMixIn jacksonMixIn = builder.build();
@@ -51,21 +51,21 @@ public class JacksonMixInTest {
         // then
         assertNotNull(jacksonMixIn);
         assertEquals(Log4jLogEvent.class, jacksonMixIn.getTargetClass());
-        assertEquals(LogEventJacksonJsonMixIn.class, jacksonMixIn.getMixInClass());
+        assertEquals(ExtendedLogEventJacksonJsonMixIn.class, jacksonMixIn.getMixInClass());
     }
 
     @Test
     public void builderThrowsOnNullTargetClass() {
 
         // given
-        JacksonMixIn.Builder builder = createDefaultTestBuilder();
+        JacksonMixInPlugin.Builder builder = createDefaultTestBuilder();
         builder.withTargetClass(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), containsString("No targetClass provided for " + JacksonMixIn.class.getName()));
+        assertThat(exception.getMessage(), containsString("No targetClass provided for " + JacksonMixInPlugin.PLUGIN_NAME));
 
     }
 
@@ -73,14 +73,14 @@ public class JacksonMixInTest {
     public void builderThrowsOnNullMixInClass() {
 
         // given
-        JacksonMixIn.Builder builder = createDefaultTestBuilder();
+        JacksonMixInPlugin.Builder builder = createDefaultTestBuilder();
         builder.withMixInClass(null);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), containsString("No mixInClass provided for " + JacksonMixIn.class.getName()));
+        assertThat(exception.getMessage(), containsString("No mixInClass provided for " + JacksonMixInPlugin.PLUGIN_NAME));
 
     }
 
@@ -88,12 +88,12 @@ public class JacksonMixInTest {
     public void builderThrowsOnMixInClassNotFound() {
 
         // given
-        JacksonMixIn.Builder builder = createDefaultTestBuilder();
+        JacksonMixInPlugin.Builder builder = createDefaultTestBuilder();
         String mixInClass = "org.appenders.test.NonExistingClass";
         builder.withMixInClass(mixInClass);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("Cannot load mixInClass: " + mixInClass));
@@ -104,12 +104,12 @@ public class JacksonMixInTest {
     public void builderThrowsOnTargetClassNotFound() {
 
         // given
-        JacksonMixIn.Builder builder = createDefaultTestBuilder();
+        JacksonMixInPlugin.Builder builder = createDefaultTestBuilder();
         String targetClass = "org.appenders.test.NonExistingClass";
         builder.withTargetClass(targetClass);
 
         // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("Cannot load targetClass: " + targetClass));

@@ -38,6 +38,7 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
+import org.appenders.log4j2.elasticsearch.JacksonMixInPlugin;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
@@ -135,7 +136,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
         protected PooledItemSourceFactory pooledItemSourceFactory;
 
-        @PluginElement(JacksonMixIn.ELEMENT_TYPE)
+        @PluginElement(JacksonMixInPlugin.ELEMENT_TYPE)
         private JacksonMixIn[] mixIns = new JacksonMixIn[0];
 
         @Override

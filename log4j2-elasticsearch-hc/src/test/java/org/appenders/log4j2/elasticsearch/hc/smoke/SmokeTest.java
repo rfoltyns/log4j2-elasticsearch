@@ -214,7 +214,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withJacksonModules(ExampleJacksonModule.newBuilder().build());
 
         if (ecsEnabled) {
-            layoutBuilder.withMixins(JacksonMixIn.newBuilder()
+            layoutBuilder.withMixins(new JacksonMixIn.Builder()
                     .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
                     .withTargetClass(LogEvent.class.getName())
                     .build());

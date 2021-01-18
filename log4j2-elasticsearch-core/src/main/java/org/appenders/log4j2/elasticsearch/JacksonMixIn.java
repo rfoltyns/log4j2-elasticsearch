@@ -20,18 +20,7 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.util.LoaderUtil;
-
-@Plugin(name = JacksonMixIn.PLUGIN_NAME, category = Node.CATEGORY, elementType = JacksonMixIn.ELEMENT_TYPE, printObject = true)
 public class JacksonMixIn {
-
-    public static final String PLUGIN_NAME = "JacksonMixIn";
-    public static final String ELEMENT_TYPE = "jacksonMixIn";
 
     private final Class targetClass;
     private final Class mixInClass;
@@ -49,20 +38,11 @@ public class JacksonMixIn {
         return mixInClass;
     }
 
-    @PluginBuilderFactory
-    public static JacksonMixIn.Builder newBuilder() {
-        return new JacksonMixIn.Builder();
-    }
+    public static class Builder {
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<JacksonMixIn> {
-
-        @PluginBuilderAttribute("targetClass")
         private String targetClassName;
-
-        @PluginBuilderAttribute("mixInClass")
         private String mixInClassName;
 
-        @Override
         public JacksonMixIn build() {
 
             Class targetClass = loadClass(targetClassName, "targetClass");
@@ -75,13 +55,14 @@ public class JacksonMixIn {
         private Class loadClass(String className, String argName) {
 
             if (className == null) {
-                throw new ConfigurationException(String.format("No %s provided for %s", argName, JacksonMixIn.PLUGIN_NAME));
+                throw new IllegalArgumentException(String.format("No %s provided for %s", argName, JacksonMixIn.class.getName()));
             }
 
             try {
-                return LoaderUtil.loadClass(className);
+                // TODO: Extract to util class
+                return Class.forName(className);
             } catch (ClassNotFoundException e) {
-                throw new ConfigurationException(String.format("Cannot load %s: %s for %s", argName, className, JacksonMixIn.PLUGIN_NAME));
+                throw new IllegalArgumentException(String.format("Cannot load %s: %s for %s", argName, className, JacksonMixIn.class.getName()));
             }
 
         }
@@ -97,4 +78,5 @@ public class JacksonMixIn {
         }
 
     }
+
 }

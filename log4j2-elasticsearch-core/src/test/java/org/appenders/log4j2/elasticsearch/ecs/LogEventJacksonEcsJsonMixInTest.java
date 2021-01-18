@@ -72,7 +72,7 @@ public class LogEventJacksonEcsJsonMixInTest {
         JacksonJsonLayout layout = JacksonJsonLayout.newBuilder()
                 .setConfiguration(LoggerContext.getContext(false).getConfiguration())
                 .withItemSourceFactory(StringItemSourceFactory.newBuilder().build())
-                .withMixins(JacksonMixIn.newBuilder()
+                .withMixins(new JacksonMixIn.Builder()
                         .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
                         .withTargetClass(LogEvent.class.getName())
                         .build())
