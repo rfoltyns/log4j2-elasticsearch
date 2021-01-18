@@ -1,44 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  #%L
-  log4j2-elasticsearch
-  %%
-  Copyright (C) 2018 Rafal Foltynski
-  %%
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-  
-       http://www.apache.org/licenses/LICENSE-2.0
-  
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-  #L%
-  -->
-
-
 
 <Configuration status="INFO">
 
     <Appenders>
-        <Console name="CONSOLE" />
         <Elasticsearch name="elasticsearchAsyncBatch">
             <IndexName indexName="log4j2-elasticsearch-jest" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
-                <VirtualProperty name="hostname" value="$${env:hostname:-undefined}" />
-                <VirtualProperty name="dynamicField" value="$${env:dynamicValue}" dynamic="true" />
-                <PooledItemSourceFactory poolName="itemPool" itemSizeInBytes="512" initialPoolSize="10000"
-                                         monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                <VirtualProperty name="field1" value="$${ctx:ctxVariable:-}" dynamic="true" />
+                <VirtualProperty name="field2" value="$${env:envVariable:-}" />
+                <PooledItemSourceFactory poolName="itemPool"
+                                         itemSizeInBytes="${sys:smokeTest.initialItemBufferSizeInBytes:-1024}"
+                                         maxItemSizeInBytes="8192"
+                                         initialPoolSize="${sys:smokeTest.initialItemPoolSize:-40000}"
+                                         monitored="true"
+                                         monitorTaskInterval="10000"
+                                         resizeTimeout="500">
                     <UnlimitedResizePolicy resizeFactor="0.6" />
                 </PooledItemSourceFactory>
             </JacksonJsonLayout>
-            <AsyncBatchDelivery batchSize="10000"
-                               deliveryInterval="3000" >
-                <IndexTemplate name="log4j2-elasticsearch-jest-index-template" path="classpath:indexTemplate-7.json" />
+            <AsyncBatchDelivery batchSize="${sys:smokeTest.batchSize:-10000}"
+                                deliveryInterval="10000" >
+                <IndexTemplate name="log4j2-elasticsearch-jest" path="classpath:indexTemplate-7.json" />
                 <ILMPolicy name="log4j2-elasticsearch-jest-ilm-policy" rolloverAlias="log4j2-elasticsearch-jest" path="classpath:ilmPolicy-7.json" />
                 <JestBufferedHttp serverUris="https://localhost:9200"
                     connTimeout="500"
@@ -46,8 +29,12 @@
                     maxTotalConnection="40"
                     defaultMaxTotalConnectionPerRoute="8"
                     mappingType="_doc">
-                    <PooledItemSourceFactory poolName="batchPool" itemSizeInBytes="5120000" initialPoolSize="3"
-                                             monitored="true" monitorTaskInterval="10000" resizeTimeout="500">
+                    <PooledItemSourceFactory poolName="batchPool"
+                                             itemSizeInBytes="5120000"
+                                             initialPoolSize="${sys:smokeTest.initialBatchPoolSize:-4}"
+                                             monitored="true"
+                                             monitorTaskInterval="10000"
+                                             resizeTimeout="500">
                         <UnlimitedResizePolicy resizeFactor="0.70" />
                     </PooledItemSourceFactory>
                     <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
@@ -63,9 +50,9 @@
                              caPath="${sys:pemCertInfo.caPath}" />
                     </XPackAuth>
                 </JestBufferedHttp>
-                <ChronicleMapRetryFailoverPolicy fileName="failedItems.chronicleMap"
-                                               numberOfEntries="1000000"
-                                               averageValueSize="2048"
+                <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-./}failedItems-log4j2-elasticsearch-jest.chronicleMap"
+                                               numberOfEntries="${sys:smokeTest.initialItemBufferSizeInBytes:-500000}"
+                                               averageValueSize="${sys:smokeTest.initialItemBufferSizeInBytes:-2048}"
                                                batchSize="5000"
                                                retryDelay="3000"
                                                monitored="true"
@@ -80,7 +67,6 @@
         <AsyncLogger name="elasticsearch" level="info" additivity="false">
             <AppenderRef ref="elasticsearchAsyncBatch" />
         </AsyncLogger>
-        <Root level="info" />
     </Loggers>
 
 </Configuration>
