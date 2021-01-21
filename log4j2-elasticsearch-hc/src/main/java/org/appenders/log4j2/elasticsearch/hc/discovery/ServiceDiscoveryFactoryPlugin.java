@@ -58,10 +58,14 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<ServiceDiscoveryFactoryPlugin> {
 
         public static final String DEFAULT_TARGET_SCHEME = "http";
+        public static final String DEFAULT_NODES_FILTER = "_all";
         public static final long DEFAULT_REFRESH_INTERVAL = 30000;
         public static final int DEFAULT_RESPONSE_BUFFER_SIZE = 32768;
         public static final int DEFAULT_CONN_TIMEOUT = 500;
         public static final int DEFAULT_READ_TIMEOUT = 3000;
+
+        @PluginBuilderAttribute
+        protected String nodesFilter = DEFAULT_NODES_FILTER;
 
         @PluginBuilderAttribute
         protected String targetScheme = DEFAULT_TARGET_SCHEME;
@@ -87,6 +91,7 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
         @PluginElement("auth")
         protected Auth<HttpClientFactory.Builder> auth;
 
+
         @Override
         public ServiceDiscoveryFactoryPlugin build() {
 
@@ -96,7 +101,7 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
 
             return new ServiceDiscoveryFactoryPlugin(
                     createPoliciesRegistry().get(policyNames, createClientProvider()),
-                    new ElasticsearchNodesQuery(targetScheme),
+                    new ElasticsearchNodesQuery(targetScheme, nodesFilter),
                     refreshInterval
             );
 
@@ -134,6 +139,11 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
 
             return this;
 
+        }
+
+        public Builder withNodesFilter(String nodesFilter) {
+            this.nodesFilter = nodesFilter;
+            return this;
         }
 
         public Builder withTargetScheme(String targetScheme) {

@@ -83,14 +83,17 @@ public class SmokeTest extends SmokeTestBase {
         final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc");
         final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
         final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
+        final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
 
-        getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
+        getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
                 "batchSize", batchSize,
                 "initialBatchPoolSize", initialBatchPoolSize,
                 "initialItemBufferSizeInBytes", initialItemBufferSizeInBytes,
                 "initialBatchPoolSize", initialBatchPoolSize,
                 "indexName", indexName,
-                "ecsEnabled", ecsEnabled);
+                "ecs.enabled", ecsEnabled,
+                "servicediscovery.enabled", serviceDiscoveryEnabled,
+                "servicediscovery.nodesFilter", nodesFilter);
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 
@@ -138,7 +141,7 @@ public class SmokeTest extends SmokeTestBase {
 
             ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(
                     clientProviderPolicy,
-                    new ElasticsearchNodesQuery(secured ? "https" : "http"),
+                    new ElasticsearchNodesQuery(secured ? "https" : "http", nodesFilter),
                     5000L
             );
 

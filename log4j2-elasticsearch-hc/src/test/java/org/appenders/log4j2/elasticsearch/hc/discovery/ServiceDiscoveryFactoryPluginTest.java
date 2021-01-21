@@ -33,6 +33,7 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactoryPlugin.PLUGIN_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -45,6 +46,7 @@ import static org.junit.Assert.assertThrows;
 public class ServiceDiscoveryFactoryPluginTest {
 
     public static final int TEST_REFRESH_INTERVAL = 3500;
+    public static final String TEST_NODES_FILTER = "test:nodes_filter";
     public static final String TEST_TARGET_SCHEME = "https";
     public static final String TEST_SERVER_URIS = "http://localhost:9200;http://localhost:9201";
     public static final int TEST_CONN_TIMEOUT = 100;
@@ -72,6 +74,7 @@ public class ServiceDiscoveryFactoryPluginTest {
         Security auth = SecurityTest.createTestBuilder().build();
 
         ServiceDiscoveryFactoryPlugin.Builder builder = createDefaultTestServiceDiscoveryConfigPluginBuilder()
+                .withNodesFilter(TEST_NODES_FILTER)
                 .withTargetScheme(TEST_TARGET_SCHEME)
                 .withRefreshInterval(TEST_REFRESH_INTERVAL)
                 .withServerUris(TEST_SERVER_URIS)
@@ -96,6 +99,7 @@ public class ServiceDiscoveryFactoryPluginTest {
 
         assertThat(httpClientFactoryBuilder, new HttpClientFactoryTest.BuilderMatcher(clientFactoryBuilder));
         assertEquals(TEST_TARGET_SCHEME, ((ElasticsearchNodesQuery)plugin.serviceDiscoveryRequest).resultScheme);
+        assertEquals(TEST_NODES_FILTER, ((ElasticsearchNodesQuery)plugin.serviceDiscoveryRequest).nodesFilter);
         assertEquals(TEST_REFRESH_INTERVAL, plugin.refreshInterval);
 
     }
@@ -125,6 +129,7 @@ public class ServiceDiscoveryFactoryPluginTest {
 
         assertThat(httpClientFactoryBuilder, new HttpClientFactoryTest.BuilderMatcher(clientFactoryBuilder));
         assertEquals(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_TARGET_SCHEME, ((ElasticsearchNodesQuery)plugin.serviceDiscoveryRequest).resultScheme);
+        assertEquals(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_NODES_FILTER, ((ElasticsearchNodesQuery)plugin.serviceDiscoveryRequest).nodesFilter);
         assertEquals(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_REFRESH_INTERVAL, plugin.refreshInterval);
 
     }

@@ -21,7 +21,9 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
  */
 
 import org.appenders.log4j2.elasticsearch.hc.BlockingResponseHandler;
+import org.appenders.log4j2.elasticsearch.hc.GenericRequest;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
+import org.appenders.log4j2.elasticsearch.hc.Request;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -49,7 +51,7 @@ public class ElasticsearchNodesQueryTest {
 
         // given
         String expectedScheme = UUID.randomUUID().toString();
-        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme);
 
         HttpClient httpClient = mock(HttpClient.class);
         ServiceDiscoveryCallback<List<String>> callback = mock(ServiceDiscoveryCallback.class);
@@ -84,7 +86,7 @@ public class ElasticsearchNodesQueryTest {
 
         // given
         String expectedScheme = UUID.randomUUID().toString();
-        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme);
 
         HttpClient httpClient = mock(HttpClient.class);
         ServiceDiscoveryCallback<List<String>> callback = mock(ServiceDiscoveryCallback.class);
@@ -110,7 +112,7 @@ public class ElasticsearchNodesQueryTest {
 
         // given
         String expectedScheme = UUID.randomUUID().toString();
-        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme);
 
         HttpClient httpClient = mock(HttpClient.class);
         ServiceDiscoveryCallback<List<String>> callback = mock(ServiceDiscoveryCallback.class);
@@ -132,7 +134,7 @@ public class ElasticsearchNodesQueryTest {
 
         // given
         String expectedScheme = UUID.randomUUID().toString();
-        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme);
 
         HttpClient httpClient = mock(HttpClient.class);
         String expectedMessage = "test exception";
@@ -157,7 +159,7 @@ public class ElasticsearchNodesQueryTest {
 
         // given
         String expectedScheme = UUID.randomUUID().toString();
-        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme);
 
         HttpClient httpClient = mock(HttpClient.class);
         String expectedMessage = "test exception";
@@ -177,6 +179,68 @@ public class ElasticsearchNodesQueryTest {
         assertThat(handler.getResult().getErrorMessage(), containsString("Unable to refresh server list"));
         assertThat(handler.getResult().getErrorMessage(), containsString("another exception"));
 
+    }
+
+    @Test
+    public void appliesGivenNodesFilter() {
+
+        // given
+        String expectedFilter = UUID.randomUUID().toString();
+
+        String expectedScheme = UUID.randomUUID().toString();
+        ElasticsearchNodesQuery query = createDefaultTestQuery(expectedScheme, expectedFilter);
+
+        HttpClient httpClient = mock(HttpClient.class);
+        NodesResponse nodesResponse = new NodesResponse(null);
+        when(httpClient.execute(any(), any())).thenReturn(nodesResponse);
+
+        ServiceDiscoveryCallback<List<String>> callback = mock(ServiceDiscoveryCallback.class);
+
+        // when
+        query.execute(httpClient, callback);
+
+        // then
+        @SuppressWarnings("unchecked") ArgumentCaptor<Request> captor =
+                ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(captor.capture(), any());
+        Request request = captor.getValue();
+
+        assertThat(request.getURI(), containsString(expectedFilter));
+
+    }
+
+    @Test
+    public void appliesDefaultNodesFilterIfNotProvided() {
+
+        // given
+        String expectedScheme = UUID.randomUUID().toString();
+        ElasticsearchNodesQuery query = new ElasticsearchNodesQuery(expectedScheme);
+
+        HttpClient httpClient = mock(HttpClient.class);
+        NodesResponse nodesResponse = new NodesResponse(null);
+        when(httpClient.execute(any(), any())).thenReturn(nodesResponse);
+
+        ServiceDiscoveryCallback<List<String>> callback = mock(ServiceDiscoveryCallback.class);
+
+        // when
+        query.execute(httpClient, callback);
+
+        // then
+        @SuppressWarnings("unchecked") ArgumentCaptor<Request> captor =
+                ArgumentCaptor.forClass(Request.class);
+        verify(httpClient).execute(captor.capture(), any());
+        Request request = captor.getValue();
+
+        assertThat(request.getURI(), containsString(ElasticsearchNodesQuery.DEFAULT_NODES_FILTER));
+
+    }
+
+    private ElasticsearchNodesQuery createDefaultTestQuery(String expectedScheme) {
+        return createDefaultTestQuery(expectedScheme, ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
+    }
+
+    private ElasticsearchNodesQuery createDefaultTestQuery(String expectedScheme, String nodesFilter) {
+        return new ElasticsearchNodesQuery(expectedScheme, nodesFilter);
     }
 
     private NodeInfo createTestNodeInfo(String publishAddress) {

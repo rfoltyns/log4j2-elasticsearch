@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.appenders.log4j2.elasticsearch.hc.BlockingResponseHandler;
+import org.appenders.log4j2.elasticsearch.hc.GenericRequest;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 
 import java.util.Collections;
@@ -33,23 +34,27 @@ import java.util.stream.Collectors;
  */
 public class ElasticsearchNodesQuery implements ServiceDiscoveryRequest<HttpClient> {
 
+    public static final String DEFAULT_NODES_FILTER = "_all";
+
     private final BlockingResponseHandler<NodesResponse> responseHandler = new BlockingResponseHandler<>(
             new ObjectMapper().readerFor(NodesResponse.class),
             (ex) -> new NodesResponse(Collections.emptyMap()).withErrorMessage("Unable to refresh server list: " + ex.getMessage())
     );
 
     protected final String resultScheme;
-
-    // TODO: add query params
-    //      https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-info.html
-    //      https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster.html#cluster-nodes
+    protected final String nodesFilter;
 
     public ElasticsearchNodesQuery(String resultScheme) {
+        this(resultScheme, DEFAULT_NODES_FILTER);
+    }
+
+    public ElasticsearchNodesQuery(String resultScheme, String nodesFilter) {
         this.resultScheme = resultScheme;
+        this.nodesFilter = nodesFilter;
     }
 
     /**
-     * Executes {@link NodesRequest} using given client.
+     * Executes request using given client.
      *
      * @param httpClient client to use
      * @param callback address list consumer
@@ -57,7 +62,7 @@ public class ElasticsearchNodesQuery implements ServiceDiscoveryRequest<HttpClie
     @Override
     public void execute(HttpClient httpClient, ServiceDiscoveryCallback<List<String>> callback) {
 
-        final NodesRequest request = new NodesRequest();
+        final GenericRequest request = new GenericRequest("GET", String.format("_nodes/%s/http", nodesFilter), null);
         final NodesResponse response;
 
         try {
