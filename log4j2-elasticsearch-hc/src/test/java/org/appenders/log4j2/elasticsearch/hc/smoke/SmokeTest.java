@@ -109,7 +109,9 @@ public class SmokeTest extends SmokeTestBase {
                 .withReadTimeout(2000)
                 .withIoThreadCount(4)
                 .withMaxTotalConnections(4)
-                .withAuth(secured ? getAuth() : null);
+                .withAuth(secured ? getAuth() : null)
+                .withPooledResponseBuffers(true)
+                .withPooledResponseBuffersSizeInBytes(1048576);
 
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
@@ -126,7 +128,9 @@ public class SmokeTest extends SmokeTestBase {
                     .withReadTimeout(1000)
                     .withConnTimeout(500)
                     .withMaxTotalConnections(1)
-                    .withIoThreadCount(1));
+                    .withIoThreadCount(1)
+                    .withPooledResponseBuffers(true)
+                    .withPooledResponseBuffersSizeInBytes(4096));
 
             ClientProviderPolicy<HttpClient> clientProviderPolicy = new ClientProviderPoliciesRegistry().get(
                     new HashSet<>(Arrays.asList("none")),

@@ -97,4 +97,10 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
         return state == State.STOPPED;
     }
 
+    @Override
+    public String toString() {
+        return "HttpClientProvider{" +
+                "config=" + httpClientFactoryBuilder +
+                '}';
+    }
 }

@@ -25,12 +25,16 @@ import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Random;
 
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -51,10 +55,12 @@ public class HttpClientProviderTest {
     public static final int TEST_IO_THREAD_COUNT = RANDOM.nextInt(1000) + 10;
     public static final boolean TEST_POOLED_RESPONSE_BUFFERS_ENABLED = true;
     public static final int TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES = 34;
+    public static final Security TEST_AUTH = SecurityTest.createTestBuilder().build();
 
     public static HttpClientFactory.Builder createDefaultTestBuilder() {
         HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder()
                 .withServerList(Arrays.asList(TEST_SERVER_URIS))
+
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
@@ -72,7 +78,8 @@ public class HttpClientProviderTest {
     public void paramsAreSetCorrectly() {
 
         // given
-        HttpClientFactory.Builder httpClientFactoryBuilder = createDefaultTestBuilder();
+        HttpClientFactory.Builder httpClientFactoryBuilder = createDefaultTestBuilder()
+                .withAuth(TEST_AUTH);
 
         // when
         HttpClientProvider clientProvider = new HttpClientProvider(httpClientFactoryBuilder);
@@ -80,12 +87,15 @@ public class HttpClientProviderTest {
         // then
         assertSame(httpClientFactoryBuilder, clientProvider.getHttpClientFactoryBuilder());
         assertEquals(httpClientFactoryBuilder.serverList, Arrays.asList(TEST_SERVER_URIS));
+        assertSame(httpClientFactoryBuilder.auth, TEST_AUTH);
         assertEquals(httpClientFactoryBuilder.connTimeout, TEST_CONNECTION_TIMEOUT);
         assertEquals(httpClientFactoryBuilder.readTimeout, TEST_READ_TIMEOUT);
         assertEquals(httpClientFactoryBuilder.ioThreadCount, TEST_IO_THREAD_COUNT);
         assertEquals(httpClientFactoryBuilder.maxTotalConnections, TEST_MAX_TOTAL_CONNECTIONS);
         assertEquals(httpClientFactoryBuilder.pooledResponseBuffersEnabled, TEST_POOLED_RESPONSE_BUFFERS_ENABLED);
         assertEquals(httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes, TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES);
+
+        assertThat(clientProvider.toString(), containsString(Integer.toString(TEST_MAX_TOTAL_CONNECTIONS)));
 
     }
 
