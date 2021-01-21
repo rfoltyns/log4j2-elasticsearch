@@ -60,12 +60,14 @@ import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
@@ -83,6 +85,7 @@ public class SmokeTest extends SmokeTestBase {
         final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc");
         final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
         final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
+        final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
         final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
 
         getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
@@ -127,7 +130,7 @@ public class SmokeTest extends SmokeTestBase {
         if (serviceDiscoveryEnabled) {
 
             HttpClientProvider serviceDiscoveryClientProvider = new HttpClientProvider(new HttpClientFactory.Builder()
-                    .withServerList(getServerList(secured))
+                    .withServerList(getServerList(secured, serviceDiscoveryList))
                     .withReadTimeout(1000)
                     .withConnTimeout(500)
                     .withMaxTotalConnections(1)
@@ -240,8 +243,10 @@ public class SmokeTest extends SmokeTestBase {
                 .withIgnoreExceptions(false);
     }
 
-    private List<String> getServerList(boolean secured) {
-        return Collections.singletonList((secured ? "https" : "http") + "://localhost:9200");
+    private List<String> getServerList(boolean secured, String hostPortList) {
+        return SplitUtil.split(hostPortList, ";").stream()
+                .map(uri -> String.format("%s://%s", (secured ? "https" : "http"), uri))
+                .collect(Collectors.toList());
     }
 
     private static Auth<HttpClientFactory.Builder> getAuth() {
