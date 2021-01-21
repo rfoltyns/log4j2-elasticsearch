@@ -48,20 +48,21 @@ import static org.appenders.core.util.PropertiesUtil.getInt;
 public abstract class SmokeTestBase {
 
     public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
-    public static final String DEFAULT_LOGGER_NAME = "elasticsearch";
-    public static final Random RANDOM = new Random();
 
+    private final Random random = new Random();
     private final AtomicInteger localCounter = new AtomicInteger();
 
-    // TODO: expose all via system properties
-    public static final int INITIAL_SLEEP_PER_THREAD = 10;
-    public static final int MILLIS_BEFORE_SHUTDOWN = 60000;
-    public static final int MILLIS_AFTER_SHUTDOWN = 60000;
-    public static final int NUMBER_OF_PRODUCERS = 100;
-    public static final int LIMIT_PER_SEC = getInt("smokeTest.limitPerSec", 10000);
-    public static final int LOG_SIZE = 300;
-    protected boolean secure = false;
-    private final AtomicInteger numberOfLogs = new AtomicInteger(1000000);
+    public final AtomicInteger limitTotal = new AtomicInteger(getInt("smokeTest.limitTotal", 1000000));
+    public final int limitPerSec = getInt("smokeTest.limitPerSec", 10000);
+    public final boolean pooled = Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true"));
+    public final boolean secure = Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false"));
+    public final int logSizeInBytes = getInt("smokeTest.logSizeInBytes", 300);
+    public final int lifecycleStopDelayMillis = getInt("smokeTest.lifecycleStopDelayMillis", 10000);
+    public final int exitDelayMillis = getInt("smokeTest.exitDelayMillis", 10000);
+    public final int numberOfProducers = getInt("smokeTest.noOfProducers", 500);
+    public final AtomicInteger producerSleepMillis = new AtomicInteger(getInt("smokeTest.initialProducerSleepMillis", 50));
+
+    public final String defaultLoggerName = System.getProperty("smokeTest.loggerName", "elasticsearch");
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
 
@@ -70,8 +71,8 @@ public abstract class SmokeTestBase {
     }
 
     protected String createLog() {
-        byte[] bytes = new byte[LOG_SIZE];
-        RANDOM.nextBytes(bytes);
+        byte[] bytes = new byte[logSizeInBytes];
+        random.nextBytes(bytes);
 
         return new String(bytes);
     }
@@ -105,13 +106,13 @@ public abstract class SmokeTestBase {
         // set up disruptor forcefully
         ((LifeCycle)delegateSupplier.apply(config)).start();
 
-        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, DEFAULT_LOGGER_NAME,
+        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, defaultLoggerName,
                 "false", refs, null, config, null );
 
         loggerConfig.addAppender(appender, Level.INFO, null);
 
         config.addAppender(appender);
-        config.addLogger(DEFAULT_LOGGER_NAME, loggerConfig);
+        config.addLogger(defaultLoggerName, loggerConfig);
 
     }
 
@@ -125,7 +126,7 @@ public abstract class SmokeTestBase {
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(false, false, secure),
+                () -> createElasticsearchAppenderBuilder(false, pooled, secure),
                 createAsyncLoggerConfigDelegateProvider());
 
         String loggerThatReferencesElasticsearchAppender = "elasticsearch";
@@ -143,28 +144,6 @@ public abstract class SmokeTestBase {
         System.setProperty("log4j2.enable.direct.encoders", "true");
         System.setProperty("log4j2.garbagefree.threadContextMap", "true");
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
-        System.setProperty("AsyncLogger.RingBufferSize", "16384");
-        System.setProperty("AsyncLoggerConfig.RingBufferSize", "16384");
-        System.setProperty("AsyncLogger.WaitStrategy", "sleep");
-
-        createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(false, false, secure),
-                createAsyncLoggerConfigDelegateProvider());
-
-        final String log = createLog();
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> log);
-    }
-
-    @Test
-    public void programmaticBufferedConfigTest() throws InterruptedException {
-
-        System.setProperty("log4j.configurationFile", "log4j2-test.xml");
-
-        System.setProperty("log4j2.enable.threadlocals", "true");
-        System.setProperty("log4j2.enable.direct.encoders", "true");
-        System.setProperty("log4j2.garbagefree.threadContextMap", "true");
-        System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         System.setProperty("AsyncLogger.RingBufferSize", "16384");
         System.setProperty("AsyncLogger.WaitStrategy", "sleep");
@@ -173,13 +152,13 @@ public abstract class SmokeTestBase {
         System.setProperty("AsyncLoggerConfig.WaitStrategy", "sleep");
 
         createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(false, true, secure),
+                () -> createElasticsearchAppenderBuilder(false, pooled, secure),
                 createAsyncLoggerConfigDelegateProvider());
 
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
+        Logger logger = LogManager.getLogger(defaultLoggerName);
 
         final String log = createLog();
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> log);
+        indexLogs(logger, null, numberOfProducers, () -> log);
     }
 
     @Test
@@ -194,13 +173,11 @@ public abstract class SmokeTestBase {
         Logger logger = LogManager.getLogger("file");
 
         final String log = createLog();
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> log);
+        indexLogs(logger, null, numberOfProducers, () -> log);
     }
 
     @Test
     public void xmlConfigTest() throws InterruptedException {
-
-        AtomicInteger counter = new AtomicInteger();
 
         // let's test https://github.com/rfoltyns/log4j2-elasticsearch/issues/15
         URI uri = URI.create("log4j2.xml");
@@ -215,9 +192,9 @@ public abstract class SmokeTestBase {
 
         context.setConfigLocation(uri);
 
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME);
+        Logger logger = LogManager.getLogger(defaultLoggerName);
         final String log = createLog();
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> log);
+        indexLogs(logger, null, numberOfProducers, () -> log);
     }
 
     @Test
@@ -227,24 +204,23 @@ public abstract class SmokeTestBase {
         AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger("elasticsearch");
-        indexLogs(logger, null, NUMBER_OF_PRODUCERS, () -> "Message " + counter.incrementAndGet());
+        indexLogs(logger, null, numberOfProducers, () -> "Message " + counter.incrementAndGet());
     }
 
     <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
 
-        final AtomicInteger sleepTime = new AtomicInteger(INITIAL_SLEEP_PER_THREAD);
         CountDownLatch latch = new CountDownLatch(numberOfProducers);
 
-        int numberOfLogsToDeliver = numberOfLogs.get();
+        int numberOfLogsToDeliver = limitTotal.get();
         AtomicInteger totalCounter = new AtomicInteger();
         for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
             new Thread(() -> {
 
-                for (;numberOfLogs.decrementAndGet() >= 0; totalCounter.incrementAndGet()) {
+                for (; limitTotal.decrementAndGet() >= 0; totalCounter.incrementAndGet()) {
                     logger.info(marker, logSupplier.get());
                     localCounter.incrementAndGet();
                     try {
-                        sleep(sleepTime.get());
+                        sleep(producerSleepMillis.get());
                     } catch (InterruptedException e) {
                         interrupted();
                     }
@@ -257,15 +233,16 @@ public abstract class SmokeTestBase {
         while (latch.getCount() != 0) {
             sleep(1000);
             int count = localCounter.getAndSet(0);
-            if (count > LIMIT_PER_SEC && sleepTime.get() != 1) {
-                sleepTime.incrementAndGet();
-            } else if (sleepTime.get() > 1) {
-                sleepTime.decrementAndGet();
+            int sleepMillis = producerSleepMillis.get();
+            if (count > limitPerSec && sleepMillis != 1) {
+                producerSleepMillis.incrementAndGet();
+            } else if (sleepMillis > 1) {
+                producerSleepMillis.decrementAndGet();
             }
 
             String stats = String.format(
                     "Sleep millis per thread: %d, Current throughput: %d; Progress: %d/%d",
-                    sleepTime.get(),
+                    sleepMillis,
                     count,
                     totalCounter.get(),
                     numberOfLogsToDeliver);
@@ -273,12 +250,12 @@ public abstract class SmokeTestBase {
             System.out.println(stats);
         }
 
-        sleep(MILLIS_BEFORE_SHUTDOWN);
+        sleep(lifecycleStopDelayMillis);
 
         System.out.println("Shutting down");
         LogManager.shutdown();
 
-        sleep(MILLIS_AFTER_SHUTDOWN);
+        sleep(exitDelayMillis);
 
     }
 

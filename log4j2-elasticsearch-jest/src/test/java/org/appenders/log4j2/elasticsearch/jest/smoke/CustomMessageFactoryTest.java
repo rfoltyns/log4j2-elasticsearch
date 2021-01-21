@@ -52,7 +52,7 @@ public class CustomMessageFactoryTest extends SmokeTest {
                 config -> config.getAsyncLoggerConfigDelegate());
 
         ObjectMapper objectMapper = configuredMapper();
-        Logger logger = LogManager.getLogger(DEFAULT_LOGGER_NAME,
+        Logger logger = LogManager.getLogger(defaultLoggerName,
                 new SerializedMessageFactory(objectMapper));
 
         logger.info(new LogObject("Hello, World!"));
