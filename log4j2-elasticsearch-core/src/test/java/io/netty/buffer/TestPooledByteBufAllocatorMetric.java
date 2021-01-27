@@ -22,7 +22,7 @@ package io.netty.buffer;
 
 public class TestPooledByteBufAllocatorMetric {
 
-    private ByteBufAllocatorMetric delegate;
+    private final ByteBufAllocatorMetric delegate;
 
     public TestPooledByteBufAllocatorMetric() {
         this.delegate = new PooledByteBufAllocatorMetric(new PooledByteBufAllocator());

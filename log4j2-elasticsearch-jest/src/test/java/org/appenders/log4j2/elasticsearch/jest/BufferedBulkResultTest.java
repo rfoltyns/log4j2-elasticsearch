@@ -155,7 +155,7 @@ public class BufferedBulkResultTest {
     public void errorMessageDoesNotContainStatusIfStatusEqualsZeroAndSucceeded() {
 
         // given
-        BufferedBulkResult result = new BufferedBulkResult(0, false, null, 0, null);;
+        BufferedBulkResult result = new BufferedBulkResult(0, false, null, 0, null);
 
         // when
         String actualMessage = result.getErrorMessage(DEFAULT_TEST_MESSAGE);

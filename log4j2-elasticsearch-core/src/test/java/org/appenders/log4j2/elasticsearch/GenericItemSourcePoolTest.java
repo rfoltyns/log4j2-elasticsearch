@@ -421,8 +421,8 @@ public abstract class GenericItemSourcePoolTest {
 
         when(resizePolicy.increase(eq(pool))).thenAnswer(new Answer<Boolean>() {
 
-            private AtomicInteger counter = new AtomicInteger(expectedIneffectiveResizes);
-            private Random random = new Random();
+            private final AtomicInteger counter = new AtomicInteger(expectedIneffectiveResizes);
+            private final Random random = new Random();
 
             @Override
             public Boolean answer(InvocationOnMock invocation) throws InterruptedException {
@@ -487,7 +487,7 @@ public abstract class GenericItemSourcePoolTest {
 
 
         when(resizePolicy.increase(eq(pool))).thenAnswer((Answer<Boolean>) invocation -> {
-            Thread.currentThread().sleep(1000);
+            Thread.sleep(1000);
             return true;
         });
 

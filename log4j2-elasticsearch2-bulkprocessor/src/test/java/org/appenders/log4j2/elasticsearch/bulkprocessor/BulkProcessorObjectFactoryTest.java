@@ -254,7 +254,7 @@ public class BulkProcessorObjectFactoryTest {
 
         // then
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(failoverPolicy, times(2)).deliver((String) captor.capture());
+        verify(failoverPolicy, times(2)).deliver(captor.capture());
 
         assertTrue(captor.getAllValues().contains(payload1));
         assertTrue(captor.getAllValues().contains(payload2));
@@ -499,8 +499,8 @@ public class BulkProcessorObjectFactoryTest {
      */
     public static class EmbeddedElasticsearchServer {
 
-        private Client client;
-        private Node node;
+        private final Client client;
+        private final Node node;
         private String storagePath;
         private File tempFile;
 

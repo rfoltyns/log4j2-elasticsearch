@@ -46,7 +46,7 @@ public class RetryProcessorTest {
 
     public static final int DEFAULT_TEST_MAX_RETRY_SIZE = 10;
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Before
     public void setup() {

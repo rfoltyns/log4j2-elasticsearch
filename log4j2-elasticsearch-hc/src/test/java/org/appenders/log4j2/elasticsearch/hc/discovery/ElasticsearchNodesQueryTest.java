@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
  */
 
 import org.appenders.log4j2.elasticsearch.hc.BlockingResponseHandler;
-import org.appenders.log4j2.elasticsearch.hc.GenericRequest;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.Request;
 import org.junit.Test;
@@ -200,8 +199,7 @@ public class ElasticsearchNodesQueryTest {
         query.execute(httpClient, callback);
 
         // then
-        @SuppressWarnings("unchecked") ArgumentCaptor<Request> captor =
-                ArgumentCaptor.forClass(Request.class);
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
         verify(httpClient).execute(captor.capture(), any());
         Request request = captor.getValue();
 
@@ -226,8 +224,7 @@ public class ElasticsearchNodesQueryTest {
         query.execute(httpClient, callback);
 
         // then
-        @SuppressWarnings("unchecked") ArgumentCaptor<Request> captor =
-                ArgumentCaptor.forClass(Request.class);
+        ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
         verify(httpClient).execute(captor.capture(), any());
         Request request = captor.getValue();
 

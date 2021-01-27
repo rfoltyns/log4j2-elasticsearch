@@ -200,11 +200,5 @@ public class OperationFactoryTest {
         public TestException(String expectedMessage) {
             super(expectedMessage);
         }
-
-        @Override
-        public String getMessage() {
-            return super.getMessage();
-        }
-
     }
 }

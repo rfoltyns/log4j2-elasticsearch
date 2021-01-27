@@ -27,7 +27,6 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
-import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 
 import java.io.IOException;
 
@@ -51,7 +50,7 @@ public class HttpClient implements LifeCycle {
      * @param requestFactory {@link Request} adapter
      * @param asyncResponseConsumerFactory async response consumer provider
      */
-    HttpClient(
+    public HttpClient(
             CloseableHttpAsyncClient asyncClient,
             ServerPool serverPool,
             RequestFactory requestFactory,
@@ -101,13 +100,7 @@ public class HttpClient implements LifeCycle {
     }
 
     HttpUriRequest createClientRequest(final Request request) throws IOException {
-
-        String url = new StringBuilder(128)
-                .append(serverPool.getNext())
-                .append('/')
-                .append(request.getURI())
-                .toString();
-
+        String url = serverPool.getNext() + '/' + request.getURI();
         return (HttpUriRequest) httpRequestFactory.create(url, request);
     }
 

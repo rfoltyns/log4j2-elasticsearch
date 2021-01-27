@@ -50,7 +50,7 @@ public class MarshallingTest {
         System.setProperty("io.netty.allocator.maxOrder", "1");
     }
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Test
     public void canMarshallKeySequenceConfig() throws IOException {

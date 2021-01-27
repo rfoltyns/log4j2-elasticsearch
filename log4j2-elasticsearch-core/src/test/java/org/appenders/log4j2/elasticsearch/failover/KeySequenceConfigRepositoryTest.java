@@ -49,7 +49,7 @@ public class KeySequenceConfigRepositoryTest {
 
     static final long DEFAULT_TEST_KEY_SEQUENCE_EXPIRY = 1000;
 
-    private static Random random = new Random();
+    private static final Random random = new Random();
 
     @Test
     public void keySequenceConfigListIsCreatedIfItIsAbsentInGivenMap() {
@@ -253,13 +253,13 @@ public class KeySequenceConfigRepositoryTest {
         repository.persist(config);
 
         CharSequence nonExpectedKey = config.getKey();
-        assertTrue(map.keySet().contains(nonExpectedKey));
+        assertTrue(map.containsKey(nonExpectedKey));
 
         // when
         repository.purge(config);
 
         // then
-        assertFalse(map.keySet().contains(nonExpectedKey));
+        assertFalse(map.containsKey(nonExpectedKey));
 
     }
 

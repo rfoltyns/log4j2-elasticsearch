@@ -91,7 +91,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(clientConfigBuilder);
 
         // then
-        verify(clientConfigBuilder).httpsIOSessionStrategy((SchemeIOSessionStrategy) notNull());
+        verify(clientConfigBuilder).httpsIOSessionStrategy(notNull());
         Assert.assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
     }
 

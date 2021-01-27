@@ -56,7 +56,7 @@ public class BulkProcessorFactory implements BatchEmitterFactory {
 
     class BulkExecutionListener implements BulkProcessor.Listener {
 
-        private Function<BulkRequest, Boolean> failureHandler;
+        private final Function<BulkRequest, Boolean> failureHandler;
 
         BulkExecutionListener(Function<BulkRequest, Boolean> failureHandler) {
             this.failureHandler = failureHandler;

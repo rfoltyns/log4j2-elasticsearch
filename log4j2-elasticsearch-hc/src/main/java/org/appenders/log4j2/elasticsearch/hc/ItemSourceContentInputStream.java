@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class ItemSourceContentInputStream extends ContentInputStream {
 
-    private AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     protected final ItemSource<SimpleInputBuffer> buffer;
 

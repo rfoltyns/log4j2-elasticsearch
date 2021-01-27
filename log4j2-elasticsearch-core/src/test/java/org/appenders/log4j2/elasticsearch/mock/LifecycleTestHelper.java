@@ -29,7 +29,7 @@ public class LifecycleTestHelper {
 
     public static Answer<Boolean> trueOnlyOnce() {
         return new Answer<Boolean>() {
-            AtomicBoolean state = new AtomicBoolean(true);
+            final AtomicBoolean state = new AtomicBoolean(true);
 
             @Override
             public Boolean answer(InvocationOnMock invocation) {
@@ -40,7 +40,7 @@ public class LifecycleTestHelper {
 
     public static Answer<Boolean> falseOnlyOnce() {
         return new Answer<Boolean>() {
-            AtomicBoolean state = new AtomicBoolean();
+            final AtomicBoolean state = new AtomicBoolean();
 
             @Override
             public Boolean answer(InvocationOnMock invocation) {

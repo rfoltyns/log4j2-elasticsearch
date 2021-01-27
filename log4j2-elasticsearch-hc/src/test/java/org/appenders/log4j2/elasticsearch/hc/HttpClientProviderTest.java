@@ -23,10 +23,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
-import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
-import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -58,16 +54,14 @@ public class HttpClientProviderTest {
     public static final Security TEST_AUTH = SecurityTest.createTestBuilder().build();
 
     public static HttpClientFactory.Builder createDefaultTestBuilder() {
-        HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder()
+        return new HttpClientFactory.Builder()
                 .withServerList(Arrays.asList(TEST_SERVER_URIS))
-
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
                 .withIoThreadCount(TEST_IO_THREAD_COUNT)
                 .withPooledResponseBuffers(TEST_POOLED_RESPONSE_BUFFERS_ENABLED)
                 .withPooledResponseBuffersSizeInBytes(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES);
-        return httpClientFactoryBuilder;
     }
 
     public static HttpClientProvider createDefaultTestClientProvider() {

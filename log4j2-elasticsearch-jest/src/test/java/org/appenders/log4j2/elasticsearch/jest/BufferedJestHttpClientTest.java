@@ -91,11 +91,11 @@ public class BufferedJestHttpClientTest {
     public void prepareRequestCreatesPostRequest() throws IOException {
 
         // given
-        Bulk bulk = createDefaultTestBufferedBulk();
+        BufferedBulk bulk = createDefaultTestBufferedBulk();
 
         // when
         BufferedJestHttpClient client = createDefaultTestHttpClient();
-        HttpUriRequest request = client.prepareRequest((BufferedBulk) bulk);
+        HttpUriRequest request = client.prepareRequest(bulk);
 
         // then
         Assert.assertEquals("POST", request.getRequestLine().getMethod());
@@ -124,11 +124,11 @@ public class BufferedJestHttpClientTest {
     public void prepareRequestCreatesRequestWithContentTypeHeader() throws IOException {
 
         // given
-        Bulk bulk = createDefaultTestBufferedBulk();
+        BufferedBulk bulk = createDefaultTestBufferedBulk();
 
         // when
         BufferedJestHttpClient client = createDefaultTestHttpClient();
-        HttpUriRequest request = client.prepareRequest((BufferedBulk) bulk);
+        HttpUriRequest request = client.prepareRequest(bulk);
 
         // then
         HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();

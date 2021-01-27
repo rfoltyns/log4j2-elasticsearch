@@ -290,6 +290,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
         listener.onCorruption(corruption);
 
         // then
+        //noinspection ThrowableNotThrown
         verify(corruption, times(2)).exception();
         verify(corruption, times(1)).message();
 
@@ -308,6 +309,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
         listener.onCorruption(corruption);
 
         // then
+        //noinspection ThrowableNotThrown
         verify(corruption, times(1)).exception();
         verify(corruption, times(1)).message();
 
@@ -651,7 +653,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
     public KeySequenceSelector createDummyKeySequenceSelector() {
         return new KeySequenceSelector() {
 
-            KeySequence keySequence = createDefaultTestKeySequence();
+            final KeySequence keySequence = createDefaultTestKeySequence();
 
             @Override
             public Supplier<KeySequence> currentKeySequence() {

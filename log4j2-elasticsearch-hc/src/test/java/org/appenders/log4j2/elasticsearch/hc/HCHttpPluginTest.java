@@ -64,11 +64,9 @@ public class HCHttpPluginTest {
                 .createDefaultTestSourceFactoryConfig()
                 .build();
 
-        HCHttpPlugin.Builder builder = HCHttpPlugin.newBuilder()
+        return HCHttpPlugin.newBuilder()
                 .withItemSourceFactory(itemSourceFactory)
                 .withServerUris(TEST_SERVER_URIS);
-
-        return builder;
     }
 
     @Test

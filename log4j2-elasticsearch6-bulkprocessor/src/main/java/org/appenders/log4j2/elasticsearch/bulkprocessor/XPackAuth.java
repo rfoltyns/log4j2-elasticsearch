@@ -37,8 +37,8 @@ public class XPackAuth implements Auth<Settings.Builder> {
 
     static final String PLUGIN_NAME = "XPackAuth";
 
-    private final Credentials credentials;
-    private final CertInfo certInfo;
+    private final Credentials<Settings.Builder> credentials;
+    private final CertInfo<Settings.Builder> certInfo;
 
     protected XPackAuth(Credentials<Settings.Builder> credentials, CertInfo<Settings.Builder> certInfo){
         this.credentials = credentials;
@@ -60,11 +60,11 @@ public class XPackAuth implements Auth<Settings.Builder> {
 
         @PluginElement("credentials")
         @Required(message = "No credentials provided for " + XPackAuth.PLUGIN_NAME)
-        private Credentials credentials;
+        private Credentials<Settings.Builder> credentials;
 
         @PluginElement("certInfo")
         @Required(message = "No certInfo provided for " + XPackAuth.PLUGIN_NAME)
-        private CertInfo certInfo;
+        private CertInfo<Settings.Builder> certInfo;
 
         @Override
         public XPackAuth build() {
@@ -77,12 +77,12 @@ public class XPackAuth implements Auth<Settings.Builder> {
             return new XPackAuth(credentials, certInfo);
         }
 
-        public Builder withCredentials(Credentials credentials) {
+        public Builder withCredentials(Credentials<Settings.Builder> credentials) {
             this.credentials = credentials;
             return this;
         }
 
-        public Builder withCertInfo(CertInfo certInfo) {
+        public Builder withCertInfo(CertInfo<Settings.Builder> certInfo) {
             this.certInfo = certInfo;
             return this;
         }

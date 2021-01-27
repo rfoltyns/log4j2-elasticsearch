@@ -74,7 +74,7 @@ public class PutIndexTemplate extends SetupStep<GenericJestRequest, JestResult> 
     @Override
     public GenericJestRequest createRequest() {
 
-        GenericJestRequest request = new GenericJestRequest("PUT", source) {
+        return new GenericJestRequest("PUT", source) {
             @Override
             public String buildURI() {
                 return getVersionBasedUri();
@@ -87,8 +87,6 @@ public class PutIndexTemplate extends SetupStep<GenericJestRequest, JestResult> 
                 return "_index_template/" + name;
             }
         };
-
-        return request;
 
     }
 

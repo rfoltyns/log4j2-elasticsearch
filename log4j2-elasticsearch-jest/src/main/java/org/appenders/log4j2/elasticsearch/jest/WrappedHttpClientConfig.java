@@ -49,7 +49,7 @@ class WrappedHttpClientConfig {
         // same as org.apache.httpcomponents:httpcore-nio:IOReactorConfig.AVAIL_PROCS
         protected int ioThreadCount = Runtime.getRuntime().availableProcessors();
 
-        private HttpClientConfig httpClientConfig;
+        private final HttpClientConfig httpClientConfig;
 
         public Builder(HttpClientConfig httpClientConfig) {
             this.httpClientConfig = httpClientConfig;

@@ -33,7 +33,6 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactoryPlugin.PLUGIN_NAME;
 import static org.hamcrest.CoreMatchers.containsString;

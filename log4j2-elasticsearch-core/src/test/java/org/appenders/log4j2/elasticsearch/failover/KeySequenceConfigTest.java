@@ -37,7 +37,7 @@ public class KeySequenceConfigTest {
     static final int DEFAULT_OFFSET = 100;
 
     private static final long DEFAULT_TEST_SEQUENCE_ID = 1;
-    private static Random random = new Random();
+    private static final Random random = new Random();
     private static int offsetMultiplier = 1;
 
     public static KeySequenceConfig createDefaultTestKeySequenceConfig() {

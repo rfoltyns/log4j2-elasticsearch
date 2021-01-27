@@ -37,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 
 public class BulkResultDeserializerTest {
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Test
     public void canDeserializeStatus() throws IOException {

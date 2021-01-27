@@ -390,10 +390,9 @@ public abstract class BatchRequestTest {
     }
 
     public static BatchRequest.Builder createDefaultTestObjectBuilder() {
-        BatchRequest.Builder builder = new BatchRequest.Builder()
+        return new BatchRequest.Builder()
                 .withObjectWriter(mock(ObjectWriter.class))
                 .withBuffer(mock(ByteBufItemSource.class));
-        return builder;
     }
 
 }

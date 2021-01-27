@@ -47,7 +47,7 @@ public class ClientSetting {
     }
 
     @PluginBuilderFactory
-    public static final Builder newBuilder() {
+    public static Builder newBuilder() {
         return new Builder();
     }
 

@@ -222,7 +222,7 @@ public abstract class SmokeTestBase {
                     try {
                         sleep(producerSleepMillis.get());
                     } catch (InterruptedException e) {
-                        interrupted();
+                        Thread.currentThread().interrupt();
                     }
 
                 }

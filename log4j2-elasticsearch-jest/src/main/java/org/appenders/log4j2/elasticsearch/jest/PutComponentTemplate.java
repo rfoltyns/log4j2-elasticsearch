@@ -67,14 +67,12 @@ public class PutComponentTemplate extends SetupStep<GenericJestRequest, JestResu
     @Override
     public GenericJestRequest createRequest() {
 
-        GenericJestRequest request = new GenericJestRequest("PUT", source) {
+        return new GenericJestRequest("PUT", source) {
             @Override
             public String buildURI() {
                 return "_component_template/" + templateName;
             }
         };
-
-        return request;
 
     }
 

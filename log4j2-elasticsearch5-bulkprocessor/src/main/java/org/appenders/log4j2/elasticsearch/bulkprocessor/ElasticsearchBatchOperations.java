@@ -30,7 +30,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 
 public class ElasticsearchBatchOperations implements BatchOperations<BulkRequest> {
 
-    private static String ACTION_TYPE = "index";
+    private static final String ACTION_TYPE = "index";
 
     @Override
     public Object createBatchItem(String indexName, Object source) {

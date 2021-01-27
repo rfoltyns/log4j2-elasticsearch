@@ -33,7 +33,7 @@ import java.util.Collection;
  */
 public class JestBatchIntrospector implements BatchIntrospector<Bulk> {
 
-    private BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector = new JestActionIntrospector();
+    private final BatchItemIntrospector<AbstractDocumentTargetedAction<DocumentResult>> itemIntrospector = new JestActionIntrospector();
 
     @Override
     public Collection items(Bulk introspected) {

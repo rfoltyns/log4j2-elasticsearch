@@ -37,8 +37,8 @@ public class XPackAuth implements Auth<HttpClientConfig.Builder> {
 
     static final String PLUGIN_NAME = "XPackAuth";
 
-    private final Credentials credentials;
-    private final CertInfo certInfo;
+    private final Credentials<HttpClientConfig.Builder> credentials;
+    private final CertInfo<HttpClientConfig.Builder> certInfo;
 
     protected XPackAuth(Credentials<HttpClientConfig.Builder> credentials, CertInfo<HttpClientConfig.Builder> certInfo){
         this.credentials = credentials;
@@ -65,10 +65,10 @@ public class XPackAuth implements Auth<HttpClientConfig.Builder> {
 
         @PluginElement("credentials")
         @Required(message = "No credentials provided for " + XPackAuth.PLUGIN_NAME)
-        private Credentials credentials;
+        private Credentials<HttpClientConfig.Builder> credentials;
 
         @PluginElement("certInfo")
-        private CertInfo certInfo;
+        private CertInfo<HttpClientConfig.Builder> certInfo;
 
         @Override
         public XPackAuth build() {
@@ -81,12 +81,12 @@ public class XPackAuth implements Auth<HttpClientConfig.Builder> {
 
         }
 
-        public Builder withCredentials(Credentials credentials) {
+        public Builder withCredentials(Credentials<HttpClientConfig.Builder> credentials) {
             this.credentials = credentials;
             return this;
         }
 
-        public Builder withCertInfo(CertInfo certInfo) {
+        public Builder withCertInfo(CertInfo<HttpClientConfig.Builder> certInfo) {
             this.certInfo = certInfo;
             return this;
         }

@@ -132,7 +132,7 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
     }
 
     private boolean isOwned(KeySequenceConfig existing) {
-        return repository.ID == existing.ownerId;
+        return KeySequenceConfigRepository.ID == existing.ownerId;
      }
 
     private KeySequenceConfig findMatchingKeySequenceConfig() {

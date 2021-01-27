@@ -32,11 +32,11 @@ public class BatchResult implements Response {
     static final String REQUEST_FAILED_MESAGE = "Request failed";
     private static final String SEPARATOR = ". ";
 
-    private int took;
-    private boolean errors;
-    private Error error;
-    private int statusCode;
-    private List<BatchItemResult> items;
+    private final int took;
+    private final boolean errors;
+    private final Error error;
+    private final int statusCode;
+    private final List<BatchItemResult> items;
     private String errorMessage;
     private int responseCode;
 

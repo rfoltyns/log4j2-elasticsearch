@@ -41,7 +41,7 @@ import java.io.IOException;
  */
 public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<HttpResponse> {
 
-    private ItemSourcePool<SimpleInputBuffer> itemSourcePool;
+    private final ItemSourcePool<SimpleInputBuffer> itemSourcePool;
 
     private volatile HttpResponse response;
     private volatile ItemSource<SimpleInputBuffer> buffer;

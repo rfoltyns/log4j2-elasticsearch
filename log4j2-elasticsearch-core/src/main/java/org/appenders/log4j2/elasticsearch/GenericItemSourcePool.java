@@ -65,7 +65,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     private final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
 
     private final int initialPoolSize;
-    private final AtomicInteger totalPoolSize = new AtomicInteger();;
+    private final AtomicInteger totalPoolSize = new AtomicInteger();
 
     private final boolean monitored;
     private final long monitorTaskInterval;

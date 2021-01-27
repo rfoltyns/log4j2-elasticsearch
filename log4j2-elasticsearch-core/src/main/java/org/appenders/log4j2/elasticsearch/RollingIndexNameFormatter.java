@@ -44,9 +44,9 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
 
     public static final String DEFAULT_SEPARATOR = "-";
 
-    private String indexName;
+    private final String indexName;
     private String currentName;
-    private String separator;
+    private final String separator;
     private long nextRolloverTime;
     private final AtomicBoolean rollingOver = new AtomicBoolean();
 
@@ -58,12 +58,12 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
     /**
      * Alternative formatter used during and right after the rollover due to race conditions caused by PatternProcessor internal state
      */
-    private FastDateFormat fastDateFormat;
+    private final FastDateFormat fastDateFormat;
 
     /**
      * Initial buffer capacity (to avoid resizing)
      */
-    private int DEFAULT_BUFFER_SIZE = 32;
+    private final int defaultBufferSize = 32;
     private long currentFileTime;
 
     protected RollingIndexNameFormatter(String indexName, String pattern, long initTimeInMillis, TimeZone timeZone) {
@@ -126,7 +126,7 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
     }
 
     private StringBuilder buffer(String indexName) {
-        return new StringBuilder(DEFAULT_BUFFER_SIZE).append(indexName);
+        return new StringBuilder(defaultBufferSize).append(indexName);
     }
 
     @PluginBuilderFactory

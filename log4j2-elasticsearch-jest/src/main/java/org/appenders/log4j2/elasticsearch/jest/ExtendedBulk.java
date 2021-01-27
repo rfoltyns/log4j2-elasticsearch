@@ -35,7 +35,7 @@ public class ExtendedBulk extends Bulk {
 
     public static class Builder extends Bulk.Builder {
 
-        private Collection<BulkableAction> actions = new ConcurrentLinkedQueue<>();
+        private final Collection<BulkableAction> actions = new ConcurrentLinkedQueue<>();
 
         public Builder addAction(BulkableAction action) {
             this.actions.add(action);

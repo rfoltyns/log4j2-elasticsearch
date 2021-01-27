@@ -39,7 +39,7 @@ public class ClientSettingsTest {
                 .withValue(TEST_VALUE).build();
 
         ClientSettings.Builder clientSettings = createDefaultTestClientSettingsBuilder()
-                .withClientSettings(new ClientSetting[] { clientSetting });
+                .withClientSettings(clientSetting);
 
         // when
         clientSettings.build();
@@ -51,7 +51,7 @@ public class ClientSettingsTest {
 
         // given
         ClientSettings.Builder clientSettings = createDefaultTestClientSettingsBuilder()
-                .withClientSettings(null);
+                .withClientSettings((ClientSetting[]) null);
 
         // when
         clientSettings.build();
@@ -67,7 +67,7 @@ public class ClientSettingsTest {
                 .withValue(TEST_VALUE).build();
 
         ClientSettings.Builder clientSettings = createDefaultTestClientSettingsBuilder()
-                .withClientSettings(new ClientSetting[] { clientSetting });
+                .withClientSettings(clientSetting);
 
         ClientSettings settings = clientSettings.build();
 
@@ -83,9 +83,7 @@ public class ClientSettingsTest {
 
     private ClientSettings.Builder createDefaultTestClientSettingsBuilder() {
         return ClientSettings.newBuilder()
-                .withClientSettings(new ClientSetting[] {
-                        createDefaultTestClientSettingBuilder().build()
-                });
+                .withClientSettings(createDefaultTestClientSettingBuilder().build());
     }
 
 }

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class BulkRequestIntrospector implements BatchIntrospector<BulkRequest> {
 
-    private BulkActionIntrospector itemIntrospector = new BulkActionIntrospector();
+    private final BulkActionIntrospector itemIntrospector = new BulkActionIntrospector();
 
     @Override
     public Collection<Object> items(BulkRequest introspected) {

@@ -415,11 +415,11 @@ public class HttpClientTest {
         // then
         verify(responseHandler, never()).failed(any());
         verify(responseHandler).completed(batchResultCaptor.capture());
-        Response result = batchResultCaptor.getValue();
+        BatchResult result = batchResultCaptor.getValue();
 
         assertTrue(result.isSucceeded());
         assertEquals(200, result.getResponseCode());
-        assertNull(((BatchResult)result).getItems());
+        assertNull(result.getItems());
 
     }
 
@@ -443,12 +443,12 @@ public class HttpClientTest {
         // then
         verify(responseHandler, never()).failed(any());
         verify(responseHandler).completed(batchResultCaptor.capture());
-        Response result = batchResultCaptor.getValue();
+        BatchResult result = batchResultCaptor.getValue();
 
         assertFalse(result.isSucceeded());
         assertEquals(expectedStatusCode, result.getResponseCode());
         assertNotEquals(httpResponse.getStatusLine().getReasonPhrase(), result.withErrorMessage("test fallback message").getErrorMessage());
-        assertNotNull(((BatchResult)result).getItems());
+        assertNotNull(result.getItems());
 
     }
 

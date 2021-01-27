@@ -74,8 +74,8 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
     public Function<BulkEmitterTest.TestBatch, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
         return new Function<BulkEmitterTest.TestBatch, Boolean>() {
 
-            private Function<BulkEmitterTest.TestBatch, Boolean> failureHandler = createFailureHandler(failoverPolicy);
-            private TestClient client = createClient();
+            private final Function<BulkEmitterTest.TestBatch, Boolean> failureHandler = createFailureHandler(failoverPolicy);
+            private final TestClient client = createClient();
 
             @Override
             public Boolean apply(BulkEmitterTest.TestBatch bulk) {
@@ -108,7 +108,7 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
     public void addOperation(Operation operation) {
         try {
             operation.execute();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
     }
 

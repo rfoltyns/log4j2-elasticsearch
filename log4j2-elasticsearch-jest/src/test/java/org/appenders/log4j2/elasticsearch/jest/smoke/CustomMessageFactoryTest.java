@@ -68,7 +68,7 @@ public class CustomMessageFactoryTest extends SmokeTest {
 
     private static class LogObject {
 
-        private Long timeStamp;
+        private final Long timeStamp;
         private final String userLog;
 
         public LogObject(String userLog) {

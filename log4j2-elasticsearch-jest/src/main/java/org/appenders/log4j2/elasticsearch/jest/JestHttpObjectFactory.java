@@ -139,7 +139,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     public Function<Bulk, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
         return new Function<Bulk, Boolean>() {
 
-            private Function<Bulk, Boolean> failureHandler = createFailureHandler(failoverPolicy);
+            private final Function<Bulk, Boolean> failureHandler = createFailureHandler(failoverPolicy);
 
             @Override
             public Boolean apply(Bulk bulk) {

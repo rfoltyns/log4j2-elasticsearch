@@ -32,11 +32,11 @@ public class BufferedBulkResult {
     static final String BULK_REQUEST_FAILED_MESAGE = "Bulk request failed";
     private static final String SEPARATOR = ". ";
 
-    private int took;
-    private boolean errors;
-    private BulkError error;
-    private int status;
-    private List<BulkResultItem> items;
+    private final int took;
+    private final boolean errors;
+    private final BulkError error;
+    private final int status;
+    private final List<BulkResultItem> items;
 
     public BufferedBulkResult(int took, boolean errors, BulkError error, int status, List<BulkResultItem> items) {
         this.took = took;

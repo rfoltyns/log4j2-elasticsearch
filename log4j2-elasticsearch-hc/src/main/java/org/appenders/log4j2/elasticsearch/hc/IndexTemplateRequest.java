@@ -42,9 +42,7 @@ public class IndexTemplateRequest implements Request {
 
     @Override
     public String getURI() {
-        StringBuilder sb = new StringBuilder("_template/");
-        sb.append(templateName);
-        return sb.toString();
+        return "_template/" + templateName;
     }
 
     @Override

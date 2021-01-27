@@ -346,7 +346,7 @@ public class JestHttpObjectFactoryTest {
 
         // then
         ArgumentCaptor<Bulk> captor = ArgumentCaptor.forClass(Bulk.class);
-        verify(mockedJestClient, times(1)).executeAsync((Bulk) captor.capture(), Mockito.any());
+        verify(mockedJestClient, times(1)).executeAsync(captor.capture(), Mockito.any());
 
         assertEquals(bulk, captor.getValue());
     }

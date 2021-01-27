@@ -100,6 +100,7 @@ public class KeySequenceConfig implements ItemSource<KeySequenceConfig>, Seriali
 
     @Override
     public String toString() {
+        //noinspection StringBufferReplaceableByString
         return new StringBuilder(128)
                 .append("{\"cls\": \"").append(KeySequenceConfig.class.getSimpleName()).append("\",")
                 .append("\"seqId\":").append(seqId).append(",")

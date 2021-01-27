@@ -56,11 +56,11 @@ public abstract class BulkEmitterTest {
 
         // given
         int slackTime = 10000;
-        Function listener = spy(new Function<Collection, Boolean>() {
+        Function<Collection, Boolean> listener = spy(new Function<Collection, Boolean>() {
             @Override
             public Boolean apply(Collection collection) {
                 try {
-                    Thread.currentThread().sleep(slackTime);
+                    Thread.sleep(slackTime);
                 } catch (InterruptedException e) {
                     Assert.fail();
                 }
@@ -93,9 +93,9 @@ public abstract class BulkEmitterTest {
 
         // when
         t1.start();
-        Thread.currentThread().sleep(100);
+        Thread.sleep(100);
         t2.start();
-        Thread.currentThread().sleep(100);
+        Thread.sleep(100);
         t2.interrupt();
 
         // then
@@ -108,11 +108,11 @@ public abstract class BulkEmitterTest {
 
         // given
         int slackTime = 100;
-        Function listener = spy(new Function<Collection, Boolean>() {
+        Function<Collection, Boolean> listener = spy(new Function<Collection, Boolean>() {
             @Override
             public Boolean apply(Collection collection) {
                 try {
-                    Thread.currentThread().sleep(slackTime);
+                    Thread.sleep(slackTime);
                 } catch (InterruptedException e) {
                     Assert.fail();
                 }
@@ -157,7 +157,7 @@ public abstract class BulkEmitterTest {
 
     private BatchBuilder<Collection> createTestBatchBuilder() {
         return new BatchBuilder<Collection>() {
-            Collection items = new ConcurrentLinkedQueue();
+            final Collection items = new ConcurrentLinkedQueue();
 
             @Override
             public void add(Object item) {
@@ -342,8 +342,7 @@ public abstract class BulkEmitterTest {
     }
 
     public static BulkEmitter createTestBulkEmitter(int batchSize, int interval, BatchOperations batchOperations) {
-        BulkEmitter bulkEmitter = new BulkEmitter(batchSize, interval, batchOperations);
-        return bulkEmitter;
+        return new BulkEmitter(batchSize, interval, batchOperations);
     }
 
     private Function<TestBatch, Boolean> dummyObserver() {
@@ -378,7 +377,7 @@ public abstract class BulkEmitterTest {
 
     public static class TestBatchBuilder implements BatchBuilder {
 
-        private Collection<Object> items = new ConcurrentLinkedQueue<>();
+        private final Collection<Object> items = new ConcurrentLinkedQueue<>();
 
         @Override
         public void add(Object item) {
@@ -393,7 +392,7 @@ public abstract class BulkEmitterTest {
 
     public static class TestBatchItem {
 
-        private Object data;
+        private final Object data;
 
         public TestBatchItem(Object data) {
             this.data = data;

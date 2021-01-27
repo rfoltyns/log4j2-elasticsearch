@@ -44,7 +44,7 @@ import static org.mockito.Mockito.when;
 
 public class ExtendedJestClientFactoryTest {
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

@@ -312,8 +312,8 @@ public class RollingIndexNameFormatterTest {
     }
 
     public static class TestTuple {
-        private LogEvent logEvent;
-        private int increment;
+        private final LogEvent logEvent;
+        private final int increment;
 
         public TestTuple(LogEvent logEvent, int increment) {
             this.logEvent = logEvent;

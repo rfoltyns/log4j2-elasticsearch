@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class NoopBackoffPolicyTest {
 
-    private Random random = new Random();
+    private final Random random = new Random();
 
     @Test
     public void buildsSuccessfully() {

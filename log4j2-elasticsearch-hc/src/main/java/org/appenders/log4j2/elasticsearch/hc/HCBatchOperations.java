@@ -58,7 +58,7 @@ public class HCBatchOperations implements BatchOperations<BatchRequest> {
     public BatchBuilder<BatchRequest> createBatchBuilder() {
         return new BatchBuilder<BatchRequest>() {
 
-            private BatchRequest.Builder builder = new BatchRequest.Builder()
+            private final BatchRequest.Builder builder = new BatchRequest.Builder()
                     .withBuffer(pooledItemSourceFactory.createEmptySource())
                     .withObjectWriter(objectWriter);
 
