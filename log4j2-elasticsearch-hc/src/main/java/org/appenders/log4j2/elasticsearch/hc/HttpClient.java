@@ -35,7 +35,7 @@ import java.io.IOException;
 /**
  * Apache HC based client with optional response buffer pooling
  */
-class HttpClient implements LifeCycle {
+public class HttpClient implements LifeCycle {
 
     private final static Logger LOG = InternalLogging.getLogger();
 
@@ -52,7 +52,7 @@ class HttpClient implements LifeCycle {
      * @param requestFactory {@link Request} adapter
      * @param asyncResponseConsumerFactory async response consumer provider
      */
-    HttpClient(
+    public HttpClient(
             CloseableHttpAsyncClient asyncClient,
             ServerPool serverPool,
             RequestFactory requestFactory,
