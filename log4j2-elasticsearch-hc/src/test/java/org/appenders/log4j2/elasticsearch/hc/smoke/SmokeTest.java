@@ -28,12 +28,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
+import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
+import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
@@ -136,8 +140,11 @@ public class SmokeTest extends SmokeTestBase {
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 
+
+        UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
+
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
-        PooledItemSourceFactory pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes).build();
+        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes);
 
         final List<String> serverList = getServerList(secured, getConfig().getProperty("serverList", String.class));
         HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
@@ -197,7 +204,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withShutdownDelayMillis(10000)
                 .build();
 
-        IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
+        IndexNameFormatter<LogEvent> indexNameFormatter = NoopIndexNameFormatter.newBuilder()
                 .withIndexName(indexName)
                 .build();
 
@@ -218,11 +225,12 @@ public class SmokeTest extends SmokeTestBase {
         }
 
         if (buffered) {
-            PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
+            PooledItemSourceFactory<LogEvent, ByteBuf> sourceFactoryConfig = new PooledItemSourceFactory.Builder<LogEvent, ByteBuf>()
                     .withPoolName("itemPool")
+                    .withPooledObjectOps(new ByteBufPooledObjectOps(
+                            byteBufAllocator,
+                            new ByteBufBoundedSizeLimitPolicy(initialItemBufferSizeInBytes, initialItemBufferSizeInBytes * 2)))
                     .withInitialPoolSize(initialItemPoolSize)
-                    .withItemSizeInBytes(initialItemBufferSizeInBytes)
-                    .withMaxItemSizeInBytes(initialItemBufferSizeInBytes * 2)
                     .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
                     .withMonitored(true)
                     .withMonitorTaskInterval(10000)
@@ -247,13 +255,17 @@ public class SmokeTest extends SmokeTestBase {
 
     }
 
-    private PooledItemSourceFactory.Builder batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
-        return PooledItemSourceFactory.newBuilder()
+    private PooledItemSourceFactory<Object, ByteBuf> batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
+        return new PooledItemSourceFactory.Builder<Object, ByteBuf>()
                 .withPoolName("batchPool")
                 .withInitialPoolSize(initialBatchPoolSize)
-                .withItemSizeInBytes(estimatedBatchSizeInBytes)
+                .withPooledObjectOps(new ByteBufPooledObjectOps(
+                        UnpooledByteBufAllocator.DEFAULT,
+                        new ByteBufBoundedSizeLimitPolicy(estimatedBatchSizeInBytes, estimatedBatchSizeInBytes)))
                 .withMonitored(true)
-                .withMonitorTaskInterval(10000);
+                .withMonitorTaskInterval(10000)
+                .build();
+
     }
 
     private List<String> getServerList(boolean secured, String hostPortList) {

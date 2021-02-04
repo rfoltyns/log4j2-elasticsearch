@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.jmh;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,9 @@ package org.appenders.log4j2.elasticsearch.jmh;
  */
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
+import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
 import org.appenders.log4j2.elasticsearch.ExtendedPooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
@@ -77,7 +80,7 @@ public class GenericItemSourcePoolTest {
         final ExtendedPooledItemSourceFactory.Builder itemPoolBuilder = (ExtendedPooledItemSourceFactory.Builder) new ExtendedPooledItemSourceFactory.Builder()
                 .withPoolName("itemPool")
                 .withInitialPoolSize(poolSize)
-                .withItemSizeInBytes(itemSizeInBytes);
+                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes)));
 
         this.itemPool = itemPoolBuilder.configuredItemSourcePool();
 

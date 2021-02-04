@@ -22,9 +22,12 @@ package org.appenders.log4j2.elasticsearch.jmh;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import net.openhft.affinity.AffinityLock;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
+import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
@@ -84,7 +87,7 @@ public class PooledItemSourceFactoryTest {
     public void prepare() {
 
         this.itemPool = new PooledItemSourceFactory.Builder()
-                .withItemSizeInBytes(itemSizeInBytes + (itemSizeInBytes / 2))
+                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes)))
                 .withInitialPoolSize(poolSize)
                 .withPoolName("itemPool")
                 .build();

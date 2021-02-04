@@ -31,9 +31,9 @@ import java.nio.charset.Charset;
 public class ByteBufItemSource implements ItemSource<ByteBuf> {
 
     private final ByteBuf source;
-    private final ReleaseCallback releaseCallback;
+    private final ReleaseCallback<ByteBuf> releaseCallback;
 
-    public ByteBufItemSource(ByteBuf source, ReleaseCallback releaseCallback) {
+    public ByteBufItemSource(final ByteBuf source, final ReleaseCallback<ByteBuf> releaseCallback) {
         this.source = source;
         this.releaseCallback = releaseCallback;
     }

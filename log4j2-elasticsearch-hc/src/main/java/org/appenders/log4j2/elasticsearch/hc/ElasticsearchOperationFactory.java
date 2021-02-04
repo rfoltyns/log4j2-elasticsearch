@@ -20,6 +20,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.ByteBufItemSourceFactoryPlugin;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
@@ -59,7 +60,7 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
     }
 
     private static PooledItemSourceFactory createSetupOpsItemSourceFactory() {
-        return PooledItemSourceFactory.newBuilder()
+        return ByteBufItemSourceFactoryPlugin.newBuilder()
                 .withItemSizeInBytes(4096)
                 .withMaxItemSizeInBytes(4096)
                 .withInitialPoolSize(1)

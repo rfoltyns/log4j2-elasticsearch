@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * Allows to specify desired capacity of {@code io.netty.buffer.ByteBuf}.
  */
-class ByteBufBoundedSizeLimitPolicy implements SizeLimitPolicy<ByteBuf> {
+public class ByteBufBoundedSizeLimitPolicy implements SizeLimitPolicy<ByteBuf> {
 
     private final int minSize;
     private final int maxSize;

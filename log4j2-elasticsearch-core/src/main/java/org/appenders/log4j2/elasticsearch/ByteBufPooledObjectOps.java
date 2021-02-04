@@ -26,7 +26,7 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 
 import java.util.function.Supplier;
 
-class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
+public class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
 
     private static final int NAX_NUM_COMPONENTS = Integer.parseInt(
             System.getProperty("appenders.io.netty.buffer.CompositeByteBuf.maxNumComponents", "2"));
@@ -38,7 +38,7 @@ class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
      * @param byteBufAllocator {@code io.netty.buffer.ByteBufAllocator} to use
      * @param sizeLimitPolicy {@link SizeLimitPolicy} to be applied on creation and {@link #reset(ItemSource)}
      */
-    ByteBufPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator, SizeLimitPolicy<ByteBuf> sizeLimitPolicy) {
+    public ByteBufPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator, SizeLimitPolicy<ByteBuf> sizeLimitPolicy) {
         this.byteBufAllocator = byteBufAllocator;
         this.sizeLimitPolicy = sizeLimitPolicy;
     }

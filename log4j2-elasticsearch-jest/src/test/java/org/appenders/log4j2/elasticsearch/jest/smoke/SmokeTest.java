@@ -21,6 +21,8 @@ package org.appenders.log4j2.elasticsearch.jest.smoke;
  */
 
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -28,6 +30,8 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
+import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
+import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
@@ -111,10 +115,12 @@ public class SmokeTest extends SmokeTestBase {
             int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
 
             ((BufferedJestHttpObjectFactory.Builder)jestHttpObjectFactoryBuilder).withItemSourceFactory(
-                    PooledItemSourceFactory.newBuilder()
+                    new PooledItemSourceFactory.Builder<Object, ByteBuf>()
                             .withPoolName("batchPool")
+                            .withPooledObjectOps(new ByteBufPooledObjectOps(
+                                    UnpooledByteBufAllocator.DEFAULT,
+                                    new ByteBufBoundedSizeLimitPolicy(estimatedBatchSizeInBytes, estimatedBatchSizeInBytes)))
                             .withInitialPoolSize(initialBatchPoolSize)
-                            .withItemSizeInBytes(estimatedBatchSizeInBytes)
                             .withMonitored(true)
                             .withMonitorTaskInterval(10000)
                             .build()
@@ -167,10 +173,12 @@ public class SmokeTest extends SmokeTestBase {
         }
 
         if (buffered) {
-            PooledItemSourceFactory sourceFactoryConfig = PooledItemSourceFactory.newBuilder()
+            PooledItemSourceFactory<Object, ByteBuf> sourceFactoryConfig = new PooledItemSourceFactory.Builder<Object, ByteBuf>()
                     .withPoolName("itemPool")
+                    .withPooledObjectOps(new ByteBufPooledObjectOps(
+                            UnpooledByteBufAllocator.DEFAULT,
+                            new ByteBufBoundedSizeLimitPolicy(initialItemBufferSizeInBytes, initialItemBufferSizeInBytes * 2)))
                     .withInitialPoolSize(initialItemPoolSize)
-                    .withItemSizeInBytes(initialItemBufferSizeInBytes)
                     .withMonitored(true)
                     .withMonitorTaskInterval(10000)
                     .build();

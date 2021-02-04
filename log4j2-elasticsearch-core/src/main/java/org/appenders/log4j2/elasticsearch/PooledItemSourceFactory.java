@@ -23,12 +23,6 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
 import java.io.IOException;
@@ -39,10 +33,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 /**
  * Uses underlying {@link ItemSourcePool} to get {@link ItemSource} instances.
  */
-@Plugin(name = PooledItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
 public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
-
-    public static final String PLUGIN_NAME = "PooledItemSourceFactory";
 
     private volatile State state = State.STOPPED;
 
@@ -112,54 +103,54 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         }
     }
 
-    @PluginBuilderFactory
-    public static PooledItemSourceFactory.Builder<Object, ByteBuf> newBuilder() {
-        return new PooledItemSourceFactory.Builder<>();
-    }
-
-    public static class Builder<T, R> implements org.apache.logging.log4j.core.util.Builder<PooledItemSourceFactory<T, R>> {
+    public static class Builder<T, R> {
 
         public static final long DEFAULT_RESIZE_TIMEOUT = 1000L;
         public static final long DEFAULT_MONITOR_TASK_INTERVAL = 30000L;
+        private static final int DEFAULT_ITEM_SIZE_IN_BYTES = 0;
+        private static final int DEFAULT_MAX_ITEM_SIZE_IN_BYTES = Integer.MAX_VALUE;
 
-        @PluginBuilderAttribute
         protected String poolName;
-
-        @PluginElement(ResizePolicy.ELEMENT_TYPE)
         protected ResizePolicy resizePolicy;
-
-        @PluginBuilderAttribute
-        protected int itemSizeInBytes;
-
-        @PluginBuilderAttribute
         protected int initialPoolSize;
-
-        @PluginBuilderAttribute
         protected boolean monitored;
-
-        @PluginBuilderAttribute
         protected long monitorTaskInterval = DEFAULT_MONITOR_TASK_INTERVAL;
-
-        @PluginBuilderAttribute
         protected long resizeTimeout = DEFAULT_RESIZE_TIMEOUT;
+        protected PooledObjectOps<R> pooledObjectOps;
 
-        @PluginBuilderAttribute
-        protected int maxItemSizeInBytes = Integer.MAX_VALUE;
+        /**
+         * @deprecated As of 1.7, this field will be removed. Use {@link #pooledObjectOps} instead.
+         */
+        @Deprecated
+        protected int itemSizeInBytes = DEFAULT_ITEM_SIZE_IN_BYTES;
 
-        @Override
+        /**
+         * @deprecated As of 1.7, this field will be removed. Use {@link #pooledObjectOps} instead.
+         */
+        @Deprecated
+        protected int maxItemSizeInBytes = DEFAULT_MAX_ITEM_SIZE_IN_BYTES;
+
         public PooledItemSourceFactory<T, R> build() {
 
             if (initialPoolSize <= 0) {
-                throw new ConfigurationException("initialPoolSize must be higher than 0 for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("initialPoolSize must be higher than 0 for " + PooledItemSourceFactory.class.getSimpleName());
             }
-            if (itemSizeInBytes <= 0) {
-                throw new ConfigurationException("itemSizeInBytes must be higher than 0 for " + PLUGIN_NAME);
-            }
-            if (maxItemSizeInBytes <= 0) {
-                throw new ConfigurationException("maxItemSizeInBytes must be higher than 0 for " + PLUGIN_NAME);
-            }
-            if (maxItemSizeInBytes < itemSizeInBytes) {
-                throw new ConfigurationException("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes for " + PLUGIN_NAME);
+            if (pooledObjectOps == null) {
+
+                getLogger().warn("No PooledObjectOps provided for " + PooledItemSourceFactory.class.getSimpleName() + ". Falling back to deprecated size limit config based on itemSizeInBytes and maxItemSizeInBytes and Netty allocator");
+
+                if (itemSizeInBytes <= 0) {
+                    throw new IllegalArgumentException("itemSizeInBytes must be higher than 0 for " + PooledItemSourceFactory.class.getSimpleName());
+                }
+                if (maxItemSizeInBytes <= 0) {
+                    throw new IllegalArgumentException("maxItemSizeInBytes must be higher than 0 for " + PooledItemSourceFactory.class.getSimpleName());
+                }
+                if (maxItemSizeInBytes < itemSizeInBytes) {
+                    throw new IllegalArgumentException("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes for " + PooledItemSourceFactory.class.getSimpleName());
+                }
+
+                pooledObjectOps = configuredPooledObjectOps(UnpooledByteBufAllocator.DEFAULT);
+
             }
 
             if (poolName == null) {
@@ -194,7 +185,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         ItemSourcePool<R> configuredItemSourcePool() {
             return new GenericItemSourcePool<>(
                     poolName,
-                    configuredPooledObjectOps(new UnpooledByteBufAllocator(false, false, false)),
+                    pooledObjectOps,
                     resizePolicy,
                     resizeTimeout,
                     monitored,
@@ -203,6 +194,12 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
             );
         }
 
+        /**
+         * @param byteBufAllocator Netty ByteBuf allocator
+         * @return this
+         * @deprecated As of 1.7, this method will be removed. Construct {@link PooledObjectOps} outside of this builder and use {@link #withPooledObjectOps(PooledObjectOps)} instead.
+         */
+        @Deprecated
         PooledObjectOps<R> configuredPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator) {
             return (PooledObjectOps<R>) new ByteBufPooledObjectOps(
                     byteBufAllocator,
@@ -210,12 +207,33 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         }
 
         /**
+         * @param pooledObjectOps pooled items ops
+         * @return this
+         */
+        public Builder<T, R> withPooledObjectOps(PooledObjectOps<R> pooledObjectOps) {
+
+            if (itemSizeInBytes != DEFAULT_ITEM_SIZE_IN_BYTES || maxItemSizeInBytes != DEFAULT_MAX_ITEM_SIZE_IN_BYTES) {
+                throw new IllegalArgumentException("Cannot use both [max]itemSizeInBytes and pooledObjectOps. Set size limits pooledObjectOps.sizeLimitPolicy instead");
+            }
+
+            this.pooledObjectOps = pooledObjectOps;
+            return this;
+
+        }
+
+        /**
          * @param itemSizeInBytes initial pooled item size
          * @return this
          */
         public Builder<T, R> withItemSizeInBytes(int itemSizeInBytes) {
+
+            if (pooledObjectOps != null) {
+                throw new IllegalArgumentException("Cannot use both itemSizeInBytes and pooledObjectOps. Set size limits with pooledObjectOps.sizeLimitPolicy instead");
+            }
+
             this.itemSizeInBytes = itemSizeInBytes;
             return this;
+
         }
 
         /**
@@ -223,8 +241,14 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
          * @return this
          */
         public Builder<T, R> withMaxItemSizeInBytes(int maxItemSizeInBytes) {
+
+            if (pooledObjectOps != null) {
+                throw new IllegalArgumentException("Cannot use both maxItemSizeInBytes and pooledObjectOps. Set size limits with pooledObjectOps.sizeLimitPolicy instead");
+            }
+
             this.maxItemSizeInBytes = maxItemSizeInBytes;
             return this;
+
         }
 
         /**
