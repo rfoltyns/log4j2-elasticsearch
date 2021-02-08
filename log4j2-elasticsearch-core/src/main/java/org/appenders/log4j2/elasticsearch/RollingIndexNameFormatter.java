@@ -74,8 +74,8 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
         this.indexName = indexName;
         this.fastDateFormat = FastDateFormat.getInstance(pattern, timeZone);
         this.patternProcessor = createPatternProcessor(pattern);
-        this.currentName = doFormat(indexName, initTimeInMillis);
         this.separator = separator;
+        this.currentName = doFormat(indexName, initTimeInMillis);
 
         long previousTime = this.patternProcessor.getNextTime(initTimeInMillis, -1, false);
         this.patternProcessor.setPrevFileTime(previousTime);
