@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 public class BlockingResponseHandlerTest {
 
     @Test
-    public void canBeInterrupted() {
+    public void canBeInterrupted() throws InterruptedException {
 
         // given
         final BlockingResponseHandler<Response> handler = new BlockingResponseHandler<>(
@@ -48,6 +48,7 @@ public class BlockingResponseHandlerTest {
 
         // when
         thread.start();
+        Thread.sleep(100);
         thread.interrupt();
 
         // then
