@@ -158,9 +158,9 @@ public class RollingIndexNameFormatterTest {
         // given
         LogEvent logEvent = mock(LogEvent.class);
         when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
-        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
-        builder.withSeparator(".");
-        IndexNameFormatter formatter = builder.build();
+        RollingIndexNameFormatter formatter = createRollingIndexNameFormatterBuilder()
+                .withSeparator(".")
+                .build();
 
         // when
         String formattedIndexName = formatter.format(logEvent);
