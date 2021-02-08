@@ -64,6 +64,7 @@ Custom [`ServiceDiscoveryFactory`](https://github.com/rfoltyns/log4j2-elasticsea
 
 Name | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
+nodesFilter | Attribute | no | `_all` | Nodes filter as defined in [Elasticsearch 7.x documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/cluster.html#cluster-nodes) (`_nodes/<nodesFilter>/http`).
 serverUris | Attribute | no | inherited from HCHttp | List of semicolon-separated address sources.
 connTimeout | Attribute | no | 500 | Number of milliseconds before ConnectException is thrown while attempting to connect.
 readTimeout | Attribute | no | 1000 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
@@ -80,7 +81,8 @@ Example:
         <HCHttp ...>
             ...
             <ServiceDiscovery serverUris="http://localhost:9250"
-                              refreshInterval="10000" />
+                              refreshInterval="10000"
+                              nodesFilter="ingest:true" />
             ...
         </HCHttp>
     </AsyncBatchDelivery>
