@@ -54,7 +54,7 @@ Feature Requests welcome!
     <dependency>
         <groupId>org.appenders.log4j</groupId>
         <artifactId>log4j2-elasticsearch-jest</artifactId>
-        <version>1.4.4</version>
+        <version>1.4.6</version>
     </dependency>
     ```
 

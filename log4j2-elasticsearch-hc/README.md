@@ -11,7 +11,7 @@ Output is generated with FasterXML Jackson based [JacksonJsonLayout](https://git
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch-hc</artifactId>
-    <version>1.4.4</version>
+    <version>1.4.6</version>
 </dependency>
 ```
 ## Usage
