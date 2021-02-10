@@ -13,6 +13,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.appenders.st</groupId>
+            <artifactId>appenders-jackson-st</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <scope>provided</scope>

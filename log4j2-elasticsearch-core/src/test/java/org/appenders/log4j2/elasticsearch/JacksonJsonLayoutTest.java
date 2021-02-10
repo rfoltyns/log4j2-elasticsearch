@@ -37,6 +37,7 @@ import org.apache.logging.log4j.core.jackson.ExtendedLog4j2JsonModule;
 import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
 import org.apache.logging.log4j.message.Message;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
+import org.appenders.st.jackson.SingleThreadJsonFactory;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Rule;

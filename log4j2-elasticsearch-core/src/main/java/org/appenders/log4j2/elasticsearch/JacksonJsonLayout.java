@@ -241,7 +241,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
 
         protected JsonFactory createJsonFactory() {
             if (singleThread) {
-                return new SingleThreadJsonFactory();
+                return new SingleThreadJsonFactoryProvider().create();
             }
             return new JsonFactory();
         }
@@ -307,12 +307,12 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         }
 
         /**
-         * Allows to configure {@link SingleThreadJsonFactory}
+         * Allows to configure {@code org.appenders.st.jackson.SingleThreadJsonFactory}
          *
          * NOTE: Use ONLY when {@link JacksonJsonLayout#serialize(LogEvent)}/{@link JacksonJsonLayout#serialize(Message)}
          * are called exclusively by a one thread at a time, e.g. with AsyncLogger
          *
-         * @param singleThread if true, {@link SingleThreadJsonFactory} will be used to create serializers,
+         * @param singleThread if true, {@code org.appenders.st.jackson.SingleThreadJsonFactory} will be used to create serializers,
          *                    otherwise {@code com.fasterxml.jackson.core.JsonFactory} will be used
          * @return this
          */
