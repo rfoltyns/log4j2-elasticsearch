@@ -17,6 +17,10 @@
             <artifactId>appenders-jackson-st</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.appenders.logging</groupId>
+            <artifactId>appenders-logging</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <scope>provided</scope>
@@ -64,6 +68,12 @@
         </dependency>
 
         <!-- TEST -->
+        <dependency>
+            <groupId>org.appenders.logging</groupId>
+            <artifactId>appenders-logging</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

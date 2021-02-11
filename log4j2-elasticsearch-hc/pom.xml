@@ -96,12 +96,18 @@
 
         <!-- TEST -->
         <dependency>
+            <groupId>org.appenders.logging</groupId>
+            <artifactId>appenders-logging</artifactId>
+            <classifier>tests</classifier>
+        </dependency>
+        <dependency>
             <groupId>org.appenders.log4j</groupId>
             <artifactId>log4j2-elasticsearch-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
