@@ -35,6 +35,9 @@ import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -49,6 +52,8 @@ public abstract class SmokeTestBase {
 
     public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
 
+    protected final Params params = new Params();
+
     private final Random random = new Random();
     private final AtomicInteger localCounter = new AtomicInteger();
 
@@ -59,10 +64,23 @@ public abstract class SmokeTestBase {
     public final int logSizeInBytes = getInt("smokeTest.logSizeInBytes", 300);
     public final int lifecycleStopDelayMillis = getInt("smokeTest.lifecycleStopDelayMillis", 10000);
     public final int exitDelayMillis = getInt("smokeTest.exitDelayMillis", 10000);
-    public final int numberOfProducers = getInt("smokeTest.noOfProducers", 500);
-    public final AtomicInteger producerSleepMillis = new AtomicInteger(getInt("smokeTest.initialProducerSleepMillis", 50));
+    public final int numberOfProducers = getInt("smokeTest.noOfProducers", 100);
+    public final AtomicInteger producerSleepMillis = new AtomicInteger(getInt("smokeTest.initialProducerSleepMillis", 20));
 
     public final String defaultLoggerName = System.getProperty("smokeTest.loggerName", "elasticsearch");
+
+    protected SmokeTestBase() {
+        this.params.add("limitTotal", limitTotal)
+                .add("limitPerSec", limitPerSec)
+                .add("pooled", pooled)
+                .add("secure", secure)
+                .add("logSizeInBytes", logSizeInBytes)
+                .add("lifecycleStopDelayMillis", lifecycleStopDelayMillis)
+                .add("exitDelayMillis", exitDelayMillis)
+                .add("numberOfProducers", numberOfProducers)
+                .add("producerSleepMillis", producerSleepMillis)
+                .add("loggerName", defaultLoggerName);
+    }
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
 
@@ -256,6 +274,21 @@ public abstract class SmokeTestBase {
         LogManager.shutdown();
 
         sleep(exitDelayMillis);
+
+    }
+
+    public static class Params {
+
+        private final Map<String, Object> paramsMap = new LinkedHashMap();
+
+        public Params add(final String name, Object value) {
+            paramsMap.put(name, value);
+            return this;
+        }
+
+        public Map<String, Object> getAll() {
+            return new HashMap<>(paramsMap);
+        }
 
     }
 

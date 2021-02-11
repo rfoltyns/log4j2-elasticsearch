@@ -64,8 +64,11 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -87,15 +90,16 @@ public class SmokeTest extends SmokeTestBase {
         final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
         final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
 
-        getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
-                "batchSize", batchSize,
-                "initialBatchPoolSize", initialBatchPoolSize,
-                "initialItemBufferSizeInBytes", initialItemBufferSizeInBytes,
-                "initialBatchPoolSize", initialBatchPoolSize,
-                "indexName", indexName,
-                "ecs.enabled", ecsEnabled,
-                "servicediscovery.enabled", serviceDiscoveryEnabled,
-                "servicediscovery.nodesFilter", nodesFilter);
+        params.add("batchSize", batchSize)
+                .add("initialBatchPoolSize", initialBatchPoolSize)
+                .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
+                .add("initialBatchPoolSize", initialBatchPoolSize)
+                .add("indexName", indexName)
+                .add("ecs.enabled", ecsEnabled)
+                .add("servicediscovery.enabled", serviceDiscoveryEnabled)
+                .add("servicediscovery.nodesFilter", nodesFilter);
+
+        getLogger().info("Running SmokeTest {}", params.getAll());
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 

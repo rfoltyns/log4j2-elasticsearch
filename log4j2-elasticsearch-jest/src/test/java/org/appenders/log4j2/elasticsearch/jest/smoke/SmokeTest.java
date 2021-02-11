@@ -70,13 +70,14 @@ public class SmokeTest extends SmokeTestBase {
         final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-jest");
         final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
 
-        getLogger().info("Running SmokeTest[{}={}, {}={}, {}={}, {}={}, {}={}, {}={}]",
-                "batchSize", batchSize,
-                "initialBatchPoolSize", initialBatchPoolSize,
-                "initialItemBufferSizeInBytes", initialItemBufferSizeInBytes,
-                "initialBatchPoolSize", initialBatchPoolSize,
-                "indexName", indexName,
-                "ecsEnabled", ecsEnabled);
+        params.add("batchSize", batchSize)
+                .add("initialBatchPoolSize", initialBatchPoolSize)
+                .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
+                .add("initialBatchPoolSize", initialBatchPoolSize)
+                .add("indexName", indexName)
+                .add("ecs.enabled", ecsEnabled);
+
+        getLogger().info("Running SmokeTest {}", params.getAll());
 
         JestHttpObjectFactory.Builder jestHttpObjectFactoryBuilder;
         if (buffered) {

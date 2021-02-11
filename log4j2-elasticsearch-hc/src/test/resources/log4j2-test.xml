@@ -20,7 +20,7 @@
   -->
 
 
-<Configuration status="WARN">
+<Configuration status="INFO">
 
     <Loggers>
         <Root level="info" />
