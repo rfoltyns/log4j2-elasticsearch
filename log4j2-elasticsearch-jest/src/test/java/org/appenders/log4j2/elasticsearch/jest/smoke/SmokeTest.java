@@ -59,11 +59,6 @@ import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public class SmokeTest extends SmokeTestBase {
 
-    @BeforeClass
-    public static void beforeClass() {
-        System.setProperty("log4j.configurationFile", "log4j2.xml");
-    }
-
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
