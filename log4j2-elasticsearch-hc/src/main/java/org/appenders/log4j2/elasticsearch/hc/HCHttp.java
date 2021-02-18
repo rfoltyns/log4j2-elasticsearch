@@ -459,8 +459,9 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
 
     }
 
+
     @Override
-    public void start() {
+    public final void start() {
 
         addOperation(() -> LifeCycle.of(clientProvider).start());
 
@@ -472,12 +473,14 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
             itemSourceFactory.start();
         }
 
+        startExtensions();
+
         state = State.STARTED;
 
     }
 
     @Override
-    public void stop() {
+    public final void stop() {
 
         if (isStopped()) {
             return;
@@ -490,6 +493,8 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
         itemSourceFactory.stop();
 
         operationFactoryItemSourceFactory.stop();
+
+        stopExtensions();
 
         state = State.STOPPED;
 
@@ -506,6 +511,5 @@ public class HCHttp implements ClientObjectFactory<HttpClient, BatchRequest> {
     public boolean isStopped() {
         return state == State.STOPPED;
     }
-
 
 }

@@ -1095,6 +1095,40 @@ public class HCHttpTest {
     }
 
     @Test
+    public void lifecycleStarStartsExtensions() {
+
+        // given
+        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(mock(HttpClientProvider.class))
+                .build());
+
+        // when
+        objectFactory.start();
+
+        // then
+        verify(objectFactory).startExtensions();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsExtensions() {
+
+        // given
+        HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(mock(HttpClientProvider.class))
+                .build());
+
+        objectFactory.start();
+
+        // when
+        objectFactory.stop();
+
+        // then
+        verify(objectFactory).stopExtensions();
+
+    }
+
+    @Test
     public void lifecycleStopDoesNotStopClientIfClientNotCreated() {
 
         // given

@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.junit.Test;
-import org.mockito.MockingDetails;
 import org.mockito.Mockito;
 import org.mockito.invocation.Invocation;
 
@@ -32,10 +31,8 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 public class LifeCycleTest {
 
