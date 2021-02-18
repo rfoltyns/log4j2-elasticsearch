@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 
 import io.searchbox.client.config.HttpClientConfig;
-import org.apache.http.nio.conn.SchemeIOSessionStrategy;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.junit.Assert;

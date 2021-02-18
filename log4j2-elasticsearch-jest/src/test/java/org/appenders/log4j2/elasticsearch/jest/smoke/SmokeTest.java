@@ -52,7 +52,6 @@ import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
-import org.junit.BeforeClass;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;

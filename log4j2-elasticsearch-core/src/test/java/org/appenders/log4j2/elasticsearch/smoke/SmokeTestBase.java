@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.lang.Thread.interrupted;
 import static java.lang.Thread.sleep;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
