@@ -21,14 +21,21 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.junit.Test;
+import org.mockito.MockingDetails;
 import org.mockito.Mockito;
+import org.mockito.invocation.Invocation;
+
+import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class LifeCycleTest {
 
@@ -72,6 +79,38 @@ public class LifeCycleTest {
 
         // then
         Mockito.verify(lifeCycle).stop(anyLong(), anyBoolean());
+    }
+
+    @Test
+    public void startExtensionHasNoEffectsByDefault() {
+
+        // given
+        LifeCycle lifeCycle = spy(createDefaultTestLifecycle());
+
+        Collection<Invocation> before = mockingDetails(lifeCycle).getInvocations();
+
+        // when
+        lifeCycle.startExtensions();
+
+        // then
+        assertEquals(before.size() + 1, mockingDetails(lifeCycle).getInvocations().size());
+
+    }
+
+    @Test
+    public void stopExtensionHasNoEffectsByDefault() {
+
+        // given
+        LifeCycle lifeCycle = spy(createDefaultTestLifecycle());
+
+        Collection<Invocation> before = mockingDetails(lifeCycle).getInvocations();
+
+        // when
+        lifeCycle.stopExtensions();
+
+        // then
+        assertEquals(before.size() + 1, mockingDetails(lifeCycle).getInvocations().size());
+
     }
 
     public static TestObject createDefaultTestLifecycle() {

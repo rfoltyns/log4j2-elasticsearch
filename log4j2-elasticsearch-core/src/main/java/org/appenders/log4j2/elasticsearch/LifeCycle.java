@@ -51,6 +51,28 @@ public interface LifeCycle {
         return this;
     }
 
+    /**
+     * Starts extensions.
+     *
+     * Allows to encapsulate state in base classes.
+     *
+     * SHOULD be invoked BEFORE {@link State} changes to {@link State#STARTED}
+     */
+    default void startExtensions() {
+
+    };
+
+    /**
+     * Stops extensions.
+     *
+     * Allows to encapsulate state in base classes.
+     *
+     * SHOULD be invoked BEFORE {@link State} changes to {@link State#STOPPED}
+     */
+    default void stopExtensions() {
+
+    };
+
     boolean isStarted();
 
     boolean isStopped();
