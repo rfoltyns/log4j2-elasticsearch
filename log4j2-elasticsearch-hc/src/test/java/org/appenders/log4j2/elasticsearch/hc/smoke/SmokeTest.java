@@ -62,11 +62,11 @@ import org.appenders.log4j2.elasticsearch.hc.BatchResult;
 import org.appenders.log4j2.elasticsearch.hc.BatchResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
+import org.appenders.log4j2.elasticsearch.hc.ElasticsearchOperationFactory;
 import org.appenders.log4j2.elasticsearch.hc.Error;
 import org.appenders.log4j2.elasticsearch.hc.ErrorMixIn;
 import org.appenders.log4j2.elasticsearch.hc.HCBatchOperations;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
-import org.appenders.log4j2.elasticsearch.hc.HCOperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
@@ -163,7 +163,7 @@ public class SmokeTest extends SmokeTestBase {
 
         httpObjectFactoryBuilder
                 .withClientProvider(clientProvider)
-                .withOperationFactory(new HCOperationFactoryDispatcher(
+                .withOperationFactory(new ElasticsearchOperationFactory(
                         new SyncStepProcessor(clientProvider, configuredReader()),
                         new Log4j2Lookup(configuration.getStrSubstitutor())));
 

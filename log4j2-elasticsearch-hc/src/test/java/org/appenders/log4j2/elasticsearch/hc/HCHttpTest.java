@@ -111,7 +111,7 @@ public class HCHttpTest {
                 .build();
 
         return new HCHttp.Builder()
-                .withOperationFactory(new HCOperationFactoryDispatcher(step -> Result.SUCCESS, ValueResolver.NO_OP))
+                .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
                 .withBatchOperations(new HCBatchOperations(itemSourceFactory))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
 
@@ -1010,7 +1010,7 @@ public class HCHttpTest {
     public void lifecycleStartStartOperationFactoryOnlyOnce() {
 
         // given
-        HCOperationFactoryDispatcher operationFactory = mock(HCOperationFactoryDispatcher.class);
+        ElasticsearchOperationFactory operationFactory = mock(ElasticsearchOperationFactory.class);
         when(operationFactory.isStarted()).thenAnswer(trueOnlyOnce());
 
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()
@@ -1034,7 +1034,7 @@ public class HCHttpTest {
     public void lifecycleStopStopsOperationFactoryOnlyOnce() {
 
         // given
-        HCOperationFactoryDispatcher operationFactory = mock(HCOperationFactoryDispatcher.class);
+        ElasticsearchOperationFactory operationFactory = mock(ElasticsearchOperationFactory.class);
         when(operationFactory.isStarted()).thenAnswer(trueOnlyOnce());
 
         HCHttp objectFactory = spy(createDefaultHttpObjectFactoryBuilder()

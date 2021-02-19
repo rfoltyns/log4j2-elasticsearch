@@ -35,13 +35,13 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 /**
  * {@inheritDoc}
  */
-public class HCOperationFactoryDispatcher extends OperationFactoryDispatcher implements LifeCycle {
+public class ElasticsearchOperationFactory extends OperationFactoryDispatcher implements LifeCycle {
 
     private volatile State state = State.STOPPED;
 
     private final EmptyItemSourceFactory itemSourceFactory;
 
-    public HCOperationFactoryDispatcher(
+    public ElasticsearchOperationFactory(
             StepProcessor<SetupStep<Request, Response>> stepProcessor,
             ValueResolver valueResolver,
             EmptyItemSourceFactory itemSourceFactory) {
@@ -52,7 +52,7 @@ public class HCOperationFactoryDispatcher extends OperationFactoryDispatcher imp
         register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
     }
 
-    public HCOperationFactoryDispatcher(
+    public ElasticsearchOperationFactory(
             StepProcessor<SetupStep<Request, Response>> stepProcessor,
             ValueResolver valueResolver) {
         this(stepProcessor, valueResolver, createSetupOpsItemSourceFactory());

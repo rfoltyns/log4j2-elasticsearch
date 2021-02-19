@@ -140,7 +140,7 @@ public class HCHttpPlugin extends HCHttp {
             return ValueResolver.NO_OP;
         }
 
-        protected HCOperationFactoryDispatcher createOperationFactory(HttpClientProvider clientProvider) {
+        protected ElasticsearchOperationFactory createOperationFactory(HttpClientProvider clientProvider) {
 
             final ObjectReader objectReader = new ObjectMapper()
                     .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
@@ -154,7 +154,7 @@ public class HCHttpPlugin extends HCHttp {
 
             final ValueResolver valueResolver = getValueResolver();
 
-            return new HCOperationFactoryDispatcher(
+            return new ElasticsearchOperationFactory(
                     new SyncStepProcessor(clientProvider, objectReader),
                     valueResolver);
         }

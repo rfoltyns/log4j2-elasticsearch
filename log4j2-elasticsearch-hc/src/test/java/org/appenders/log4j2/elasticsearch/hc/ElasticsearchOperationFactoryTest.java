@@ -51,7 +51,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class HCOperationFactoryDispatcherTest {
+public class ElasticsearchOperationFactoryTest {
 
     @Test
     public void supportsComponentTemplate() throws Exception {
@@ -71,7 +71,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "componentTemplate"));
 
-        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        ElasticsearchOperationFactory ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(componentTemplate);
@@ -87,8 +87,8 @@ public class HCOperationFactoryDispatcherTest {
     }
 
     @NotNull
-    private HCOperationFactoryDispatcher createDefaultTestOperationsFactoryDispatcher(CapturingStepProcessor stepProcessor, ValueResolver valueResolver, EmptyItemSourceFactory createTestItemSource) {
-        return new HCOperationFactoryDispatcher(stepProcessor, valueResolver, createTestItemSource);
+    private ElasticsearchOperationFactory createDefaultTestOperationsFactoryDispatcher(CapturingStepProcessor stepProcessor, ValueResolver valueResolver, EmptyItemSourceFactory createTestItemSource) {
+        return new ElasticsearchOperationFactory(stepProcessor, valueResolver, createTestItemSource);
     }
 
     @Test
@@ -109,7 +109,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "indexTemplate"));
 
-        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        ElasticsearchOperationFactory ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(indexTemplate);
@@ -145,7 +145,7 @@ public class HCOperationFactoryDispatcherTest {
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
 
-        HCOperationFactoryDispatcher ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+        ElasticsearchOperationFactory ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
 
         // when
         Operation result = ops.create(ilmPolicy);
