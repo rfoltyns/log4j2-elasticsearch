@@ -113,6 +113,24 @@ public class BufferedBulkOperationsTest {
     }
 
     @Test
+    public void usesDefaultMappingTypeIfNotProvided() {
+
+        // given
+        PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        BufferedBulkOperations bulkOperations = new BufferedBulkOperations(itemSourceFactory);
+
+        ItemSource itemSource = mock(ItemSource.class);
+        BufferedIndex item = (BufferedIndex) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        String type = item.getType();
+
+        // then
+        Assert.assertEquals("_doc", type);
+
+    }
+
+    @Test
     public void createsBufferedBulkBuilder() {
 
         // given

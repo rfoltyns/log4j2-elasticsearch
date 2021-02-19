@@ -108,7 +108,7 @@ public class JestBulkOperationsTest {
     }
 
     @Test
-    public void defaultJestBulkOperationsSetsDefaultMappingType() {
+    public void usesDefaultMappingTypeIfNotProvided() {
 
         // given
         BatchOperations<Bulk> bulkOperations = new JestBulkOperations();
@@ -121,7 +121,7 @@ public class JestBulkOperationsTest {
         String type = item.getType();
 
         // then
-        assertEquals("index", type);
+        assertEquals("_doc", type);
 
     }
 
