@@ -31,6 +31,8 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -42,7 +44,10 @@ import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_ENABLED;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_READ_TIMEOUT;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -105,6 +110,21 @@ public class HCHttpPluginTest {
         assertEquals(TEST_POOLED_RESPONSE_BUFFERS_ENABLED, httpClientFactoryBuilder.pooledResponseBuffersEnabled);
         assertEquals(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES, httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes);
         assertEquals(auth, httpClientFactoryBuilder.auth);
+
+    }
+
+    @Test
+    public void builderThrowsIfItemSourceFactoryIsNull() {
+
+        // given
+        final HCHttpPlugin.Builder builder = createDefaultHttpObjectFactoryBuilder()
+                .withItemSourceFactory(null);
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + PooledItemSourceFactory.class.getSimpleName()));
 
     }
 

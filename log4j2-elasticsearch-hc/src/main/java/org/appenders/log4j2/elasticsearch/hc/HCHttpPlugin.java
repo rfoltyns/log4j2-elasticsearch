@@ -115,7 +115,7 @@ public class HCHttpPlugin extends HCHttp {
             HttpClientProvider clientProvider = createClientProvider();
 
             return new HCHttpPlugin(new HCHttp.Builder()
-                    .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType))
+                    .withBatchOperations(createBatchOperations())
                     .withOperationFactory(createOperationFactory(clientProvider))
                     .withClientProvider(clientProvider)
                     .withBackoffPolicy(backoffPolicy == null ? new NoopBackoffPolicy<>() : backoffPolicy)
@@ -139,7 +139,6 @@ public class HCHttpPlugin extends HCHttp {
             // fallback to no-op
             return ValueResolver.NO_OP;
         }
-
         protected ElasticsearchOperationFactory createOperationFactory(HttpClientProvider clientProvider) {
 
             final ObjectReader objectReader = new ObjectMapper()
@@ -181,6 +180,13 @@ public class HCHttpPlugin extends HCHttp {
             }
 
             return mainClientProvider;
+        }
+
+        private HCBatchOperations createBatchOperations() {
+            if (pooledItemSourceFactory == null) {
+                throw new IllegalArgumentException(String.format("No %s provided for %s", PooledItemSourceFactory.class.getSimpleName(), HCHttp.class.getSimpleName()));
+            }
+            return new HCBatchOperations(pooledItemSourceFactory, mappingType);
         }
 
         public Builder withServerUris(String serverUris) {
