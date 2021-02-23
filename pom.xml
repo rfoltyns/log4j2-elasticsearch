@@ -48,7 +48,7 @@
         <java.version>1.8</java.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <org.appenders.st.jackson.version>1.0</org.appenders.st.jackson.version>
+        <org.appenders.st.jackson.version>1.0.1</org.appenders.st.jackson.version>
         <org.appenders.logging.version>1.0</org.appenders.logging.version>
         <log4j2.version>2.13.3</log4j2.version>
         <jacoco.version>0.8.3</jacoco.version>
