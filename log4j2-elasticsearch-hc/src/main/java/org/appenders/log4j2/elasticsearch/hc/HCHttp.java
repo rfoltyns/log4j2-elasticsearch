@@ -219,7 +219,9 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         }
 
         /**
+         * @param mappingType mapping type
          * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
+         * @return this
          */
         @Deprecated
         public Builder withMappingType(String mappingType) {
@@ -228,7 +230,9 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         }
 
         /**
+         * @param pooledItemSourceFactory {@link org.appenders.log4j2.elasticsearch.ItemSource} pool
          * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
+         * @return this
          */
         @Deprecated
         public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {
