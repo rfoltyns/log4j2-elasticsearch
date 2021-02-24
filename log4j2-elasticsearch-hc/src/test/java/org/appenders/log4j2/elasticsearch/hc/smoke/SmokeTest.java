@@ -103,7 +103,7 @@ public class SmokeTest extends SmokeTestBase {
         final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
         final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
 
-        params.add("batchSize", batchSize)
+        getConfig().add("batchSize", batchSize)
                 .add("initialBatchPoolSize", initialBatchPoolSize)
                 .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
                 .add("initialBatchPoolSize", initialBatchPoolSize)
@@ -112,7 +112,7 @@ public class SmokeTest extends SmokeTestBase {
                 .add("servicediscovery.enabled", serviceDiscoveryEnabled)
                 .add("servicediscovery.nodesFilter", nodesFilter);
 
-        getLogger().info("Running SmokeTest {}", params.getAll());
+        getLogger().info("{}", getConfig().getAll());
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
 

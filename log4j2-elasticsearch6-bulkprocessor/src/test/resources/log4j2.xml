@@ -62,7 +62,7 @@
         <AsyncLogger name="elasticsearch" level="info" additivity="false">
             <AppenderRef ref="asyncLogger" />
         </AsyncLogger>
-        <Root level="info" />
+        <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 
 </Configuration>

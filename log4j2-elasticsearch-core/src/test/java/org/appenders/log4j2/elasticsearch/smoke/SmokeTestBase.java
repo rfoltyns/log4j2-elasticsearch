@@ -51,43 +51,23 @@ public abstract class SmokeTestBase {
 
     public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
 
-    protected final Params params = new Params();
+    private final SmokeTestConfig config = new SmokeTestConfig();
 
     private final Random random = new Random();
     private final AtomicInteger localCounter = new AtomicInteger();
 
-    public final AtomicInteger limitTotal = new AtomicInteger(getInt("smokeTest.limitTotal", 1000000));
-    public final int limitPerSec = getInt("smokeTest.limitPerSec", 10000);
-    public final boolean pooled = Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true"));
-    public final boolean secure = Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false"));
-    public final int logSizeInBytes = getInt("smokeTest.logSizeInBytes", 300);
-    public final int lifecycleStopDelayMillis = getInt("smokeTest.lifecycleStopDelayMillis", 10000);
-    public final int exitDelayMillis = getInt("smokeTest.exitDelayMillis", 10000);
-    public final int numberOfProducers = getInt("smokeTest.noOfProducers", 100);
-    public final AtomicInteger producerSleepMillis = new AtomicInteger(getInt("smokeTest.initialProducerSleepMillis", 20));
-
-    public final String defaultLoggerName = System.getProperty("smokeTest.loggerName", "elasticsearch");
-
-    protected SmokeTestBase() {
-        this.params.add("limitTotal", limitTotal)
-                .add("limitPerSec", limitPerSec)
-                .add("pooled", pooled)
-                .add("secure", secure)
-                .add("logSizeInBytes", logSizeInBytes)
-                .add("lifecycleStopDelayMillis", lifecycleStopDelayMillis)
-                .add("exitDelayMillis", exitDelayMillis)
-                .add("numberOfProducers", numberOfProducers)
-                .add("producerSleepMillis", producerSleepMillis)
-                .add("loggerName", defaultLoggerName);
-    }
-
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
+
+    protected final SmokeTestConfig getConfig() {
+        return config;
+    }
 
     protected Function<Configuration, AsyncLoggerConfigDelegate> createAsyncLoggerConfigDelegateProvider() {
         return Configuration::getAsyncLoggerConfigDelegate;
     }
 
     protected String createLog() {
+        final int logSizeInBytes = getConfig().getProperty("logSizeInBytes", Integer.class);
         byte[] bytes = new byte[logSizeInBytes];
         random.nextBytes(bytes);
 
@@ -123,13 +103,13 @@ public abstract class SmokeTestBase {
         // set up disruptor forcefully
         ((LifeCycle)delegateSupplier.apply(config)).start();
 
-        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, defaultLoggerName,
+        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, getConfig().getProperty("defaultLoggerName", String.class),
                 "false", refs, null, config, null );
 
         loggerConfig.addAppender(appender, Level.INFO, null);
 
         config.addAppender(appender);
-        config.addLogger(defaultLoggerName, loggerConfig);
+        config.addLogger(getConfig().getProperty("defaultLoggerName", String.class), loggerConfig);
 
     }
 
@@ -143,7 +123,10 @@ public abstract class SmokeTestBase {
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(false, pooled, secure),
+                () -> createElasticsearchAppenderBuilder(
+                        false,
+                        getConfig().getProperty("pooled", Boolean.class),
+                        getConfig().getProperty("secure", Boolean.class)),
                 createAsyncLoggerConfigDelegateProvider());
 
         String loggerThatReferencesElasticsearchAppender = "elasticsearch";
@@ -169,13 +152,16 @@ public abstract class SmokeTestBase {
         System.setProperty("AsyncLoggerConfig.WaitStrategy", "sleep");
 
         createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(false, pooled, secure),
+                () -> createElasticsearchAppenderBuilder(
+                        false,
+                        getConfig().getProperty("pooled", Boolean.class),
+                        getConfig().getProperty("secure", Boolean.class)),
                 createAsyncLoggerConfigDelegateProvider());
 
-        Logger logger = LogManager.getLogger(defaultLoggerName);
+        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class));
 
         final String log = createLog();
-        indexLogs(logger, null, numberOfProducers, () -> log);
+        indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
     }
 
     @Test
@@ -190,7 +176,7 @@ public abstract class SmokeTestBase {
         Logger logger = LogManager.getLogger("file");
 
         final String log = createLog();
-        indexLogs(logger, null, numberOfProducers, () -> log);
+        indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
     }
 
     @Test
@@ -209,9 +195,9 @@ public abstract class SmokeTestBase {
 
         context.setConfigLocation(uri);
 
-        Logger logger = LogManager.getLogger(defaultLoggerName);
+        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class));
         final String log = createLog();
-        indexLogs(logger, null, numberOfProducers, () -> log);
+        indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
     }
 
     @Test
@@ -221,10 +207,14 @@ public abstract class SmokeTestBase {
         AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger("elasticsearch");
-        indexLogs(logger, null, numberOfProducers, () -> "Message " + counter.incrementAndGet());
+        indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> "Message " + counter.incrementAndGet());
     }
 
     <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
+
+        final AtomicInteger limitTotal = new AtomicInteger(getConfig().getProperty("limitTotal", Integer.class));
+        final AtomicInteger producerSleepMillis = new AtomicInteger(getConfig().getProperty("producerSleepMillis", Integer.class));
+        final int limitPerSec = getConfig().getProperty("limitPerSec", Integer.class);
 
         CountDownLatch latch = new CountDownLatch(numberOfProducers);
 
@@ -267,26 +257,58 @@ public abstract class SmokeTestBase {
             System.out.println(stats);
         }
 
-        sleep(lifecycleStopDelayMillis);
+        sleep(getConfig().getProperty("lifecycleStopDelayMillis", Integer.class));
 
         System.out.println("Shutting down");
         LogManager.shutdown();
 
-        sleep(exitDelayMillis);
+        sleep(getConfig().getProperty("exitDelayMillis", Integer.class));
 
     }
 
-    public static class Params {
+    protected static class SmokeTestConfig {
 
-        private final Map<String, Object> paramsMap = new LinkedHashMap();
+        protected final Map<String, Object> paramsMap = new LinkedHashMap();
 
-        public Params add(final String name, Object value) {
+        protected void initParams() {
+
+            if (!paramsMap.isEmpty()) {
+                return;
+            }
+
+            add("limitTotal", getInt("smokeTest.limitTotal", 1000000))
+            .add("limitPerSec", getInt("smokeTest.limitPerSec", 10000))
+            .add("pooled", Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true")))
+            .add("secure", Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false")))
+            .add("logSizeInBytes", getInt("smokeTest.logSizeInBytes", 1))
+            .add("lifecycleStopDelayMillis", getInt("smokeTest.lifecycleStopDelayMillis", 10000))
+            .add("exitDelayMillis", getInt("smokeTest.exitDelayMillis", 10000))
+            .add("numberOfProducers", getInt("smokeTest.noOfProducers", 100))
+            .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
+            .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"));
+
+        }
+
+        public SmokeTestConfig add(final String name, Object value) {
             paramsMap.put(name, value);
             return this;
         }
 
         public Map<String, Object> getAll() {
             return new HashMap<>(paramsMap);
+        }
+
+        public <T> T getProperty(String propertyName, Class<T> type) {
+            initParams();
+            //noinspection unchecked
+            return (T) paramsMap.get(propertyName);
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getName() + "{ " +
+                    "paramsMap=" + paramsMap +
+                    '}';
         }
 
     }

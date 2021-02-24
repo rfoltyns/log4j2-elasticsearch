@@ -19,11 +19,10 @@
   #L%
   -->
 
-
-<Configuration status="WARN">
+<Configuration status="${sys:log4j2.level:-WARN}">
 
     <Loggers>
-        <Root level="info" />
+        <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 
 </Configuration>

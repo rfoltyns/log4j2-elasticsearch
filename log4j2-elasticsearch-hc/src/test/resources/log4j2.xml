@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
-<Configuration status="INFO">
+<Configuration status="${sys:log4j2.level:-WARN}">
 
     <Appenders>
         <Elasticsearch name="elasticsearchAsyncBatch">
@@ -53,7 +52,7 @@
 <!--                    </Security>-->
                 </HCHttp>
                 <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-}failedItems-log4j2-elasticsearch-hc.chronicleMap"
-                                              numberOfEntries="${sys:smokeTest.initialItemBufferSizeInBytes:-500000}"
+                                              numberOfEntries="${sys:appenders.failover.chroniclemap.numberOfEntries:-1000000}"
                                               averageValueSize="${sys:smokeTest.initialItemBufferSizeInBytes:-2048}"
                                               batchSize="5000"
                                               retryDelay="3000"

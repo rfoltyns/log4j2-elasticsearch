@@ -32,7 +32,7 @@
         <Logger name="org.elasticsearch.client.transport.TransportClientNodesService" level="DEBUG" >
             <AppenderRef ref="CONSOLE" />
         </Logger>
-        <Root level="info" />
+        <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 
 </Configuration>

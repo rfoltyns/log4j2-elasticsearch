@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,11 +49,13 @@ public class CustomMessageFactoryTest extends SmokeTest {
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");
 
         createLoggerProgrammatically(
-                () -> createElasticsearchAppenderBuilder(true, false, secure),
-                config -> config.getAsyncLoggerConfigDelegate());
+                () -> createElasticsearchAppenderBuilder(true,
+                        false,
+                        getConfig().getProperty("secure", Boolean.class)),
+                Configuration::getAsyncLoggerConfigDelegate);
 
         ObjectMapper objectMapper = configuredMapper();
-        Logger logger = LogManager.getLogger(defaultLoggerName,
+        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class),
                 new SerializedMessageFactory(objectMapper));
 
         logger.info(new LogObject("Hello, World!"));
