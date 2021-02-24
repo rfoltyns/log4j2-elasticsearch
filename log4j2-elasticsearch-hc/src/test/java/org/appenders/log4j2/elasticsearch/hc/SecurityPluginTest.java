@@ -25,6 +25,7 @@ import org.appenders.log4j2.elasticsearch.Credentials;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -39,10 +40,6 @@ public class SecurityPluginTest {
         return SecurityPlugin.newBuilder()
                 .withCredentials(BasicCredentialsTest.createTestBuilder().build())
                 .withCertInfo(PEMCertInfoTest.createTestCertInfoBuilder().build());
-    }
-
-    public static HttpClientFactory.Builder createDefaultTestObjectBuilder() {
-        return new HttpClientFactory.Builder();
     }
 
     @Test
@@ -65,7 +62,7 @@ public class SecurityPluginTest {
         // given
         Credentials<HttpClientFactory.Builder> credentials = mock(Credentials.class);
 
-        HttpClientFactory.Builder settingsBuilder = createDefaultTestObjectBuilder();
+        HttpClientFactory.Builder settingsBuilder = createDefaultTestHttpClientFactoryBuilder();
 
         SecurityPlugin security = createTestBuilder()
                 .withCredentials(credentials)

@@ -65,6 +65,7 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_CONNECTION_TIMEOUT;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_IO_THREAD_COUNT;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_MAX_TOTAL_CONNECTIONS;
@@ -122,7 +123,7 @@ public class HCHttpTest {
 
         // given
         HCHttp.Builder builder = (HCHttp.Builder) createDefaultHttpObjectFactoryBuilder()
-                .withClientProvider(new HttpClientProvider(new HttpClientFactory.Builder()))
+                .withClientProvider(new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()))
                 .withServerUris(TEST_SERVER_URIS)
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)

@@ -30,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.PEMCertInfoTest.createTestCertInfoBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,21 +46,17 @@ public class SecurityTest {
     @Captor
     private ArgumentCaptor<HttpClientFactory.Builder> builderArgumentCaptor;
 
-    public static Security.Builder createTestBuilder() {
+    public static Security.Builder createDefaultTestSecurityBuilder() {
         return new Security.Builder()
                 .withCredentials(BasicCredentialsTest.createTestBuilder().build())
                 .withCertInfo(createTestCertInfoBuilder().build());
-    }
-
-    public static HttpClientFactory.Builder createDefaultTestObjectBuilder() {
-        return new HttpClientFactory.Builder();
     }
 
     @Test
     public void minimalBuilderTest() {
 
         // given
-        Security.Builder builder = createTestBuilder();
+        Security.Builder builder = createDefaultTestSecurityBuilder();
 
         // when
         Security security = builder.build();
@@ -75,9 +72,9 @@ public class SecurityTest {
         // given
         Credentials<HttpClientFactory.Builder> credentials = spy(new DummyCredentials());
 
-        HttpClientFactory.Builder settingsBuilder = createDefaultTestObjectBuilder();
+        HttpClientFactory.Builder settingsBuilder = createDefaultTestHttpClientFactoryBuilder();
 
-        Security security = createTestBuilder()
+        Security security = createDefaultTestSecurityBuilder()
                 .withCredentials(credentials)
                 .build();
 
@@ -94,7 +91,7 @@ public class SecurityTest {
     public void failsIfCredentialsNotConfigured() {
 
         // given
-        Security.Builder builder = createTestBuilder()
+        Security.Builder builder = createDefaultTestSecurityBuilder()
                 .withCredentials(null);
 
         // when
@@ -111,9 +108,9 @@ public class SecurityTest {
         // given
         CertInfo<HttpClientFactory.Builder> certInfo = spy(new DummyCertInfo());
 
-        HttpClientFactory.Builder settingsBuilder = createDefaultTestObjectBuilder();
+        HttpClientFactory.Builder settingsBuilder = createDefaultTestHttpClientFactoryBuilder();
 
-        Security security = createTestBuilder()
+        Security security = createDefaultTestSecurityBuilder()
                 .withCertInfo(certInfo)
                 .build();
 
@@ -130,11 +127,11 @@ public class SecurityTest {
     public void doesntApplyCertInfoIfNotConfigured() {
 
         // given
-        Security auth = createTestBuilder()
+        Security auth = createDefaultTestSecurityBuilder()
                 .withCertInfo(null)
                 .build();
 
-        HttpClientFactory.Builder settingsBuilder = spy(createDefaultTestObjectBuilder());
+        HttpClientFactory.Builder settingsBuilder = spy(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         auth.configure(settingsBuilder);

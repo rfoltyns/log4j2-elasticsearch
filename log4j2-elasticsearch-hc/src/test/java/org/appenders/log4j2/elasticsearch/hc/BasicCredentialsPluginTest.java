@@ -25,7 +25,7 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.appenders.log4j2.elasticsearch.hc.SecurityTest.createDefaultTestObjectBuilder;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
@@ -98,7 +98,7 @@ public class BasicCredentialsPluginTest {
                 .withPassword(TEST_PASSWORD)
                 .build();
 
-        HttpClientFactory.Builder settings = spy(createDefaultTestObjectBuilder());
+        HttpClientFactory.Builder settings = spy(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         plugin.applyTo(settings);

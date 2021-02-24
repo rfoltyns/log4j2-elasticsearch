@@ -51,12 +51,14 @@ import java.util.UUID;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.createDefaultTestClientProvider;
 import static org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscoveryTest.createNonSchedulingServiceDiscovery;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -79,18 +81,15 @@ public class HttpClientFactoryTest {
     private static final boolean TEST_POOLED_RESPONSE_BUFFERS_ENABLED = true;
     private static final int TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES = 34;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void toStringDoesNotPrintSensitiveInfo() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
 
         String randomString = UUID.randomUUID().toString();
 
-        Security security = SecurityTest.createTestBuilder()
+        Security security = SecurityTest.createDefaultTestSecurityBuilder()
                 .withCredentials(new BasicCredentials(randomString, randomString))
                 .withCertInfo(new PEMCertInfo(randomString, randomString, randomString, randomString))
                 .build();
@@ -111,7 +110,7 @@ public class HttpClientFactoryTest {
     public void toStringDoesNotPrintFullServiceDiscoveryInfo() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
 
         ServiceDiscovery serviceDiscovery = createNonSchedulingServiceDiscovery(createDefaultTestClientProvider(), (client, callback) -> {});
 
@@ -131,7 +130,7 @@ public class HttpClientFactoryTest {
     public void builderSetsAllFields() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
 
         ConnectionSocketFactory plainSocketFactory = mock(ConnectionSocketFactory.class);
         LayeredConnectionSocketFactory sslSocketFactory = mock(LayeredConnectionSocketFactory.class);
@@ -178,7 +177,7 @@ public class HttpClientFactoryTest {
     public void builderSetsDefaultFields() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
 
         // when
         HttpClientFactory httpClientFactory = builder.build();
@@ -196,7 +195,7 @@ public class HttpClientFactoryTest {
     public void builderAppliesAuthIfConfigured() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
 
         ConnectionSocketFactory plainSocketFactory = mock(ConnectionSocketFactory.class);
         LayeredConnectionSocketFactory sslSocketFactory = mock(LayeredConnectionSocketFactory.class);
@@ -204,7 +203,7 @@ public class HttpClientFactoryTest {
         SchemeIOSessionStrategy httpsIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
         CredentialsProvider credentialsProvider = mock(CredentialsProvider.class);
 
-        Security security = spy(SecurityTest.createTestBuilder().build());
+        Security security = spy(SecurityTest.createDefaultTestSecurityBuilder().build());
 
         builder.withAuth(security)
                 .withPlainSocketFactory(plainSocketFactory)
@@ -231,17 +230,17 @@ public class HttpClientFactoryTest {
     public void throwsIllegalStateOnReactorException() throws IOReactorException {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
         HttpClientFactory factory = spy(builder.build());
 
         String expectedMessage = UUID.randomUUID().toString();
         when(factory.createIOReactor()).thenThrow(new IOReactorException(expectedMessage));
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(expectedMessage);
-
         // when
-        factory.createInstance();
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, factory::createInstance);
+
+        // then
+        assertThat(exception.getMessage(), containsString(expectedMessage));
 
     }
 
@@ -271,7 +270,7 @@ public class HttpClientFactoryTest {
     public void disablingPooledResponseBuffersInitializesClientWithBasicAsyncResponseConsumerFactory() {
 
         // given
-        HttpClientFactory.Builder builder = new HttpClientFactory.Builder();
+        HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder();
         builder.withServerList(TEST_SERVER_LIST)
                 .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
                 .withPooledResponseBuffers(false);
@@ -329,11 +328,9 @@ public class HttpClientFactoryTest {
         return createDefaultTestHttpClientFactoryBuilder().build();
     }
 
-    private HttpClientFactory.Builder createDefaultTestHttpClientFactoryBuilder() {
-        List<String> serverList = new ArrayList();
-        serverList.add("http://localhost:9200");
+    public static HttpClientFactory.Builder createDefaultTestHttpClientFactoryBuilder() {
         return new HttpClientFactory.Builder()
-                .withServerList(serverList)
+                .withServerList(TEST_SERVER_LIST)
                 .withMaxTotalConnections(1);
     }
 

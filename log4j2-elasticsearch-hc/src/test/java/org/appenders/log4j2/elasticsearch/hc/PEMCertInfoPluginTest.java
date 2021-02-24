@@ -25,7 +25,7 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.junit.Test;
 
-import static org.appenders.log4j2.elasticsearch.hc.SecurityTest.createDefaultTestObjectBuilder;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -77,7 +77,7 @@ public class PEMCertInfoPluginTest {
                 .withCaPath(TEST_CA_PATH)
                 .build();
 
-        HttpClientFactory.Builder httpClientFactoryBuilder = spy(createDefaultTestObjectBuilder());
+        HttpClientFactory.Builder httpClientFactoryBuilder = spy(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         certInfo.applyTo(httpClientFactoryBuilder);

@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactoryPlugin.PLUGIN_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -70,7 +71,7 @@ public class ServiceDiscoveryFactoryPluginTest {
     public void setsPropertiesIfConfigured() {
 
         // given
-        Security auth = SecurityTest.createTestBuilder().build();
+        Security auth = SecurityTest.createDefaultTestSecurityBuilder().build();
 
         ServiceDiscoveryFactoryPlugin.Builder builder = createDefaultTestServiceDiscoveryConfigPluginBuilder()
                 .withNodesFilter(TEST_NODES_FILTER)
@@ -82,7 +83,7 @@ public class ServiceDiscoveryFactoryPluginTest {
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withPooledResponseBuffersSizeInBytes(TEST_BUFFER_SIZE_IN_BYTES);
 
-        HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder()
+        HttpClientFactory.Builder httpClientFactoryBuilder = createDefaultTestHttpClientFactoryBuilder()
                 .withServerList(SplitUtil.split(TEST_SERVER_URIS))
                 .withConnTimeout(TEST_CONN_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
@@ -109,7 +110,7 @@ public class ServiceDiscoveryFactoryPluginTest {
         // given
         ServiceDiscoveryFactoryPlugin.Builder builder = createDefaultTestServiceDiscoveryConfigPluginBuilder();
 
-        HttpClientFactory.Builder httpClientFactoryBuilder = new HttpClientFactory.Builder()
+        HttpClientFactory.Builder httpClientFactoryBuilder = createDefaultTestHttpClientFactoryBuilder()
                 .withConnTimeout(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_CONN_TIMEOUT)
                 .withReadTimeout(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_READ_TIMEOUT)
                 .withPooledResponseBuffersSizeInBytes(ServiceDiscoveryFactoryPlugin.Builder.DEFAULT_RESPONSE_BUFFER_SIZE)
@@ -141,8 +142,8 @@ public class ServiceDiscoveryFactoryPluginTest {
                 .withServerUris(null)
                 .withAuth(null);
 
-        Auth<HttpClientFactory.Builder> auth = SecurityTest.createTestBuilder().build();
-        HttpClientFactory.Builder parentHttpClientFactoryBuilder = new HttpClientFactory.Builder()
+        Auth<HttpClientFactory.Builder> auth = SecurityTest.createDefaultTestSecurityBuilder().build();
+        HttpClientFactory.Builder parentHttpClientFactoryBuilder = createDefaultTestHttpClientFactoryBuilder()
                 .withServerList(SplitUtil.split(TEST_SERVER_URIS))
                 .withAuth(auth)
                 .withServiceDiscovery(null)
@@ -174,7 +175,7 @@ public class ServiceDiscoveryFactoryPluginTest {
 
         ServiceDiscoveryFactoryPlugin plugin = builder.build();
 
-        HttpClientProvider source = new HttpClientProvider(new HttpClientFactory.Builder());
+        HttpClientProvider source = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         HttpClientProvider target = resolveClientProvider(plugin, source);
@@ -231,7 +232,7 @@ public class ServiceDiscoveryFactoryPluginTest {
 
     private HttpClientProvider resolveClientProvider(ServiceDiscoveryFactoryPlugin plugin) {
         ClientProvider<HttpClient> clientProvider = plugin.clientProviderPolicy.apply(
-                new HttpClientProvider(new HttpClientFactory.Builder()));
+                new HttpClientProvider(new HttpClientFactory.Builder())); // crucial to use default, plain builder here
         return (HttpClientProvider) clientProvider;
     }
 

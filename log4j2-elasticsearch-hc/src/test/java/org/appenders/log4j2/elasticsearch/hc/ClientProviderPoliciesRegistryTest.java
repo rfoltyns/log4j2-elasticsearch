@@ -361,7 +361,7 @@ public class ClientProviderPoliciesRegistryTest {
 
         ClientProviderPolicy<HttpClient> policy = registry.get(SECURITY, initialClientProvider);
 
-        Security expectedAuth = SecurityTest.createTestBuilder().build();
+        Security expectedAuth = SecurityTest.createDefaultTestSecurityBuilder().build();
         PlainConnectionSocketFactory expectedPlainConnectionSocketFactory = mock(PlainConnectionSocketFactory.class);
         SSLConnectionSocketFactory expectedSSLConnectionSocketFactory = mock(SSLConnectionSocketFactory.class);
         SchemeIOSessionStrategy expectedHttpIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
@@ -396,7 +396,7 @@ public class ClientProviderPoliciesRegistryTest {
         // given
         ClientProviderPoliciesRegistry registry = new ClientProviderPoliciesRegistry();
 
-        Security expectedAuth = SecurityTest.createTestBuilder().build();
+        Security expectedAuth = SecurityTest.createDefaultTestSecurityBuilder().build();
         PlainConnectionSocketFactory expectedPlainConnectionSocketFactory = mock(PlainConnectionSocketFactory.class);
         SSLConnectionSocketFactory expectedSSLConnectionSocketFactory = mock(SSLConnectionSocketFactory.class);
         SchemeIOSessionStrategy expectedHttpIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
@@ -414,7 +414,7 @@ public class ClientProviderPoliciesRegistryTest {
 
         ClientProviderPolicy<HttpClient> policy = registry.get(SECURITY, initialClientProvider);
 
-        Security unexpectedAuth = SecurityTest.createTestBuilder().build();
+        Security unexpectedAuth = SecurityTest.createDefaultTestSecurityBuilder().build();
         PlainConnectionSocketFactory unexpectedPlainConnectionSocketFactory = mock(PlainConnectionSocketFactory.class);
         SSLConnectionSocketFactory unexpectedSSLConnectionSocketFactory = mock(SSLConnectionSocketFactory.class);
         SchemeIOSessionStrategy unexpectedHttpIOSessionStrategy = mock(SchemeIOSessionStrategy.class);
@@ -463,7 +463,7 @@ public class ClientProviderPoliciesRegistryTest {
         ClientProviderPolicy<HttpClient> policy = registry.get(policies, initialClientProvider);
 
         List<String> expectedServerList = SplitUtil.split(TEST_SERVER_URIS);
-        Security expectedAuth = SecurityTest.createTestBuilder().build();
+        Security expectedAuth = SecurityTest.createDefaultTestSecurityBuilder().build();
         PlainConnectionSocketFactory expectedPlainConnectionSocketFactory = mock(PlainConnectionSocketFactory.class);
         SSLConnectionSocketFactory expectedSSLConnectionSocketFactory = mock(SSLConnectionSocketFactory.class);
         SchemeIOSessionStrategy expectedHttpIOSessionStrategy = mock(SchemeIOSessionStrategy.class);

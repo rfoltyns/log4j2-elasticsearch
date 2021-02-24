@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Random;
 
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,10 +52,10 @@ public class HttpClientProviderTest {
     public static final int TEST_IO_THREAD_COUNT = RANDOM.nextInt(1000) + 10;
     public static final boolean TEST_POOLED_RESPONSE_BUFFERS_ENABLED = true;
     public static final int TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES = 34;
-    public static final Security TEST_AUTH = SecurityTest.createTestBuilder().build();
+    public static final Security TEST_AUTH = SecurityTest.createDefaultTestSecurityBuilder().build();
 
     public static HttpClientFactory.Builder createDefaultTestBuilder() {
-        return new HttpClientFactory.Builder()
+        return createDefaultTestHttpClientFactoryBuilder()
                 .withServerList(Arrays.asList(TEST_SERVER_URIS))
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)

@@ -22,13 +22,17 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 
 import org.appenders.log4j2.elasticsearch.CertInfo;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Test;
 
-import static org.appenders.log4j2.elasticsearch.hc.SecurityTest.createDefaultTestObjectBuilder;
+import java.security.Security;
+
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
@@ -76,7 +80,7 @@ public class PEMCertInfoTest {
                 .withCaPath(TEST_CA_PATH)
                 .build();
 
-        HttpClientFactory.Builder httpClientFactoryBuilder = spy(createDefaultTestObjectBuilder());
+        HttpClientFactory.Builder httpClientFactoryBuilder = spy(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         certInfo.applyTo(httpClientFactoryBuilder);
@@ -146,6 +150,31 @@ public class PEMCertInfoTest {
 
         // then
         assertEquals(PEMCertInfo.configExceptionMessage, exception.getMessage());
+
+    }
+
+    @Test
+    public void addsBouncyCastleProviderIfNotLoaded() {
+
+        // given
+        java.security.Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+        PEMCertInfo certInfo = createTestCertInfoBuilder()
+                .withKeyPath(TEST_KEY_PATH)
+                .withKeyPassphrase(TEST_KEY_PASSPHRASE)
+                .withClientCertPath(TEST_CLIENT_CERT_PATH)
+                .withCaPath(TEST_CA_PATH)
+                .build();
+
+        HttpClientFactory.Builder clientConfigBuilder = spy(createDefaultTestHttpClientFactoryBuilder());
+
+        assertNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+
+        // when
+        certInfo.applyTo(clientConfigBuilder);
+
+        // then
+        assertNotNull(BouncyCastleProvider.PROVIDER_NAME);
 
     }
 

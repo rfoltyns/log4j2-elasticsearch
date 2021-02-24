@@ -32,6 +32,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
@@ -50,12 +51,6 @@ public class JKSCertInfoPluginTest {
         return JKSCertInfoPlugin.newBuilder()
                 .withKeystorePath(TEST_KEYSTORE_PATH)
                 .withTruststorePath(TEST_TRUSTSTORE_PATH);
-    }
-
-    public static HttpClientFactory.Builder createDefaultHttpClientFactoryBuilder() {
-        ArrayList<String> serverList = new ArrayList<>();
-        serverList.add("localhost");
-        return new HttpClientFactory.Builder().withServerList(serverList);
     }
 
     @Test
@@ -83,7 +78,7 @@ public class JKSCertInfoPluginTest {
                 .withTruststorePassword(TEST_TRUSTSTORE_PASSWORD)
                 .build();
 
-        HttpClientFactory.Builder httpClientFactoryBuilder = Mockito.spy(createDefaultHttpClientFactoryBuilder());
+        HttpClientFactory.Builder httpClientFactoryBuilder = Mockito.spy(createDefaultTestHttpClientFactoryBuilder());
 
         // when
         certInfo.applyTo(httpClientFactoryBuilder);
