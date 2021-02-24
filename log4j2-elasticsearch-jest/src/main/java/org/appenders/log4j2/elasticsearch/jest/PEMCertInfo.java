@@ -33,7 +33,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.appenders.log4j2.elasticsearch.thirdparty.PemReader;
+import org.appenders.log4j2.elasticsearch.jest.thirdparty.PemReader;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -69,7 +69,7 @@ public class PEMCertInfo implements CertInfo<HttpClientConfig.Builder> {
     public void applyTo(HttpClientConfig.Builder builder) {
 
         if (java.security.Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            java.security.Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+            java.security.Security.addProvider(new BouncyCastleProvider());
         }
 
         try (

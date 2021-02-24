@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.thirdparty;
+package org.appenders.log4j2.elasticsearch.jest.thirdparty;
 
 /*
  * Copyright 2014 The Netty Project
@@ -50,10 +50,6 @@ import java.util.regex.Pattern;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 
-/**
- * @deprecated As of 1.6, this class will be removed. Use {@link org.appenders.log4j2.elasticsearch.jest.thirdparty.PemReader} instead.
- */
-@Deprecated
 public final class PemReader
 {
     private static final Pattern CERT_PATTERN = Pattern.compile(

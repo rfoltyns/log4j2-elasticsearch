@@ -24,7 +24,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.junit.Assert;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,8 +32,11 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.Security;
 
 import static org.appenders.log4j2.elasticsearch.jest.XPackAuthTest.createDefaultClientConfigBuilder;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -68,7 +71,7 @@ public class PEMCertInfoTest {
         CertInfo certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
@@ -90,7 +93,7 @@ public class PEMCertInfoTest {
 
         // then
         verify(clientConfigBuilder).httpsIOSessionStrategy(notNull());
-        Assert.assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
+        assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
     }
 
     @Test
@@ -152,13 +155,29 @@ public class PEMCertInfoTest {
 
     }
 
-    private File createInvalidKey() throws IOException {
-        File tempFile = File.createTempFile("log4j2-elasticsaarch", "certinfo-test");
-        tempFile.deleteOnExit();
-        FileOutputStream fileOutputStream = new FileOutputStream(tempFile);
-        fileOutputStream.write("cert-test".getBytes());
-        fileOutputStream.close();
-        return  tempFile;
+    @Test
+    public void addsBouncyCastleProviderIfNotLoaded() {
+
+        // given
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+
+        PEMCertInfo certInfo = createTestCertInfoBuilder()
+                .withKeyPath(TEST_KEY_PATH)
+                .withKeyPassphrase(TEST_KEY_PASSPHRASE)
+                .withClientCertPath(TEST_CLIENT_CERT_PATH)
+                .withCaPath(TEST_CA_PATH)
+                .build();
+
+        HttpClientConfig.Builder clientConfigBuilder = spy(createDefaultClientConfigBuilder());
+
+        assertNull(Security.getProvider(BouncyCastleProvider.PROVIDER_NAME));
+
+        // when
+        certInfo.applyTo(clientConfigBuilder);
+
+        // then
+        assertNotNull(BouncyCastleProvider.PROVIDER_NAME);
+
     }
 
 }
