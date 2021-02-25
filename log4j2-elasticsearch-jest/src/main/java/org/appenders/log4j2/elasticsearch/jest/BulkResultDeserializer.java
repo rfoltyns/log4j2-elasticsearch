@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -34,7 +33,7 @@ import java.util.List;
 public class BulkResultDeserializer extends JsonDeserializer {
 
     @Override
-    public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public Object deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
         int took = 0;
         boolean errors = false;
         BulkError error = null;

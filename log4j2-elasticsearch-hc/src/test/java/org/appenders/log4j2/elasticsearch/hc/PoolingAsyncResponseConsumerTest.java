@@ -56,7 +56,7 @@ public class PoolingAsyncResponseConsumerTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void onResponseReceivedReturnsTheSameResponse() throws IOException {
+    public void onResponseReceivedReturnsTheSameResponse() {
 
         // given
         HttpResponse response = mock(HttpResponse.class);
@@ -94,7 +94,7 @@ public class PoolingAsyncResponseConsumerTest {
     }
 
     @Test
-    public void onEntityEnclosedPoolsTheBufferOnce() throws IOException, PoolResourceException {
+    public void onEntityEnclosedPoolsTheBufferOnce() throws IOException {
 
         // given
         GenericItemSourcePool<SimpleInputBuffer> itemSourcePool = spy(createDefaultTestGenericItemSourcePool(
@@ -145,7 +145,7 @@ public class PoolingAsyncResponseConsumerTest {
     }
 
     @Test
-    public void onContentReceivedThrowsIOExceptionOnEmptyPool() throws IOException, PoolResourceException {
+    public void onContentReceivedThrowsIOExceptionOnEmptyPool() throws IOException {
 
         // given
         ItemSourcePool<SimpleInputBuffer> itemSourcePool = createDefaultTestGenericItemSourcePool(

@@ -147,8 +147,7 @@ class ChronicleMapProxy implements MapProxy<CharSequence, ItemSource> {
     }
 
     private ItemSource putInternal(CharSequence key, ItemSource failedItem) {
-        chronicleMap.put(key, failedItem);
-        return null;
+        return chronicleMap.put(key, failedItem);
     }
 
     private ItemSource removeInternal(CharSequence key) {

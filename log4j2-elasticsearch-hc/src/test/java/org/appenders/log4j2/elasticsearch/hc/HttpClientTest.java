@@ -681,7 +681,7 @@ public class HttpClientTest {
             }
 
             @Override
-            public Response deserializeResponse(InputStream inputStream) throws IOException {
+            public Response deserializeResponse(InputStream inputStream) {
                 return null;
             }
 

@@ -455,7 +455,7 @@ public class HCHttpTest {
         resultHandler.deserializeResponse(inputStream);
 
         // then
-        verify(mockedObjectReader).readValue(eq(inputStream), eq(BatchResult.class));
+        verify(mockedObjectReader).readValue(eq(inputStream));
     }
 
     @Test

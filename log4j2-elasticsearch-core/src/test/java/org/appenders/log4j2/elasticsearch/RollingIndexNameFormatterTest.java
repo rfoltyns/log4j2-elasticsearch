@@ -278,7 +278,7 @@ public class RollingIndexNameFormatterTest {
             }));
         }
 
-        threads.stream().forEach(th -> th.start());
+        threads.forEach(Thread::start);
         countDownLatch.await();
     }
 

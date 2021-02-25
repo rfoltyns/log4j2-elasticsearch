@@ -396,7 +396,7 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void multipleThreadsGetPooledWhenResizePolicyEventuallyCopeWithTheLoad() throws PoolResourceException, InterruptedException {
+    public void multipleThreadsGetPooledWhenResizePolicyEventuallyCopeWithTheLoad() throws InterruptedException {
 
         // given
         ResizePolicy resizePolicy = mock(ResizePolicy.class);

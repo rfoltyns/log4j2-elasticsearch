@@ -385,7 +385,7 @@ public class JestHttpObjectFactoryTest {
     }
 
     @Test
-    public void batchListenerOperationExceptionIsNotPropagated() throws Exception {
+    public void batchListenerOperationExceptionIsNotPropagated() {
 
         // given
         Builder builder = createTestObjectFactoryBuilder();

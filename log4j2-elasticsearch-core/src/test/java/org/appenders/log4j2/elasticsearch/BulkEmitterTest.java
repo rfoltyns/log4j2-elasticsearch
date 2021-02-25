@@ -237,7 +237,7 @@ public abstract class BulkEmitterTest {
     }
 
     @Test
-    public void listenerIsNotifiedByScheduledTask() throws InterruptedException {
+    public void listenerIsNotifiedByScheduledTask() {
 
         // given
         BulkEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 1000, new TestBatchOperations());

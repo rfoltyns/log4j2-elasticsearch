@@ -31,8 +31,6 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import java.util.UUID;

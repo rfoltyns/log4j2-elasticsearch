@@ -120,7 +120,7 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
 
             @Override
             public BatchResult deserializeResponse(InputStream responseBody) throws IOException {
-                return objectReader.readValue(responseBody, BatchResult.class);
+                return objectReader.readValue(responseBody);
             }
 
         };

@@ -46,7 +46,6 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Allows to customize serialization of incoming events. See {@link Builder} API docs for more details
@@ -328,8 +327,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
          * @return this
          */
         public Builder withJacksonModules(JacksonModule... modules) {
-            this.jacksonModules = Stream.of(modules).flatMap(Stream::of)
-                    .toArray(JacksonModule[]::new);
+            this.jacksonModules = modules;
             return this;
         }
 

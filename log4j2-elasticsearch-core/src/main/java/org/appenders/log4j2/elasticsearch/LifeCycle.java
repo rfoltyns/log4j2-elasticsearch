@@ -60,7 +60,7 @@ public interface LifeCycle {
      */
     default void startExtensions() {
 
-    };
+    }
 
     /**
      * Stops extensions.
@@ -71,7 +71,7 @@ public interface LifeCycle {
      */
     default void stopExtensions() {
 
-    };
+    }
 
     boolean isStarted();
 

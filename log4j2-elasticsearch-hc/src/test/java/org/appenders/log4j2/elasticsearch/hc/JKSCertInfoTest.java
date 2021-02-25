@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;

@@ -33,25 +33,19 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.createDefaultTestClientProvider;
 import static org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscoveryTest.createNonSchedulingServiceDiscovery;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -288,7 +282,7 @@ public class HttpClientFactoryTest {
     }
 
     @Test
-    public void configuresServerPoolUrlsFromGivenServiceDiscovery() throws IOException, URISyntaxException {
+    public void configuresServerPoolUrlsFromGivenServiceDiscovery() throws IOException {
 
         // given
         String expectedAddress = "http://expected:9234";
