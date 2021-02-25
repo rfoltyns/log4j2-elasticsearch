@@ -357,6 +357,52 @@ public class HCServiceDiscoveryTest {
     }
 
     @Test
+    public void refreshNotifiesOldListenersWhenNewListenerAddedAndAddressListHasNotChanged() {
+
+        // given
+        String expectedAddress1 = "http://localhost:9200";
+        String expectedAddress2 = "http://localhost:9201";
+
+        List<String> response1 = Arrays.asList(expectedAddress1, expectedAddress2);
+        List<String> response2 = Arrays.asList(expectedAddress2, expectedAddress1);
+
+        HCServiceDiscovery<HttpClient> serviceDiscovery = createNonSchedulingServiceDiscovery(
+                clientProviderMock(),
+                new TestServiceDiscoveryRequest(Arrays.asList(response1, response2)));
+
+        ServerInfoListener listener1 = mock(ServerInfoListener.class);
+        serviceDiscovery.addListener(listener1);
+
+        serviceDiscovery.start();
+
+        ServerInfoListener listener2 = mock(ServerInfoListener.class);
+
+        // when
+        serviceDiscovery.refresh();
+
+        serviceDiscovery.addListener(listener2);
+
+        serviceDiscovery.refresh();
+
+        // then
+        @SuppressWarnings("unchecked") ArgumentCaptor<List<ServerInfo>> captor1 = forClass(List.class);
+        verify(listener1, times(2)).onServerInfo(captor1.capture());
+
+        @SuppressWarnings("unchecked") ArgumentCaptor<List<ServerInfo>> captor2 = forClass(List.class);
+        verify(listener2).onServerInfo(captor2.capture());
+
+        final List<List<ServerInfo>> captor1Values = captor1.getAllValues();
+        assertEquals(captor1Values.get(1), captor2.getAllValues().get(0));
+
+        assertEquals(captor1Values.get(0).get(0).getResolvedAddress(), captor1Values.get(1).get(1).getResolvedAddress());
+        assertEquals(captor1Values.get(0).get(1).getResolvedAddress(), captor1Values.get(1).get(0).getResolvedAddress());
+
+        assertEquals(expectedAddress1, captor1Values.get(0).get(0).getResolvedAddress());
+        assertEquals(expectedAddress2, captor1Values.get(0).get(1).getResolvedAddress());
+
+    }
+
+    @Test
     public void refreshDoesNotNotifyListenerWhenNoAddressFound() {
 
         // given

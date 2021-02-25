@@ -74,6 +74,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
     @Override
     public void addListener(ServerInfoListener listener) {
+        this.cache.clear();
         this.listeners.add(listener);
     }
 
