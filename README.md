@@ -95,5 +95,11 @@ Feature Requests welcome!
 Be aware that Jackson FasterXML, Log4j2, Apache HC, Netty, Chronicle or JCTools jars may need to be provided for this library to work. By design, you can choose which jars you'd like to have on your classpath.
 Please visit [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for an overview of provided and compile dependencies
 
+In order to fix [#56](https://github.com/rfoltyns/log4j2-elasticsearch/issues/56), two new modules were extracted from `log4j2-elasticsearch-core`:
+* (1.5+) [appenders-logging](https://github.com/appenders/appenders-logging) (`compile`) available [here](https://mvnrepository.com/artifact/org.appenders.logging/appenders-logging)
+* (1.5+) [appenders-jackson-st](https://github.com/appenders/appenders-jackson-st) (`compile`) available [here](https://mvnrepository.com/artifact/org.appenders.st/appenders-jackson-st)
+
+This will not cause any issues if you're using packaging tools with transitive dependencies support (Maven, Gradle, etc.). However, in some cases e.g. if you're managing your jars explicitly, classloaders will complain. Sorry for the inconvenience.
+
 ## Released to [Sonatype OSS repos](https://oss.sonatype.org/content/repositories/releases/org/appenders/log4j/)
 Visit submodules' documentation or [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for XML snippets.
