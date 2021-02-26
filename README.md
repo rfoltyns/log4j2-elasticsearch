@@ -7,8 +7,6 @@
 
 This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
-Latest released code (1.4.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.4).
-
 Project consists of:
 * `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
 * `log4j2-elasticsearch-hc` - optimized Apache Async HTTP client compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
