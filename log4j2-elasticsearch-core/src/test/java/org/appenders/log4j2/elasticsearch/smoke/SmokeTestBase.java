@@ -285,7 +285,8 @@ public abstract class SmokeTestBase {
             .add("exitDelayMillis", getInt("smokeTest.exitDelayMillis", 10000))
             .add("numberOfProducers", getInt("smokeTest.noOfProducers", 100))
             .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
-            .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"));
+            .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"))
+            .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")));
 
         }
 

@@ -43,6 +43,8 @@ public class CustomMessageFactoryTest extends SmokeTest {
     @Test
     public void messageFactoryTest() {
 
+        System.setProperty("smokeTest.singleThread", "false");
+
         System.setProperty("log4j2.enable.threadlocals", "true");
         System.setProperty("log4j2.enable.direct.encoders", "true");
         System.setProperty("Log4jContextSelector", "org.apache.logging.log4j.core.async.AsyncLoggerContextSelector");

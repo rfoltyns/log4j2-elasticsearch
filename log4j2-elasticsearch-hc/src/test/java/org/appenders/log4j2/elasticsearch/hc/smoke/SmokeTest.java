@@ -227,7 +227,7 @@ public class SmokeTest extends SmokeTestBase {
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
                 )
-                .withSingleThread(true)
+                .withSingleThread(getConfig().getProperty("singleThread", Boolean.class))
                 .withJacksonModules(ExampleJacksonModule.newBuilder().build());
 
         if (ecsEnabled) {
