@@ -2,7 +2,7 @@
 <Configuration status="WARN">
 
     <Appenders>
-        <File name="fileAppender" fileName="${sys:logfile.path:-log4j2-elasticsearch-jest.log}">
+        <File name="fileAppender" fileName="${sys:logfile.path:-./}log4j2-elasticsearch-jest.log">
             <PatternLayout>
                 <Pattern>%d %p [%t] %m%n</Pattern>
             </PatternLayout>
