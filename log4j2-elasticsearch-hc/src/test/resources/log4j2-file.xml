@@ -4,7 +4,7 @@
     <Appenders>
         <Console name="CONSOLE" level="DEBUG" />
 
-        <File name="fileAppender" fileName="${sys:logfile.path:-log4j2-elasticsearch-hc.log}">
+        <File name="fileAppender" fileName="${sys:logfile.path:-./}log4j2-elasticsearch-hc.log">
             <PatternLayout>
                 <Pattern>%d %p [%t] %m%n</Pattern>
             </PatternLayout>
