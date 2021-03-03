@@ -20,6 +20,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.OpSource;
@@ -30,23 +31,19 @@ import org.appenders.log4j2.elasticsearch.SkippingSetupStepChain;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static org.appenders.log4j2.elasticsearch.hc.CreateBootstrapIndex.BOOTSTRAP_TEMPLATE;
 
-public class ILMPolicySetupOp implements OperationFactory {
+public class DataStreamSetupOp implements OperationFactory {
 
     protected final StepProcessor<SetupStep<Request, Response>> stepProcessor;
-    protected final ValueResolver valueResolver;
     protected final EmptyItemSourceFactory itemSourceFactory;
 
     private final ByteBufItemSourceWriter writer = new ByteBufItemSourceWriter();
 
-    public ILMPolicySetupOp(StepProcessor<SetupStep<Request, Response>> stepProcessor, ValueResolver valueResolver, EmptyItemSourceFactory itemSourceFactory) {
+    public DataStreamSetupOp(StepProcessor<SetupStep<Request, Response>> stepProcessor, EmptyItemSourceFactory itemSourceFactory) {
         this.stepProcessor = stepProcessor;
-        this.valueResolver = valueResolver;
         this.itemSourceFactory = itemSourceFactory;
     }
 
@@ -54,29 +51,18 @@ public class ILMPolicySetupOp implements OperationFactory {
     @Override
     public <T extends OpSource> Operation create(T opSource) {
 
-        ILMPolicy ilmPolicy = (ILMPolicy) opSource;
+        DataStream dataStream = (DataStream) opSource;
 
-        SetupStep<Request, Response> checkBootstrapIndex =
-                new CheckBootstrapIndex(ilmPolicy.getRolloverAlias());
+        SetupStep<Request, Response> checkDataStream =
+                new CheckDataStream(dataStream.getName());
 
-        String bootstrapIndexRequestBody = String.format(BOOTSTRAP_TEMPLATE, ilmPolicy.getRolloverAlias());
-        SetupStep<Request, Response> createBootstrapIndex = new CreateBootstrapIndex(
-                ilmPolicy.getRolloverAlias(),
-                writer.write(itemSourceFactory.createEmptySource(), bootstrapIndexRequestBody.getBytes()));
 
-        String ilmPolicyRequestBody = valueResolver.resolve(ilmPolicy.getSource());
-        SetupStep<Request, Response> updateIlmPolicy = new PutILMPolicy(
-                ilmPolicy.getName(),
-                writer.write(itemSourceFactory.createEmptySource(), ilmPolicyRequestBody.getBytes()));
+        String createDataStreamBody = "{}";
+        SetupStep<Request, Response> createDataStream = new CreateDataStream(
+                dataStream.getName(),
+                writer.write(itemSourceFactory.createEmptySource(), createDataStreamBody.getBytes()));
 
-        final List<SetupStep<Request, Response>> setupSteps = new ArrayList<>();
-        if (ilmPolicy.isCreateBootstrapIndex()) {
-            setupSteps.add(checkBootstrapIndex);
-            setupSteps.add(createBootstrapIndex);
-        }
-        setupSteps.add(updateIlmPolicy);
-
-        return new SkippingSetupStepChain<>(setupSteps, stepProcessor);
+        return new SkippingSetupStepChain<>(Arrays.asList(checkDataStream, createDataStream), stepProcessor);
 
     }
 

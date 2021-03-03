@@ -83,7 +83,7 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
                 .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
                 .addMixIn(BatchResult.class, BatchResultMixIn.class)
                 .addMixIn(Error.class, ErrorMixIn.class)
-                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
+                .addMixIn(BatchItemResult.class, DataStreamBatchItemResultMixIn.class)
                 .readerFor(BatchResult.class);
     }
 

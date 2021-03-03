@@ -41,8 +41,8 @@ public class ILMPolicyPlugin extends ILMPolicy {
     /**
      * {@inheritDoc}
      */
-    protected ILMPolicyPlugin(String policyName, String rolloverAlias, String source) {
-        super(policyName, rolloverAlias, source);
+    protected ILMPolicyPlugin(String policyName, String rolloverAlias, boolean createBootstrapIndex, String source) {
+        super(policyName, rolloverAlias, createBootstrapIndex, source);
     }
 
     @PluginBuilderFactory
@@ -59,6 +59,9 @@ public class ILMPolicyPlugin extends ILMPolicy {
         @PluginAttribute("rolloverAlias")
         @Required
         private String rolloverAlias;
+
+        @PluginAttribute("createBootstrapIndex")
+        private boolean createBootstrapIndex = true;
 
         @PluginAttribute("path")
         private String path;
@@ -80,7 +83,7 @@ public class ILMPolicyPlugin extends ILMPolicy {
                 throw new ConfigurationException("Either path or source have to be provided for " + ILMPolicyPlugin.class.getSimpleName());
             }
 
-            return new ILMPolicyPlugin(name, rolloverAlias, loadSource());
+            return new ILMPolicyPlugin(name, rolloverAlias, createBootstrapIndex, loadSource());
         }
 
         private String loadSource() {
@@ -119,6 +122,11 @@ public class ILMPolicyPlugin extends ILMPolicy {
          */
         public Builder withRolloverAlias(String rolloverAlias) {
             this.rolloverAlias = rolloverAlias;
+            return this;
+        }
+
+        public Builder withCreateBootstrapIndex(boolean createBootstrapIndex) {
+            this.createBootstrapIndex = createBootstrapIndex;
             return this;
         }
 

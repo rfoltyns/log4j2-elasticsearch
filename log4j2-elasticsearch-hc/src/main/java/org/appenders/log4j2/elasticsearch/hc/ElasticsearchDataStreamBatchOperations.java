@@ -24,32 +24,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
-import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
-public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCycle {
+public class ElasticsearchDataStreamBatchOperations extends HCBatchOperations {
 
-    private volatile State state = State.STOPPED;
-
-    protected final PooledItemSourceFactory pooledItemSourceFactory;
-    private final String mappingType;
-    protected final ObjectWriter objectWriter;
-
-    public HCBatchOperations(PooledItemSourceFactory pooledItemSourceFactory, String mappingType) {
-        this.pooledItemSourceFactory = pooledItemSourceFactory;
-        this.mappingType = mappingType;
-        this.objectWriter = configuredWriter();
-    }
-
-    public HCBatchOperations(PooledItemSourceFactory pooledItemSourceFactory) {
-        this(pooledItemSourceFactory, "_doc");
-    }
-
-    public String getMappingType() {
-        return mappingType;
+    public ElasticsearchDataStreamBatchOperations(PooledItemSourceFactory pooledItemSourceFactory) {
+        super(pooledItemSourceFactory, "_doc");
     }
 
     @Override
@@ -59,9 +41,8 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
 
     @Override
     public Object createBatchItem(String indexName, ItemSource source) {
-        return new IndexRequest.Builder(source)
+        return new ElasticsearchDataStreamItem.Builder(source)
                 .index(indexName)
-                .type(mappingType)
                 .build();
     }
 
@@ -69,13 +50,14 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
     public BatchBuilder<BatchRequest> createBatchBuilder() {
         return new BatchBuilder<BatchRequest>() {
 
-            private final BatchRequest.Builder builder = new BatchRequest.Builder()
-                    .withBuffer(pooledItemSourceFactory.createEmptySource())
-                    .withObjectWriter(objectWriter);
+            private final BatchRequest.Builder builder =
+                    new ElasticsearchDataStreamBatchRequest.Builder()
+                            .withBuffer(pooledItemSourceFactory.createEmptySource())
+                            .withObjectWriter(objectWriter);
 
             @Override
             public void add(Object item) {
-                builder.add((IndexRequest)item);
+                builder.add((ElasticsearchDataStreamItem)item);
             }
 
             @Override
@@ -93,44 +75,8 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
     protected ObjectWriter configuredWriter() {
         return new ExtendedObjectMapper(new MappingJsonFactory())
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
-                .writerFor(IndexRequest.class);
-    }
-
-    @Override
-    public void start() {
-
-        if (isStarted()) {
-            return;
-        }
-
-        pooledItemSourceFactory.start();
-
-        state = State.STARTED;
-
-    }
-
-    @Override
-    public void stop() {
-
-        if (isStopped()) {
-            return;
-        }
-
-        pooledItemSourceFactory.stop();
-
-        state = State.STOPPED;
-
-    }
-
-    @Override
-    public boolean isStarted() {
-        return state == State.STARTED;
-    }
-
-    @Override
-    public boolean isStopped() {
-        return state == State.STOPPED;
+                .addMixIn(ElasticsearchDataStreamItem.class, ElasticsearchDataStreamItemMixIn.class)
+                .writerFor(ElasticsearchDataStreamItem.class);
     }
 
 }

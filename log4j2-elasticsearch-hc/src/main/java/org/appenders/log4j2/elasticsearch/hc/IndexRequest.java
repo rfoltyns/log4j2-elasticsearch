@@ -73,7 +73,7 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
 
     public static class Builder {
 
-        private final ItemSource<ByteBuf> source;
+        protected final ItemSource<ByteBuf> source;
 
         private String id;
         private String index;

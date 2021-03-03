@@ -31,12 +31,14 @@ import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.jackson.LogEventJacksonDataStreamJsonMixIn;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
+import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ExampleJacksonModule;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
@@ -62,10 +64,10 @@ import org.appenders.log4j2.elasticsearch.hc.BatchResult;
 import org.appenders.log4j2.elasticsearch.hc.BatchResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
+import org.appenders.log4j2.elasticsearch.hc.ElasticsearchDataStreamBatchOperations;
 import org.appenders.log4j2.elasticsearch.hc.ElasticsearchOperationFactory;
 import org.appenders.log4j2.elasticsearch.hc.Error;
 import org.appenders.log4j2.elasticsearch.hc.ErrorMixIn;
-import org.appenders.log4j2.elasticsearch.hc.HCBatchOperations;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
@@ -77,6 +79,7 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,6 +105,7 @@ public class SmokeTest extends SmokeTestBase {
         final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
         final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
         final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
+        final boolean dataStreamsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.dataStreams.enabled", "true"));
 
         getConfig().add("batchSize", batchSize)
                 .add("initialBatchPoolSize", initialBatchPoolSize)
@@ -109,8 +113,9 @@ public class SmokeTest extends SmokeTestBase {
                 .add("initialBatchPoolSize", initialBatchPoolSize)
                 .add("indexName", indexName)
                 .add("ecs.enabled", ecsEnabled)
-                .add("servicediscovery.enabled", serviceDiscoveryEnabled)
-                .add("servicediscovery.nodesFilter", nodesFilter);
+                .add("dataStreams.enabled", dataStreamsEnabled)
+                .add("servicediscovery.nodesFilter", nodesFilter)
+                .add("servicediscovery.enabled", serviceDiscoveryEnabled);
 
         getLogger().info("{}", getConfig().getAll());
 
@@ -132,7 +137,7 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
-                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory))
+                .withBatchOperations(new ElasticsearchDataStreamBatchOperations(pooledItemSourceFactory))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4));
 
@@ -185,14 +190,19 @@ public class SmokeTest extends SmokeTestBase {
 
         IndexTemplate componentIndexTemplate = new IndexTemplate.Builder()
                 .withApiVersion(8)
-                .withName(indexName + "-composed-index-template")
-                .withPath("classpath:composableIndexTemplate-7.json")
+                .withName(indexName + (dataStreamsEnabled ? "-data-stream" : "-composed-index-template"))
+                .withPath(getComposableIndexTemplateName())
                 .build();
 
         ILMPolicy ilmPolicy = new ILMPolicy(
                 indexName + "-ilm-policy",
                 indexName,
+                !dataStreamsEnabled,
                 ResourceUtil.loadResource("classpath:ilmPolicy-7.json"));
+
+        DataStream dataStream = new DataStream.Builder()
+                .withName(indexName + "-data-stream")
+                .build();
 
         KeySequenceSelector keySequenceSelector =
                 new Log4j2SingleKeySequenceSelector.Builder()
@@ -203,7 +213,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
-                .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy)
+                .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy, dataStream)
                 .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
                         .withKeySequenceSelector(keySequenceSelector)
                         .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))
@@ -218,11 +228,15 @@ public class SmokeTest extends SmokeTestBase {
                 .build();
 
         IndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
-                .withIndexName(indexName)
+                .withIndexName(indexName + (dataStreamsEnabled ? "-data-stream" : ""))
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
                 .setConfiguration(configuration)
+                .withMixins(new JacksonMixIn.Builder()
+                        .withTargetClass(LogEvent.class.getName())
+                        .withMixInClass(LogEventJacksonDataStreamJsonMixIn.class.getName())
+                        .build())
                 .withVirtualProperties(
                         new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
                         new VirtualProperty("progField", "constantValue", false)
@@ -257,6 +271,12 @@ public class SmokeTest extends SmokeTestBase {
                 .withIndexNameFormatter(indexNameFormatter)
                 .withLayout(layoutBuilder.build())
                 .withIgnoreExceptions(false);
+    }
+
+    @NotNull
+    private String getComposableIndexTemplateName() {
+        final boolean dsEnabled = getConfig().getProperty("dataStreams.enabled", Boolean.class);
+        return String.format("classpath:composableIndexTemplate-7%s.json", dsEnabled ? "-datastream"  :"");
     }
 
     private PooledItemSourceFactory.Builder batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {

@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
+import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -50,6 +51,7 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
         register(ComponentTemplate.TYPE_NAME, new ComponentTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
         register(IndexTemplate.TYPE_NAME, new IndexTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
         register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
+        register(DataStream.TYPE_NAME, new DataStreamSetupOp(stepProcessor, this.itemSourceFactory));
     }
 
     public ElasticsearchOperationFactory(

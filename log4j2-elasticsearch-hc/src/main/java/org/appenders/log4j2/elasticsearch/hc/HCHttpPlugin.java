@@ -101,6 +101,9 @@ public class HCHttpPlugin extends HCHttp {
         @PluginBuilderAttribute
         protected String mappingType = "_doc";
 
+        @PluginBuilderAttribute
+        private boolean dataStreamsEnabled;
+
         @PluginElement(BackoffPolicy.NAME)
         protected BackoffPolicy<BatchRequest> backoffPolicy;
 
@@ -108,6 +111,7 @@ public class HCHttpPlugin extends HCHttp {
         protected ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory;
 
         protected ValueResolver valueResolver;
+
 
         @Override
         public HCHttpPlugin build() {
@@ -186,6 +190,9 @@ public class HCHttpPlugin extends HCHttp {
             if (pooledItemSourceFactory == null) {
                 throw new IllegalArgumentException(String.format("No %s provided for %s", PooledItemSourceFactory.class.getSimpleName(), HCHttp.class.getSimpleName()));
             }
+            if (dataStreamsEnabled) {
+                return new ElasticsearchDataStreamBatchOperations(pooledItemSourceFactory);
+            }
             return new HCBatchOperations(pooledItemSourceFactory, mappingType);
         }
 
@@ -231,6 +238,11 @@ public class HCHttpPlugin extends HCHttp {
 
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
+            return this;
+        }
+
+        public Builder withDataStreamsEnabled(boolean dataStreamsEnabled) {
+            this.dataStreamsEnabled = dataStreamsEnabled;
             return this;
         }
 
