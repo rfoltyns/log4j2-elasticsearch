@@ -1,10 +1,10 @@
-package org.apache.logging.log4j.core.jackson;
+package org.appenders.log4j2.elasticsearch.json.jackson;
 
 /*-
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,13 @@ import org.apache.logging.log4j.core.impl.ExtendedStackTraceElement;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
 import org.apache.logging.log4j.message.Message;
 import org.appenders.log4j2.elasticsearch.JacksonModule;
+import org.appenders.log4j2.elasticsearch.thirdparty.ExtendedStackTraceElementMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.LevelMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.MarkerMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.MessageJacksonJsonMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.StackTraceElementMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.ThrowableProxyMixIn;
 
-/**
- * @deprecated As of 2.0, this class will be removed. Use {@link org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule} instead
- */
-@Deprecated
 public class ExtendedLog4j2JsonModule extends SimpleModule implements JacksonModule {
 
     @Override
@@ -49,7 +51,7 @@ public class ExtendedLog4j2JsonModule extends SimpleModule implements JacksonMod
         context.setMixInAnnotations(Message.class, MessageJacksonJsonMixIn.class);
 
         // https://github.com/rfoltyns/log4j2-elasticsearch/issues/9, timeMillis can't be ignored
-        context.setMixInAnnotations(LogEvent.class, LogEventJacksonJsonMixIn.class);
+        context.setMixInAnnotations(LogEvent.class, ExtendedLogEventJacksonJsonMixIn.class);
 
     }
 

@@ -33,9 +33,9 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
-import org.apache.logging.log4j.core.jackson.ExtendedLog4j2JsonModule;
-import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
 import org.apache.logging.log4j.message.Message;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
 import org.hamcrest.CoreMatchers;
@@ -200,7 +200,7 @@ public class JacksonJsonLayoutTest {
 
         Module.SetupContext setupContext = mock(Module.SetupContext.class);
         captor.getValue().setupModule(setupContext);
-        verify(setupContext).setMixInAnnotations(eq(LogEvent.class), eq(LogEventJacksonJsonMixIn.class));
+        verify(setupContext).setMixInAnnotations(eq(LogEvent.class), eq(ExtendedLogEventJacksonJsonMixIn.class));
 
     }
 

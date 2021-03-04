@@ -1,4 +1,4 @@
-package org.apache.logging.log4j.core.jackson;
+package org.appenders.log4j2.elasticsearch.thirdparty;
 
 /*-
  * #%L
@@ -21,12 +21,12 @@ package org.apache.logging.log4j.core.jackson;
  */
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.logging.log4j.message.Message;
+import org.appenders.log4j2.elasticsearch.json.jackson.JacksonJsonRawMessageSerializer;
 
-/**
- * @deprecated As of 2.0, this class will be removed. Use {@link org.appenders.log4j2.elasticsearch.thirdparty.MessageJacksonJsonMixIn} instead
- */
-@Deprecated
-@JsonSerialize(using = JacksonJsonMessageSerializer.class)
+@JsonSerialize(
+        as = Message.class,
+        using = JacksonJsonRawMessageSerializer.class)
 public abstract class MessageJacksonJsonMixIn {
 
 }

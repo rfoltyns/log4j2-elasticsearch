@@ -37,9 +37,9 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
-import org.apache.logging.log4j.core.jackson.ExtendedLog4j2JsonModule;
 import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.message.Message;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 
 import java.util.Arrays;
 import java.util.Collection;
