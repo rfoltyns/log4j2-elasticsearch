@@ -26,14 +26,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.impl.ThrowableProxy;
-import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
 
 /**
  * ECS-friendly output.
  *
  * NOTE: {@code @timestamp} is of type {@code long}.
  */
-public abstract class LogEventJacksonEcsJsonMixIn extends LogEventJacksonJsonMixIn {
+public abstract class LogEventJacksonEcsJsonMixIn extends ExtendedLogEventJacksonJsonMixIn {
 
     private static final long serialVersionUID = 1L;
 

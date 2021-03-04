@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
-import org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn;
+import org.appenders.log4j2.elasticsearch.thirdparty.LogEventJacksonJsonMixIn;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

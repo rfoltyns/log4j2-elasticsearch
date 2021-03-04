@@ -36,7 +36,7 @@ import com.fasterxml.jackson.databind.util.Annotations;
  * This custom FasterXML Jackson {@code com.fasterxml.jackson.databind.ser.VirtualBeanPropertyWriter}
  * allows to append {@link VirtualProperty}-ies at the end of JSON output
  *
- * @see org.apache.logging.log4j.core.jackson.LogEventJacksonJsonMixIn
+ * @see org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn
  * @see org.appenders.log4j2.elasticsearch.JacksonJsonLayout.Builder
  */
 public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
