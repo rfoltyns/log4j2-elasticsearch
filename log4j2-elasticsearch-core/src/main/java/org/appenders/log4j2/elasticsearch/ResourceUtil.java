@@ -27,6 +27,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ResourceUtil {
 
@@ -62,8 +64,9 @@ public class ResourceUtil {
 
     private static String loadClasspathResource(final String path) {
         try {
-            InputStream resource = ClassLoader.getSystemClassLoader().getResourceAsStream(
-                    path.replace(CLASSPATH_PREFIX, ""));
+            String resourcePath = path.replace(CLASSPATH_PREFIX, "");
+
+            InputStream resource = loadClasspathResource(resourcePath, getClassLoaders());
             if (resource == null) {
                 throw new IllegalArgumentException("Requested classpath resource was null: " + path);
             }
@@ -79,6 +82,22 @@ public class ResourceUtil {
         } catch (Exception e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
+    }
+
+    private static InputStream loadClasspathResource(String resourcePath, ClassLoader... classLoaders) {
+        for (ClassLoader classLoader : classLoaders) {
+            final InputStream resource = classLoader.getResourceAsStream(resourcePath);
+            if (resource != null) {
+                return resource;
+            }
+        }
+        return null;
+    }
+
+    private static ClassLoader[] getClassLoaders() {
+        return Stream.of(ClassLoader.getSystemClassLoader(), Thread.currentThread().getContextClassLoader())
+                .filter(Objects::nonNull)
+                .toArray(ClassLoader[]::new);
     }
 
     private static String loadFileSystemResource(String path) {
