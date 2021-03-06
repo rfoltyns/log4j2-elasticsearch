@@ -40,7 +40,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -55,6 +57,7 @@ public abstract class SmokeTestBase {
 
     private final Random random = new Random();
     private final AtomicInteger localCounter = new AtomicInteger();
+    private final AtomicInteger totalCounter = new AtomicInteger();
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
 
@@ -214,42 +217,41 @@ public abstract class SmokeTestBase {
 
         final AtomicInteger limitTotal = new AtomicInteger(getConfig().getProperty("limitTotal", Integer.class));
         final AtomicInteger producerSleepMillis = new AtomicInteger(getConfig().getProperty("producerSleepMillis", Integer.class));
+        final AtomicInteger producerBatchSize = new AtomicInteger(getConfig().getProperty("producerBatchSize", Integer.class));
         final int limitPerSec = getConfig().getProperty("limitPerSec", Integer.class);
 
         CountDownLatch latch = new CountDownLatch(numberOfProducers);
 
         int numberOfLogsToDeliver = limitTotal.get();
-        AtomicInteger totalCounter = new AtomicInteger();
         for (int thIndex = 0; thIndex < numberOfProducers; thIndex++) {
             new Thread(() -> {
-
-                for (; limitTotal.decrementAndGet() >= 0; totalCounter.incrementAndGet()) {
-                    logger.info(marker, logSupplier.get());
-                    localCounter.incrementAndGet();
-                    try {
-                        sleep(producerSleepMillis.get());
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-
+                while (limitTotal.get() >= 0) {
+                    logMicroBatch(producerBatchSize.get(), limitTotal, logger, marker, logSupplier);
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(producerSleepMillis.get()));
                 }
                 latch.countDown();
             }).start();
         }
 
         while (latch.getCount() != 0) {
-            sleep(1000);
+
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+
             int count = localCounter.getAndSet(0);
             int sleepMillis = producerSleepMillis.get();
+
             if (count > limitPerSec && sleepMillis != 1) {
                 producerSleepMillis.incrementAndGet();
             } else if (sleepMillis > 1) {
                 producerSleepMillis.decrementAndGet();
+            } else if (count < limitPerSec) {
+                producerBatchSize.incrementAndGet();
             }
 
             String stats = String.format(
-                    "Sleep millis per thread: %d, Current throughput: %d; Progress: %d/%d",
+                    "Sleep millis per producer: %d, Producer batch size: %d, Current throughput: %d; Progress: %d/%d",
                     sleepMillis,
+                    producerBatchSize.get(),
                     count,
                     totalCounter.get(),
                     numberOfLogsToDeliver);
@@ -266,9 +268,17 @@ public abstract class SmokeTestBase {
 
     }
 
+    private <T> void logMicroBatch(final int batchSize, final AtomicInteger limitTotal, Logger logger, Marker marker, Supplier<T> logSupplier) {
+        for (int i = 0; i < batchSize && limitTotal.decrementAndGet() >= 0; i++) {
+            logger.info(marker, logSupplier.get());
+            localCounter.incrementAndGet();
+            totalCounter.incrementAndGet();
+        }
+    }
+
     protected static class SmokeTestConfig {
 
-        protected final Map<String, Object> paramsMap = new LinkedHashMap();
+        protected final Map<String, Object> paramsMap = new LinkedHashMap<>();
 
         protected void initParams() {
 
@@ -283,7 +293,8 @@ public abstract class SmokeTestBase {
             .add("logSizeInBytes", getInt("smokeTest.logSizeInBytes", 1))
             .add("lifecycleStopDelayMillis", getInt("smokeTest.lifecycleStopDelayMillis", 10000))
             .add("exitDelayMillis", getInt("smokeTest.exitDelayMillis", 10000))
-            .add("numberOfProducers", getInt("smokeTest.noOfProducers", 100))
+            .add("numberOfProducers", getInt("smokeTest.noOfProducers", 5))
+            .add("producerBatchSize", getInt("smokeTest.producerBatchSize", 10))
             .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
             .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"))
             .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")));
