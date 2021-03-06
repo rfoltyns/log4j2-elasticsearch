@@ -122,9 +122,9 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
                 .withServerList(new ArrayList<>())
                 .withConnTimeout(500)
-                .withReadTimeout(2000)
-                .withIoThreadCount(4)
-                .withMaxTotalConnections(4)
+                .withReadTimeout(10000)
+                .withIoThreadCount(8)
+                .withMaxTotalConnections(8)
                 .withAuth(secured ? getAuth() : null)
                 .withPooledResponseBuffers(true)
                 .withPooledResponseBuffersSizeInBytes(1048576);
@@ -134,7 +134,7 @@ public class SmokeTest extends SmokeTestBase {
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
                 .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory))
                 .withClientProvider(clientProvider)
-                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(4));
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8));
 
         if (serviceDiscoveryEnabled) {
 
