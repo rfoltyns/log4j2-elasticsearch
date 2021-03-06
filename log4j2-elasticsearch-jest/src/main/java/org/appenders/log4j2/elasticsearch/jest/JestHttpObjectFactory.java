@@ -147,7 +147,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 executePreBatchOperations();
 
                 if (backoffPolicy.shouldApply(bulk)) {
-                    getLogger().warn("Backoff applied. Request rejected.");
+                    getLogger().warn("Backoff applied. Batch rejected");
                     failureHandler.apply(bulk);
                     return false;
                 } else {
