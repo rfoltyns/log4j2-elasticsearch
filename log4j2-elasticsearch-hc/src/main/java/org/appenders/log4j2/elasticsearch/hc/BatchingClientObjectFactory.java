@@ -114,7 +114,7 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
                 }
 
                 if (backoffPolicy.shouldApply(request)) {
-                    getLogger().warn("Backoff applied. Request rejected.");
+                    getLogger().warn("Backoff applied. Batch of {} items rejected", request.getItems().size());
                     failureHandler.apply(request);
                     request.completed();
                     return false;
