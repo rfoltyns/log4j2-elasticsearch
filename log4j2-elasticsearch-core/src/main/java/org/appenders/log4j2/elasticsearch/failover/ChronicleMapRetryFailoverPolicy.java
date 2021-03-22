@@ -272,8 +272,9 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
         protected Builder lazyInit() {
 
             try {
+                // FIXME: messy initialization.. need to simplify
                 this.mapProxy = new ChronicleMapProxy(createChronicleMap());
-                this.keySequenceSelector = configuredKeySequenceSelector();
+                this.keySequenceSelector = configuredKeySequenceSelector(this.mapProxy);
             } catch (Exception e) {
                 throw new IllegalStateException("Could not initialize " +
                         ChronicleMapRetryFailoverPolicy.class.getSimpleName(), e);
@@ -283,9 +284,8 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
 
         }
 
-        protected KeySequenceSelector configuredKeySequenceSelector() {
-
-            KeySequenceConfigRepository repository = createKeySequenceConfigRepository(this.mapProxy);
+        protected KeySequenceSelector configuredKeySequenceSelector(MapProxy<CharSequence, ItemSource> mapProxy) {
+            KeySequenceConfigRepository repository = createKeySequenceConfigRepository(mapProxy);
             keySequenceSelector.withRepository(repository);
 
             KeySequence keySequence = keySequenceSelector.firstAvailable();
@@ -296,6 +296,15 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
             }
 
             return keySequenceSelector;
+        }
+
+        /**
+         * @deprecated As of 1.6, this method will be removed. Use {@link #configuredKeySequenceSelector(MapProxy)} instead.
+         * @return {@link KeySequenceSelector} based on currently set {@link MapProxy}
+         */
+        @Deprecated
+        protected KeySequenceSelector configuredKeySequenceSelector() {
+            return configuredKeySequenceSelector(this.mapProxy);
         }
 
         KeySequenceConfigRepository createKeySequenceConfigRepository(Map<CharSequence, ItemSource> map) {
