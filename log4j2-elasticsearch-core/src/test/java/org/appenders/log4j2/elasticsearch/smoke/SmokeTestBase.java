@@ -32,6 +32,11 @@ import org.apache.logging.log4j.core.async.AsyncLoggerConfigDelegate;
 import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
+import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
+import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
+import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -48,6 +53,7 @@ import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
 import static org.appenders.core.util.PropertiesUtil.getInt;
+import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapUtil.resolveChronicleMapFilePath;
 
 public abstract class SmokeTestBase {
 
@@ -75,20 +81,6 @@ public abstract class SmokeTestBase {
         random.nextBytes(bytes);
 
         return new String(bytes);
-    }
-
-    protected String resolveChronicleMapFilePath(String fileName) {
-
-        String path = System.getProperty(
-                "appenders.failover.chroniclemap.dir",
-                "./");
-
-        if (!path.endsWith("/")) {
-            path += "/";
-        }
-
-        return path + fileName;
-
     }
 
     public final void createLoggerProgrammatically(Supplier<ElasticsearchAppender.Builder> appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
@@ -213,6 +205,29 @@ public abstract class SmokeTestBase {
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> "Message " + counter.incrementAndGet());
     }
 
+    protected FailoverPolicy resolveFailoverPolicy() {
+
+        if (!getConfig().getProperty("chronicleMap.enabled", Boolean.class)) {
+            return new NoopFailoverPolicy.Builder().build();
+        }
+
+        KeySequenceSelector keySequenceSelector =
+                new Log4j2SingleKeySequenceSelector.Builder()
+                        .withSequenceId(getConfig().getProperty("chronicleMap.sequenceId", Integer.class))
+                        .build();
+
+        return new ChronicleMapRetryFailoverPolicy.Builder()
+                .withKeySequenceSelector(keySequenceSelector)
+                .withFileName(resolveChronicleMapFilePath(getConfig().getProperty("indexName", String.class) + ".chronicleMap"))
+                .withNumberOfEntries(1000000)
+                .withAverageValueSize(2048)
+                .withBatchSize(5000)
+                .withRetryDelay(4000)
+                .withMonitored(true)
+                .withMonitorTaskInterval(1000)
+                .build();
+    }
+
     <T> void indexLogs(Logger logger, Marker marker, int numberOfProducers, Supplier<T> logSupplier) throws InterruptedException {
 
         final AtomicInteger limitTotal = new AtomicInteger(getConfig().getProperty("limitTotal", Integer.class));
@@ -276,7 +291,7 @@ public abstract class SmokeTestBase {
         }
     }
 
-    protected static class SmokeTestConfig {
+    public static class SmokeTestConfig {
 
         protected final Map<String, Object> paramsMap = new LinkedHashMap<>();
 
@@ -297,7 +312,8 @@ public abstract class SmokeTestBase {
             .add("producerBatchSize", getInt("smokeTest.producerBatchSize", 10))
             .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
             .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"))
-            .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")));
+            .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")))
+            .add("chronicleMap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
 
         }
 

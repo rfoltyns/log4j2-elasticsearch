@@ -43,9 +43,6 @@ import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn;
-import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
-import org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.jest.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.jest.BufferedJestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
@@ -74,7 +71,8 @@ public class SmokeTest extends SmokeTestBase {
                 .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
                 .add("initialBatchPoolSize", initialBatchPoolSize)
                 .add("indexName", indexName)
-                .add("ecs.enabled", ecsEnabled);
+                .add("ecs.enabled", ecsEnabled)
+                .add("chronicleMap.sequenceId", 2);
 
         getLogger().info("Running SmokeTest {}", getConfig().getAll());
 
@@ -141,21 +139,11 @@ public class SmokeTest extends SmokeTestBase {
                 .withPath("classpath:ilmPolicy-7.json")
                 .build();
 
-        KeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(2);
-
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(jestHttpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
-                .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
-                        .withKeySequenceSelector(keySequenceSelector)
-                        .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))
-                        .withAverageValueSize(2048)
-                        .withNumberOfEntries(1000000)
-                        .withBatchSize(5000)
-                        .withRetryDelay(3000)
-                        .withMonitored(true)
-                        .build())
+                .withFailoverPolicy(resolveFailoverPolicy())
                 .withSetupOpSources(indexSettings, indexMappings, indexSettingsIlm, componentIndexTemplate, ilmPolicy)
                 .build();
 

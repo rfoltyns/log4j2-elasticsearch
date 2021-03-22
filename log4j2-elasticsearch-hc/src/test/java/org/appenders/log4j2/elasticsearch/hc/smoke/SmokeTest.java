@@ -52,9 +52,6 @@ import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn;
-import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
-import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.hc.BatchItemResult;
 import org.appenders.log4j2.elasticsearch.hc.BatchItemResultMixIn;
@@ -79,7 +76,6 @@ import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -111,7 +107,8 @@ public class SmokeTest extends SmokeTestBase {
                 .add("indexName", indexName)
                 .add("ecs.enabled", ecsEnabled)
                 .add("servicediscovery.enabled", serviceDiscoveryEnabled)
-                .add("servicediscovery.nodesFilter", nodesFilter);
+                .add("servicediscovery.nodesFilter", nodesFilter)
+                .add("chronicleMap.sequenceId", 1);
 
         getLogger().info("{}", getConfig().getAll());
 
@@ -195,26 +192,12 @@ public class SmokeTest extends SmokeTestBase {
                 indexName,
                 ResourceUtil.loadResource("classpath:ilmPolicy-7.json"));
 
-        KeySequenceSelector keySequenceSelector =
-                new Log4j2SingleKeySequenceSelector.Builder()
-                        .withSequenceId(1)
-                        .build();
-
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize + additionalBatchSize)
                 .withDeliveryInterval(1000)
                 .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy)
-                .withFailoverPolicy(new ChronicleMapRetryFailoverPolicy.Builder()
-                        .withKeySequenceSelector(keySequenceSelector)
-                        .withFileName(resolveChronicleMapFilePath(indexName + ".chronicleMap"))
-                        .withNumberOfEntries(1000000)
-                        .withAverageValueSize(2048)
-                        .withBatchSize(5000)
-                        .withRetryDelay(4000)
-                        .withMonitored(true)
-                        .withMonitorTaskInterval(1000)
-                        .build())
+                .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
                 .build();
 
