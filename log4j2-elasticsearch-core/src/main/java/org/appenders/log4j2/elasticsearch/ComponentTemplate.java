@@ -81,10 +81,10 @@ public class ComponentTemplate implements OpSource {
 
         void validate() {
             if (name == null) {
-                throw new IllegalArgumentException("No name provided for " + getClass().getSimpleName());
+                throw new IllegalArgumentException("No name provided for " + ComponentTemplate.class.getSimpleName());
             }
             if ((path == null && source == null) || (path != null && source != null)) {
-                throw new IllegalArgumentException("Either path or source have to be provided for " + getClass().getSimpleName());
+                throw new IllegalArgumentException("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName());
             }
         }
 

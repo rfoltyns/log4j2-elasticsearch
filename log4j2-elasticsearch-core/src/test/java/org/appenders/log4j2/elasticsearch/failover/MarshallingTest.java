@@ -25,8 +25,8 @@ import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,8 +41,8 @@ import static java.lang.Math.abs;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
 import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createTestKeySequenceConfig;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MarshallingTest {
 
@@ -159,7 +159,7 @@ public class MarshallingTest {
         try {
             return File.createTempFile("test", ".chronicleMap");
         } catch (IOException e) {
-            Assert.fail("Cannot create temp file");
+            Assertions.fail("Cannot create temp file");
             return null;
         }
     }

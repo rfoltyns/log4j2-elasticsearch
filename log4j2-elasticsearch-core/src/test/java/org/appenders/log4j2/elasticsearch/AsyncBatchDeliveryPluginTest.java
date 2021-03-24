@@ -23,10 +23,8 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.appenders.log4j2.elasticsearch.spi.TestBatchEmitterFactory;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -34,7 +32,11 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.eq;
@@ -50,9 +52,6 @@ public class AsyncBatchDeliveryPluginTest {
     private static final int TEST_DELIVERY_INTERVAL = 100;
 
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static TestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
         TestHttpObjectFactory.Builder builder = TestHttpObjectFactory.newBuilder();
@@ -89,7 +88,7 @@ public class AsyncBatchDeliveryPluginTest {
         BatchDelivery<String> delivery = invokePluginFactory(batchDeliveryBuilder);
 
         // then
-        Assert.assertNotNull(delivery);
+        assertNotNull(delivery);
     }
 
     @Test
@@ -99,11 +98,12 @@ public class AsyncBatchDeliveryPluginTest {
         AsyncBatchDeliveryPlugin.Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withClientObjectFactory(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
-
         // when
-        invokePluginFactory(batchDeliveryBuilder);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> invokePluginFactory(batchDeliveryBuilder));
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 

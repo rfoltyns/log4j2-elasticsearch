@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch;
+package org.appenders.log4j2.elasticsearch.spi;
 
 /*-
  * #%L
@@ -22,12 +22,18 @@ package org.appenders.log4j2.elasticsearch;
 
 
 
+import org.appenders.log4j2.elasticsearch.BatchEmitter;
+import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
+import org.appenders.log4j2.elasticsearch.BulkEmitter;
+import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.TestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.mockito.Mockito;
 
 public class TestBatchEmitterFactory extends BatchEmitterServiceProvider implements BatchEmitterFactory<BatchEmitter> {
 
-    private BatchEmitter spiedEmitter;
+    BatchEmitter spiedEmitter;
 
     @Override
     public boolean accepts(Class clientObjectFactoryClass) {

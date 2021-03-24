@@ -20,13 +20,13 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -58,7 +58,7 @@ public class SkippingSetupStepChainTest {
         verify(expected3).shouldProcess(any());
         verify(expected3).onResponse(any());
 
-        Assert.assertEquals(Arrays.asList(Result.SKIP, Result.FAILURE, Result.SUCCESS), execOnStep.getResultList());
+        assertEquals(Arrays.asList(Result.SKIP, Result.FAILURE, Result.SUCCESS), execOnStep.getResultList());
 
     }
 
@@ -93,7 +93,7 @@ public class SkippingSetupStepChainTest {
         verify(expected2).createRequest();
         verify(expected2).onResponse(any());
 
-        Assert.assertEquals(Arrays.asList(Result.SKIP, Result.SUCCESS), stepProcessor.getResultList());
+        assertEquals(Arrays.asList(Result.SKIP, Result.SUCCESS), stepProcessor.getResultList());
 
     }
 

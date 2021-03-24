@@ -22,12 +22,16 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IndexTemplatePluginTest {
 
@@ -83,52 +87,69 @@ public class IndexTemplatePluginTest {
         assertEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplatePlugin.getApiVersion());
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenNameIsNotSet() {
+    @Test
+    public void throwsByDefaultWhenNameIsNotSet() {
 
         // when
-        createTestIndexTemplate(null, TEST_PATH);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(null, TEST_PATH));
+
+        // then
+        assertThat(exception.getMessage(), containsString("No name provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenNeitherPathOrSourceIsSet() {
+    @Test
+    public void throwsByDefaultWhenNeitherPathOrSourceIsSet() {
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, null, null);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, null, null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenBothPathAndSourceAreSet() {
+    @Test
+    public void throwsByDefaultWhenBothPathAndSourceAreSet() {
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH, TEST_SOURCE);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH, TEST_SOURCE));
 
+        // then
+        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenClasspathResourceDoesntExist() {
+    @Test
+    public void throwsByDefaultWhenClasspathResourceDoesntExist() {
 
         // when
-        createTestIndexTemplate(null, "classpath:nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, "classpath:nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("classpath:nonExistentFile"));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenFileDoesNotExist() {
+    @Test
+    public void throwsByDefaultWhenFileDoesNotExist() {
 
         // when
-        createTestIndexTemplate(null, "nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, "nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("nonExistentFile"));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultOnInvalidProtocol() {
+    @Test
+    public void throwsByDefaultOnInvalidProtocol() {
 
         // when
-        createTestIndexTemplate(null, "~/nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, "~/nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("~/nonExistentFile"));
 
     }
 
@@ -141,7 +162,7 @@ public class IndexTemplatePluginTest {
                 .getAbsolutePath();
 
         // when
-        createTestIndexTemplate(TEST_INDEX_TEMPLATE, existingFile);
+        assertDoesNotThrow(() -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, existingFile));
 
     }
 

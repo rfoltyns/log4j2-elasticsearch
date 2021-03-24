@@ -122,9 +122,7 @@ class RetryProcessor implements Runnable {
         }
 
         // simple backoff for now
-        if (backoffMillis > 0) {
-            LockSupport.parkNanos(backoffMillis);
-        }
+        LockSupport.parkNanos(backoffMillis);
 
         Iterator<CharSequence> selectedKeys = selectedKeysList.iterator();
         try {

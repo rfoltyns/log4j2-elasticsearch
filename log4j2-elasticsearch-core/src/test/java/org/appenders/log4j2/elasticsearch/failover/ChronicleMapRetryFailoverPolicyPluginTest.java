@@ -24,10 +24,10 @@ import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicyTest.ExceptionMatcher;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.File;
@@ -39,11 +39,11 @@ import java.util.concurrent.TimeUnit;
 import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicyTest.DEFAULT_TEST_MONITOR_TASK_INTERVAL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,17 +62,17 @@ public class ChronicleMapRetryFailoverPolicyPluginTest {
     public static final int TEST_NUMBER_OF_ENTRIES = 100;
     public static final int DEFAULT_TEST_RETRY_INTERVAL = random.nextInt(100) + 200;
 
-    @BeforeClass
+    @BeforeAll
     public static void globalSetup() {
         InternalLoggingTest.mockTestLogger();
     }
 
-    @AfterClass
+    @AfterAll
     public static void globalTeardown() {
         InternalLogging.setLogger(null);
     }
 
-    @Before
+    @BeforeEach
     public void setup() {
         System.setProperty("appenders.failover.keysequence.consistencyCheckDelay", "10");
     }

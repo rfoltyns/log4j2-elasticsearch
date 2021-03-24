@@ -20,14 +20,15 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -209,7 +210,7 @@ public class DelayedShutdownTest {
         DelayedShutdown shutdown = new DelayedShutdown(() -> {throw new NullPointerException(expectedMessage);});
 
         // when
-        shutdown.start(false);
+        assertDoesNotThrow(() -> shutdown.start(false));
 
     }
 

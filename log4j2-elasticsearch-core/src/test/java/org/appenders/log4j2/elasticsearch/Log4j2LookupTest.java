@@ -22,12 +22,13 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -46,7 +47,7 @@ public class Log4j2LookupTest {
         Log4j2Lookup result = createDefaultTestLog4j2Lookup(strSubstitutor);
 
         // then
-        Assert.assertNotNull(result);
+        assertNotNull(result);
 
     }
 
@@ -72,8 +73,8 @@ public class Log4j2LookupTest {
 
         verify(strSubstitutor, times(2)).replace(captor.capture());
 
-        Assert.assertEquals(expectedValue, captor.getAllValues().get(0));
-        Assert.assertEquals(expectedValue, captor.getAllValues().get(1));
+        assertEquals(expectedValue, captor.getAllValues().get(0));
+        assertEquals(expectedValue, captor.getAllValues().get(1));
 
     }
 
@@ -97,7 +98,7 @@ public class Log4j2LookupTest {
 
         verify(lookup, times(1)).resolve(captor.capture());
 
-        Assert.assertEquals(expectedValue, captor.getValue());
+        assertEquals(expectedValue, captor.getValue());
 
     }
 

@@ -24,17 +24,18 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.logging.log4j.core.LogEvent;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -42,9 +43,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class StringItemSourceFactoryTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -66,10 +64,11 @@ public class StringItemSourceFactoryTest {
         // given
         StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
 
-        expectedException.expect(UnsupportedOperationException.class);
-
         // when
-        factory.createEmptySource();
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, factory::createEmptySource);
+
+        // then
+        assertThat(exception.getMessage(), containsString("cannot create empty source. Use buffer-based classes instead"));
 
     }
 

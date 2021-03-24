@@ -21,12 +21,16 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ILMPolicyPluginTest {
 
@@ -36,7 +40,7 @@ public class ILMPolicyPluginTest {
     private static final String TEST_ROLLOVER_ALIAS = "test-rollover-alias";
 
     public static ILMPolicyPlugin.Builder createTestILMPolicyPluginBuilder() {
-        ILMPolicyPlugin.Builder builder = ILMPolicyPlugin.newBuilder();
+        final ILMPolicyPlugin.Builder builder = ILMPolicyPlugin.newBuilder();
         builder.withName(TEST_ILM_POLICY_NAME)
                 .withPath(TEST_PATH)
                 .withRolloverAlias(TEST_ROLLOVER_ALIAS);
@@ -47,13 +51,13 @@ public class ILMPolicyPluginTest {
     public void startsWhenSetupCorrectlyWithNameAndPathAndRolloverAlias() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withName(TEST_ILM_POLICY_NAME)
                 .withPath(TEST_PATH)
                 .withRolloverAlias(TEST_ROLLOVER_ALIAS);
 
         // when
-        ILMPolicyPlugin ilmPolicyPlugin = builder.build();
+        final ILMPolicyPlugin ilmPolicyPlugin = builder.build();
 
         // then
         assertNotNull(ilmPolicyPlugin);
@@ -67,14 +71,14 @@ public class ILMPolicyPluginTest {
     public void startsWhenSetupCorrectlyWithNameAndSourceAndRolloverAlias() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withName(TEST_ILM_POLICY_NAME)
                 .withRolloverAlias(TEST_ROLLOVER_ALIAS)
                 .withPath(null)
                 .withSource(TEST_SOURCE);
 
         // when
-        ILMPolicyPlugin ilmPolicyPlugin = builder.build();
+        final ILMPolicyPlugin ilmPolicyPlugin = builder.build();
 
         // then
         assertNotNull(ilmPolicyPlugin);
@@ -82,94 +86,130 @@ public class ILMPolicyPluginTest {
         assertNotNull(ilmPolicyPlugin.getSource());
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptionWhenNameIsNotSet() {
+    @Test
+    public void builderthrowsWhenNameIsNotSet() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withName(null);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "No name provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptionWhenRolloverAliasIsNotSet() {
+    @Test
+    public void builderthrowsWhenRolloverAliasIsNotSet() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withRolloverAlias(null);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "No rolloverAlias provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptionWhenNeitherPathOrSourceIsSet() {
+    @Test
+    public void builderthrowsWhenNeitherPathOrSourceIsSet() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath(null)
                 .withSource(null);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "Either path or source have to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptionWhenBothPathAndSourceAreSet() {
+    @Test
+    public void builderthrowsWhenBothPathAndSourceAreSet() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath(TEST_PATH)
                 .withSource(TEST_SOURCE);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "Either path or source have to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenClasspathResourceDoesntExist() {
+    @Test
+    public void builderthrowsWhenClasspathResourceDoesntExist() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath("classpath:nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "classpath:nonExistentFile"));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenFileDoesNotExist() {
+    @Test
+    public void builderthrowsWhenFileDoesNotExist() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath("nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "nonExistentFile"));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionOnInvalidProtocol() {
+    @Test
+    public void builderthrowsOnInvalidProtocol() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath("~/nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "~/nonExistentFile"));
+
     }
 
     @Test
     public void builderDoesNotThrowExceptionWhenFileExists() {
 
         // given
-        ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
+        final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withPath(new File(ClassLoader.getSystemClassLoader().getResource("ilmPolicy.json").getFile()).getAbsolutePath());
 
         // when
-        builder.build();
+        assertDoesNotThrow(builder::build);
+
     }
 
 }

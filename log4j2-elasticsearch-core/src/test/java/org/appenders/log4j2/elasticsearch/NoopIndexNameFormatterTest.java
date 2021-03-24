@@ -23,19 +23,17 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class NoopIndexNameFormatterTest {
 
     public static final String TEST_INDEX_NAME = "testIndexName";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void returnsIndexNameUnchanged() {
@@ -58,11 +56,11 @@ public class NoopIndexNameFormatterTest {
         // given
         NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("indexName");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("indexName"));
     }
 
 

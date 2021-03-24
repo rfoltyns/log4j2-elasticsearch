@@ -21,9 +21,7 @@ package org.appenders.log4j2.elasticsearch.failover;
  */
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,17 +29,17 @@ import java.util.UUID;
 import java.util.concurrent.locks.LockSupport;
 
 import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createDefaultTestKeySequenceConfig;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SingleKeySequenceSelectorTest {
 
     static final int DEFAULT_TEST_SEQUENCE_ID = 1;
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     // ==============================
     // After setup (after firstAvailable() call)
@@ -104,12 +102,12 @@ public class SingleKeySequenceSelectorTest {
         // given
         SingleKeySequenceSelector keySequenceSelector = new SingleKeySequenceSelector(DEFAULT_TEST_SEQUENCE_ID);
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(KeySequenceConfigRepository.class.getSimpleName() +
-                " was not provided for " + SingleKeySequenceSelector.class.getSimpleName());
-
         // when
-        keySequenceSelector.firstAvailable();
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> keySequenceSelector.firstAvailable());
+
+        // then
+        assertThat(exception.getMessage(), equalTo(KeySequenceConfigRepository.class.getSimpleName() +
+                " was not provided for " + SingleKeySequenceSelector.class.getSimpleName()));
 
     }
 

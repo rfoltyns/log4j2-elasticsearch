@@ -25,36 +25,37 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Random;
 import java.util.UUID;
+import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@PrepareForTest({ItemSourcePool.class, PooledItemSourceFactory.Builder.class})
-@RunWith(PowerMockRunner.class)
 public class PooledItemSourceFactoryTest {
 
     static {
@@ -66,11 +67,25 @@ public class PooledItemSourceFactoryTest {
     private static final int DEFAULT_TEST_POOL_SIZE = 10;
     private static final int DEFAULT_TEST_ITEM_SIZE_IN_BYTES = 512;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
+    @AfterEach
+    public void tearDown() {
+        InternalLogging.setLogger(null);
+    }
 
     public static PooledItemSourceFactory.Builder createDefaultTestSourceFactoryConfig() {
         return PooledItemSourceFactory.newBuilder()
+                .withInitialPoolSize(DEFAULT_TEST_POOL_SIZE)
+                .withItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES)
+                .withMaxItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+    }
+
+    public static PooledItemSourceFactory.Builder createTestItemSourceFactoryBuilder(Function<ItemSourcePool, ItemSourcePool> wrapper) {
+        return new PooledItemSourceFactory.Builder() {
+            @Override
+            ItemSourcePool configuredItemSourcePool() {
+                return wrapper.apply(super.configuredItemSourcePool());
+            }
+        }
                 .withInitialPoolSize(DEFAULT_TEST_POOL_SIZE)
                 .withItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES)
                 .withMaxItemSizeInBytes(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
@@ -86,7 +101,7 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory factory = builder.build();
 
         // then
-        Assert.assertNotNull(factory);
+        assertNotNull(factory);
 
     }
 
@@ -97,12 +112,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withInitialPoolSize(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("initialPoolSize must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("initialPoolSize must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -113,12 +128,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withInitialPoolSize(-1);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("initialPoolSize must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("initialPoolSize must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -129,12 +144,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withItemSizeInBytes(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("itemSizeInBytes must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("itemSizeInBytes must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -145,12 +160,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withItemSizeInBytes(-1);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("itemSizeInBytes must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("itemSizeInBytes must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -161,12 +176,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withMaxItemSizeInBytes(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("maxItemSizeInBytes must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("maxItemSizeInBytes must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -177,12 +192,12 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withMaxItemSizeInBytes(-1);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("maxItemSizeInBytes must be higher than 0");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("maxItemSizeInBytes must be higher than 0"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -194,12 +209,12 @@ public class PooledItemSourceFactoryTest {
                 .withMaxItemSizeInBytes(1)
                 .withItemSizeInBytes(2);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes");
-        expectedException.expectMessage(PooledItemSourceFactory.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes"));
+        assertThat(exception.getMessage(), containsString(PooledItemSourceFactory.PLUGIN_NAME));
 
     }
 
@@ -213,12 +228,11 @@ public class PooledItemSourceFactoryTest {
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(expectedMessage);
-
         // when
-        pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class)));
 
+        // then
+        assertThat(exception.getMessage(), containsString(expectedMessage));
     }
 
     @Test
@@ -232,13 +246,42 @@ public class PooledItemSourceFactoryTest {
 
         PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(expectedMessage);
-
         // when
-        pooledItemSourceFactory.createEmptySource();
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.createEmptySource());
+
+        // then
+        assertThat(exception.getMessage(), containsString(expectedMessage));
 
     }
+
+    @Test
+    public void throwsWhenResizeIsIneffective() {
+
+        // given
+        final PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+                .withResizePolicy(new ResizePolicy() {
+                    @Override
+                    public boolean increase(ItemSourcePool itemSourcePool) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean decrease(ItemSourcePool itemSourcePool) {
+                        return false;
+                    }
+                })
+                .withResizeTimeout(0);
+
+        final PooledItemSourceFactory itemSourceFactory = builder.build();
+
+        // when
+        IllegalStateException exception = assertThrows(IllegalStateException.class, itemSourceFactory::createEmptySource);
+
+        // then
+        assertThat(exception.getMessage(), containsString("ResizePolicy is ineffective"));
+
+    }
+
     @Test
     public void isBufferedReturnsTrue() {
 
@@ -339,48 +382,39 @@ public class PooledItemSourceFactoryTest {
         assertNull(result);
         verify(bufferedItemSource).release();
         assertEquals(IllegalArgumentException.class, caught.getClass());
+
     }
 
     @Test
-    public void builderConfiguresItemSourcePool() throws Exception {
+    public void printsPoolMetricsIfConfigured() {
 
         // given
-        boolean monitored = true;
-        long monitorTaskInterval = new Random().nextInt();
-        long resizeTimeout = new Random().nextInt(1000) + 100;
-        int initialPoolSize = new Random().nextInt(100) + 1;
-        int itemSizeInBytes = new Random().nextInt(1024) + 1024;
-        String poolName = UUID.randomUUID().toString();
-        ResizePolicy resizePolicy = mock(ResizePolicy.class);
+        final Logger logger = mockTestLogger();
 
-        PooledItemSourceFactory.Builder builder = PowerMockito.spy(createDefaultTestSourceFactoryConfig())
-                .withMonitored(monitored)
-                .withMonitorTaskInterval(monitorTaskInterval)
-                .withResizePolicy(resizePolicy)
-                .withResizeTimeout(resizeTimeout)
-                .withInitialPoolSize(initialPoolSize)
-                .withItemSizeInBytes(itemSizeInBytes)
-                .withMaxItemSizeInBytes(itemSizeInBytes * 2)
-                .withPoolName(poolName);
+        final String expectedPoolName = UUID.randomUUID().toString();
 
-        GenericItemSourcePool pool = GenericItemSourcePoolTest.createDefaultTestGenericItemSourcePool(DEFAULT_TEST_POOL_SIZE, monitored);
-        PowerMockito.whenNew(GenericItemSourcePool.class).withAnyArguments().thenReturn(pool);
+        final PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedPoolName)
+                .withMonitored(true)
+                .withMonitorTaskInterval(1000);
+
+        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "0");
+
+        final PooledItemSourceFactory itemSourceFactory = builder.build();
 
         // when
-        builder.build();
+        itemSourceFactory.start();
 
         // then
-        PowerMockito.verifyNew(GenericItemSourcePool.class).withArguments(
-                eq(poolName),
-                any(PooledObjectOps.class),
-                eq(resizePolicy),
-                eq(resizeTimeout),
-                eq(monitored),
-                eq(monitorTaskInterval),
-                eq(initialPoolSize)
-        );
+        final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(logger, timeout(500)).info(captor.capture());
+
+        assertThat(captor.getValue(), containsString(expectedPoolName));
+
+        itemSourceFactory.stop();
 
     }
+
 
     @Test
     public void lifecycleStopShutsDownPoolOnlyOnce() {
@@ -389,8 +423,7 @@ public class PooledItemSourceFactoryTest {
         ItemSourcePool pool = mock(ItemSourcePool.class);
         when(pool.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
 
-        PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
-        when(sourceFactoryConfig.configuredItemSourcePool()).thenReturn(pool);
+        PooledItemSourceFactory.Builder sourceFactoryConfig = createTestItemSourceFactoryBuilder( defaultPool -> pool);
 
         PooledItemSourceFactory factory = sourceFactoryConfig.build();
         factory.start();
@@ -410,8 +443,7 @@ public class PooledItemSourceFactoryTest {
         // given
         ItemSourcePool pool = mock(ItemSourcePool.class);
 
-        PooledItemSourceFactory.Builder sourceFactoryConfig = spy(createDefaultTestSourceFactoryConfig());
-        when(sourceFactoryConfig.configuredItemSourcePool()).thenReturn(pool);
+        PooledItemSourceFactory.Builder sourceFactoryConfig = createTestItemSourceFactoryBuilder( defaultPool -> pool);
 
         when(pool.isStarted()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
 

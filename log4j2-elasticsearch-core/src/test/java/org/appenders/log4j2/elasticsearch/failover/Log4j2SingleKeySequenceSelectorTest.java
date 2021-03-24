@@ -21,16 +21,14 @@ package org.appenders.log4j2.elasticsearch.failover;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class Log4j2SingleKeySequenceSelectorTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -54,11 +52,11 @@ public class Log4j2SingleKeySequenceSelectorTest {
         Log4j2SingleKeySequenceSelector.Builder builder = Log4j2SingleKeySequenceSelector.newBuilder()
                 .withSequenceId(-1);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("sequenceId must be higher than 0");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("sequenceId must be higher than 0"));
 
     }
 
@@ -69,11 +67,11 @@ public class Log4j2SingleKeySequenceSelectorTest {
         Log4j2SingleKeySequenceSelector.Builder builder = Log4j2SingleKeySequenceSelector.newBuilder()
                 .withSequenceId(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("sequenceId must be higher than 0");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("sequenceId must be higher than 0"));
 
     }
 

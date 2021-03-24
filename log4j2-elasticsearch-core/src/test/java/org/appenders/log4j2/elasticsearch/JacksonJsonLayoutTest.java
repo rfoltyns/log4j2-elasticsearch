@@ -39,20 +39,19 @@ import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJs
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -66,9 +65,6 @@ import static org.mockito.Mockito.when;
 
 public class JacksonJsonLayoutTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void builderBuildsSuccessfully() {
 
@@ -79,7 +75,7 @@ public class JacksonJsonLayoutTest {
         JacksonJsonLayout layout = builder.build();
 
         // then
-        Assert.assertNotNull(layout);
+        assertNotNull(layout);
 
     }
 
@@ -102,10 +98,11 @@ public class JacksonJsonLayoutTest {
         // given
         JacksonJsonLayout layout = createDefaultTestBuilder().build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-
         // when
-        layout.toByteArray(new Log4jLogEvent());
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> layout.toByteArray(new Log4jLogEvent()));
+
+        // then
+        assertThat(exception.getMessage(), IsEqual.equalTo("Cannot return unwrapped byte array. Use ItemSource based API"));
 
     }
 
@@ -116,11 +113,11 @@ public class JacksonJsonLayoutTest {
         JacksonJsonLayout.Builder builder = createDefaultTestBuilder()
                 .setConfiguration(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No Configuration instance provided for " + JacksonJsonLayout.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), IsEqual.equalTo("No Configuration instance provided for " + JacksonJsonLayout.PLUGIN_NAME));
 
     }
 

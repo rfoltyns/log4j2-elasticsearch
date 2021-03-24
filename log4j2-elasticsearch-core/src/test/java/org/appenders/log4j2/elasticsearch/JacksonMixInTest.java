@@ -23,17 +23,16 @@ package org.appenders.log4j2.elasticsearch;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.appenders.log4j2.elasticsearch.thirdparty.LogEventJacksonJsonMixIn;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JacksonMixInTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static JacksonMixIn.Builder createDefaultTestBuilder() {
         JacksonMixIn.Builder builder = JacksonMixIn.newBuilder();
@@ -64,11 +63,11 @@ public class JacksonMixInTest {
         JacksonMixIn.Builder builder = createDefaultTestBuilder();
         builder.withTargetClass(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No targetClass provided for " + JacksonMixIn.PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No targetClass provided for " + JacksonMixIn.PLUGIN_NAME));
 
     }
 
@@ -79,11 +78,12 @@ public class JacksonMixInTest {
         JacksonMixIn.Builder builder = createDefaultTestBuilder();
         builder.withMixInClass(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No mixInClass provided for " + JacksonMixIn.PLUGIN_NAME);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No mixInClass provided for " + JacksonMixIn.PLUGIN_NAME));
 
     }
 
@@ -95,12 +95,12 @@ public class JacksonMixInTest {
         String mixInClass = "org.appenders.test.NonExistingClass";
         builder.withMixInClass(mixInClass);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Cannot load mixInClass");
-        expectedException.expectMessage(mixInClass);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Cannot load mixInClass"));
+        assertThat(exception.getMessage(), containsString(mixInClass));
 
     }
 
@@ -112,12 +112,12 @@ public class JacksonMixInTest {
         String targetClass = "org.appenders.test.NonExistingClass";
         builder.withTargetClass(targetClass);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Cannot load targetClass");
-        expectedException.expectMessage(targetClass);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Cannot load targetClass"));
+        assertThat(exception.getMessage(), containsString(targetClass));
 
     }
 

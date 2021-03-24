@@ -37,21 +37,21 @@ import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.powermock.api.mockito.PowerMockito;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -65,9 +65,6 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 public class ElasticsearchAppenderTest {
 
     private static final String TEST_APPENDER_NAME = "testAppender";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderReturnsNonNullObject() {
@@ -89,11 +86,12 @@ public class ElasticsearchAppenderTest {
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withName(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No name provided");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No name provided"));
+
     }
 
     @Test
@@ -103,11 +101,11 @@ public class ElasticsearchAppenderTest {
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withLayout(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No layout provided");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No layout provided"));
 
     }
 
@@ -118,11 +116,12 @@ public class ElasticsearchAppenderTest {
         ElasticsearchAppender.Builder builder = createTestElasticsearchAppenderBuilder();
         builder.withBatchDelivery(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No batchDelivery [AsyncBatchDelivery] provided");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No batchDelivery [AsyncBatchDelivery] provided"));
+
     }
 
     @Test
@@ -152,7 +151,7 @@ public class ElasticsearchAppenderTest {
     public void appenderUsesProvidedLayoutWhenMessageOnlyIsSetToFalse() {
 
         // given
-        Layout layout = PowerMockito.mock(Layout.class);
+        Layout layout = mock(Layout.class);
 
         ElasticsearchAppender.Builder builder = ElasticsearchAppenderTest.createTestElasticsearchAppenderBuilder();
         builder.withMessageOnly(false);

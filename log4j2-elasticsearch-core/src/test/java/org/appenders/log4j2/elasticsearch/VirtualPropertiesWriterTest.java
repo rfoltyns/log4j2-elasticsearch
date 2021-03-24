@@ -32,16 +32,19 @@ import com.fasterxml.jackson.databind.introspect.AnnotationCollector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import org.apache.logging.log4j.core.LogEvent;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.VirtualPropertyTest.createDefaultVirtualPropertyBuilder;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,18 +56,15 @@ import static org.mockito.Mockito.when;
 
 public class VirtualPropertiesWriterTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void defaultConstructorIsNotSupported() {
 
-        // given
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("Invalid use of " + VirtualPropertiesWriter.class.getSimpleName());
-
         // when
-        new VirtualPropertiesWriter();
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, VirtualPropertiesWriter::new);
+
+        // then
+        assertThat(exception.getMessage(), IsEqual.equalTo("Invalid use of " + VirtualPropertiesWriter.class.getSimpleName() + ". Use virtualProperties based constructors"));
+
     }
 
     @Test
@@ -90,11 +90,11 @@ public class VirtualPropertiesWriterTest {
                 mock(ValueResolver.class)
         );
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("Should not be used with this implementation");
-
         // when
-        writer.value(null, null, null);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> writer.value(null, null, null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Should not be used with this implementation. Use serializeAsField() to write value directly."));
 
     }
 

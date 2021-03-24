@@ -56,11 +56,10 @@ public class ComponentTemplatePlugin extends ComponentTemplate {
 
         try {
             builder.validate();
+            return new ComponentTemplatePlugin(name, builder.loadSource());
         } catch (Exception e) {
             throw new ConfigurationException(e);
         }
-
-        return new ComponentTemplatePlugin(name, builder.loadSource());
 
     }
 

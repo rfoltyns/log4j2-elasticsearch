@@ -30,7 +30,7 @@ import net.openhft.chronicle.wire.WireOut;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,8 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -207,7 +208,7 @@ public class FailedItemMarshallerTest {
         FailedItemSource deserialized = (FailedItemSource) failedItemMarshaller.read(in, null);
 
         // when
-        deserialized.release();
+        assertDoesNotThrow(deserialized::release);
 
     }
 }
