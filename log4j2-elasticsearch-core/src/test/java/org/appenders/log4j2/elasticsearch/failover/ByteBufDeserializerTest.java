@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.failover;
 import com.fasterxml.jackson.core.JsonParser;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.CompositeByteBuf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;

@@ -21,10 +21,8 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -33,8 +31,9 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -48,9 +47,6 @@ public abstract class BulkEmitterTest {
     public static final int TEST_BATCH_SIZE = 2;
     public static final String TEST_DATA = "dummyData";
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void interruptedExceptionIsHandled() throws InterruptedException {
 
@@ -62,7 +58,7 @@ public abstract class BulkEmitterTest {
                 try {
                     Thread.sleep(slackTime);
                 } catch (InterruptedException e) {
-                    Assert.fail();
+                    Assertions.fail();
                 }
                 return true;
             }
@@ -114,7 +110,7 @@ public abstract class BulkEmitterTest {
                 try {
                     Thread.sleep(slackTime);
                 } catch (InterruptedException e) {
-                    Assert.fail();
+                    Assertions.fail();
                 }
                 return true;
             }
@@ -192,7 +188,7 @@ public abstract class BulkEmitterTest {
         // then
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
         Mockito.verify(dummyObserver, Mockito.times(1)).apply(captor.capture());
-        Assert.assertEquals(batchSize, captor.getValue().items.size());
+        assertEquals(batchSize, captor.getValue().items.size());
     }
 
     @Test
@@ -215,7 +211,7 @@ public abstract class BulkEmitterTest {
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
         Mockito.verify(dummyObserver, Mockito.times(expectedNumberOfBatches)).apply(captor.capture());
         for (TestBatch batch : captor.getAllValues()) {
-            Assert.assertEquals(TEST_BATCH_SIZE, batch.items.size());
+            assertEquals(TEST_BATCH_SIZE, batch.items.size());
         }
 
     }

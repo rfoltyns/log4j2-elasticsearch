@@ -77,7 +77,7 @@ public class ILMPolicyPlugin extends ILMPolicy {
             }
 
             if ((path == null && source == null) || (path != null && source != null)) {
-                throw new ConfigurationException("Either path or source have to be provided for " + ILMPolicyPlugin.class.getSimpleName());
+                throw new ConfigurationException("Either path or source have to be provided for " + PLUGIN_NAME);
             }
 
             return new ILMPolicyPlugin(name, rolloverAlias, loadSource());

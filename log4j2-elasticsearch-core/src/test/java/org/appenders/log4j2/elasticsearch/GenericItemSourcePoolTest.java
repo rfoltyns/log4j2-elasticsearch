@@ -23,10 +23,8 @@ package org.appenders.log4j2.elasticsearch;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.TestPooledByteBufAllocatorMetric;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -39,10 +37,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,9 +65,6 @@ public abstract class GenericItemSourcePoolTest {
    }
 
     public static UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void poolShutdownShutsDownExecutor() {
@@ -326,12 +324,12 @@ public abstract class GenericItemSourcePoolTest {
                 0
         ));
 
-        expectedException.expect(PoolResourceException.class);
-        expectedException.expectMessage("has to be reconfigured to handle current load");
-        expectedException.expectMessage(DEFAULT_TEST_ITEM_POOL_NAME);
-
         // when
-        pool.getPooled();
+        final PoolResourceException exception = assertThrows(PoolResourceException.class, pool::getPooled);
+
+        // then
+        assertThat(exception.getMessage(), containsString("has to be reconfigured to handle current load"));
+        assertThat(exception.getMessage(), containsString(DEFAULT_TEST_ITEM_POOL_NAME));
 
     }
 
@@ -356,11 +354,11 @@ public abstract class GenericItemSourcePoolTest {
                 0
         ));
 
-        expectedException.expect(PoolResourceException.class);
-        expectedException.expectMessage("Unable to resize. Creation of ItemSource was unsuccessful");
-
         // when
-        pool.getPooled();
+        final PoolResourceException exception = assertThrows(PoolResourceException.class, pool::getPooled);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Unable to resize. Creation of ItemSource was unsuccessful"));
 
     }
 
@@ -385,7 +383,6 @@ public abstract class GenericItemSourcePoolTest {
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
                 0
         ));
-
 
         // when
         boolean resized = pool.remove();
@@ -446,9 +443,9 @@ public abstract class GenericItemSourcePoolTest {
                     pool.getPooled();
                 } catch (PoolResourceException e) {
                     System.out.println(e.getMessage());
-                    Assert.fail();
+                    Assertions.fail();
                 } catch (InterruptedException e) {
-                    Assert.fail();
+                    Assertions.fail();
                 } finally {
                     end.countDown();
                 }
@@ -504,7 +501,7 @@ public abstract class GenericItemSourcePoolTest {
                     pool.getPooled();
                 } catch (PoolResourceException e) {
                     System.out.println(e.getMessage());
-                    Assert.fail();
+                    Assertions.fail();
                 } catch (InterruptedException e) {
                     // noop
                 } catch (IllegalStateException e) {

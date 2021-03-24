@@ -58,11 +58,10 @@ public class IndexTemplatePlugin extends IndexTemplate {
 
         try {
             builder.validate();
+            return new IndexTemplatePlugin(name, builder.loadSource());
         } catch (Exception e) {
             throw new ConfigurationException(e.getMessage());
         }
-
-        return new IndexTemplatePlugin(name, builder.loadSource());
 
     }
 

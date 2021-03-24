@@ -26,19 +26,21 @@ import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.appenders.log4j2.elasticsearch.spi.TestBatchEmitterFactory;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -56,9 +58,6 @@ public class AsyncBatchDeliveryTest {
     private static final int TEST_DELIVERY_INTERVAL = 100;
 
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static TestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
         TestHttpObjectFactory.Builder builder = TestHttpObjectFactory.newBuilder();
@@ -84,7 +83,7 @@ public class AsyncBatchDeliveryTest {
         BatchDelivery<String> delivery = batchDeliveryBuilder.build();
 
         // then
-        Assert.assertNotNull(delivery);
+        assertNotNull(delivery);
     }
 
     @Test
@@ -94,11 +93,12 @@ public class AsyncBatchDeliveryTest {
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withClientObjectFactory(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " + AsyncBatchDelivery.class.getSimpleName());
-
         // when
-        batchDeliveryBuilder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, batchDeliveryBuilder::build);
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 
@@ -109,11 +109,12 @@ public class AsyncBatchDeliveryTest {
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withBatchSize(0);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName());
-
         // when
-        batchDeliveryBuilder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, batchDeliveryBuilder::build);
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 
@@ -124,11 +125,12 @@ public class AsyncBatchDeliveryTest {
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withBatchSize(-1);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName());
-
         // when
-        batchDeliveryBuilder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, batchDeliveryBuilder::build);
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No batchSize provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 
@@ -139,11 +141,12 @@ public class AsyncBatchDeliveryTest {
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withDeliveryInterval(0);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
-
         // when
-        batchDeliveryBuilder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, batchDeliveryBuilder::build);
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 
@@ -154,11 +157,12 @@ public class AsyncBatchDeliveryTest {
         Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder();
         batchDeliveryBuilder.withDeliveryInterval(-1);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
-
         // when
-        batchDeliveryBuilder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, batchDeliveryBuilder::build);
+
+        // then
+        assertThat(exception.getMessage(),
+                equalTo("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName()));
 
     }
 
@@ -587,8 +591,6 @@ public class AsyncBatchDeliveryTest {
 
     static class TestAsyncBatchDelivery extends AsyncBatchDelivery {
 
-        private BatchEmitterServiceProvider mockedProvider;
-
         public TestAsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, IndexTemplate indexTemplate) {
             super(new Builder()
                     .withBatchSize(batchSize)
@@ -600,7 +602,7 @@ public class AsyncBatchDeliveryTest {
 
         @Override
         protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
-            return mockedProvider;
+            return null;
         }
 
     }

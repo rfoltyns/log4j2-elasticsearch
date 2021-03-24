@@ -21,8 +21,8 @@ package org.appenders.log4j2.elasticsearch.failover;
  */
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,8 +32,8 @@ import java.util.function.Supplier;
 import static org.appenders.log4j2.elasticsearch.failover.SingleKeySequenceSelectorTest.DEFAULT_TEST_SEQUENCE_ID;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequenceConfig;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,7 +48,7 @@ public class RetryProcessorTest {
 
     private final Random random = new Random();
 
-    @Before
+    @BeforeEach
     public void setup() {
         System.setProperty("appenders.retry.backoff.millis", "0");
     }

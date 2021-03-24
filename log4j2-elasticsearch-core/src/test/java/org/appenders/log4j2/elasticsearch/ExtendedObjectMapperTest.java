@@ -23,9 +23,9 @@ package org.appenders.log4j2.elasticsearch;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.util.MinimalPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ExtendedObjectMapperTest {
 

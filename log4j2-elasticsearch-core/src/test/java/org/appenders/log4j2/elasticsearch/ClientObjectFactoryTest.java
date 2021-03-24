@@ -20,10 +20,13 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public class ClientObjectFactoryTest {
 
@@ -71,7 +74,7 @@ public class ClientObjectFactoryTest {
         };
 
         // when
-        factory.addOperation(() -> {});
+        assertDoesNotThrow(() -> factory.addOperation(() -> {}));
 
     }
 

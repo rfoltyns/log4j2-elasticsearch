@@ -22,8 +22,9 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SingleThreadJsonFactoryProviderTest {
 
@@ -37,7 +38,7 @@ public class SingleThreadJsonFactoryProviderTest {
         JsonFactory jsonFactory = provider.create();
 
         // then
-        Assert.assertTrue(jsonFactory instanceof SingleThreadJsonFactory);
+        assertTrue(jsonFactory instanceof SingleThreadJsonFactory);
 
     }
 

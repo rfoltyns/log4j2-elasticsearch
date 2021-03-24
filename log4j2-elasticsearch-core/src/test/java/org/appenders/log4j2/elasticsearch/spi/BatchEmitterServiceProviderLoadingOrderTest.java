@@ -25,11 +25,8 @@ import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.TestBatchEmitterFactory;
 import org.jetbrains.annotations.NotNull;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -38,9 +35,9 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 import static org.appenders.log4j2.elasticsearch.AsyncBatchDeliveryTest.createTestObjectFactoryBuilder;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -48,9 +45,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class BatchEmitterServiceProviderLoadingOrderTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void firstServiceLoaderWins() {
@@ -126,17 +120,21 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
     public void checksUntilLastIfPreviousLoaderIsNull() {
 
         // given
-        Iterable<BatchEmitterFactory> serviceLoader2 = createTestIterable(new TestBatchEmitterFactory());
+        final TestBatchEmitterFactory batchEmitterFactory = new TestBatchEmitterFactory();
+        Iterable<BatchEmitterFactory> serviceLoader2 = createTestIterable(batchEmitterFactory);
 
         BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
                 Arrays.asList(null, serviceLoader2));
 
         // when
-        serviceProvider.createInstance(
+        final BatchEmitter instance = serviceProvider.createInstance(
                 0,
                 0,
                 createTestObjectFactoryBuilder().build(),
                 new NoopFailoverPolicy());
+
+        // then
+        assertSame(batchEmitterFactory.spiedEmitter, instance);
 
     }
 

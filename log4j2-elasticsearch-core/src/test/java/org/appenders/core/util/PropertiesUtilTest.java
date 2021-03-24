@@ -22,8 +22,8 @@ package org.appenders.core.util;
 
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
@@ -31,8 +31,8 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -40,7 +40,7 @@ public class PropertiesUtilTest {
 
     public static final int OFFSET = 1000;
 
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }

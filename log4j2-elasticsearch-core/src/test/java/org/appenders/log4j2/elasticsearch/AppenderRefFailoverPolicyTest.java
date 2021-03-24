@@ -30,13 +30,16 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.failover.FailedItemSourceTest.createTestFailedItemSource;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyString;
@@ -124,8 +127,8 @@ public class AppenderRefFailoverPolicyTest {
         verify(appender, times(2)).append(any(LogEvent.class));
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionOnUnresolvedAppender() {
+    @Test
+    public void throwsOnUnresolvedAppender() {
 
         // given
         Appender appender = mock(Appender.class);
@@ -139,9 +142,13 @@ public class AppenderRefFailoverPolicyTest {
         String failedMessage = "test failed message";
 
         // when
-        failoverPolicy.deliver(failedMessage);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> failoverPolicy.deliver(failedMessage));
+
+        // then
+        assertThat(exception.getMessage(), containsString("No failover appender named testAppenderRef found"));
 
     }
+
     public static  FailoverPolicy<String> createTestFailoverPolicy(String testAppenderRef, Configuration configuration) {
         AppenderRefFailoverPolicy.Builder builder = AppenderRefFailoverPolicy.newBuilder();
         builder.withAppenderRef(AppenderRef.createAppenderRef(

@@ -24,8 +24,7 @@ package org.appenders.log4j2.elasticsearch;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.rolling.PatternProcessor;
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -39,6 +38,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -77,30 +81,38 @@ public class RollingIndexNameFormatterTest {
         IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
 
         // then
-        Assert.assertNotNull(formatter);
+        assertNotNull(formatter);
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptioWhenIndexNameIsNull() {
+    @Test
+    public void builderThrowsWhenIndexNameIsNull() {
 
         // when
         RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
         builder.withIndexName(null);
 
+        // when
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
         // then
-        builder.build();
+        assertThat(exception.getMessage(), containsString("No indexName provided for RollingIndexName"));
+
     }
 
 
-    @Test(expected = ConfigurationException.class)
-    public void builderThrowsExceptioWhenPatternIsNull() {
+    @Test
+    public void builderThrowsWhenPatternIsNull() {
 
         // when
         RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
         builder.withPattern(null);
 
+        // when
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
         // then
-        builder.build();
+        assertThat(exception.getMessage(), containsString("No pattern provided for RollingIndexName"));
+
     }
 
     @Test
@@ -116,7 +128,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
+        assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
     }
 
 
@@ -133,7 +145,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-21-00.54", formattedIndexName);
+        assertEquals("testIndexName-2017-12-21-00.54", formattedIndexName);
     }
 
     @Test
@@ -149,7 +161,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-22.54", formattedIndexName);
+        assertEquals("testIndexName-2017-12-20-22.54", formattedIndexName);
     }
 
     @Test
@@ -166,7 +178,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName.2017-12-20-23.54", formattedIndexName);
+        assertEquals("testIndexName.2017-12-20-23.54", formattedIndexName);
     }
 
     @Test
@@ -181,7 +193,7 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
+        assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
     }
 
     @Test
@@ -223,9 +235,9 @@ public class RollingIndexNameFormatterTest {
         String formattedIndexName = formatter.format(logEvent);
 
         // then
-        Assert.assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
+        assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
         countDownLatch.await();
-        Assert.assertEquals(testNextTimeResult, ((RollingIndexNameFormatter)formatter).getNextRolloverTime());
+        assertEquals(testNextTimeResult, ((RollingIndexNameFormatter)formatter).getNextRolloverTime());
 
     }
 
@@ -263,13 +275,13 @@ public class RollingIndexNameFormatterTest {
 
                         // then
                         if (tuple.getIncrement() < 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-23.53", formattedIndexName);
+                            assertEquals("testIndexName-2017-12-20-23.53", formattedIndexName);
                         }
                         if (tuple.getIncrement() == 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
+                            assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
                         }
                         if (tuple.getIncrement() > 0) {
-                            Assert.assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
+                            assertEquals("testIndexName-2017-12-20-23.55", formattedIndexName);
                         }
                     }
                 } finally {

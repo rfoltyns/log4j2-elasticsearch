@@ -20,11 +20,11 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FailedItemInfoTest {
 

@@ -20,9 +20,7 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -32,12 +30,15 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createTestKeySequenceConfig;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequence.RESERVED_KEYS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -46,21 +47,17 @@ public class UUIDSequenceTest {
     public static final int DEFAULT_TEST_SEQ_ID = 1;
     public static final int EXPECTED_INITIAL_DIFF = 0;
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void throwsOnInitialReaderIndexLowerThanReservedKeys() {
 
         // given
         KeySequenceConfig sequenceConfig = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS - 1, RESERVED_KEYS);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("readerIndex cannot be lower than");
-
         // when
-        createDefaultTestUUIDSequence(sequenceConfig);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> createDefaultTestUUIDSequence(sequenceConfig));
 
+        // then
+        assertThat(exception.getMessage(), containsString("readerIndex cannot be lower than " + RESERVED_KEYS));
     }
 
     @Test
@@ -69,11 +66,11 @@ public class UUIDSequenceTest {
         // given
         KeySequenceConfig sequenceConfig = createTestKeySequenceConfig(DEFAULT_TEST_SEQ_ID, RESERVED_KEYS, RESERVED_KEYS - 1);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("writerIndex cannot be lower than");
-
         // when
-        createDefaultTestUUIDSequence(sequenceConfig);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> createDefaultTestUUIDSequence(sequenceConfig));
+
+        // then
+        assertThat(exception.getMessage(), containsString("writerIndex cannot be lower than " + RESERVED_KEYS));
 
     }
 

@@ -20,9 +20,15 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ResourceUtilTest {
 
@@ -30,7 +36,10 @@ public class ResourceUtilTest {
     public void loadsClasspathResourceIfResourceExists() {
 
         // when
-        ResourceUtil.loadResource("classpath:indexTemplate.json");
+        final String resource = ResourceUtil.loadResource("classpath:indexTemplate.json");
+
+        // then
+        assertNotNull(resource);
 
     }
 
@@ -38,39 +47,54 @@ public class ResourceUtilTest {
     public void loadsFileResourceIfResourceExists() {
 
         // when
-        ResourceUtil.loadResource(new File(ClassLoader.getSystemClassLoader().getResource("indexTemplate.json").getFile()).getAbsolutePath());
+        final String resource = ResourceUtil.loadResource(new File(ClassLoader.getSystemClassLoader().getResource("indexTemplate.json").getFile()).getAbsolutePath());
+
+        // then
+        assertNotNull(resource);
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void throwsExceptionWhenUriIsNull() {
+    @Test
+    public void throwsWhenUriIsNull() {
 
         // when
-        ResourceUtil.loadResource(null);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ResourceUtil.loadResource(null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("uri cannot be null"));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void throwsExceptionWhenClasspathResourceDoesNotExist() {
+    @Test
+    public void throwsWhenClasspathResourceDoesNotExist() {
 
         // when
-        ResourceUtil.loadResource("classpath:nonExistentFile");
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ResourceUtil.loadResource("classpath:nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Requested classpath resource was null"));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void throwsExceptionWhenFileDoesntExist() {
+    @Test
+    public void throwsWhenFileDoesntExist() {
 
         // when
-        ResourceUtil.loadResource("nonExistentFile");
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ResourceUtil.loadResource("nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Exception while loading file resource: nonExistentFile"));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void throwsExceptionOnInvalidProtocol() {
+    @Test
+    public void throwsOnInvalidProtocol() {
 
         // when
-        ResourceUtil.loadResource("~/nonExistentFile");
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> ResourceUtil.loadResource("~/nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Exception while loading file resource: ~/nonExistentFile"));
 
     }
 

@@ -24,11 +24,11 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import io.netty.buffer.ByteBuf;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -45,7 +45,7 @@ public class ByteBufSerializerTest {
         ByteBufSerializer serializer = new ByteBufSerializer();
 
         // when
-        Class handledType = serializer.handledType();
+        Class<ByteBuf> handledType = serializer.handledType();
 
         // then
         assertEquals(ByteBuf.class, handledType);

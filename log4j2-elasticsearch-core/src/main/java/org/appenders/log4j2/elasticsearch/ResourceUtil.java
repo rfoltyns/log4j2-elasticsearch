@@ -80,7 +80,7 @@ public class ResourceUtil {
             }
             return sb.toString();
         } catch (Exception e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
+            throw new IllegalArgumentException("Exception while loading classpath resource: " + e.getMessage(), e);
         }
     }
 
@@ -104,7 +104,7 @@ public class ResourceUtil {
         try {
             return new String(Files.readAllBytes(Paths.get(path)));
         } catch (IOException e){
-            throw new IllegalArgumentException(e.getMessage(), e);
+            throw new IllegalArgumentException("Exception while loading file resource: " + e.getMessage(), e);
         }
     }
 

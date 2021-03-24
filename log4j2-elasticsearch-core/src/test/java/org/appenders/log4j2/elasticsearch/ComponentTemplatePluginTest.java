@@ -22,12 +22,16 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ComponentTemplatePluginTest {
 
@@ -68,52 +72,73 @@ public class ComponentTemplatePluginTest {
         assertNotNull(plugin.getSource());
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenNameIsNotSet() {
+    @Test
+    public void throwsByDefaultWhenNameIsNotSet() {
 
         // when
-        createTestComponentTemplate(null, TEST_PATH);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(null, TEST_PATH));
+
+        // then
+        assertThat(exception.getMessage(), containsString("No name provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenNeitherPathOrSourceIsSet() {
+    @Test
+    public void throwsByDefaultWhenNeitherPathOrSourceIsSet() {
 
         // when
-        createTestComponentTemplate(TEST_TEMPLATE_NAME, null, null);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, null, null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenBothPathAndSourceAreSet() {
+    @Test
+    public void throwsByDefaultWhenBothPathAndSourceAreSet() {
 
         // when
-        createTestComponentTemplate(TEST_TEMPLATE_NAME, TEST_PATH, TEST_SOURCE);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, TEST_PATH, TEST_SOURCE));
 
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenClasspathResourceDoesntExist() {
+    @Test
+    public void throwsByDefaultWhenClasspathResourceDoesntExist() {
 
         // when
-        createTestComponentTemplate(null, "classpath:nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, "classpath:nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "classpath:nonExistentFile"));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultWhenFileDoesNotExist() {
+    @Test
+    public void throwsByDefaultWhenFileDoesNotExist() {
 
         // when
-        createTestComponentTemplate(null, "nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, "nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "nonExistentFile"));
 
     }
 
-    @Test(expected = ConfigurationException.class)
-    public void throwsExceptionByDefaultOnInvalidProtocol() {
+    @Test
+    public void throwsByDefaultOnInvalidProtocol() {
 
         // when
-        createTestComponentTemplate(null, "~/nonExistentFile");
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, "~/nonExistentFile"));
+
+        // then
+        assertThat(exception.getMessage(), containsString(
+                "~/nonExistentFile"));
 
     }
 
@@ -126,7 +151,7 @@ public class ComponentTemplatePluginTest {
                 .getAbsolutePath();
 
         // when
-        createTestComponentTemplate(TEST_TEMPLATE_NAME, existingFile);
+        assertDoesNotThrow(() -> createTestComponentTemplate(TEST_TEMPLATE_NAME, existingFile));
 
     }
 

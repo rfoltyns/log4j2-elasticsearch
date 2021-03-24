@@ -51,7 +51,7 @@
         <org.appenders.st.jackson.version>1.0.1</org.appenders.st.jackson.version>
         <org.appenders.logging.version>1.0</org.appenders.logging.version>
         <log4j2.version>2.13.3</log4j2.version>
-        <jacoco.version>0.8.3</jacoco.version>
+        <jacoco.version>0.8.6</jacoco.version>
         <jackson.version>2.12.0</jackson.version>
         <httpclient.version>4.5.11</httpclient.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
@@ -59,6 +59,9 @@
         <net.openhft.chroniclemap.version>3.19.40</net.openhft.chroniclemap.version>
         <jctools.version>3.1.0</jctools.version>
         <junit.version>4.13.1</junit.version>
+        <jupyter.version>5.7.1</jupyter.version>
+        <mockito.version>3.8.0</mockito.version>
+        <hamcrest.version>2.2</hamcrest.version>
     </properties>
 
     <modules>
@@ -193,6 +196,45 @@
                 <scope>test</scope>
             </dependency>
 
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${jupyter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${jupyter.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${jupyter.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-junit-jupiter</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest</artifactId>
+                <version>${hamcrest.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+
         </dependencies>
     </dependencyManagement>
 
@@ -239,14 +281,6 @@
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
                     <version>${jacoco.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.jacoco</groupId>
-                            <artifactId>org.jacoco.agent</artifactId>
-                            <version>${jacoco.version}</version>
-                            <classifier>runtime</classifier>
-                        </dependency>
-                    </dependencies>
                     <configuration>
                         <excludes>
                             <exclude>**/thirdparty/*</exclude>
@@ -255,23 +289,30 @@
                     </configuration>
                     <executions>
                         <execution>
-                            <id>jacoco-site</id>
-                            <phase>package</phase>
+                            <id>prepare-agent</id>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>prepare-package</phase>
                             <goals>
                                 <goal>report</goal>
                             </goals>
                         </execution>
                         <execution>
-                            <id>default-instrument</id>
+                            <id>post-unit-test</id>
+                            <phase>test</phase>
                             <goals>
-                                <goal>instrument</goal>
+                                <goal>report</goal>
                             </goals>
-                        </execution>
-                        <execution>
-                            <id>default-restore-instrumented-classes</id>
-                            <goals>
-                                <goal>restore-instrumented-classes</goal>
-                            </goals>
+                            <configuration>
+                                <!-- Sets the path to the file which contains the execution data. -->
+                                <dataFile>target/jacoco.exec</dataFile>
+                                <!-- Sets the output directory for the code coverage report. -->
+                                <outputDirectory>target/jacoco-ut</outputDirectory>
+                            </configuration>
                         </execution>
                     </executions>
                 </plugin>
@@ -310,6 +351,10 @@
                         </filesets>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.8.1</version>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -317,7 +362,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.18.1</version>
+                <version>2.22.2</version>
                 <configuration>
                     <excludes>
                         <exclude>%regex[.*smoke.*Test.*]</exclude>

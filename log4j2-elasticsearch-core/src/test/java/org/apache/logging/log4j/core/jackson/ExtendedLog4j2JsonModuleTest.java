@@ -28,10 +28,10 @@ import org.appenders.log4j2.elasticsearch.JacksonHandlerInstantiator;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.VirtualPropertyFilter;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -62,7 +62,7 @@ public class ExtendedLog4j2JsonModuleTest {
         final String result = objectMapper.writeValueAsString(logEvent);
 
         // then
-        MatcherAssert.assertThat(result, CoreMatchers.containsString("" + expectedMillis));
+        assertThat(result, containsString("" + expectedMillis));
 
     }
 

@@ -21,20 +21,18 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.hamcrest.core.IsEqual;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class VirtualPropertyTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderFailsWhenNameIsNull() {
@@ -43,11 +41,11 @@ public class VirtualPropertyTest {
         VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withName(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No name provided for " + VirtualProperty.PLUGIN_NAME);
+        // then
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        builder.build();
+        assertThat(exception.getMessage(), IsEqual.equalTo("No name provided for " + VirtualProperty.PLUGIN_NAME));
 
     }
 
@@ -58,11 +56,12 @@ public class VirtualPropertyTest {
         VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withValue(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No value provided for " + VirtualProperty.PLUGIN_NAME);
+        // then
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        builder.build();
+        assertThat(exception.getMessage(), IsEqual.equalTo("No value provided for " + VirtualProperty.PLUGIN_NAME));
+
     }
 
     @Test

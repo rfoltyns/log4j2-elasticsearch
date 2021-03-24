@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Map;

@@ -28,9 +28,12 @@ import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.ser.VirtualBeanPropertyWriter;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JacksonHandlerInstantiatorTest {
 
@@ -45,7 +48,7 @@ public class JacksonHandlerInstantiatorTest {
         JacksonHandlerInstantiator result = createTestHandlerInstantiator(customProperties, valueResolver);
 
         // then
-        Assert.assertNotNull(result);
+        assertNotNull(result);
     }
 
     @Test
@@ -69,7 +72,7 @@ public class JacksonHandlerInstantiatorTest {
         );
 
         // then
-        Assert.assertTrue(result1 == result2);
+        assertTrue(result1 == result2);
 
     }
 
@@ -85,7 +88,7 @@ public class JacksonHandlerInstantiatorTest {
         JsonDeserializer<?> result = handlerInstantiator.deserializerInstance(null, null, null);
 
         // then
-        Assert.assertNull(result);
+        assertNull(result);
 
     }
 
@@ -101,7 +104,7 @@ public class JacksonHandlerInstantiatorTest {
         KeyDeserializer result = handlerInstantiator.keyDeserializerInstance(null, null, null);
 
         // then
-        Assert.assertNull(result);
+        assertNull(result);
 
     }
 
@@ -117,7 +120,7 @@ public class JacksonHandlerInstantiatorTest {
         JsonSerializer<?> result = handlerInstantiator.serializerInstance(null, null, null);
 
         // then
-        Assert.assertNull(result);
+        assertNull(result);
 
     }
 
@@ -134,7 +137,7 @@ public class JacksonHandlerInstantiatorTest {
         TypeResolverBuilder<?> result = handlerInstantiator.typeResolverBuilderInstance(null, null, null);
 
         // then
-        Assert.assertNull(result);
+        assertNull(result);
 
     }
 
@@ -150,7 +153,7 @@ public class JacksonHandlerInstantiatorTest {
         TypeIdResolver result = handlerInstantiator.typeIdResolverInstance(null, null, null);
 
         // then
-        Assert.assertNull(result);
+        assertNull(result);
 
     }
 

@@ -20,7 +20,7 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.ignoreStubs;

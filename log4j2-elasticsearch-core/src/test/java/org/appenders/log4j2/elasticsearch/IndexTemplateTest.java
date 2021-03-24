@@ -21,13 +21,18 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class IndexTemplateTest {
 
@@ -46,13 +51,13 @@ public class IndexTemplateTest {
     public void startsWhenSetupCorrectlyWithNonDefaultApiVersion() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withName(TEST_INDEX_TEMPLATE)
                 .withPath(TEST_PATH)
                 .withApiVersion(8);
 
         // when
-        IndexTemplate indexTemplate = builder.build();
+        final IndexTemplate indexTemplate = builder.build();
 
         // then
         assertNotNull(indexTemplate);
@@ -67,12 +72,12 @@ public class IndexTemplateTest {
     public void startsWhenSetupCorrectlyWithNameAndPath() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withName(TEST_INDEX_TEMPLATE)
                 .withPath(TEST_PATH);
 
         // when
-        IndexTemplate indexTemplate = builder.build();
+        final IndexTemplate indexTemplate = builder.build();
 
         // then
         assertNotNull(indexTemplate);
@@ -86,13 +91,13 @@ public class IndexTemplateTest {
     public void startsWhenSetupCorrectlyWithNameAndSource() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withName(TEST_INDEX_TEMPLATE)
                 .withPath(null)
                 .withSource(TEST_SOURCE);
 
         // when
-        IndexTemplate indexTemplate = builder.build();
+        final IndexTemplate indexTemplate = builder.build();
 
         // then
         assertNotNull(indexTemplate);
@@ -100,83 +105,112 @@ public class IndexTemplateTest {
         assertNotNull(indexTemplate.getSource());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenNameIsNotSet() {
+    @Test
+    public void builderThrowsWhenNameIsNotSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withName(null);
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No name provided for " + IndexTemplate.class.getSimpleName()));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenNeitherPathOrSourceIsSet() {
+    @Test
+    public void builderThrowsWhenNeitherPathOrSourceIsSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withPath(null)
                 .withSource(null);
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenBothPathAndSourceAreSet() {
+    @Test
+    public void builderThrowsWhenBothPathAndSourceAreSet() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withPath(TEST_PATH)
                 .withSource(TEST_SOURCE);
 
         // when
-        builder.build();
-    }
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenClasspathResourceDoesntExist() {
+        // then
+        assertThat(exception.getMessage(), equalTo("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
 
-        // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withPath("classpath:nonExistentFile");
-
-        // when
-        builder.build();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenFileDoesNotExist() {
-
-        // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withPath("nonExistentFile");
-
-        // when
-        builder.build();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionOnInvalidProtocol() {
-
-        // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
-        builder.withPath("~/nonExistentFile");
-
-        // when
-        builder.build();
     }
 
     @Test
-    public void builderDoesntThrowExceptionWhenFileExists() {
+    public void builderThrowsWhenClasspathResourceDoesntExist() {
 
         // given
-        IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        builder.withPath("classpath:nonExistentFile");
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Exception while loading classpath resource"));
+        assertThat(exception.getMessage(), containsString("classpath:nonExistentFile"));
+
+    }
+
+    @Test
+    public void builderThrowsWhenFileDoesNotExist() {
+
+        // given
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        builder.withPath("nonExistentFile");
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Exception while loading file resource"));
+        assertThat(exception.getMessage(), containsString("nonExistentFile"));
+
+
+    }
+
+    @Test
+    public void builderThrowsOnInvalidProtocol() {
+
+        // given
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
+        builder.withPath("~/nonExistentFile");
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo(
+                "Exception while loading file resource: ~/nonExistentFile"));
+
+    }
+
+    @Test
+    public void builderDoesntThrowWhenFileExists() {
+
+        // given
+        final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withPath(new File(ClassLoader.getSystemClassLoader().getResource("indexTemplate.json").getFile()).getAbsolutePath());
 
         // when
-        builder.build();
+        assertDoesNotThrow(builder::build);
+
     }
 
 }

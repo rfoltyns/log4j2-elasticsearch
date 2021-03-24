@@ -21,15 +21,16 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -38,9 +39,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class UnlimitedResizePolicyTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -62,11 +60,11 @@ public class UnlimitedResizePolicyTest {
         UnlimitedResizePolicy.Builder builder = UnlimitedResizePolicy.newBuilder();
         builder.withResizeFactor(0);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("must be higher than 0");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("resizeFactor must be higher than 0"));
 
     }
 
@@ -77,11 +75,11 @@ public class UnlimitedResizePolicyTest {
         UnlimitedResizePolicy.Builder builder = UnlimitedResizePolicy.newBuilder();
         builder.withResizeFactor(-0.1);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("must be higher than 0");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("resizeFactor must be higher than 0"));
 
     }
 
@@ -92,11 +90,11 @@ public class UnlimitedResizePolicyTest {
         UnlimitedResizePolicy.Builder builder = UnlimitedResizePolicy.newBuilder();
         builder.withResizeFactor(1.01);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("must be lower or equal 1");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("resizeFactor must be lower or equal 1"));
 
     }
 
@@ -110,11 +108,11 @@ public class UnlimitedResizePolicyTest {
         Integer initialPoolSize = 5;
         when(pool.getInitialSize()).thenReturn(initialPoolSize);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("will not resize given pool");
-
         // when
-        policy.increase(pool);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> policy.increase(pool));
+
+        // then
+        assertThat(exception.getMessage(), containsString("will not resize given pool"));
 
     }
 

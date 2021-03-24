@@ -21,12 +21,16 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ComponentTemplateTest {
 
@@ -77,19 +81,23 @@ public class ComponentTemplateTest {
         assertNotNull(template.getSource());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenNameIsNotSet() {
+    @Test
+    public void builderthrowsWhenNameIsNotSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withName(null);
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No name provided for " + ComponentTemplate.class.getSimpleName()));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenNeitherPathOrSourceIsSet() {
+    @Test
+    public void builderthrowsWhenNeitherPathOrSourceIsSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -97,11 +105,15 @@ public class ComponentTemplateTest {
                 .withSource(null);
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenBothPathAndSourceAreSet() {
+    @Test
+    public void builderthrowsWhenBothPathAndSourceAreSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -109,40 +121,56 @@ public class ComponentTemplateTest {
                 .withSource(TEST_SOURCE);
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenClasspathResourceDoesntExist() {
+    @Test
+    public void builderthrowsWhenClasspathResourceDoesntExist() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("classpath:nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("classpath:nonExistentFile"));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionWhenFileDoesNotExist() {
+    @Test
+    public void builderthrowsWhenFileDoesNotExist() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("nonExistentFile"));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void builderThrowsExceptionOnInvalidProtocol() {
+    @Test
+    public void builderThrowsOnInvalidProtocol() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
         builder.withPath("~/nonExistentFile");
 
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("~/nonExistentFile"));
+
     }
 
     @Test
@@ -153,7 +181,8 @@ public class ComponentTemplateTest {
         builder.withPath(new File(ClassLoader.getSystemClassLoader().getResource("componentTemplate.json").getFile()).getAbsolutePath());
 
         // when
-        builder.build();
+        assertDoesNotThrow(builder::build);
+
     }
 
 }

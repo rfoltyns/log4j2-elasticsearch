@@ -20,23 +20,20 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class OperationFactoryDispatcherTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void supportsTypeOnceFactoryRegistered() {
@@ -91,11 +88,11 @@ public class OperationFactoryDispatcherTest {
 
         OpSource opSource = new UnknownOpSource();
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(UnknownOpSource.class.getSimpleName() + " is not supported");
-
         // when
-        operationFactoryDispatcher.create(opSource);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> operationFactoryDispatcher.create(opSource));
+
+        // then
+        assertThat(exception.getMessage(), containsString(UnknownOpSource.class.getSimpleName() + " is not supported"));
 
     }
 
@@ -146,4 +143,5 @@ public class OperationFactoryDispatcherTest {
             return null;
         }
     }
+
 }
