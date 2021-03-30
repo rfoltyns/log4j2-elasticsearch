@@ -24,16 +24,17 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 import static org.appenders.log4j2.elasticsearch.jest.JKSCertInfo.PLUGIN_NAME;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -45,9 +46,6 @@ public class JKSCertInfoTest {
     public static final String TEST_KEYSTORE_PASSWORD = System.getProperty("jksCertInfo.keystorePassword");
     public static final String TEST_TRUSTSTORE_PATH = System.getProperty("jksCertInfo.truststorePath");
     public static final String TEST_TRUSTSTORE_PASSWORD = System.getProperty("jksCertInfo.truststorePassword");
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static JKSCertInfo.Builder createTestCertInfoBuilder() {
         return JKSCertInfo.newBuilder()
@@ -66,10 +64,10 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder = createTestCertInfoBuilder();
 
         // when
-        CertInfo certInfo = builder.build();
+        CertInfo<HttpClientConfig.Builder> certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
@@ -91,7 +89,7 @@ public class JKSCertInfoTest {
 
         // then
         verify(clientConfigBuilder).httpsIOSessionStrategy(notNull());
-        Assert.assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
+        assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
     }
 
     @Test
@@ -101,11 +99,11 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder = createTestCertInfoBuilder()
                 .withKeystorePath(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No keystorePath provided for " + PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No keystorePath provided for " + PLUGIN_NAME));
 
     }
 
@@ -116,11 +114,11 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder= createTestCertInfoBuilder()
                 .withKeystorePassword(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("keystorePassword");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("keystorePassword"));
 
     }
 
@@ -131,11 +129,11 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder = createTestCertInfoBuilder()
                 .withTruststorePath(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No truststorePath provided for " + PLUGIN_NAME);
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No truststorePath provided for " + PLUGIN_NAME));
 
     }
 
@@ -147,20 +145,17 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder= createTestCertInfoBuilder()
                 .withTruststorePassword(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("truststorePassword");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("truststorePassword"));
 
     }
     @Test
     public void builderThrowsIfKeyIsInvalid() throws IOException {
 
         // given
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(PEMCertInfo.configExceptionMessage);
-
         File invalidKey = createInvalidKey();
 
         JKSCertInfo testCertInfo = createTestCertInfoBuilder()
@@ -168,7 +163,10 @@ public class JKSCertInfoTest {
                 .build();
 
         // when
-        testCertInfo.applyTo(mock(HttpClientConfig.Builder.class));
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> testCertInfo.applyTo(mock(HttpClientConfig.Builder.class)));
+
+        // then
+        assertThat(exception.getMessage(), containsString(PEMCertInfo.configExceptionMessage));
 
     }
 

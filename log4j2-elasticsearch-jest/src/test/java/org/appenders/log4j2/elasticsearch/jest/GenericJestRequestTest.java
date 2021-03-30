@@ -22,20 +22,18 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import io.searchbox.action.GenericJestRequestIntrospector;
 import io.searchbox.client.config.ElasticsearchVersion;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertSame;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class GenericJestRequestTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderThrowsByDefault() {
@@ -43,11 +41,11 @@ public class GenericJestRequestTest {
         // given
         GenericJestRequest.EmptyBuilder builder = new GenericJestRequest.EmptyBuilder();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("No need to use builder. Create directly");
-
         // when
-        builder.build();
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No need to use builder. Create directly"));
 
     }
 

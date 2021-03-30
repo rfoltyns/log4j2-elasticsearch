@@ -39,15 +39,13 @@ import org.apache.http.message.BasicStatusLine;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -56,12 +54,12 @@ import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -69,7 +67,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class BufferedJestHttpClientTest {
 
     static {
@@ -98,7 +96,7 @@ public class BufferedJestHttpClientTest {
         HttpUriRequest request = client.prepareRequest(bulk);
 
         // then
-        Assert.assertEquals("POST", request.getRequestLine().getMethod());
+        assertEquals("POST", request.getRequestLine().getMethod());
 
     }
 
@@ -132,7 +130,7 @@ public class BufferedJestHttpClientTest {
 
         // then
         HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
-        Assert.assertEquals(ContentType.APPLICATION_JSON.toString(), entity.getContentType().getValue());
+        assertEquals(ContentType.APPLICATION_JSON.toString(), entity.getContentType().getValue());
 
     }
 
@@ -164,7 +162,7 @@ public class BufferedJestHttpClientTest {
         ByteBufInputStream content = (ByteBufInputStream) entity.getContent();
         byte[] actualBody = new byte[content.available()];
         content.read(actualBody);
-        Assert.assertEquals(new String(expectedBody), new String(actualBody));
+        assertEquals(new String(expectedBody), new String(actualBody));
 
     }
 
@@ -173,7 +171,8 @@ public class BufferedJestHttpClientTest {
 
         // given
         BufferedJestHttpClient client = spy(createDefaultTestHttpClient());
-        CloseableHttpAsyncClient asyncClient = mockAsyncClient(client);
+        CloseableHttpAsyncClient asyncClient = mock(CloseableHttpAsyncClient.class);
+        when(client.getAsyncClient()).thenReturn(asyncClient);
 
         Bulk bulk = createDefaultTestBufferedBulk();
 
@@ -191,7 +190,7 @@ public class BufferedJestHttpClientTest {
 
         // given
         BufferedJestHttpClient client = spy(createDefaultTestHttpClient());
-        CloseableHttpAsyncClient asyncClient = mockAsyncClient(client);
+        CloseableHttpAsyncClient asyncClient = mock(CloseableHttpAsyncClient.class);
 
         String expectedMesage = UUID.randomUUID().toString();
         BufferedBulk bulk = createDefaultTestBufferedBulk();
@@ -217,7 +216,11 @@ public class BufferedJestHttpClientTest {
         // given
         JestResultHandler<JestResult> resultHandler = createMockTestResultHandler();
 
-        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(resultHandler);
+        final BufferedBulkResult bulkResult = new BufferedBulkResult(0, false, null, 200, null);
+        final BufferedBulk bulk = mock(BufferedBulk.class);
+        when(bulk.deserializeResponse(any())).thenReturn(bulkResult);
+
+        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(resultHandler, bulk);
 
         HttpResponse httpResponse = createDefaultTestHttpResponse(200, UUID.randomUUID().toString());
 
@@ -310,7 +313,11 @@ public class BufferedJestHttpClientTest {
         // given
         JestResultHandler<JestResult> jestResultHandler = createMockTestResultHandler();
 
-        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(jestResultHandler);
+        final BufferedBulkResult bulkResult = new BufferedBulkResult(0, false, null, 200, null);
+        final BufferedBulk bulk = mock(BufferedBulk.class);
+        when(bulk.deserializeResponse(any())).thenReturn(bulkResult);
+
+        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(jestResultHandler, bulk);
 
         String reasonPhrase = UUID.randomUUID().toString();
         HttpResponse httpResponse = createDefaultTestHttpResponse(200, reasonPhrase);
@@ -338,7 +345,10 @@ public class BufferedJestHttpClientTest {
 
         BufferedBulkResult bufferedBulkResult = spy(new BufferedBulkResult(0, true, null, 400, new ArrayList<>()));
 
-        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(jestResultHandler, bufferedBulkResult);
+        final BufferedBulk bulk = mock(BufferedBulk.class);
+        when(bulk.deserializeResponse(any())).thenReturn(bufferedBulkResult);
+
+        BufferedJestHttpClient.BufferedResultCallback asyncCallback = mockHttpResponseCallback(jestResultHandler, bulk);
 
         int expectedStatusCode = new Random().nextInt(1000) + 1000;
         String reasonPhrase = UUID.randomUUID().toString();
@@ -362,8 +372,6 @@ public class BufferedJestHttpClientTest {
     private HttpResponse createDefaultTestHttpResponse(int statusCode, String reasonPhrase) throws IOException {
 
         HttpEntity httpEntity = mock(HttpEntity.class);
-        when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream("{}".getBytes()));
-
         HttpResponse httpResponse = mock(HttpResponse.class);
         when(httpResponse.getEntity()).thenReturn(httpEntity);
 
@@ -372,34 +380,21 @@ public class BufferedJestHttpClientTest {
     }
 
     private BufferedJestHttpClient.BufferedResultCallback mockHttpResponseCallback(JestResultHandler<JestResult> jestResultHandler) throws IOException {
-
-        BufferedBulkResult bufferedBulkResult = mock(BufferedBulkResult.class);
-        when(bufferedBulkResult.isSucceeded()).thenReturn(true);
-        when(bufferedBulkResult.getItems()).thenReturn(null);
-        when(bufferedBulkResult.getErrorMessage(any())).thenCallRealMethod();
-
-        return mockHttpResponseCallback(jestResultHandler, bufferedBulkResult);
-
+        return mockHttpResponseCallback(jestResultHandler, mock(BufferedBulk.class));
     }
 
-    private BufferedJestHttpClient.BufferedResultCallback mockHttpResponseCallback(JestResultHandler<JestResult> jestResultHandler, BufferedBulkResult bufferedBulkResult) throws IOException {
+    private BufferedJestHttpClient.BufferedResultCallback mockHttpResponseCallback(JestResultHandler<JestResult> jestResultHandler, BufferedBulk bulk) throws IOException {
         BufferedJestHttpClient client = spy(createDefaultTestHttpClient());
-        CloseableHttpAsyncClient asyncClient = mockAsyncClient(client);
+        CloseableHttpAsyncClient asyncClient1 = mock(CloseableHttpAsyncClient.class);
+        when(client.getAsyncClient()).thenReturn(asyncClient1);
+        CloseableHttpAsyncClient asyncClient = asyncClient1;
 
-        BufferedBulk bulk = mock(BufferedBulk.class);
         when(bulk.getURI()).thenReturn(UUID.randomUUID().toString());
-        when(bulk.deserializeResponse(any())).thenReturn(bufferedBulkResult);
         when(bulk.serializeRequest()).thenReturn(mock(ByteBuf.class));
 
         client.executeAsync(bulk, jestResultHandler);
         verify(asyncClient).execute(any(HttpUriRequest.class), bufferedResultCallbackCaptor.capture());
         return bufferedResultCallbackCaptor.getValue();
-    }
-
-    private CloseableHttpAsyncClient mockAsyncClient(BufferedJestHttpClient client) {
-        CloseableHttpAsyncClient asyncClient = mock(CloseableHttpAsyncClient.class);
-        when(client.getAsyncClient()).thenReturn(asyncClient);
-        return asyncClient;
     }
 
     private BufferedBulk createDefaultTestBufferedBulk() {

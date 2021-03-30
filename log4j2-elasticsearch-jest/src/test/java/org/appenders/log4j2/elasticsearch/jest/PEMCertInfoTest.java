@@ -25,15 +25,16 @@ import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.security.Security;
 
 import static org.appenders.log4j2.elasticsearch.jest.XPackAuthTest.createDefaultClientConfigBuilder;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -46,9 +47,6 @@ public class PEMCertInfoTest {
     public static final String TEST_CLIENT_CERT_PATH = System.getProperty("pemCertInfo.clientCertPath");
     public static final String TEST_CA_PATH = System.getProperty("pemCertInfo.caPath");
     public static final String TEST_KEY_PASSPHRASE = System.getProperty("pemCertInfo.keyPassphrase");
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static PEMCertInfo.Builder createTestCertInfoBuilder() {
         return PEMCertInfo.newBuilder()
@@ -91,19 +89,21 @@ public class PEMCertInfoTest {
         // then
         verify(clientConfigBuilder).httpsIOSessionStrategy(notNull());
         assertNotNull(clientConfigBuilder.build().getHttpsIOSessionStrategy());
+
     }
 
     @Test
     public void keyPathIsNotAppliedIfNotConfigured() {
 
         // given
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No keyPath provided");
+        final PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+                .withKeyPath(null);
 
         // when
-        createTestCertInfoBuilder()
-                .withKeyPath(null)
-                .build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No keyPath provided"));
 
     }
 
@@ -111,13 +111,14 @@ public class PEMCertInfoTest {
     public void builderThrowsIfClientCertPathIsNotConfigured() {
 
         // given
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No clientCertPath provided");
+        final PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+                .withClientCertPath(null);
 
         // when
-        createTestCertInfoBuilder()
-                .withClientCertPath(null)
-                .build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No clientCertPath provided"));
 
     }
 
@@ -125,13 +126,14 @@ public class PEMCertInfoTest {
     public void builderThrowsIfCaPathIsNotConfigured() {
 
         // given
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No caPath provided");
+        final PEMCertInfo.Builder builder = createTestCertInfoBuilder()
+                .withCaPath(null);
 
         // when
-        createTestCertInfoBuilder()
-                .withCaPath(null)
-                .build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No caPath provided"));
 
     }
 
@@ -144,11 +146,11 @@ public class PEMCertInfoTest {
                 .withKeyPassphrase("")
                 .build();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(PEMCertInfo.configExceptionMessage);
-
         // when
-        testCertInfo.applyTo(mock(HttpClientConfig.Builder.class));
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> testCertInfo.applyTo(mock(HttpClientConfig.Builder.class)));
+
+        // then
+        assertThat(exception.getMessage(), containsString(PEMCertInfo.configExceptionMessage));
 
     }
 

@@ -22,25 +22,21 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
+import io.searchbox.core.DocumentResult;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
 import org.appenders.log4j2.elasticsearch.BatchIntrospector;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class ExtendedBulkTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -86,7 +82,7 @@ public class ExtendedBulkTest {
         Index action = new Index.Builder(source).build();
 
         int randomSize = new Random().nextInt(1000) + 10;
-        Collection<BulkableAction> actions = new ArrayList<>(randomSize);
+        Collection<BulkableAction<DocumentResult>> actions = new ArrayList<>(randomSize);
         for (int ii = 0; ii < randomSize; ii++) {
             actions.add(action);
         }

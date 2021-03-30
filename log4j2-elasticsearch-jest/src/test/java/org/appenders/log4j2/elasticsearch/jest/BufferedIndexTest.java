@@ -21,18 +21,16 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class BufferedIndexTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderFailsWhenSourceIsNull() {
@@ -40,11 +38,11 @@ public class BufferedIndexTest {
         // given
         BufferedIndex.Builder builder = new BufferedIndex.Builder(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("source cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("source cannot be null"));
 
     }
 
@@ -54,11 +52,11 @@ public class BufferedIndexTest {
         // given
         BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("BufferedIndex cannot return Strings. Use getSource() instead");
-
         // when
-        bufferedIndex.getData(null);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> bufferedIndex.getData(null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("BufferedIndex cannot return Strings. Use getSource() instead"));
 
     }
 
@@ -68,11 +66,11 @@ public class BufferedIndexTest {
         // given
         BufferedIndex bufferedIndex = new BufferedIndex.Builder(mock(ByteBufItemSource.class)).build();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("BufferedIndex cannot handle String result. Use buffer-based API");
-
         // when
-        bufferedIndex.createNewElasticSearchResult(null, 0, null, null);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> bufferedIndex.createNewElasticSearchResult(null, 0, null, null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("BufferedIndex cannot handle String result. Use buffer-based API"));
 
     }
 
@@ -86,7 +84,7 @@ public class BufferedIndexTest {
         String type = bufferedIndex.getType();
 
         // then
-        Assert.assertNull(DEFAULT_MAPPING_TYPE, type);
+        assertNull(type);
 
     }
 
@@ -100,7 +98,7 @@ public class BufferedIndexTest {
         String bullkMethodName = bufferedIndex.getBulkMethodName();
 
         // then
-        Assert.assertNull(bullkMethodName);
+        assertNull(bullkMethodName);
 
     }
 
@@ -115,7 +113,7 @@ public class BufferedIndexTest {
         String restMethodName = bufferedIndex.getRestMethodName();
 
         // then
-        Assert.assertEquals(BufferedIndex.HTTP_METHOD_NAME, restMethodName);
+        assertEquals(BufferedIndex.HTTP_METHOD_NAME, restMethodName);
 
     }
 

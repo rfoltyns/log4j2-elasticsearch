@@ -36,26 +36,23 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 public class BufferedBulkOperationsTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void throwsOnStringSource() {
@@ -67,11 +64,11 @@ public class BufferedBulkOperationsTest {
         String indexName = UUID.randomUUID().toString();
         String source = UUID.randomUUID().toString();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("Use ItemSource based API instead");
-
         // when
-        bufferedBulkOperations.createBatchItem(indexName, source);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> bufferedBulkOperations.createBatchItem(indexName, source));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Use ItemSource based API instead"));
 
     }
 
@@ -89,7 +86,7 @@ public class BufferedBulkOperationsTest {
         String type = item.getType();
 
         // then
-        Assert.assertEquals(DEFAULT_MAPPING_TYPE, type);
+        assertEquals(DEFAULT_MAPPING_TYPE, type);
 
     }
 
@@ -108,7 +105,7 @@ public class BufferedBulkOperationsTest {
         String type = item.getType();
 
         // then
-        Assert.assertEquals(expectedMappingType, type);
+        assertEquals(expectedMappingType, type);
 
     }
 
@@ -126,7 +123,7 @@ public class BufferedBulkOperationsTest {
         String type = item.getType();
 
         // then
-        Assert.assertEquals("_doc", type);
+        assertEquals("_doc", type);
 
     }
 
@@ -155,7 +152,7 @@ public class BufferedBulkOperationsTest {
         ObjectWriter writer = bufferedBulkOperations.configuredWriter();
 
         // then
-        Assert.assertNotNull(writer);
+        assertNotNull(writer);
 
     }
 
@@ -170,7 +167,7 @@ public class BufferedBulkOperationsTest {
         ObjectReader reader = bufferedBulkOperations.configuredReader();
 
         // then
-        Assert.assertNotNull(reader);
+        assertNotNull(reader);
 
     }
 

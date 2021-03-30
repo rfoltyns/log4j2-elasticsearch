@@ -30,11 +30,8 @@ import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 
@@ -42,7 +39,8 @@ import java.io.IOException;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactoryTest.createTestObjectFactoryBuilder;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -52,10 +50,7 @@ import static org.mockito.Mockito.when;
 
 public class OperationFactoryTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }
@@ -88,7 +83,7 @@ public class OperationFactoryTest {
 
         String actualPayload = extractPayload(requestArgumentCaptor.getValue());
 
-        Assert.assertEquals(actualPayload, expectedPayload);
+        assertEquals(actualPayload, expectedPayload);
 
     }
 

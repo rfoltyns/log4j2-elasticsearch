@@ -25,15 +25,15 @@ import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,7 +43,7 @@ public class PutIndexTemplateTest {
     public static final String TEST_TEMPLATE_NAME = "testIndexTemplateName";
     private static final String TEST_SOURCE = UUID.randomUUID().toString();
 
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }

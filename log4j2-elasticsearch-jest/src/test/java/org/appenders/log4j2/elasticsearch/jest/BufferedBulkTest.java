@@ -29,10 +29,7 @@ import io.searchbox.action.BulkableAction;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
@@ -45,9 +42,13 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -55,9 +56,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class BufferedBulkTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -69,7 +67,7 @@ public class BufferedBulkTest {
         BufferedBulk bufferedBulk = builder.build();
 
         // then
-        Assert.assertNotNull(bufferedBulk);
+        assertNotNull(bufferedBulk);
 
     }
 
@@ -81,11 +79,12 @@ public class BufferedBulkTest {
 
         builder.withBuffer(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("bufferedSource cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("bufferedSource cannot be null"));
+
     }
 
     @Test
@@ -96,11 +95,12 @@ public class BufferedBulkTest {
 
         builder.withObjectReader(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("objectReader cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("objectReader cannot be null"));
+
     }
 
     @Test
@@ -111,11 +111,12 @@ public class BufferedBulkTest {
 
         builder.withObjectWriter(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("objectWriter cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("objectWriter cannot be null"));
+
     }
 
     @Test
@@ -131,6 +132,7 @@ public class BufferedBulkTest {
 
         // then
         assertEquals(1, builder.actions.size());
+
     }
 
     @Test
@@ -150,6 +152,7 @@ public class BufferedBulkTest {
 
         // then
         assertEquals(expectedSize, builder.actions.size());
+
     }
 
     @Test

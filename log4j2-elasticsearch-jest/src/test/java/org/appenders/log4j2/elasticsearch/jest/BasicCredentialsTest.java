@@ -23,13 +23,13 @@ package org.appenders.log4j2.elasticsearch.jest;
 
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.appenders.log4j2.elasticsearch.jest.XPackAuthTest.createDefaultClientConfigBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -55,7 +55,7 @@ public class BasicCredentialsTest {
         BasicCredentials certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
