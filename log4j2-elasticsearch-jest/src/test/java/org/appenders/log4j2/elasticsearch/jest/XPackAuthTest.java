@@ -25,26 +25,25 @@ import io.searchbox.client.config.HttpClientConfig;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class XPackAuthTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Captor
     private ArgumentCaptor<HttpClientConfig.Builder> builderArgumentCaptor;
@@ -69,7 +68,7 @@ public class XPackAuthTest {
         XPackAuth xPackAuth = builder.build();
 
         // then
-        Assert.assertNotNull(xPackAuth);
+        assertNotNull(xPackAuth);
 
     }
 
@@ -90,7 +89,7 @@ public class XPackAuthTest {
 
         // then
         verify(credentials).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -101,11 +100,11 @@ public class XPackAuthTest {
         XPackAuth.Builder builder = createTestBuilder()
                 .withCredentials(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("credentials");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage() , containsString("credentials"));
 
     }
 
@@ -126,7 +125,7 @@ public class XPackAuthTest {
 
         // then
         verify(certInfo).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 

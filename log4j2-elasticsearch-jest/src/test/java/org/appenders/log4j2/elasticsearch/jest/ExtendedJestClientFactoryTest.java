@@ -28,14 +28,15 @@ import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.nio.conn.SchemeIOSessionStrategy;
 import org.apache.http.nio.reactor.IOReactorException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Random;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -45,9 +46,6 @@ import static org.mockito.Mockito.when;
 public class ExtendedJestClientFactoryTest {
 
     private final Random random = new Random();
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void ioReactorConfigUsesGivenIoThreadCount() {
@@ -202,14 +200,11 @@ public class ExtendedJestClientFactoryTest {
         String expectedMessage = UUID.randomUUID().toString();
         when(factory.createIOReactor()).thenThrow(new IOReactorException(expectedMessage));
 
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage(expectedMessage);
-
         // when
-        factory.createUnconfiguredPoolingNHttpClientConnectionManager();
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, factory::createUnconfiguredPoolingNHttpClientConnectionManager);
 
         // then
-        verify(factory).createSchemeIOSessionStrategyRegistry();
+        assertThat(exception.getMessage(), containsString(expectedMessage));
 
     }
 

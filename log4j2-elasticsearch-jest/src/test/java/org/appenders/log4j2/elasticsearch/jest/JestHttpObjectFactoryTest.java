@@ -47,10 +47,8 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
@@ -65,11 +63,14 @@ import java.util.function.Function;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -82,9 +83,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class JestHttpObjectFactoryTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     private static final int TEST_CONNECTION_TIMEOUT = 1111;
     private static final int TEST_READ_TIMEOUT = 2222;
@@ -101,7 +99,7 @@ public class JestHttpObjectFactoryTest {
         return builder;
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }
@@ -110,15 +108,14 @@ public class JestHttpObjectFactoryTest {
     public void builderThrowsIfServerUrisStringIsNull() {
 
         // given
-        Builder builder = createTestObjectFactoryBuilder();
-        String serverUris = null;
-
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No serverUris provided");
+        Builder builder = createTestObjectFactoryBuilder()
+                .withServerUris(null);
 
         // when
-        builder.withServerUris(serverUris);
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No serverUris provided"));
 
     }
 
@@ -129,11 +126,11 @@ public class JestHttpObjectFactoryTest {
         JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         builder.withBackoffPolicy(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No " + BackoffPolicy.NAME + " provided");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + BackoffPolicy.NAME + " provided"));
 
     }
 
@@ -182,7 +179,8 @@ public class JestHttpObjectFactoryTest {
         builder.withIoThreadCount(TEST_IO_THREAD_COUNT);
 
         // when
-        ClientObjectFactory<JestClient, Bulk> httpObjectFactory = builder.build();
+        JestHttpObjectFactory httpObjectFactory = spy(builder.build());
+        httpObjectFactory.createClient();
 
         // then
         assertEquals(TEST_CONNECTION_TIMEOUT,

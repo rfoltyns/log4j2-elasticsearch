@@ -24,9 +24,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import org.apache.http.Header;
 import org.apache.http.entity.ContentType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,10 +32,13 @@ import java.io.InputStream;
 import java.util.Random;
 
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -48,18 +49,17 @@ public class ByteBufHttpEntityTest {
         System.setProperty("io.netty.allocator.maxOrder", "1");
     }
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void writeToOutputStreamIsNotSupported() {
 
         // given
         ByteBufHttpEntity entity = new ByteBufHttpEntity(createDefaultTestByteBuf(), 0, null);
-        expectedException.expect(UnsupportedOperationException.class);
 
         // when
-        entity.writeTo(new ByteArrayOutputStream());
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> entity.writeTo(new ByteArrayOutputStream()));
+
+        // then
+        assertThat(exception.getMessage(), containsString("writeTo(OutputStream) is not supported. Use getContent() to get InputStream instead"));
 
     }
 

@@ -44,9 +44,7 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
@@ -61,10 +59,13 @@ import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDef
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -76,8 +77,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BufferedJestHttpObjectFactoryTest {
-
-
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "1");
@@ -93,9 +92,6 @@ public class BufferedJestHttpObjectFactoryTest {
     private static final int TEST_IO_THREAD_COUNT = 4;
     private static final String TEST_MAPPING_TYPE = UUID.randomUUID().toString();
     private static final JacksonMixIn[] TEST_MIXINS = new JacksonMixIn[4];
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static BufferedJestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
 
@@ -115,24 +111,26 @@ public class BufferedJestHttpObjectFactoryTest {
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         builder.withItemSourceFactory(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No " + PooledItemSourceFactory.class.getSimpleName() + " configured");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No " + PooledItemSourceFactory.class.getSimpleName() + " configured"));
 
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test
     public void builderFailsIfServerUrisStringIsNull() {
 
         // given
-        BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
-        String serverUris = null;
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withServerUris(null);
 
         // when
-        builder.withServerUris(serverUris);
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No serverUris provided for JestHttpObjectFactory"));
 
     }
 

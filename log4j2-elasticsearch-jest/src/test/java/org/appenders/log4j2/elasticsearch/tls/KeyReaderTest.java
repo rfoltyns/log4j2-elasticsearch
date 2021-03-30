@@ -21,17 +21,17 @@ package org.appenders.log4j2.elasticsearch.tls;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfoTest;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.Security;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class KeyReaderTest {
 
@@ -46,7 +46,7 @@ public class KeyReaderTest {
         PKCS8EncodedKeySpec keySpec = keyReader.readPrivateKey(pemPKey, Optional.ofNullable(""));
 
         // then
-        Assert.assertNotNull(keySpec);
+        assertNotNull(keySpec);
     }
 
     @Test
@@ -64,6 +64,6 @@ public class KeyReaderTest {
         );
 
         // then
-        Assert.assertNotNull(keySpec);
+        assertNotNull(keySpec);
     }
 }

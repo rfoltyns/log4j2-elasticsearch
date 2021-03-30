@@ -27,12 +27,12 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.BufferedIndex;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

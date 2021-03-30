@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.client.config.HttpClientConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 

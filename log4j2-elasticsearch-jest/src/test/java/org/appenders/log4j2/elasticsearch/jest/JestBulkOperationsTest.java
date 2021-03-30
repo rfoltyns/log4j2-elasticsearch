@@ -30,22 +30,20 @@ import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class JestBulkOperationsTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void nonStringItemSourceIsNotSupported() {
@@ -55,11 +53,11 @@ public class JestBulkOperationsTest {
 
         ItemSource itemSource = Object::new;
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("Non String payloads are not supported");
-
         // when
-        bulkOperations.createBatchItem("testIndex", itemSource);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> bulkOperations.createBatchItem("testIndex", itemSource));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Non String payloads are not supported"));
 
     }
 
