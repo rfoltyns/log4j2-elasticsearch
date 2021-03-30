@@ -33,7 +33,7 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -42,17 +42,19 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.createDefaultTestClientProvider;
 import static org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscoveryTest.createNonSchedulingServiceDiscovery;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -307,6 +309,8 @@ public class HttpClientFactoryTest {
 
         HttpClient httpClient = httpClientFactory.createInstance();
         serviceDiscovery.start();
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
 
         // when
         httpClient.execute(request, mock(BlockingResponseHandler.class));

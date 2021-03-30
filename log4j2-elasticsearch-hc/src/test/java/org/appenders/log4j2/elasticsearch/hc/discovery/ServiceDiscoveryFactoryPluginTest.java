@@ -30,7 +30,7 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.SecurityTest;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -38,10 +38,10 @@ import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.create
 import static org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactoryPlugin.PLUGIN_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ServiceDiscoveryFactoryPluginTest {
 

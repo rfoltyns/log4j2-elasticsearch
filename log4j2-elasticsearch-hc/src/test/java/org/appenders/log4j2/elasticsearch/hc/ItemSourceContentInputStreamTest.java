@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.apache.http.nio.util.SimpleInputBuffer;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;

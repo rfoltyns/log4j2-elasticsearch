@@ -23,7 +23,7 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
 import org.appenders.log4j2.elasticsearch.hc.BlockingResponseHandler;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.Request;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
@@ -34,8 +34,8 @@ import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsCollectionContaining.hasItems;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.core.IsIterableContaining.hasItems;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;

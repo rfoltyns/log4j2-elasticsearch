@@ -22,19 +22,17 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 public class IndexRequestTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderFailsWhenSourceIsNull() {
@@ -42,11 +40,11 @@ public class IndexRequestTest {
         // given
         IndexRequest.Builder builder = createIndexRequestBuilder(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("source cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("source cannot be null"));
 
     }
 
@@ -57,11 +55,11 @@ public class IndexRequestTest {
         IndexRequest.Builder builder = createIndexRequestBuilder()
                 .index(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("index cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("index cannot be null"));
 
     }
 
@@ -72,11 +70,11 @@ public class IndexRequestTest {
         IndexRequest.Builder builder = createIndexRequestBuilder()
                 .type(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("type cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("type cannot be null"));
 
     }
 

@@ -41,14 +41,13 @@ import org.apache.http.protocol.HttpContext;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayInputStream;
@@ -63,12 +62,12 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -79,7 +78,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class HttpClientTest {
 
     static {
@@ -98,7 +97,7 @@ public class HttpClientTest {
     @Captor
     private ArgumentCaptor<HttpAsyncResponseConsumer> asyncConsumerCaptor;
 
-    @After
+    @AfterEach
     public void tearDown() {
         setLogger(null);
     }
@@ -114,7 +113,7 @@ public class HttpClientTest {
         HttpUriRequest httpRequest = client.createClientRequest(request);
 
         // then
-        Assert.assertEquals("POST", httpRequest.getRequestLine().getMethod());
+        assertEquals("POST", httpRequest.getRequestLine().getMethod());
 
     }
 
@@ -148,7 +147,7 @@ public class HttpClientTest {
 
         // then
         HttpEntity entity = ((HttpEntityEnclosingRequest) httpRequest).getEntity();
-        Assert.assertEquals(ContentType.APPLICATION_JSON.toString(), entity.getContentType().getValue());
+        assertEquals(ContentType.APPLICATION_JSON.toString(), entity.getContentType().getValue());
 
     }
 
@@ -255,9 +254,19 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = mock(BatchResult.class);
+        when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
-        HttpResponse httpResponse = createDefaultTestHttpResponse(200, UUID.randomUUID().toString());
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+
+        HttpEntity httpEntity = mock(HttpEntity.class);
+        final ByteArrayInputStream inputStream = spy(new ByteArrayInputStream("{}".getBytes()));
+        when(httpEntity.getContent()).thenReturn(inputStream);
+
+        HttpResponse httpResponse = mock(HttpResponse.class);
+        when(httpResponse.getEntity()).thenReturn(httpEntity);
+
+        when(httpResponse.getStatusLine()).thenReturn(new BasicStatusLine(HttpVersion.HTTP_1_1, 200, UUID.randomUUID().toString()));
 
         // when
         asyncCallback.completed(httpResponse);
@@ -265,6 +274,7 @@ public class HttpClientTest {
         // then
         verify(responseHandler, never()).failed(any());
         verify(responseHandler).completed(any());
+        verify(inputStream).close();
 
     }
 
@@ -274,13 +284,15 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = mock(BatchResult.class);
+
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
         when(entity.getContent()).thenThrow(new IOException(exceptionMessage));
 
-        HttpResponse httpResponse = createDefaultTestHttpResponse(200, UUID.randomUUID().toString());
+        HttpResponse httpResponse = createDefaultTestHttpResponse();
         when(httpResponse.getEntity()).thenReturn(entity);
 
         // when
@@ -300,7 +312,9 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = mock(ResponseHandler.class);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = mock(BatchResult.class);
+
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
@@ -308,7 +322,7 @@ public class HttpClientTest {
             throw new Throwable(exceptionMessage);
         });
 
-        HttpResponse httpResponse = createDefaultTestHttpResponse(200, UUID.randomUUID().toString());
+        HttpResponse httpResponse = createDefaultTestHttpResponse();
         when(httpResponse.getEntity()).thenReturn(entity);
 
         // when
@@ -329,7 +343,10 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = mock(BatchResult.class);
+        when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
+
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
@@ -363,7 +380,9 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = mock(BatchResult.class);
+
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
         // when
         asyncCallback.cancelled();
@@ -404,7 +423,10 @@ public class HttpClientTest {
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
+        final BatchResult batchResult = new BatchResult(0, false, null, 100, null);
+        when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
+
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
         String reasonPhrase = UUID.randomUUID().toString();
         HttpResponse httpResponse = createDefaultTestHttpResponse(200, reasonPhrase);
@@ -430,6 +452,7 @@ public class HttpClientTest {
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
 
         BatchResult batchResult = spy(new BatchResult(0, true, null, 400, new ArrayList<>()));
+        when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
         HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
 
@@ -611,10 +634,9 @@ public class HttpClientTest {
         );
     }
 
-    private HttpResponse createDefaultTestHttpResponse(int statusCode, String reasonPhrase) throws IOException {
+    private HttpResponse createDefaultTestHttpResponse(int statusCode, String reasonPhrase) {
 
         HttpEntity httpEntity = mock(HttpEntity.class);
-        when(httpEntity.getContent()).thenReturn(new ByteArrayInputStream("{}".getBytes()));
 
         HttpResponse httpResponse = mock(HttpResponse.class);
         when(httpResponse.getEntity()).thenReturn(httpEntity);
@@ -623,13 +645,14 @@ public class HttpClientTest {
         return httpResponse;
     }
 
-    private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler) throws IOException {
+    private HttpResponse createDefaultTestHttpResponse() {
 
-        BatchResult batchResult = spy(new BatchResult(0, false, null, 0, null));
-        when(batchResult.isSucceeded()).thenReturn(true);
+        HttpEntity httpEntity = mock(HttpEntity.class);
 
-        return mockHttpResponseCallback(responseHandler, batchResult);
+        HttpResponse httpResponse = mock(HttpResponse.class);
+        when(httpResponse.getEntity()).thenReturn(httpEntity);
 
+        return httpResponse;
     }
 
     private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler, BatchResult batchResult) throws IOException {
@@ -643,9 +666,6 @@ public class HttpClientTest {
         ItemSource itemSource = mock(ItemSource.class);
         when(itemSource.getSource()).thenReturn(mock(ByteBuf.class));
         when(request.serialize()).thenReturn(itemSource);
-
-        when(responseHandler.deserializeResponse(any(InputStream.class)))
-                .thenReturn(batchResult);
 
         client.executeAsync(request, responseHandler);
         verify(asyncClient).execute(

@@ -23,8 +23,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -34,7 +33,8 @@ import java.io.IOException;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -62,7 +62,7 @@ public class JKSCertInfoPluginTest {
         CertInfo<HttpClientFactory.Builder> certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
@@ -84,7 +84,8 @@ public class JKSCertInfoPluginTest {
 
         // then
         verify(httpClientFactoryBuilder).withHttpsIOSessionStrategy(notNull());
-        Assert.assertNotNull(httpClientFactoryBuilder.build().httpsIOSessionStrategy);
+        assertNotNull(httpClientFactoryBuilder.build().httpsIOSessionStrategy);
+
     }
 
     @Test

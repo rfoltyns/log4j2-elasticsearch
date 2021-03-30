@@ -26,7 +26,7 @@ import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ResizePolicy;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_ITEM_POOL_NAME;

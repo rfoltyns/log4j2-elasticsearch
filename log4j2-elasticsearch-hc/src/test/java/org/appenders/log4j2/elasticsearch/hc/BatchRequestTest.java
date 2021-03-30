@@ -25,10 +25,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.IOException;
@@ -41,8 +38,12 @@ import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.IndexRequestTest.createIndexRequestBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -50,9 +51,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public abstract class BatchRequestTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderBuildsSuccessfully() {
@@ -64,7 +62,7 @@ public abstract class BatchRequestTest {
         BatchRequest batchRequest = builder.build();
 
         // then
-        Assert.assertNotNull(batchRequest);
+        assertNotNull(batchRequest);
 
     }
 
@@ -76,11 +74,12 @@ public abstract class BatchRequestTest {
 
         builder.withBuffer(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("buffer cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("buffer cannot be null"));
+
     }
 
     @Test
@@ -91,11 +90,12 @@ public abstract class BatchRequestTest {
 
         builder.withObjectWriter(null);
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("objectWriter cannot be null");
-
         // when
-        builder.build();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("objectWriter cannot be null"));
+
     }
 
     @Test
@@ -111,6 +111,7 @@ public abstract class BatchRequestTest {
 
         // then
         assertEquals(1, builder.items.size());
+
     }
 
     @Test
@@ -130,6 +131,7 @@ public abstract class BatchRequestTest {
 
         // then
         assertEquals(expectedSize, builder.items.size());
+
     }
 
     @Test
@@ -174,6 +176,7 @@ public abstract class BatchRequestTest {
 
         assertEquals(mappingType, allValues.get(0).getType());
         assertEquals(mappingType, allValues.get(1).getType());
+
     }
 
     @Test

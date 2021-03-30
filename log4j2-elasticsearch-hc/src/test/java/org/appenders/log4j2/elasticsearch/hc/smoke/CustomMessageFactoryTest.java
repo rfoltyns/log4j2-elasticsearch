@@ -27,12 +27,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public class CustomMessageFactoryTest extends SmokeTest {
 
-    @BeforeClass
+    @BeforeAll
     public static void beforeClass() {
         // If true or Message is annotated with @AsynchronouslyFormattable
         // LogObject will be serialized in scope of Appender (Disruptor consumer thread)
