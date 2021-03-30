@@ -30,9 +30,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,18 +38,18 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HCRequestFactoryTest {
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
-    public void throwsOnUnknownHttpMethodName() throws IOException, URISyntaxException {
+    public void throwsOnUnknownHttpMethodName() throws IOException {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -59,15 +57,11 @@ public class HCRequestFactoryTest {
         String httpMethodName = UUID.randomUUID().toString();
         Request request = createDefaultMockRequest(expectedUrl, httpMethodName);
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage(httpMethodName);
-
         // when
-        HttpUriRequest result = factory.create(expectedUrl, request);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> factory.create(expectedUrl, request));
 
         // then
-        assertTrue(result instanceof HttpPost);
-        assertEquals(result.getURI(), new URI(expectedUrl));
+        assertThat(exception.getMessage(), containsString(httpMethodName));
 
     }
 

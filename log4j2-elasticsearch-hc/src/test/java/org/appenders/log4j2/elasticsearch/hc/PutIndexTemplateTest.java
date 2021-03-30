@@ -27,15 +27,15 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,7 +45,7 @@ public class PutIndexTemplateTest {
     public static final String TEST_TEMPLATE_NAME = "testRolloverAlias";
     private static final ItemSource TEST_SOURCE = ByteBufItemSourceTest.createTestItemSource();
 
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }

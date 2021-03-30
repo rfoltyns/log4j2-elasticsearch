@@ -23,9 +23,9 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.nio.util.SimpleInputBuffer;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ReleaseCallback;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -43,7 +43,7 @@ public class InputBufferItemSourceTest {
         ItemSource<SimpleInputBuffer> itemSource = new InputBufferItemSource(expected, null);
 
         // then
-        Assert.assertTrue(expected == itemSource.getSource());
+        assertTrue(expected == itemSource.getSource());
 
     }
 

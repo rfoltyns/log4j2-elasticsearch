@@ -23,24 +23,25 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.PEMCertInfoTest.createTestCertInfoBuilder;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class SecurityTest {
 
     @Captor
@@ -62,7 +63,7 @@ public class SecurityTest {
         Security security = builder.build();
 
         // then
-        Assert.assertNotNull(security);
+        assertNotNull(security);
 
     }
 
@@ -83,7 +84,7 @@ public class SecurityTest {
 
         // then
         verify(credentials).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -119,7 +120,7 @@ public class SecurityTest {
 
         // then
         verify(certInfo).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 

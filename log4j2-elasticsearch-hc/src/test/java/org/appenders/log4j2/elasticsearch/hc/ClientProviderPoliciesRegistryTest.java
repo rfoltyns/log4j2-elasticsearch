@@ -28,8 +28,8 @@ import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.hamcrest.CoreMatchers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
@@ -49,11 +49,11 @@ import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.createDefaultTestClientProvider;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -505,7 +505,7 @@ public class ClientProviderPoliciesRegistryTest {
         Logger logger = mockTestLogger();
 
         // when
-        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assert.fail("Should not copy"));
+        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assertions.fail("Should not copy"));
 
         //then
         ArgumentCaptor<String> logCaptor = ArgumentCaptor.forClass(String.class);
@@ -530,7 +530,7 @@ public class ClientProviderPoliciesRegistryTest {
         Logger logger = mockTestLogger();
 
         // when
-        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assert.fail("Should not copy"));
+        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assertions.fail("Should not copy"));
 
         //then
         ArgumentCaptor<String> logCaptor = ArgumentCaptor.forClass(String.class);
@@ -555,7 +555,7 @@ public class ClientProviderPoliciesRegistryTest {
         Logger logger = mockTestLogger();
 
         // when
-        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assert.fail("Should not copy"));
+        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assertions.fail("Should not copy"));
 
         //then
         ArgumentCaptor<String> logCaptor = ArgumentCaptor.forClass(String.class);
@@ -580,7 +580,7 @@ public class ClientProviderPoliciesRegistryTest {
         Logger logger = mockTestLogger();
 
         // when
-        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assert.fail("Should not copy"));
+        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assertions.fail("Should not copy"));
 
         //then
         ArgumentCaptor<String> logCaptor = ArgumentCaptor.forClass(String.class);
@@ -605,7 +605,7 @@ public class ClientProviderPoliciesRegistryTest {
         Logger logger = mockTestLogger();
 
         // when
-        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assert.fail("Should not copy"));
+        ClientProviderPoliciesRegistry.PropertiesMapper.copyProperty(expectedPropertyName, source, target, value -> Assertions.fail("Should not copy"));
 
         //then
         ArgumentCaptor<String> logCaptor = ArgumentCaptor.forClass(String.class);

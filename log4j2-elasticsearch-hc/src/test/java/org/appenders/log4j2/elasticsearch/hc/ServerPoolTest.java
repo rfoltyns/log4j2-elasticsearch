@@ -22,9 +22,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServerInfo;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,37 +31,34 @@ import java.util.Random;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class ServerPoolTest {
 
-    public static final String TEST_SERVER = "http://localhost:9200";
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void throwsOnNullInitialServerList() {
 
-        // given
-        expectedException.expect(IllegalArgumentException.class);
-
         // when
-        new ServerPool(null);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ServerPool(null));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Initial addresses cannot be null"));
 
     }
 
     @Test
     public void throwsOnNullInitialServerWithNoScheme() {
 
-        // given
-        expectedException.expect(IllegalArgumentException.class);
-
         // when
-        new ServerPool(Collections.singletonList("localhost:9200"));
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new ServerPool(Collections.singletonList("localhost:9200")));
+
+        // then
+        assertThat(exception.getMessage(), equalTo("Can't resolve address: localhost:9200"));
 
     }
 

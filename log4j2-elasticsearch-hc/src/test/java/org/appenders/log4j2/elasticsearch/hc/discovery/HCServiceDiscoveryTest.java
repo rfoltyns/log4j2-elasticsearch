@@ -24,9 +24,7 @@ import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.util.Arrays;
@@ -36,9 +34,12 @@ import java.util.List;
 
 import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -49,9 +50,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class HCServiceDiscoveryTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static HCServiceDiscovery<HttpClient> createNonSchedulingServiceDiscovery(
             final HttpClientProvider clientProvider,
@@ -95,10 +93,11 @@ public class HCServiceDiscoveryTest {
 
         assertFalse(serviceDiscovery.isStarted());
 
-        expectedException.expect(IllegalStateException.class);
-
         // when
-        serviceDiscovery.refresh();
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, serviceDiscovery::refresh);
+
+        // then
+        assertThat(exception.getMessage(), containsString(HCServiceDiscovery.class.getSimpleName() + " not started"));
 
     }
 
@@ -163,13 +162,13 @@ public class HCServiceDiscoveryTest {
 
         // given
         TestServiceDiscoveryRequest serviceDiscoveryRequest = mock(TestServiceDiscoveryRequest.class);
-        HCServiceDiscovery<HttpClient> serviceDiscovery = createDefaultTestServiceDiscovery(
+        HCServiceDiscovery<HttpClient> serviceDiscovery = createNonSchedulingServiceDiscovery(
                 clientProviderMock(),
                 serviceDiscoveryRequest);
 
         assertFalse(serviceDiscovery.isStarted());
 
-        expectedException.expect(IllegalStateException.class);
+        serviceDiscovery.start();
 
         // when
         serviceDiscovery.refresh();

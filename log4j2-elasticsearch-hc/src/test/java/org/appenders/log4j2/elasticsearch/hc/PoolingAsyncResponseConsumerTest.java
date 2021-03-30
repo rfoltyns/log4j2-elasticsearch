@@ -32,16 +32,17 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
 import org.appenders.log4j2.elasticsearch.ResizePolicy;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.appenders.log4j2.elasticsearch.hc.SimpleInputBufferObjectOpsTest.createDefaultTestGenericItemSourcePool;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -51,9 +52,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PoolingAsyncResponseConsumerTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void onResponseReceivedReturnsTheSameResponse() {
@@ -68,6 +66,7 @@ public class PoolingAsyncResponseConsumerTest {
 
         // then
         assertEquals(response, actual);
+
     }
 
     @Test
@@ -169,11 +168,11 @@ public class PoolingAsyncResponseConsumerTest {
 
         HttpEntity httpEntity = mock(HttpEntity.class);
 
-        expectedException.expect(IOException.class);
-        expectedException.expectMessage("Unable to resize. Creation of ItemSource was unsuccessful");
-
         // when
-         consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json"));
+        final IOException exception = assertThrows(IOException.class, () -> consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json")));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Unable to resize. Creation of ItemSource was unsuccessful"));
 
     }
 

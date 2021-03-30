@@ -25,16 +25,16 @@ import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.appenders.log4j2.elasticsearch.SetupStepTest;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,7 +43,7 @@ public class CheckBootstrapIndexTest {
 
     public static final String TEST_ROLLOVER_ALIAS = "testRolloverAlias";
 
-    @After
+    @AfterEach
     public void tearDown() {
         InternalLogging.setLogger(null);
     }
@@ -175,6 +175,7 @@ public class CheckBootstrapIndexTest {
         assertEquals("HEAD", request.getHttpMethodName());
         assertEquals(TEST_ROLLOVER_ALIAS, request.getURI());
         assertNull(request.serialize().getSource());
+
     }
 
 }

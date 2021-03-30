@@ -33,27 +33,24 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public class HCBatchOperationsTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void throwsOnStringSource() {
@@ -65,11 +62,11 @@ public class HCBatchOperationsTest {
         String indexName = UUID.randomUUID().toString();
         String source = UUID.randomUUID().toString();
 
-        expectedException.expect(UnsupportedOperationException.class);
-        expectedException.expectMessage("Use ItemSource based API instead");
-
         // when
-        batchOperations.createBatchItem(indexName, source);
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> batchOperations.createBatchItem(indexName, source));
+
+        // then
+        assertThat(exception.getMessage(), equalTo("Use ItemSource based API instead"));
 
     }
 
@@ -106,7 +103,7 @@ public class HCBatchOperationsTest {
         ObjectWriter writer = batchOperations.configuredWriter();
 
         // then
-        Assert.assertNotNull(writer);
+        assertNotNull(writer);
 
     }
 
