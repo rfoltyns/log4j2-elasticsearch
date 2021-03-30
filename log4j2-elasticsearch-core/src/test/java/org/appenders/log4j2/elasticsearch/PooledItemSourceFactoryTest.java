@@ -407,7 +407,7 @@ public class PooledItemSourceFactoryTest {
 
         // then
         final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(logger, timeout(500)).info(captor.capture());
+        verify(logger, timeout(500).atLeastOnce()).info(captor.capture());
 
         assertThat(captor.getValue(), containsString(expectedPoolName));
 
