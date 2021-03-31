@@ -79,7 +79,7 @@ public class BatchRequestResultDeserializerTest {
         // given
         ObjectMapper mapper = new ObjectMapper()
                 .addMixIn(BatchResult.class, BatchResultMixIn.class);
-        String json = String.format("{\"errors\": true}");
+        String json = "{\"errors\": true}";
 
         // when
         BatchResult result = mapper.readerFor(BatchResult.class).readValue(json);

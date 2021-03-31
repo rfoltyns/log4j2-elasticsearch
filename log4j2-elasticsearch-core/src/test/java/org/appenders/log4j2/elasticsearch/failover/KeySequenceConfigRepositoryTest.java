@@ -49,8 +49,6 @@ public class KeySequenceConfigRepositoryTest {
 
     static final long DEFAULT_TEST_KEY_SEQUENCE_EXPIRY = 1000;
 
-    private static final Random random = new Random();
-
     @Test
     public void keySequenceConfigListIsCreatedIfItIsAbsentInGivenMap() {
 

@@ -257,7 +257,7 @@ public class HttpClientTest {
         final BatchResult batchResult = mock(BatchResult.class);
         when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         HttpEntity httpEntity = mock(HttpEntity.class);
         final ByteArrayInputStream inputStream = spy(new ByteArrayInputStream("{}".getBytes()));
@@ -286,7 +286,7 @@ public class HttpClientTest {
 
         final BatchResult batchResult = mock(BatchResult.class);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
@@ -314,7 +314,7 @@ public class HttpClientTest {
 
         final BatchResult batchResult = mock(BatchResult.class);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
@@ -346,7 +346,7 @@ public class HttpClientTest {
         final BatchResult batchResult = mock(BatchResult.class);
         when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         HttpEntity entity = mock(HttpEntity.class);
         String exceptionMessage = UUID.randomUUID().toString();
@@ -382,7 +382,7 @@ public class HttpClientTest {
 
         final BatchResult batchResult = mock(BatchResult.class);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         // when
         asyncCallback.cancelled();
@@ -426,7 +426,7 @@ public class HttpClientTest {
         final BatchResult batchResult = new BatchResult(0, false, null, 100, null);
         when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         String reasonPhrase = UUID.randomUUID().toString();
         HttpResponse httpResponse = createDefaultTestHttpResponse(200, reasonPhrase);
@@ -454,7 +454,7 @@ public class HttpClientTest {
         BatchResult batchResult = spy(new BatchResult(0, true, null, 400, new ArrayList<>()));
         when(responseHandler.deserializeResponse(any())).thenReturn(batchResult);
 
-        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler, batchResult);
+        HCResultCallback asyncCallback = mockHttpResponseCallback(responseHandler);
 
         int expectedStatusCode = new Random().nextInt(1000) + 1000;
         String reasonPhrase = UUID.randomUUID().toString();
@@ -655,7 +655,7 @@ public class HttpClientTest {
         return httpResponse;
     }
 
-    private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler, BatchResult batchResult) throws IOException {
+    private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler) throws IOException {
 
         HttpClient client = Mockito.spy(createDefaultTestObject());
         CloseableHttpAsyncClient asyncClient = mockAsyncClient(client);

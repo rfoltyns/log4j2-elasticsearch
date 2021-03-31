@@ -316,8 +316,8 @@ public class SingleKeySequenceSelectorTest {
 
     }
 
-    private void sleep(int millis) {
-        LockSupport.parkNanos(millis * 1000000);
+    private void sleep(long millis) {
+        LockSupport.parkNanos(millis * 1000000L);
     }
 
 }

@@ -369,7 +369,7 @@ public class BufferedJestHttpClientTest {
 
     }
 
-    private HttpResponse createDefaultTestHttpResponse(int statusCode, String reasonPhrase) throws IOException {
+    private HttpResponse createDefaultTestHttpResponse(int statusCode, String reasonPhrase) {
 
         HttpEntity httpEntity = mock(HttpEntity.class);
         HttpResponse httpResponse = mock(HttpResponse.class);

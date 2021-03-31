@@ -184,12 +184,10 @@ public class ClientProviderPoliciesRegistryTest {
         // given
         ClientProviderPoliciesRegistry registry = new ClientProviderPoliciesRegistry();
 
-        Set<String> policies = null;
-
         // when
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> registry.get(policies, createDefaultTestClientProvider()));
+                () -> registry.get(null, createDefaultTestClientProvider()));
 
         // then
         assertThat(exception.getMessage(),

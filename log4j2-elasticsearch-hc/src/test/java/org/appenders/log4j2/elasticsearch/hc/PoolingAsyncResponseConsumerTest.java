@@ -144,7 +144,7 @@ public class PoolingAsyncResponseConsumerTest {
     }
 
     @Test
-    public void onContentReceivedThrowsIOExceptionOnEmptyPool() throws IOException {
+    public void onContentReceivedThrowsIOExceptionOnEmptyPool() {
 
         // given
         ItemSourcePool<SimpleInputBuffer> itemSourcePool = createDefaultTestGenericItemSourcePool(

@@ -89,11 +89,10 @@ public class BulkProcessorObjectFactoryTest {
     public void builderFailsIfServerUrisStringIsNull() {
 
         // given
-        Builder builder = createTestObjectFactoryBuilder();
-        String serverUris = null;
+        Builder builder = createTestObjectFactoryBuilder()
+                .withServerUris(null);
 
         // when
-        builder.withServerUris(serverUris);
         builder.build();
 
     }

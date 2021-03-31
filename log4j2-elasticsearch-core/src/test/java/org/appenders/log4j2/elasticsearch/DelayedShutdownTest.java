@@ -172,7 +172,7 @@ public class DelayedShutdownTest {
         shutdown.start(true);
 
         // when
-        new Thread(() -> shutdown.interrupt()).run();
+        new Thread(shutdown::interrupt).start();
 
         // then
         ArgumentCaptor<Exception> captor = ArgumentCaptor.forClass(Exception.class);

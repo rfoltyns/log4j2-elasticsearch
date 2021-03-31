@@ -64,13 +64,13 @@ public class RollingIndexNameFormatterTest {
 
     public static RollingIndexNameFormatter.Builder createRollingIndexNameFormatterBuilder() {
 
-        RollingIndexNameFormatter.Builder builder = spy(RollingIndexNameFormatter.newBuilder());
+        RollingIndexNameFormatter.Builder builder = spy(RollingIndexNameFormatter.newBuilder())
+                .withIndexName(TEST_INDEX_NAME)
+                .withPattern(DATE_PATTERN_WITH_MINUTES)
+                .withTimeZone(TEST_TIME_ZONE.getID());
 
         when(builder.getInitTimeInMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS);
 
-        builder.withIndexName(TEST_INDEX_NAME);
-        builder.withPattern(DATE_PATTERN_WITH_MINUTES);
-        builder.withTimeZone(TEST_TIME_ZONE.getID());
         return builder;
     }
 
@@ -88,8 +88,8 @@ public class RollingIndexNameFormatterTest {
     public void builderThrowsWhenIndexNameIsNull() {
 
         // when
-        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
-        builder.withIndexName(null);
+        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder()
+                .withIndexName(null);
 
         // when
         final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
@@ -104,8 +104,8 @@ public class RollingIndexNameFormatterTest {
     public void builderThrowsWhenPatternIsNull() {
 
         // when
-        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder();
-        builder.withPattern(null);
+        RollingIndexNameFormatter.Builder builder = createRollingIndexNameFormatterBuilder()
+                .withPattern(null);
 
         // when
         final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
@@ -302,7 +302,7 @@ public class RollingIndexNameFormatterTest {
             LogEvent logEvent = mock(LogEvent.class);
 
             int increment = random.nextInt(3) - 1;
-            when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + increment * 60000 + random.nextInt(60000));
+            when(logEvent.getTimeMillis()).thenReturn(DEFAULT_TEST_TIME_IN_MILLIS + increment * 60000L + random.nextInt(60000));
             events.add(new TestTuple(logEvent, increment));
         }
         return events;

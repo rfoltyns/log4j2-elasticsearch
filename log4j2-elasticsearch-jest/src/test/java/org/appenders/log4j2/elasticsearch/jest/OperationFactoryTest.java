@@ -75,7 +75,7 @@ public class OperationFactoryTest {
         factory.addOperation(operationFactory.create(indexTemplate));
 
         // when
-        factory.executePreBatchOperations();
+        final int executedOps = factory.executePreBatchOperations();
 
         // then
         ArgumentCaptor<GenericJestRequest> requestArgumentCaptor = ArgumentCaptor.forClass(GenericJestRequest.class);
@@ -84,6 +84,7 @@ public class OperationFactoryTest {
         String actualPayload = extractPayload(requestArgumentCaptor.getValue());
 
         assertEquals(actualPayload, expectedPayload);
+        assertEquals(1, executedOps);
 
     }
 
@@ -105,10 +106,11 @@ public class OperationFactoryTest {
         factory.addOperation(operationFactory.create(indexTemplate));
 
         // when
-        factory.executePreBatchOperations();
+        final int executedOps = factory.executePreBatchOperations();
 
         // then
         verify(mockedJestResult).getErrorMessage();
+        assertEquals(1, executedOps);
 
     }
 
@@ -191,7 +193,7 @@ public class OperationFactoryTest {
         return GenericJestRequestIntrospector.getPayload(templateAction);
     }
 
-    private class TestException extends IOException {
+    private static class TestException extends IOException {
         public TestException(String expectedMessage) {
             super(expectedMessage);
         }

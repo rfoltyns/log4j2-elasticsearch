@@ -50,11 +50,11 @@ public class BufferedJestHttpClient extends JestHttpClient {
             return;
         }
 
-        getAsyncClient().execute(request, responseHandler(clientRequest, resultHandler, request));
+        getAsyncClient().execute(request, responseHandler(clientRequest, resultHandler));
 
     }
 
-    private <T extends JestResult> BufferedResultCallback<T> responseHandler(Action<T> clientRequest, JestResultHandler<? super T> resultHandler, HttpUriRequest request) {
+    private <T extends JestResult> BufferedResultCallback<T> responseHandler(Action<T> clientRequest, JestResultHandler<? super T> resultHandler) {
         return new BufferedResultCallback(clientRequest, resultHandler);
     }
 
@@ -73,8 +73,6 @@ public class BufferedJestHttpClient extends JestHttpClient {
     }
 
     public class BufferedResultCallback<T extends JestResult> implements FutureCallback<HttpResponse> {
-
-        static final String AT_LEAST_ONE_FAILED_MESSAGE = "At least one index operation failed. Check logs for more information.";
 
         private final Action<T> clientRequest;
         private final JestResultHandler<T> resultHandler;

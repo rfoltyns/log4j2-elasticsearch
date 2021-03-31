@@ -29,6 +29,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.function.Consumer;
@@ -66,7 +67,7 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
         Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable(factory1, factory2));
 
         BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
-                Arrays.asList(serviceLoader1));
+                Collections.singletonList(serviceLoader1));
 
         // when
         BatchEmitter instance = serviceProvider.createInstance(
@@ -114,7 +115,7 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
         Iterable<BatchEmitterFactory> serviceLoader1 = spy(createTestIterable(factory1, factory2));
 
         BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(
-                Arrays.asList(serviceLoader1));
+                Collections.singletonList(serviceLoader1));
 
         // when
         BatchEmitter instance = serviceProvider.createInstance(
@@ -291,7 +292,7 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
         return new TestIterable(null);
     }
 
-    private class TestIterable implements Iterable<BatchEmitterFactory> {
+    private static class TestIterable implements Iterable<BatchEmitterFactory> {
 
         private int currentIndex = 0;
         private final BatchEmitterFactory[] values;

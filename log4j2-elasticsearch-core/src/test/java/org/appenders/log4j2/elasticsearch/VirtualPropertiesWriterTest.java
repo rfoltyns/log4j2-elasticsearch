@@ -32,7 +32,6 @@ import com.fasterxml.jackson.databind.introspect.AnnotationCollector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import org.apache.logging.log4j.core.LogEvent;
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 

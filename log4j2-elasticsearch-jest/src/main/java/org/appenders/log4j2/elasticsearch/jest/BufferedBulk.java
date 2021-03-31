@@ -42,6 +42,7 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
 public class BufferedBulk extends Bulk {
 
     public static final char LINE_SEPARATOR = '\n';
+    public static final String BULK_URI = "/_bulk";
 
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
@@ -94,7 +95,7 @@ public class BufferedBulk extends Bulk {
     }
 
     public String getURI() {
-        return "/_bulk";
+        return BULK_URI;
     }
 
     /**

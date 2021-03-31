@@ -269,7 +269,7 @@ public class HCHttpTest {
 
         // given
         HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        builder.withBackoffPolicy((BackoffPolicy<BatchRequest>)null);
+        builder.withBackoffPolicy(null);
 
         // when
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
@@ -1168,7 +1168,7 @@ public class HCHttpTest {
         return createDefaultHttpObjectFactoryBuilder().build();
     }
 
-    private class TestBackoffPolicy<T> implements BackoffPolicy<BatchRequest> {
+    private static class TestBackoffPolicy<T> implements BackoffPolicy<BatchRequest> {
 
         @Override
         public boolean shouldApply(BatchRequest data) {
