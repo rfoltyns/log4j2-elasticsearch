@@ -304,7 +304,7 @@ public class RetryProcessorTest {
 
     }
 
-    static Map<CharSequence, ItemSource> fillMap(
+    static void fillMap(
             Map<CharSequence, ItemSource> map,
             int expectedSize,
             KeySequenceSelector keySequenceSelector,
@@ -318,7 +318,6 @@ public class RetryProcessorTest {
         }
         new KeySequenceConfigRepository(map).persist(keySequence.getConfig(true));
 
-        return map;
     }
 
     public KeySequenceSelector createDefaultTestKeySequenceSelector(long sequenceId, Map<CharSequence, ItemSource> items) {

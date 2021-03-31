@@ -61,7 +61,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
 
     private DelayedShutdown shutdown;
 
-    Collection<ScheduledExecutorService> executors = new ConcurrentLinkedQueue<>();
+    final Collection<ScheduledExecutorService> executors = new ConcurrentLinkedQueue<>();
 
     /**
      * Number of exceptions occurred during failed item processing.

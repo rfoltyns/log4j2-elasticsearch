@@ -271,7 +271,7 @@ public class BufferedBulkOperationsTest {
         return builder.build();
     }
 
-    abstract class TestBulkableActionMixIn extends BulkableActionMixIn {
+    abstract static class TestBulkableActionMixIn extends BulkableActionMixIn {
 
         // test condition
         @JsonIgnore

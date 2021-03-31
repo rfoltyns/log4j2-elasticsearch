@@ -80,6 +80,7 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -148,7 +149,7 @@ public class SmokeTest extends SmokeTestBase {
                     .withPooledResponseBuffersSizeInBytes(4096));
 
             ClientProviderPolicy<HttpClient> clientProviderPolicy = new ClientProviderPoliciesRegistry().get(
-                    new HashSet<>(Arrays.asList("none")),
+                    new HashSet<>(Collections.singletonList("none")),
                     serviceDiscoveryClientProvider);
 
             ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(

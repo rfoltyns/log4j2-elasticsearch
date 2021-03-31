@@ -54,9 +54,8 @@ public class AsyncBatchDeliveryPluginTest {
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
 
     public static TestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
-        TestHttpObjectFactory.Builder builder = TestHttpObjectFactory.newBuilder();
-        builder.withServerUris(TEST_SERVER_URIS);
-        return builder;
+        return TestHttpObjectFactory.newBuilder()
+                .withServerUris(TEST_SERVER_URIS);
     }
 
     public static AsyncBatchDeliveryPlugin.Builder createTestBatchDeliveryBuilder() {
@@ -281,20 +280,17 @@ public class AsyncBatchDeliveryPluginTest {
 
     public static class TestAsyncBatchDelivery extends AsyncBatchDeliveryPlugin {
 
-
-        private BatchEmitterServiceProvider mockedProvider;
-
         public TestAsyncBatchDelivery(Builder builder) {
             super(builder);
         }
 
         @Override
         protected BatchEmitterServiceProvider createBatchEmitterServiceProvider() {
-            return mockedProvider;
+            return null;
         }
 
     }
-    private class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
+    private static class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
 
 
         private State state = State.STOPPED;

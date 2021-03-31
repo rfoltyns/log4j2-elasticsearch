@@ -42,7 +42,7 @@ public class KeySequenceConfigTest {
 
     public static KeySequenceConfig createDefaultTestKeySequenceConfig() {
         return createTestKeySequenceConfig(
-                random.nextInt(DEFAULT_OFFSET) + DEFAULT_OFFSET * offsetMultiplier++);
+                random.nextInt(DEFAULT_OFFSET) + (long) DEFAULT_OFFSET * offsetMultiplier++);
     }
 
     public static KeySequenceConfig createTestKeySequenceConfig(long sequenceId) {

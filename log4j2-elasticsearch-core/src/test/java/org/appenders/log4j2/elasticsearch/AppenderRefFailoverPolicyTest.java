@@ -150,10 +150,10 @@ public class AppenderRefFailoverPolicyTest {
     }
 
     public static  FailoverPolicy<String> createTestFailoverPolicy(String testAppenderRef, Configuration configuration) {
-        AppenderRefFailoverPolicy.Builder builder = AppenderRefFailoverPolicy.newBuilder();
-        builder.withAppenderRef(AppenderRef.createAppenderRef(
-                testAppenderRef, Level.ALL, null));
-        builder.withConfiguration(configuration);
+        AppenderRefFailoverPolicy.Builder builder = AppenderRefFailoverPolicy.newBuilder()
+            .withAppenderRef(AppenderRef.createAppenderRef(
+                testAppenderRef, Level.ALL, null))
+            .withConfiguration(configuration);
         return builder.build();
     }
 }

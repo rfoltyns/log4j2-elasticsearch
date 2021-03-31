@@ -161,8 +161,8 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsMapperWithAfterburnerIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
-        builder.withAfterburner(true);
+        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder())
+                .withAfterburner(true);
 
         ObjectMapper objectMapper = spy(new ObjectMapper());
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
@@ -569,7 +569,7 @@ public class JacksonJsonLayoutTest {
 
     }
 
-    private class TestJacksonModule extends SimpleModule implements JacksonModule {
+    private static class TestJacksonModule extends SimpleModule implements JacksonModule {
 
         @Override
         public void applyTo(ObjectMapper objectMapper) {

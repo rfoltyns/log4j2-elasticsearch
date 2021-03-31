@@ -104,11 +104,10 @@ public class BulkProcessorObjectFactoryTest {
     public void builderFailsIfServerUrisStringIsNull() {
 
         // given
-        Builder builder = createTestObjectFactoryBuilder();
-        String serverUris = null;
+        Builder builder = createTestObjectFactoryBuilder()
+                .withServerUris(null);
 
         // when
-        builder.withServerUris(serverUris);
         builder.build();
 
     }
@@ -522,10 +521,6 @@ public class BulkProcessorObjectFactoryTest {
 
             node = new Node(elasticsearchSettings.build());
             client = node.client();
-        }
-
-        public Client getClient() {
-            return client;
         }
 
         public void shutdown() {

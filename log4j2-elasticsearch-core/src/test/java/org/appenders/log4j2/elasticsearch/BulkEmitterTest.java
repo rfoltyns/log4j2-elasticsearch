@@ -345,7 +345,7 @@ public abstract class BulkEmitterTest {
         return spy(new DummyListener());
     }
 
-    class DummyListener implements Function<TestBatch, Boolean> {
+    static class DummyListener implements Function<TestBatch, Boolean> {
         @Override
         public Boolean apply(TestBatch arg1) {
             return true;

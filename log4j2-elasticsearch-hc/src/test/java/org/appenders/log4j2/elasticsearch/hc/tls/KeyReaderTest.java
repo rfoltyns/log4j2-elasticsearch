@@ -43,7 +43,7 @@ public class KeyReaderTest {
         FileInputStream pemPKey = new FileInputStream(PEMCertInfoTest.TEST_KEY_PATH);
 
         // when
-        PKCS8EncodedKeySpec keySpec = keyReader.readPrivateKey(pemPKey, Optional.ofNullable(""));
+        PKCS8EncodedKeySpec keySpec = keyReader.readPrivateKey(pemPKey, Optional.of(""));
 
         // then
         assertNotNull(keySpec);

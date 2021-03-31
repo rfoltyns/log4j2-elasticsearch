@@ -79,7 +79,7 @@ public class BulkResultDeserializerTest {
         // given
         ObjectMapper mapper = new ObjectMapper()
                 .addMixIn(BufferedBulkResult.class, BufferedBulkResultMixIn.class);
-        String json = String.format("{\"errors\": true}");
+        String json = "{\"errors\": true}";
 
         // when
         BufferedBulkResult result = mapper.readerFor(BufferedBulkResult.class).readValue(json);

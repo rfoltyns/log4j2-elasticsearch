@@ -26,6 +26,7 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
@@ -56,7 +57,7 @@ public class HttpClientProviderTest {
 
     public static HttpClientFactory.Builder createDefaultTestBuilder() {
         return createDefaultTestHttpClientFactoryBuilder()
-                .withServerList(Arrays.asList(TEST_SERVER_URIS))
+                .withServerList(Collections.singletonList(TEST_SERVER_URIS))
                 .withConnTimeout(TEST_CONNECTION_TIMEOUT)
                 .withReadTimeout(TEST_READ_TIMEOUT)
                 .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
@@ -81,7 +82,7 @@ public class HttpClientProviderTest {
 
         // then
         assertSame(httpClientFactoryBuilder, clientProvider.getHttpClientFactoryBuilder());
-        assertEquals(httpClientFactoryBuilder.serverList, Arrays.asList(TEST_SERVER_URIS));
+        assertEquals(httpClientFactoryBuilder.serverList, Collections.singletonList(TEST_SERVER_URIS));
         assertSame(httpClientFactoryBuilder.auth, TEST_AUTH);
         assertEquals(httpClientFactoryBuilder.connTimeout, TEST_CONNECTION_TIMEOUT);
         assertEquals(httpClientFactoryBuilder.readTimeout, TEST_READ_TIMEOUT);

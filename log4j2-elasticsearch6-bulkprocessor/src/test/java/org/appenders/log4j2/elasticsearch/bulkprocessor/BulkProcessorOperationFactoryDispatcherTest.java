@@ -79,7 +79,7 @@ public class BulkProcessorOperationFactoryDispatcherTest {
 
     }
 
-    private class TestOpSource implements OpSource {
+    private static class TestOpSource implements OpSource {
 
         @Override
         public String getType() {

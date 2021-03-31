@@ -401,10 +401,10 @@ public class BufferedJestHttpObjectFactoryTest {
 
         // given
         BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
-        BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
-        builder.withBackoffPolicy(backoffPolicy);
+        JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withBackoffPolicy(backoffPolicy);
 
-        BufferedJestHttpObjectFactory config = spy(builder.build());
+        JestHttpObjectFactory config = spy(builder.build());
 
         ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
         Bulk bulk = createTestBatch(payload1);

@@ -60,9 +60,8 @@ public class AsyncBatchDeliveryTest {
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
 
     public static TestHttpObjectFactory.Builder createTestObjectFactoryBuilder() {
-        TestHttpObjectFactory.Builder builder = TestHttpObjectFactory.newBuilder();
-        builder.withServerUris(TEST_SERVER_URIS);
-        return builder;
+        return TestHttpObjectFactory.newBuilder()
+                .withServerUris(TEST_SERVER_URIS);
     }
 
     public static Builder createTestBatchDeliveryBuilder() {
@@ -607,7 +606,7 @@ public class AsyncBatchDeliveryTest {
 
     }
 
-    private class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
+    private static class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
 
         private State state = State.STOPPED;
 

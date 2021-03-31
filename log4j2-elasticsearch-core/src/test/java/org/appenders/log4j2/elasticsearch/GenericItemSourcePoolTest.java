@@ -304,7 +304,7 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void throwsWhenNoMorePooledElementsAvailableAndResizePolicyDoesNotCopeWithTheLoad() throws PoolResourceException {
+    public void throwsWhenNoMorePooledElementsAvailableAndResizePolicyDoesNotCopeWithTheLoad() {
 
         // given
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
@@ -334,7 +334,7 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void throwsWhenResizePolicyDoesNotResize() throws PoolResourceException {
+    public void throwsWhenResizePolicyDoesNotResize() {
 
         // given
         ResizePolicy resizePolicy = mock(ResizePolicy.class);

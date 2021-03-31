@@ -48,7 +48,7 @@ public class BlockingResponseHandlerTest {
 
         // when
         thread.start();
-        Thread.sleep(100);
+        Thread.sleep(500);
         thread.interrupt();
 
         // then
