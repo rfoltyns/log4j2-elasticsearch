@@ -99,7 +99,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      * Schedules a task that prints pool statistics
      *
      * @param monitorTaskInterval interval between two snapshots
-     * @param additionalMetricsSupplier
+     * @param additionalMetricsSupplier metrics added on top of defaults
      */
     void startMonitorTask(long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
         executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", this.new PoolMetrics(), additionalMetricsSupplier),
