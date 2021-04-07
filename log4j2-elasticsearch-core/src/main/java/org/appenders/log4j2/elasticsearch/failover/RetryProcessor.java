@@ -90,7 +90,7 @@ class RetryProcessor implements Runnable {
      * <p>Retrieves current {@link KeySequence} using {@link KeySequenceSelector#firstAvailable()}.
      * <p>Retry batch size is the lowest of {@link #maxRetryBatchSize} and {@link KeySequence#readerKeysAvailable()}
      * <p>Returns immediately, if {@link KeySequenceSelector#firstAvailable()} returns null or {@link KeySequence#readerKeysAvailable()} equals 0.
-     * <p>Configurable pause ({@code env:appenders.retry.backoff.millis=1000) is applied to ensure that latest writer keys are not orphaned.
+     * <p>Configurable pause is applied to ensure that latest writer keys are not orphaned. {@code -Dappenders.retry.backoff.millis=1000)}
      * Pause can be disabled by setting <i>appenders.retry.backoff.millis</i> to 0.
      */
     void retry() {
