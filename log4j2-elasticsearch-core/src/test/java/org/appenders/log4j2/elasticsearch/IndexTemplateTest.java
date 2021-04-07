@@ -48,6 +48,20 @@ public class IndexTemplateTest {
     }
 
     @Test
+    public void minimalConstructorSetsDefaultApiVersion() {
+
+        // when
+        final IndexTemplate indexTemplate = new IndexTemplate(TEST_INDEX_TEMPLATE, TEST_SOURCE);
+
+        // then
+        assertNotNull(indexTemplate);
+        assertEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplate.getApiVersion());
+        assertEquals(TEST_INDEX_TEMPLATE, indexTemplate.getName());
+        assertNotNull(indexTemplate.getSource());
+        assertEquals(IndexTemplate.TYPE_NAME, indexTemplate.getType());
+    }
+
+    @Test
     public void startsWhenSetupCorrectlyWithNonDefaultApiVersion() {
 
         // given

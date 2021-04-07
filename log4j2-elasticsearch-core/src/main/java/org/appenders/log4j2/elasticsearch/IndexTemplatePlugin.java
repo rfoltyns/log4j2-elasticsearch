@@ -40,7 +40,16 @@ public class IndexTemplatePlugin extends IndexTemplate {
      * @param source Index template document
      */
     protected IndexTemplatePlugin(String name, String source) {
-        super(name, source);
+        this(DEFAULT_API_VERSION, name, source);
+    }
+
+    /**
+     * @param apiVersion Index Template API version to use. Set 7 or lower for _template (deprecated), 8 for /_index_template (since 7.8)
+     * @param name Index template name
+     * @param source Index template document
+     */
+    protected IndexTemplatePlugin(int apiVersion, String name, String source) {
+        super(apiVersion, name, source);
     }
 
     @PluginFactory
@@ -51,14 +60,13 @@ public class IndexTemplatePlugin extends IndexTemplate {
             @PluginValue("sourceString") String source) {
 
         Builder builder = newBuilder()
-                .withApiVersion(apiVersion == 0 ? DEFAULT_API_VERSION : apiVersion)
                 .withName(name)
                 .withPath(path)
                 .withSource(source);
 
         try {
             builder.validate();
-            return new IndexTemplatePlugin(name, builder.loadSource());
+            return new IndexTemplatePlugin(apiVersion == 0 ? DEFAULT_API_VERSION : apiVersion, name, builder.loadSource());
         } catch (Exception e) {
             throw new ConfigurationException(e.getMessage());
         }
