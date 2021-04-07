@@ -88,6 +88,28 @@ public class IndexTemplatePluginTest {
     }
 
     @Test
+    public void setsApiVersionIfApiVersionIsNotZero() {
+
+        // when
+        IndexTemplatePlugin indexTemplatePlugin= createTestIndexTemplate(8, TEST_INDEX_TEMPLATE, null, TEST_SOURCE);
+
+        // then
+        assertNotNull(indexTemplatePlugin);
+        assertEquals(8, indexTemplatePlugin.getApiVersion());
+    }
+
+    @Test
+    public void minimalConstructorSetsDefaultApiVersion() {
+
+        // when
+        IndexTemplatePlugin indexTemplatePlugin = new IndexTemplatePlugin(TEST_INDEX_TEMPLATE, TEST_SOURCE);
+
+        // then
+        assertEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplatePlugin.getApiVersion());
+
+    }
+
+    @Test
     public void throwsByDefaultWhenNameIsNotSet() {
 
         // when
