@@ -58,6 +58,7 @@ import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapUtil.resol
 public abstract class SmokeTestBase {
 
     public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
+    public static final long ONE_SECOND = TimeUnit.MILLISECONDS.toNanos(1000);
 
     private final SmokeTestConfig config = new SmokeTestConfig();
 
@@ -250,7 +251,7 @@ public abstract class SmokeTestBase {
 
         while (latch.getCount() != 0) {
 
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1000));
+            LockSupport.parkNanos(ONE_SECOND);
 
             int count = localCounter.getAndSet(0);
             int sleepMillis = producerSleepMillis.get();
@@ -264,7 +265,7 @@ public abstract class SmokeTestBase {
             }
 
             String stats = String.format(
-                    "Sleep millis per producer: %d, Producer batch size: %d, Current throughput: %d; Progress: %d/%d",
+                    "Sleep millis per producer: %d, Producer batch size: %d, Current throughput: %d/s; Progress: %d/%d",
                     sleepMillis,
                     producerBatchSize.get(),
                     count,
