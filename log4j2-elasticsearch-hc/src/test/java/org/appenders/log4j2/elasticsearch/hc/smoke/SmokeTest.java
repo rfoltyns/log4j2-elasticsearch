@@ -90,7 +90,6 @@ public class SmokeTest extends SmokeTestBase {
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
         final int batchSize = getInt("smokeTest.batchSize", 10000);
-        final int additionalBatchSize = (int) (batchSize * 0.2); // prevent tiny batches
         final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
         final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
         final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
@@ -194,7 +193,7 @@ public class SmokeTest extends SmokeTestBase {
 
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
-                .withBatchSize(batchSize + additionalBatchSize)
+                .withBatchSize(batchSize)
                 .withDeliveryInterval(1000)
                 .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy)
                 .withFailoverPolicy(resolveFailoverPolicy())
