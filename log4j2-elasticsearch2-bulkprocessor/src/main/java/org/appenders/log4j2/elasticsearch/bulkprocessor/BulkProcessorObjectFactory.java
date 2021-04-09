@@ -35,7 +35,6 @@ import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
@@ -138,15 +137,6 @@ public class BulkProcessorObjectFactory implements ClientObjectFactory<Transport
     @Override
     public BatchOperations<BulkRequest> createBatchOperations() {
         return new ElasticsearchBatchOperations();
-    }
-
-    @Override
-    public void execute(IndexTemplate indexTemplate) {
-        try {
-            setupOperationFactory().create(indexTemplate).execute();
-        } catch (Exception e) {
-            throw new ConfigurationException(e.getMessage(), e);
-        }
     }
 
     @Override

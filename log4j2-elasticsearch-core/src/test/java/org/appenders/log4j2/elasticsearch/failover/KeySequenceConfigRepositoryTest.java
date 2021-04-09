@@ -28,7 +28,6 @@ import org.mockito.ArgumentCaptor;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.failover.KeySequenceConfigTest.createDefaultTestKeySequenceConfig;

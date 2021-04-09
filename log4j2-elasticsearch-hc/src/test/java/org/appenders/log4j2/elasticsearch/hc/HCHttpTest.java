@@ -30,15 +30,11 @@ import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
-import org.appenders.log4j2.elasticsearch.IndexTemplateTest;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
-import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
-import org.appenders.log4j2.elasticsearch.OperationFactoryDispatcher;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.Result;
@@ -56,14 +52,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
-import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_CONNECTION_TIMEOUT;
@@ -84,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
@@ -820,98 +813,6 @@ public class HCHttpTest {
 
         // then
         verify(backoffPolicy, times(1)).deregister(eq(batchRequest));
-
-    }
-
-    @Test
-    public void passesIndexTemplateToOperationFactory() {
-
-        //given
-        OperationFactory operationFactory = spy(new OperationFactory() {
-            @Override
-            public <T extends OpSource> Operation create(T opSource) {
-                return () -> {};
-            }
-        });
-
-        HCHttp factory = createDefaultHttpObjectFactoryBuilder()
-                .withOperationFactory(operationFactory)
-                .build();
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(operationFactory).create(eq(indexTemplate));
-
-    }
-
-    @Test
-    public void deprecatedExecuteLogsExceptions() {
-
-        //given
-        HCHttp factory = Mockito.spy(createDefaultHttpObjectFactoryBuilder().build());
-
-        Logger logger = mockTestLogger();
-
-        String expectedErrorMessage = UUID.randomUUID().toString();
-        Exception testException = new IOException(expectedErrorMessage);
-
-        when(factory.setupOperationFactory()).thenReturn(new OperationFactoryDispatcher() {
-            {
-                register(IndexTemplate.TYPE_NAME, new OperationFactory() {
-                    @Override
-                    public <T extends OpSource> Operation create(T opSource) {
-                        return () -> {
-                            throw testException;
-                        };
-                    }
-                });
-            }
-        });
-
-        IndexTemplate indexTemplate = spy(IndexTemplateTest.createTestIndexTemplateBuilder()
-                .withPath("classpath:indexTemplate-7.json")
-                .build());
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(logger).error(eq("IndexTemplate not added"), eq(testException));
-
-    }
-
-    @Test
-    public void deprecatedExecuteDoesNotRethrowOnIndexTemplateOperationException() {
-
-        //given
-        HCHttp factory = Mockito.spy(HCHttpTest.createDefaultHttpObjectFactoryBuilder().build());
-
-        when(factory.setupOperationFactory()).thenReturn(new OperationFactoryDispatcher() {
-            {
-                register(IndexTemplate.TYPE_NAME, new OperationFactory() {
-                    @Override
-                    public <T extends OpSource> Operation create(T opSource) {
-                        return () -> {
-                            throw new RuntimeException("test exception");
-                        };
-                    }
-                });
-            }
-        });
-
-        IndexTemplate indexTemplate = spy(createTestIndexTemplateBuilder().build());
-
-        Logger logger = mockTestLogger();
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(logger).error(eq("IndexTemplate not added"), any());
 
     }
 

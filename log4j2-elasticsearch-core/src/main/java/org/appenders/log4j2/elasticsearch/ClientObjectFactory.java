@@ -45,14 +45,6 @@ public interface ClientObjectFactory<CLIENT_TYPE, BATCH_TYPE> extends LifeCycle,
     BatchOperations<BATCH_TYPE> createBatchOperations();
 
     /**
-     * Updates target with index template
-     * @param indexTemplate index template request
-     * @deprecated As of 1.6, this method will be removed, use {@link #addOperation(Operation)} instead
-     */
-    @Deprecated
-    void execute(IndexTemplate indexTemplate);
-
-    /**
      * Allows to add operation to be executed before next batch. Exact time of the execution depends on implementation of this factory.
      *
      * NOTE: {@code default} added for backwards compatibility. {@code default} will be removed future releases

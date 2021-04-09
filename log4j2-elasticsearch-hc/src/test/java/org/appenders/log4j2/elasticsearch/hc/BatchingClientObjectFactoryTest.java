@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientFactory;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
@@ -134,11 +133,6 @@ public class BatchingClientObjectFactoryTest {
                     @Override
                     public BatchOperations<BatchRequest> createBatchOperations() {
                         return null;
-                    }
-
-                    @Override
-                    public void execute(IndexTemplate indexTemplate) {
-
                     }
 
                     @Override

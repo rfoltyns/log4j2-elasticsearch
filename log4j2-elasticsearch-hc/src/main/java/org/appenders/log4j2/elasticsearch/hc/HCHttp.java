@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
-import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
@@ -124,15 +123,6 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
             }
 
         };
-    }
-
-    @Override
-    public void execute(IndexTemplate indexTemplate) {
-        try {
-            setupOperationFactory().create(indexTemplate).execute();
-        } catch (Exception e) {
-            getLogger().error("IndexTemplate not added", e);
-        }
     }
 
     public static class Builder extends BatchingClientObjectFactory.Builder<BatchRequest, IndexRequest> {

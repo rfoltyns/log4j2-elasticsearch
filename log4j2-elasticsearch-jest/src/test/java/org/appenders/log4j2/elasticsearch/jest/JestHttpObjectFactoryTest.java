@@ -32,7 +32,6 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -51,7 +50,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 
 import java.io.IOException;
@@ -60,7 +58,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -617,48 +614,6 @@ public class JestHttpObjectFactoryTest {
 
         // then
         assertSame(operationFactory1, operationFactory2);
-
-    }
-
-    @Test
-    public void executeIndexTemplateExecutesImmediately() throws Exception {
-
-        // given
-        JestHttpObjectFactory factory = Mockito.spy(createTestObjectFactoryBuilder().build());
-
-        OperationFactory operationFactory = mock(OperationFactory.class);
-        IndexTemplate indexTemplate = mock(IndexTemplate.class);
-        Operation operation = mock(Operation.class);
-
-        when(operationFactory.create(eq(indexTemplate))).thenReturn(operation);
-        when(factory.setupOperationFactory()).thenReturn(operationFactory);
-
-        // when
-        factory.execute(indexTemplate);
-
-        // then
-        verify(operation).execute();
-
-    }
-
-    @Test
-    public void executeErrorsAreLogged() {
-
-        // given
-        JestHttpObjectFactory factory = Mockito.spy(createTestObjectFactoryBuilder().build());
-
-        Logger logger = mockTestLogger();
-
-        RuntimeException testException = spy(new RuntimeException("test exception"));
-        when(factory.setupOperationFactory()).thenAnswer((Answer<OperationFactory>) invocationOnMock -> {
-            throw testException;
-        });
-
-        // when
-        factory.execute(createTestIndexTemplateBuilder().build());
-
-        // then
-        verify(logger).error(eq("IndexTemplate not added"), eq(testException));
 
     }
 

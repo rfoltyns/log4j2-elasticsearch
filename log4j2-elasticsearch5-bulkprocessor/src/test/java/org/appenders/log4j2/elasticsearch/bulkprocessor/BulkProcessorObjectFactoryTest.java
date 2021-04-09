@@ -49,9 +49,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
@@ -310,26 +308,6 @@ public class BulkProcessorObjectFactoryTest {
         verify(handler, times(1)).apply(captor.capture());
 
         assertEquals(payload1, new BulkRequestIntrospector().items(captor.getValue()).iterator().next());
-    }
-
-    @Test
-    public void throwsOnExecuteTemplateFailure() {
-
-        //given
-        BulkProcessorObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
-
-        String expectedMessage = "test-exception";
-
-        when(factory.getClientProvider()).thenAnswer((Answer) invocation -> {
-            throw new IOException(expectedMessage);
-        });
-
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage(expectedMessage);
-
-        // when
-        factory.execute(IndexTemplateTest.createTestIndexTemplateBuilder().build());
-
     }
 
     @Test

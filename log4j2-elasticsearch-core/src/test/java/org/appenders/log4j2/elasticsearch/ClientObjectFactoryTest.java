@@ -61,11 +61,6 @@ public class ClientObjectFactoryTest {
             }
 
             @Override
-            public void execute(IndexTemplate indexTemplate) {
-
-            }
-
-            @Override
             public OperationFactory setupOperationFactory() {
                 return null;
             }

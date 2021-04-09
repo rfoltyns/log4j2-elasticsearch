@@ -70,7 +70,7 @@ public class OperationFactoryTest {
         String expectedPayload = indexTemplate.getSource().replaceAll("\\s+","");
 
         // when
-        factory.execute(indexTemplate);
+        factory.addOperation(factory.setupOperationFactory().create(indexTemplate));
 
         // then
         ArgumentCaptor<PutIndexTemplateRequest> requestArgumentCaptor = ArgumentCaptor.forClass(PutIndexTemplateRequest.class);
