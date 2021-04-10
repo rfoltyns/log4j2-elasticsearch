@@ -65,7 +65,7 @@ public class BulkProcessorFactory implements BatchEmitterFactory<BatchEmitter> {
         return new BulkProcessorDelegate(builder.build());
     }
 
-    class BulkExecutionListener implements BulkProcessor.Listener {
+    static class BulkExecutionListener implements BulkProcessor.Listener {
 
         private final Function<BulkRequest, Boolean> failureHandler;
 
