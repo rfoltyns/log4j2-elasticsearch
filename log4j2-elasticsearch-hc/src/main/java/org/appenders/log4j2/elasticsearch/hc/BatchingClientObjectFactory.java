@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
@@ -29,7 +28,6 @@ import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
-import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -181,105 +179,6 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
 
         public Builder<BATCH_TYPE, ITEM_TYPE> withFailedItemOps(FailedItemOps<ITEM_TYPE> failedItemOps) {
             this.failedItemOps = failedItemOps;
-            return this;
-        }
-
-        /**
-         * @param serverUris semicolon-separated list of target addresses
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public Builder<BATCH_TYPE, ITEM_TYPE> withServerUris(String serverUris) {
-            this.clientProvider.getHttpClientFactoryBuilder().withServerList(SplitUtil.split(serverUris, ";"));
-            return this;
-        }
-
-        /**
-         * @param maxTotalConnections maximum number of available HTTP connections
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withMaxTotalConnections(int maxTotalConnections) {
-            this.clientProvider.getHttpClientFactoryBuilder().withMaxTotalConnections(maxTotalConnections);
-            return this;
-        }
-
-        /**
-         * @param connTimeout connection timeout
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withConnTimeout(int connTimeout) {
-            this.clientProvider.getHttpClientFactoryBuilder().withConnTimeout(connTimeout);
-            return this;
-        }
-
-        /**
-         * @param readTimeout read timeout
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withReadTimeout(int readTimeout) {
-            this.clientProvider.getHttpClientFactoryBuilder().withReadTimeout(readTimeout);
-            return this;
-        }
-
-        /**
-         * @param ioThreadCount number of 'IO Dispatcher' threads
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withIoThreadCount(int ioThreadCount) {
-            this.clientProvider.getHttpClientFactoryBuilder().withIoThreadCount(ioThreadCount);
-            return this;
-        }
-
-        /**
-         * @param auth Credentials and SSL/TLS config
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withAuth(Auth<HttpClientFactory.Builder> auth) {
-            // Special treatment here
-            if (auth != null) {
-                auth.configure(this.clientProvider.getHttpClientFactoryBuilder());
-            }
-            return this;
-        }
-
-        /**
-         * @param pooledResponseBuffersEnabled if <i>true</i>, pooled response buffers will be used while processing response, false otherwise
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withPooledResponseBuffers(boolean pooledResponseBuffersEnabled) {
-            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffers(pooledResponseBuffersEnabled);
-            return this;
-        }
-
-        /**
-         * @param estimatedResponseSizeInBytes initial size of response buffer if response buffers enabled (see {@link #withPooledResponseBuffers(boolean)}), ignored otherwise
-         * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withClientProvider(HttpClientProvider)} instead.
-         */
-        @Deprecated
-        public BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> withPooledResponseBuffersSizeInBytes(int estimatedResponseSizeInBytes) {
-            this.clientProvider.getHttpClientFactoryBuilder().withPooledResponseBuffersSizeInBytes(estimatedResponseSizeInBytes);
             return this;
         }
 

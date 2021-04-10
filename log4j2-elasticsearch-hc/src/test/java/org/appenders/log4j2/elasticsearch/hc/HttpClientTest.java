@@ -62,6 +62,8 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createDefaultTestByteBuf;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
+import static org.appenders.log4j2.elasticsearch.hc.HCHttpTest.createDefaultHttpObjectFactoryBuilder;
+import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -176,9 +178,10 @@ public class HttpClientTest {
     public void executeAsyncResponseIsNotPooledIfPoolNotConfigured() {
 
         // given
-        HCHttp.Builder testObjectFactoryBuilder =
-                HCHttpTest.createDefaultHttpObjectFactoryBuilder();
-        testObjectFactoryBuilder.withPooledResponseBuffers(false);
+        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()
+                .withPooledResponseBuffers(false));
+
+        HCHttp.Builder testObjectFactoryBuilder = createDefaultHttpObjectFactoryBuilder().withClientProvider(clientProvider);
 
         HttpClient client = spy(testObjectFactoryBuilder.build().createClient());
 
@@ -710,7 +713,7 @@ public class HttpClientTest {
 
     private HttpClient createDefaultTestObject() {
         HCHttp.Builder testObjectFactoryBuilder =
-                HCHttpTest.createDefaultHttpObjectFactoryBuilder();
+                createDefaultHttpObjectFactoryBuilder();
         return testObjectFactoryBuilder.build().createClient();
     }
 

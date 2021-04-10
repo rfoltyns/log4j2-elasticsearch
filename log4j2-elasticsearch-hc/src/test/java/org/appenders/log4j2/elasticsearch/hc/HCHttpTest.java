@@ -51,7 +51,6 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -60,14 +59,8 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.appenders.log4j2.elasticsearch.hc.BatchRequestTest.createTestBatch;
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_CONNECTION_TIMEOUT;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_IO_THREAD_COUNT;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_MAX_TOTAL_CONNECTIONS;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_ENABLED;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_READ_TIMEOUT;
-import static org.appenders.log4j2.elasticsearch.hc.HttpClientProviderTest.TEST_SERVER_URIS;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.trueOnlyOnce;
+import static org.appenders.log4j2.elasticsearch.util.SplitUtil.split;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -108,36 +101,6 @@ public class HCHttpTest {
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
                 .withBatchOperations(new HCBatchOperations(itemSourceFactory))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
-
-    }
-
-    @Test
-    public void deprecatedBuilderSettersDelegateToClientProvider() {
-
-        // given
-        HCHttp.Builder builder = (HCHttp.Builder) createDefaultHttpObjectFactoryBuilder()
-                .withClientProvider(new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()))
-                .withServerUris(TEST_SERVER_URIS)
-                .withConnTimeout(TEST_CONNECTION_TIMEOUT)
-                .withReadTimeout(TEST_READ_TIMEOUT)
-                .withMaxTotalConnections(TEST_MAX_TOTAL_CONNECTIONS)
-                .withIoThreadCount(TEST_IO_THREAD_COUNT)
-                .withPooledResponseBuffers(TEST_POOLED_RESPONSE_BUFFERS_ENABLED)
-                .withPooledResponseBuffersSizeInBytes(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES);
-
-        // when
-        HCHttp factory = builder.build();
-
-        // then
-        HttpClientFactory.Builder httpClientFactoryBuilder = factory.clientProvider.getHttpClientFactoryBuilder();
-
-        assertEquals(Collections.singletonList(TEST_SERVER_URIS), httpClientFactoryBuilder.serverList);
-        assertEquals(TEST_CONNECTION_TIMEOUT, httpClientFactoryBuilder.connTimeout);
-        assertEquals(TEST_READ_TIMEOUT, httpClientFactoryBuilder.readTimeout);
-        assertEquals(TEST_MAX_TOTAL_CONNECTIONS, httpClientFactoryBuilder.maxTotalConnections);
-        assertEquals(TEST_IO_THREAD_COUNT, httpClientFactoryBuilder.ioThreadCount);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_ENABLED, httpClientFactoryBuilder.pooledResponseBuffersEnabled);
-        assertEquals(TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES, httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes);
 
     }
 
@@ -341,8 +304,10 @@ public class HCHttpTest {
     public void configReturnsACopyOfServerUrisList() {
 
         // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
-        builder.withServerUris("http://localhost:9200;http://localhost:9201;http://localhost:9202");
+        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()
+                .withServerList(split("http://localhost:9200;http://localhost:9201;http://localhost:9202")));
+
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder().withClientProvider(clientProvider);
         ClientObjectFactory<HttpClient, BatchRequest> config = builder.build();
 
         // when
@@ -391,10 +356,13 @@ public class HCHttpTest {
     public void authIsAppliedIfConfigured() {
 
         // given
-        Auth auth = new Security(new BasicCredentials("admin", "changeme"), null);
+        Auth<HttpClientFactory.Builder> auth = new Security(new BasicCredentials("admin", "changeme"), null);
 
-        HCHttp factory = (HCHttp) createDefaultHttpObjectFactoryBuilder()
-                .withAuth(auth)
+        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()
+                .withAuth(auth));
+
+        HCHttp factory = createDefaultHttpObjectFactoryBuilder()
+                .withClientProvider(clientProvider)
                 .build();
 
         // when
@@ -409,9 +377,10 @@ public class HCHttpTest {
     public void authIsNotAppliedIfNull() {
 
         // given
-        HCHttp.Builder builder = (HCHttp.Builder) createDefaultHttpObjectFactoryBuilder()
-                .withAuth(null);
+        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()
+                .withAuth(null));
 
+        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder().withClientProvider(clientProvider);
 
         HCHttp factory = builder.build();
 
