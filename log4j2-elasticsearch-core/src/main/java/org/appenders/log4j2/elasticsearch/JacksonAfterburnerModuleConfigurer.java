@@ -30,15 +30,6 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
  */
 class JacksonAfterburnerModuleConfigurer implements JacksonModule {
 
-    /**
-     * @param objectMapper mapper to configure
-     * @deprecated As of 1.6, this method will be removed. Use {@link #applyTo(ObjectMapper)} instead
-     */
-    @Deprecated
-    void configure(ObjectMapper objectMapper) {
-        applyTo(objectMapper);
-    }
-
     @Override
     public void applyTo(ObjectMapper objectMapper) {
         objectMapper.registerModule(new AfterburnerModule());
