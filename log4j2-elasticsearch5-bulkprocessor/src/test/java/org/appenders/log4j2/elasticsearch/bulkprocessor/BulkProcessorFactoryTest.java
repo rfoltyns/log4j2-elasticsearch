@@ -73,11 +73,9 @@ public class BulkProcessorFactoryTest {
     public void bulkExecutionListenerExecutesFailoverHandlerWhenResponseHasFailures() {
 
         // given
-        BulkProcessorFactory emitterFactory = new BulkProcessorFactory();
-
         Function<BulkRequest, Boolean> failureHandler = mock(Function.class);
         BulkProcessorFactory.BulkExecutionListener listener =
-                emitterFactory.new BulkExecutionListener(failureHandler);
+                new BulkProcessorFactory.BulkExecutionListener(failureHandler);
 
         BulkRequest request = mock(BulkRequest.class);
         BulkResponse response = mock(BulkResponse.class);
@@ -96,11 +94,9 @@ public class BulkProcessorFactoryTest {
     public void bulkExecutionListenerDoesntExecuteFailoverHandlerWhenResponseDoesntHaveFailures() {
 
         // given
-        BulkProcessorFactory emitterFactory = new BulkProcessorFactory();
-
         Function<BulkRequest, Boolean> failureHandler = mock(Function.class);
         BulkProcessorFactory.BulkExecutionListener listener =
-                emitterFactory.new BulkExecutionListener(failureHandler);
+                new BulkProcessorFactory.BulkExecutionListener(failureHandler);
 
         BulkRequest request = mock(BulkRequest.class);
         BulkResponse response = mock(BulkResponse.class);

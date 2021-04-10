@@ -436,7 +436,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     /**
      * Consider this class <i>private</i>.
      */
-    class JestClientProvider implements ClientProvider<JestClient> {
+    static class JestClientProvider implements ClientProvider<JestClient> {
 
         private final WrappedHttpClientConfig.Builder clientConfigBuilder;
 

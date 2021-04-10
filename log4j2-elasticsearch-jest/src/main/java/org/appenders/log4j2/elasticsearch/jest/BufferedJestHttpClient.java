@@ -72,7 +72,7 @@ public class BufferedJestHttpClient extends JestHttpClient {
         return httpUriRequest;
     }
 
-    public class BufferedResultCallback<T extends JestResult> implements FutureCallback<HttpResponse> {
+    static public class BufferedResultCallback<T extends JestResult> implements FutureCallback<HttpResponse> {
 
         private final Action<T> clientRequest;
         private final JestResultHandler<T> resultHandler;
