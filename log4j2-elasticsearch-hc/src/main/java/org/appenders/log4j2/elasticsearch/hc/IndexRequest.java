@@ -25,7 +25,7 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 
 /**
  * {@link ItemSource} based document to be indexed.
- * When it's no longer needed, {@link #release()} MUST be called to release underlying resources.
+ * When it's no longer needed, {@link #completed()} MUST be called to release underlying resources.
  */
 public class IndexRequest implements Item<ItemSource<ByteBuf>> {
 
@@ -61,14 +61,6 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
     @Override
     public void completed() {
         this.source.release();
-    }
-
-    /**
-     * @deprecated As of 1.6, this method will be removed. Use {@link #completed()} insatead.
-     */
-    @Deprecated
-    public void release() {
-        completed();
     }
 
     public static class Builder {

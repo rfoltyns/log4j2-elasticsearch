@@ -388,7 +388,7 @@ public abstract class BatchRequestTest {
         request.completed();
 
         // then
-        verify(indexRequest).release();
+        verify(indexRequest).completed();
 
     }
 

@@ -42,25 +42,25 @@ public class BatchRequest implements Batch<IndexRequest> {
     public static final char LINE_SEPARATOR = '\n';
 
     private final ObjectWriter objectWriter;
-    private ItemSource<ByteBuf> buffer;
+    private ItemSource<ByteBuf> itemSource;
 
     protected final Collection<IndexRequest> indexRequests;
 
     protected BatchRequest(Builder builder) {
         this.indexRequests = getQueueFactoryInstance().toIterable(builder.items);
         this.objectWriter = builder.objectWriter;
-        this.buffer = builder.buffer;
+        this.itemSource = builder.itemSource;
     }
 
     /**
-     * Serializes and writes {@link #indexRequests} into {@link #buffer}
+     * Serializes and writes {@link #indexRequests} into {@link #itemSource}
      *
      * @return underlying buffer filled with serialized indexRequests
      * @throws IOException if serialization failed
      */
     public ItemSource serialize() throws IOException {
 
-        ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(buffer.getSource());
+        ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(itemSource.getSource());
 
         // in current impl with no IDs, it's possible to reduce serialization by reusing first action
         IndexRequest identicalAction = uniformAction(indexRequests);
@@ -76,11 +76,11 @@ public class BatchRequest implements Batch<IndexRequest> {
             byteBufOutputStream.writeByte(LINE_SEPARATOR);
 
             ByteBuf source = action.getSource().getSource();
-            buffer.getSource().writeBytes(source);
+            itemSource.getSource().writeBytes(source);
             byteBufOutputStream.writeByte(LINE_SEPARATOR);
 
         }
-        return buffer;
+        return itemSource;
     }
 
     /**
@@ -112,12 +112,12 @@ public class BatchRequest implements Batch<IndexRequest> {
      */
     public void completed() {
         for (IndexRequest indexRequest : indexRequests) {
-            indexRequest.release();
+            indexRequest.completed();
         }
         indexRequests.clear();
 
-        buffer.release();
-        buffer = null;
+        itemSource.release();
+        itemSource = null;
 
     }
 
@@ -154,7 +154,7 @@ public class BatchRequest implements Batch<IndexRequest> {
                 BatchRequest.class.getSimpleName(),
                 Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "10000")));
 
-        private ItemSource<ByteBuf> buffer;
+        private ItemSource<ByteBuf> itemSource;
         private ObjectWriter objectWriter;
 
         public Builder add(IndexRequest item) {
@@ -168,7 +168,7 @@ public class BatchRequest implements Batch<IndexRequest> {
         }
 
         public BatchRequest build() {
-            if (buffer == null) {
+            if (itemSource == null) {
                 throw new IllegalArgumentException("buffer cannot be null");
             }
 
@@ -180,7 +180,7 @@ public class BatchRequest implements Batch<IndexRequest> {
         }
 
         public Builder withBuffer(ItemSource<ByteBuf> buffer) {
-            this.buffer = buffer;
+            this.itemSource = buffer;
             return this;
         }
 
