@@ -37,7 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class SimpleInputBufferObjectOpsTest {
@@ -80,8 +80,8 @@ public class SimpleInputBufferObjectOpsTest {
         pooledObjectOps.purge(itemSource);
 
         // then
-        verifyZeroInteractions(itemSourceMock);
-        verifyZeroInteractions(inputBuffer);
+        verifyNoInteractions(itemSourceMock);
+        verifyNoInteractions(inputBuffer);
 
     }
 
