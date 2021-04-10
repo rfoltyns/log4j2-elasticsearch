@@ -129,15 +129,6 @@ public class BatchRequest implements Batch<IndexRequest> {
         return indexRequests;
     }
 
-    /**
-     * @return collection of batch items
-     * @deprecated As of 1.6, this method will be removed. Use {@link #getItems()} instead
-     */
-    @Deprecated
-    public Collection<IndexRequest> getIndexRequests() {
-        return getItems();
-    }
-
     @Override
     public String getURI() {
         return "/_bulk";
