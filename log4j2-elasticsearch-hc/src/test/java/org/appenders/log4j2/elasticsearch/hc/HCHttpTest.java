@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
@@ -101,107 +100,6 @@ public class HCHttpTest {
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
                 .withBatchOperations(new HCBatchOperations(itemSourceFactory))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
-
-    }
-
-    @Test
-    public void builderThrowsIfBatchOperationsIsNotProvidedAndItemSourceFactoryIsNotProvided() {
-
-        // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBatchOperations(null)
-                .withItemSourceFactory(null)
-                .withMappingType("_doc");
-
-        // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
-
-        // then
-        assertThat(exception.getMessage(), containsString("No " + BatchOperations.class.getSimpleName() + " provided"));
-
-    }
-
-    @Test
-    public void builderThrowsIfBatchOperationsIsNotProvidedAndMappingTypeIsNotProvided() {
-
-        // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBatchOperations(null)
-                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
-                .withMappingType(null);
-
-        // when
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
-
-        // then
-        assertThat(exception.getMessage(), containsString("No " + BatchOperations.class.getSimpleName() + " provided"));
-
-    }
-
-    @Test
-    public void builderWarnsIfBatchOperationsIsProvidedAndMappingTypeIsProvidedAndItemSourceFactoryIsNotProvided() {
-
-        // given
-        BatchOperations batchOperations = mock(BatchOperations.class);
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBatchOperations(batchOperations)
-                .withItemSourceFactory(null)
-                .withMappingType("_doc");
-
-        Logger logger = mockTestLogger();
-
-        // when
-        HCHttp objectFactory = builder.build();
-
-        // then
-        assertEquals(batchOperations, objectFactory.batchOperations);
-
-        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
-                HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
-
-    }
-
-    @Test
-    public void builderWarnsIfBatchOperationsIsProvidedAndMappingTypeIsNotProvidedAndItemSourceFactoryIsProvided() {
-
-        // given
-        BatchOperations batchOperations = mock(BatchOperations.class);
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBatchOperations(batchOperations)
-                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
-                .withMappingType(null);
-
-        Logger logger = mockTestLogger();
-
-        // when
-        HCHttp objectFactory = builder.build();
-
-        // then
-        assertEquals(batchOperations, objectFactory.batchOperations);
-
-        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
-                HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
-
-    }
-
-    @Test
-    public void builderWarnsIfBatchOperationsIsNotProvidedAndMappingTypeIsProvidedAndItemSourceFactoryIsProvided() {
-
-        // given
-        HCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder()
-                .withBatchOperations(null)
-                .withItemSourceFactory(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build())
-                .withMappingType("_doc");
-
-        Logger logger = mockTestLogger();
-
-        // when
-        HCHttp objectFactory = builder.build();
-
-        // then
-        assertTrue(objectFactory.batchOperations instanceof HCBatchOperations);
-        verify(logger).warn("{}: DEPRECATION! {} and {} fields are deprecated. Use {} instead",
-                HCHttp.class.getSimpleName(), "mappingType", "itemSourceFactory", "batchOperations");
 
     }
 

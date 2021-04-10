@@ -30,7 +30,6 @@ import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
-import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
@@ -130,18 +129,6 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         protected BatchOperations<BatchRequest> batchOperations;
         protected OperationFactory operationFactory;
 
-        /**
-         * @deprecated As of 1.6, this field will be removed. Use {@link #batchOperations} instead.
-         */
-        @Deprecated
-        protected String mappingType;
-
-        /**
-         * @deprecated As of 1.6, this field will be removed. Use {@link #batchOperations} instead.
-         */
-        @Deprecated
-        protected PooledItemSourceFactory pooledItemSourceFactory;
-
         @Override
         public HCHttp build() {
             return new HCHttp(validate());
@@ -154,25 +141,12 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
                 throw new IllegalArgumentException(nullValidationExceptionMessage(OperationFactory.class.getSimpleName()));
             }
 
-            handleDeprecations();
-
             if (batchOperations == null) {
                 throw new IllegalArgumentException(nullValidationExceptionMessage(BatchOperations.class.getSimpleName()));
             }
 
             return this;
 
-        }
-
-        private void handleDeprecations() {
-            if (batchOperations != null && (mappingType != null || pooledItemSourceFactory != null)) {
-                getLogger().warn("{}: DEPRECATION! {} and {} fields are deprecated and will be ignored. Using provided {}",
-                        HCHttp.class.getSimpleName(), "mappingType", "pooledItemSourceFactory", "batchOperations");
-            } else if (mappingType != null && pooledItemSourceFactory != null) {
-                getLogger().warn("{}: DEPRECATION! {} and {} fields are deprecated. Use {} instead",
-                        HCHttp.class.getSimpleName(), "mappingType", "itemSourceFactory", "batchOperations");
-                batchOperations = new HCBatchOperations(pooledItemSourceFactory, mappingType);
-            }
         }
 
         private String nullValidationExceptionMessage(final String className) {
@@ -205,28 +179,6 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
 
         public Builder withOperationFactory(OperationFactory operationFactory) {
             this.operationFactory = operationFactory;
-            return this;
-        }
-
-        /**
-         * @param mappingType mapping type
-         * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
-         * @return this
-         */
-        @Deprecated
-        public Builder withMappingType(String mappingType) {
-            this.mappingType = mappingType;
-            return this;
-        }
-
-        /**
-         * @param pooledItemSourceFactory {@link org.appenders.log4j2.elasticsearch.ItemSource} pool
-         * @deprecated As of 1.6, this method will be removed. Use {@link #batchOperations} instead.
-         * @return this
-         */
-        @Deprecated
-        public Builder withItemSourceFactory(PooledItemSourceFactory pooledItemSourceFactory) {
-            this.pooledItemSourceFactory = pooledItemSourceFactory;
             return this;
         }
 
