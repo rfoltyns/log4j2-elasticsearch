@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -38,6 +37,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.UUID;
 
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -141,7 +141,7 @@ public class HCRequestFactoryTest {
         String expectedUrl = UUID.randomUUID().toString();
         Request request = createDefaultMockRequest(expectedUrl, "POST");
 
-        ByteBuf byteBuf = new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, 2);
+        ByteBuf byteBuf = new CompositeByteBuf(byteBufAllocator, false, 2);
         byte[] expectedBytes = UUID.randomUUID().toString().getBytes();
         byteBuf.writeBytes(expectedBytes);
 

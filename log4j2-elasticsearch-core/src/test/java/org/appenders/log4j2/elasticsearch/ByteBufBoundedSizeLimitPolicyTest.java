@@ -33,11 +33,15 @@ public class ByteBufBoundedSizeLimitPolicyTest {
     public static final int DEFAULT_TEST_MAX_SIZE = 1024;
     public static final int DEFAULT_TEST_MIN_SIZE = DEFAULT_TEST_MAX_SIZE / 2;
 
+    public static ByteBufBoundedSizeLimitPolicy createDefaultTestBoundedSizeLimitPolicy() {
+        return new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE, DEFAULT_TEST_MAX_SIZE);
+    }
+
     @Test
     public void shrinksBufferIfOversized() {
 
         // given
-        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE, DEFAULT_TEST_MAX_SIZE);
+        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = createDefaultTestBoundedSizeLimitPolicy();
 
         ByteBuf byteBuf = ByteBufItemSourceTest.createDefaultTestByteBuf();
 
@@ -79,7 +83,7 @@ public class ByteBufBoundedSizeLimitPolicyTest {
     public void doesNotChangeCapacityIfBetweenBounds() {
 
         // given
-        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE, DEFAULT_TEST_MAX_SIZE);
+        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = createDefaultTestBoundedSizeLimitPolicy();
 
         ByteBuf byteBuf = ByteBufItemSourceTest.createDefaultTestByteBuf();
         byteBuf.capacity(DEFAULT_TEST_MIN_SIZE + 1);

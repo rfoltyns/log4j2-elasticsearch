@@ -35,17 +35,6 @@ class ByteBufPooledObjectOps implements PooledObjectOps<ByteBuf> {
     private final SizeLimitPolicy<ByteBuf> sizeLimitPolicy;
 
     /**
-     * @param byteBufAllocator {@code io.netty.buffer.UnpooledByteBufAllocator} to use
-     * @param initialSize initial buffer size
-     *
-     * @deprecated As of 1.6, use {@link #ByteBufPooledObjectOps(UnpooledByteBufAllocator, SizeLimitPolicy)} instead.
-     */
-    @Deprecated
-    ByteBufPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator, int initialSize) {
-        this(byteBufAllocator, new ByteBufBoundedSizeLimitPolicy(initialSize, Integer.MAX_VALUE));
-    }
-
-    /**
      * @param byteBufAllocator {@code io.netty.buffer.ByteBufAllocator} to use
      * @param sizeLimitPolicy {@link SizeLimitPolicy} to be applied on creation and {@link #reset(ItemSource)}
      */

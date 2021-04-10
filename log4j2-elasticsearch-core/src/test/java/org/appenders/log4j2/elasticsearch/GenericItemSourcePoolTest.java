@@ -37,6 +37,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicyTest.createDefaultTestBoundedSizeLimitPolicy;
+import static org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOpsTest.createTestPooledObjectOps;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -268,7 +270,7 @@ public abstract class GenericItemSourcePoolTest {
         // given
         ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
                 byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
+                createDefaultTestBoundedSizeLimitPolicy()) {
             @Override
             public ByteBufItemSource createItemSource(ReleaseCallback<ByteBuf> releaseCallback) {
                 return spy(super.createItemSource(releaseCallback));
@@ -310,10 +312,7 @@ public abstract class GenericItemSourcePoolTest {
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
         when(resizePolicy.increase(any())).thenReturn(true);
 
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
-        };
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
@@ -340,10 +339,7 @@ public abstract class GenericItemSourcePoolTest {
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
         when(resizePolicy.increase(any())).thenReturn(false);
 
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
-        };
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
@@ -370,10 +366,7 @@ public abstract class GenericItemSourcePoolTest {
             throw new PoolResourceException("test");
         });
 
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
-        };
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
@@ -400,10 +393,7 @@ public abstract class GenericItemSourcePoolTest {
 
         int expectedIneffectiveResizes = 30;
 
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
-        };
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
@@ -468,10 +458,7 @@ public abstract class GenericItemSourcePoolTest {
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
 
         int resizeTimeout = 1000;
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES) {
-        };
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
@@ -692,9 +679,7 @@ public abstract class GenericItemSourcePoolTest {
 
     public static GenericItemSourcePool createDefaultTestGenericItemSourcePool(int initialSize, boolean monitored) {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().build();
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
 
         return new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
@@ -722,9 +707,7 @@ public abstract class GenericItemSourcePoolTest {
 
     static GenericItemSourcePool<ByteBuf> createDefaultTestGenericItemSourcePool(int initialSize, boolean monitored, ScheduledExecutorService mockedExecutor) {
         ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().build();
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                byteBufAllocator,
-                DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
 
         return new GenericItemSourcePool<ByteBuf>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
@@ -746,4 +729,5 @@ public abstract class GenericItemSourcePoolTest {
             }
         };
     }
+
 }

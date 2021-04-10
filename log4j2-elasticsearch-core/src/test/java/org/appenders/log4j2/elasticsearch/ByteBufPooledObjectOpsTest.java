@@ -22,12 +22,12 @@ package org.appenders.log4j2.elasticsearch;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.spy;
@@ -86,7 +86,7 @@ public class ByteBufPooledObjectOpsTest {
     public void createsBufferWithMinSize() {
 
         // given
-        PooledObjectOps<ByteBuf> pooledObjectOps = new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT,
+        PooledObjectOps<ByteBuf> pooledObjectOps = new ByteBufPooledObjectOps(byteBufAllocator,
                 new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_SOURCE_SIZE / 2, DEFAULT_TEST_SOURCE_SIZE));
 
         // when
@@ -103,7 +103,7 @@ public class ByteBufPooledObjectOpsTest {
         // given
         CompositeByteBuf testByteBuf = spy(ByteBufItemSourceTest.createDefaultTestByteBuf());
 
-        PooledObjectOps<ByteBuf> pooledObjectOps = new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT,
+        PooledObjectOps<ByteBuf> pooledObjectOps = new ByteBufPooledObjectOps(byteBufAllocator,
                 new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_SOURCE_SIZE, DEFAULT_TEST_SOURCE_SIZE)) {
             @Override
             public ByteBufItemSource createItemSource(ReleaseCallback<ByteBuf> releaseCallback) {
@@ -136,38 +136,13 @@ public class ByteBufPooledObjectOpsTest {
 
     }
 
-    @Test
-    public void resetDoesNotShrinkIfOversizedFromDeprecatedConstructor() {
-
-        // given
-        PooledObjectOps<ByteBuf> pooledObjectOps = new ByteBufPooledObjectOps(
-                UnpooledByteBufAllocator.DEFAULT, DEFAULT_TEST_SOURCE_SIZE);
-
-        ItemSource<ByteBuf> itemSource = pooledObjectOps.createItemSource(pooled -> {
-        });
-
-        int postWriteCapacity = DEFAULT_TEST_SOURCE_SIZE * 2;
-        byte[] bytes = new byte[postWriteCapacity];
-        Arrays.fill(bytes, (byte) 1);
-
-        itemSource.getSource().writeBytes(bytes);
-
-        // when
-        pooledObjectOps.reset(itemSource);
-
-        // then
-        assertEquals(postWriteCapacity, itemSource.getSource().capacity());
-        assertEquals(0, itemSource.getSource().readerIndex());
-        assertEquals(0, itemSource.getSource().writerIndex());
-    }
-
-    private ByteBufPooledObjectOps createTestPooledObjectOps() {
+    public static ByteBufPooledObjectOps createTestPooledObjectOps() {
         return createTestPooledObjectOps(DEFAULT_TEST_SOURCE_SIZE);
     }
 
-    private ByteBufPooledObjectOps createTestPooledObjectOps(int expectedEstimatedSourceSize) {
+    public static ByteBufPooledObjectOps createTestPooledObjectOps(int expectedEstimatedSourceSize) {
         return new ByteBufPooledObjectOps(
-                UnpooledByteBufAllocator.DEFAULT,
+                byteBufAllocator,
                 new ByteBufBoundedSizeLimitPolicy(expectedEstimatedSourceSize, expectedEstimatedSourceSize));
     }
 
