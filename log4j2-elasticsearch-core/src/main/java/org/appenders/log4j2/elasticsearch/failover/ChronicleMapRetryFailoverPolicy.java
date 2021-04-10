@@ -298,15 +298,6 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
             return keySequenceSelector;
         }
 
-        /**
-         * @deprecated As of 1.6, this method will be removed. Use {@link #configuredKeySequenceSelector(MapProxy)} instead.
-         * @return {@link KeySequenceSelector} based on currently set {@link MapProxy}
-         */
-        @Deprecated
-        protected KeySequenceSelector configuredKeySequenceSelector() {
-            return configuredKeySequenceSelector(this.mapProxy);
-        }
-
         KeySequenceConfigRepository createKeySequenceConfigRepository(Map<CharSequence, ItemSource> map) {
             return new KeySequenceConfigRepository(map);
         }

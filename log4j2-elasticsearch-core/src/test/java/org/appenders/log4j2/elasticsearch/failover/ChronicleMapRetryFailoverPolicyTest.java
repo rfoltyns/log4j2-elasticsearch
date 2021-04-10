@@ -277,25 +277,6 @@ public class ChronicleMapRetryFailoverPolicyTest {
     }
 
     @Test
-    public void deprecatedConfigureKeySequenceSelectorDelegates() throws IOException {
-
-        // given
-        String fileName = createTempFile().getAbsolutePath();
-        final ChronicleMapRetryFailoverPolicy.Builder builder = spy(createDefaultTestFailoverPolicyBuilder(fileName, createDefaultTestChronicleMap()));
-
-        builder.lazyInit();
-        verify(builder, never()).configuredKeySequenceSelector();
-        verify(builder, times(1)).configuredKeySequenceSelector(any());
-
-        // when
-        final KeySequenceSelector keySequenceSelector = builder.configuredKeySequenceSelector();
-
-        // then
-        verify(builder, times(2)).configuredKeySequenceSelector(any());
-
-    }
-
-    @Test
     public void defaultHashCorruptionListenerExtractsExceptionIfAvailable() throws IOException {
 
         // given
