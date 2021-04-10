@@ -75,29 +75,6 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
     }
 
     /**
-     *
-     * @param propDef property definition created by {@code by com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector}
-     * @param annotations contains only @JsonAppend at the moment
-     * @param type {@link VirtualProperty}[]
-     * @param virtualProperties {@link VirtualProperty}-ies to append
-     * @param valueResolver {@link ValueResolver} dynamic variables resolver
-     *
-     * @deprecated This constructor should not be invoked directly and should only be used within
-     * {@link #withConfig(MapperConfig, AnnotatedClass, BeanPropertyDefinition, JavaType)} call.
-     * It will be removed in future releases.
-     */
-    @Deprecated
-    public VirtualPropertiesWriter(
-            BeanPropertyDefinition propDef,
-            Annotations annotations,
-            JavaType type,
-            VirtualProperty[] virtualProperties,
-            ValueResolver valueResolver
-    ) {
-        this(propDef, annotations, type, virtualProperties, valueResolver, new VirtualPropertyFilter[0]);
-    }
-
-    /**
      * This constructor should not be invoked directly and should only be used within
      * {@link #withConfig(MapperConfig, AnnotatedClass, BeanPropertyDefinition, JavaType)} call.
      *

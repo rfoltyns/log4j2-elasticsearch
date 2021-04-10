@@ -25,10 +25,8 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClassResolver;
-import com.fasterxml.jackson.databind.introspect.AnnotationCollector;
 import com.fasterxml.jackson.databind.introspect.VirtualAnnotatedMember;
 import com.fasterxml.jackson.databind.util.SimpleBeanPropertyDefinition;
 import org.apache.logging.log4j.core.LogEvent;
@@ -147,47 +145,6 @@ public class VirtualPropertiesWriterTest {
         assertArrayEquals(writer.virtualProperties, result.virtualProperties);
         assertEquals(writer.valueResolver, result.valueResolver);
         assertArrayEquals(writer.filters, result.filters);
-
-    }
-
-    @Test
-    public void writerCreatedWithDeprecatedConstructorWritesGivenProperties() throws Exception {
-
-        // given
-        ObjectMapper objectMapper = new ObjectMapper();
-        SerializationConfig config = objectMapper.getSerializationConfig();
-
-        JavaType javaType = config.constructType(LogEvent.class);
-        AnnotatedClass annotatedClass = createTestAnnotatedClass(config, javaType);
-
-        SimpleBeanPropertyDefinition simpleBeanPropertyDefinition =
-                getTestBeanPropertyDefinition(config, javaType, annotatedClass);
-
-        String expectedName = UUID.randomUUID().toString();
-        String expectedValue = UUID.randomUUID().toString();
-        VirtualProperty virtualProperty = spy(createNonDynamicVirtualProperty(expectedName, expectedValue));
-
-        ValueResolver valueResolver = createTestValueResolver(virtualProperty, expectedValue);
-
-        VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
-                simpleBeanPropertyDefinition,
-                new AnnotationCollector.OneAnnotation(
-                        annotatedClass.getRawType(),
-                        annotatedClass.getAnnotations().get(JsonAppend.class)
-                ),
-                javaType,
-                new VirtualProperty[] { virtualProperty },
-                valueResolver
-        );
-
-        JsonGenerator jsonGenerator = mock(JsonGenerator.class);
-
-        // when
-        writer.serializeAsField(new Object(), jsonGenerator, mock(SerializerProvider.class));
-
-        // then
-        verify(jsonGenerator).writeFieldName(eq(expectedName));
-        verify(jsonGenerator).writeString(eq(expectedValue));
 
     }
 
