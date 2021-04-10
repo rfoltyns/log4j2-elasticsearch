@@ -309,7 +309,7 @@ public class AsyncBatchDeliveryTest {
 
         BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withClientObjectFactory(objectFactory)
-                .withIndexTemplate(indexTemplate)
+                .withSetupOpSources(indexTemplate)
                 .build();
 
         // when
@@ -317,8 +317,6 @@ public class AsyncBatchDeliveryTest {
 
         // then
         verify(objectFactory).addOperation(any());
-
-        
 
     }
 
@@ -330,7 +328,7 @@ public class AsyncBatchDeliveryTest {
 
         BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withClientObjectFactory(objectFactory)
-                .withIndexTemplate(null)
+                .withSetupOpSources()
                 .build();
 
         // when
@@ -596,7 +594,7 @@ public class AsyncBatchDeliveryTest {
                     .withDeliveryInterval(deliveryInterval)
                     .withClientObjectFactory(objectFactory)
                     .withFailoverPolicy(failoverPolicy)
-                    .withIndexTemplate(indexTemplate));
+                    .withSetupOpSources(indexTemplate));
         }
 
         @Override

@@ -89,7 +89,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(bulkProcessorObjectFactory)
                 .withBatchSize(getInt("smokeTest.batchSize", 10000))
                 .withDeliveryInterval(1000)
-                .withIndexTemplate(indexTemplate)
+                .withSetupOpSources(indexTemplate)
                 .build();
 
         NoopIndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()

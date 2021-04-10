@@ -178,17 +178,9 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         }
 
         /**
-         * @param indexTemplate index template to be configured before first batch
+         * @param setupOpSources definitions of operations to execute before first batch
          * @return this
-         *
-         * @deprecated As of 1.6, this method will be removed. Use {@link #withSetupOpSources(OpSource...)} instead
          */
-        @Deprecated
-        public Builder withIndexTemplate(IndexTemplate indexTemplate) {
-            this.setupOpSources = addSetupOpSource(indexTemplate);
-            return this;
-        }
-
         public Builder withSetupOpSources(OpSource... setupOpSources) {
             this.setupOpSources = addSetupOpSource(setupOpSources);
             return this;
