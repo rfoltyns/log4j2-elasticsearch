@@ -68,7 +68,7 @@ public class ByteBufResponseTest {
 
         // given
         BasicResponse response = createDefaultTestObject()
-                .withResponseCode(new Random().nextInt(400));
+                .withResponseCode(new Random().nextInt(399) + 1);
 
         // then
         assertTrue(response.isSucceeded());
@@ -76,11 +76,23 @@ public class ByteBufResponseTest {
     }
 
     @Test
-    public void nonSuccessfulIfResponseCodeEqual400() {
+    public void nonSuccessfulIfResponseCodeEquals400() {
 
         // given
         BasicResponse response = createDefaultTestObject()
                 .withResponseCode(400);
+
+        // then
+        assertFalse(response.isSucceeded());
+
+    }
+
+    @Test
+    public void nonSuccessfulIfResponseCodeEqualsZero() {
+
+        // given
+        BasicResponse response = createDefaultTestObject()
+                .withResponseCode(0);
 
         // then
         assertFalse(response.isSucceeded());
