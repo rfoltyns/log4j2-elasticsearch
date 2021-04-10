@@ -43,7 +43,6 @@ import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.ArrayList;
 import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -375,7 +374,7 @@ public class JacksonJsonLayoutTest {
         JacksonJsonLayout.Builder builder  = createDefaultTestBuilder();
 
         // when
-        ObjectWriter writer = builder.createConfiguredWriter(new ArrayList<>());
+        ObjectWriter writer = builder.createConfiguredWriter();
 
         // then
         assertEquals(ExtendedObjectWriter.class, writer.getClass());

@@ -146,25 +146,12 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Ite
         }
 
         protected ObjectWriter createConfiguredWriter() {
-            return createConfiguredWriter(Arrays.asList(mixins)); // this method can be inlined in 1.6
-        }
-
-        /**
-         * @param mixins mixins to apply
-         * @return configured writer
-         *
-         * @deprecated As of 1.6, this method will be removed, use {@link #createConfiguredWriter()} instead
-          */
-        @Deprecated
-        protected ObjectWriter createConfiguredWriter(List<JacksonMixIn> mixins) {
-
             ObjectMapper objectMapper = createDefaultObjectMapper();
 
             return configureModules(objectMapper, getJacksonModules())
-                    .configureMixins(objectMapper, mixins)
+                    .configureMixins(objectMapper, Arrays.asList(mixins))
                     .configureVirtualProperties(objectMapper, virtualProperties, virtualPropertyFilters)
                     .createConfiguredWriter(objectMapper);
-
         }
 
         private Collection<JacksonModule> getJacksonModules() {
