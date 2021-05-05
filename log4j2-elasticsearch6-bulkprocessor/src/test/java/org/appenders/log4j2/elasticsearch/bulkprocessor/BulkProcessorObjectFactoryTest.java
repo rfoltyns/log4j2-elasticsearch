@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,12 +43,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -57,9 +53,13 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -73,17 +73,13 @@ public class BulkProcessorObjectFactoryTest {
 
     public static final String TEST_SERVER_URIS = "http://localhost:9300";
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
-
     public static Builder createTestObjectFactoryBuilder() {
         return BulkProcessorObjectFactory.newBuilder()
                 .withServerUris(TEST_SERVER_URIS)
                 .withClientSettings(ClientSettings.newBuilder().build());
     }
 
-    @Test(expected = ConfigurationException.class)
+    @Test
     public void builderFailsIfServerUrisStringIsNull() {
 
         // given
@@ -91,7 +87,10 @@ public class BulkProcessorObjectFactoryTest {
                 .withServerUris(null);
 
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No serverUris provided for " + BulkProcessorObjectFactory.PLUGIN_NAME));
 
     }
 
@@ -142,11 +141,11 @@ public class BulkProcessorObjectFactoryTest {
         builder.withServerUris("http://unknowntesthost:8080");
         BulkProcessorObjectFactory factory = builder.build();
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("unknowntesthost");
-
         // when
-        factory.createClient();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, factory::createClient);
+
+        // then
+        assertThat(exception.getMessage(), containsString("unknowntesthost"));
 
     }
 
@@ -163,7 +162,7 @@ public class BulkProcessorObjectFactoryTest {
         ClientProvider clientProvider = factory.getClientProvider();
 
         // then
-        Assert.assertTrue(clientProvider instanceof SecureClientProvider);
+        assertTrue(clientProvider instanceof SecureClientProvider);
 
     }
 
@@ -180,7 +179,7 @@ public class BulkProcessorObjectFactoryTest {
         ClientProvider clientProvider = factory.getClientProvider();
 
         // then
-        Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+        assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
 
     }
 
@@ -194,7 +193,7 @@ public class BulkProcessorObjectFactoryTest {
         ClientProvider clientProvider = factory.getClientProvider();
 
         // then
-        Assert.assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
+        assertTrue(clientProvider instanceof BulkProcessorObjectFactory.InsecureTransportClientProvider);
 
     }
 
@@ -239,6 +238,7 @@ public class BulkProcessorObjectFactoryTest {
 
         assertTrue(captor.getAllValues().contains(payload1));
         assertTrue(captor.getAllValues().contains(payload2));
+
     }
 
     @Test
@@ -257,10 +257,10 @@ public class BulkProcessorObjectFactoryTest {
 
         BulkProcessorFactory bulkProcessorFactory = new BulkProcessorFactory();
         BatchEmitter batchEmitter = bulkProcessorFactory.createInstance(
-                        1,
-                        100,
-                        config,
-                        failoverPolicy);
+                1,
+                100,
+                config,
+                failoverPolicy);
 
         String payload1 = "test1";
         ActionRequest testRequest = createTestRequest(payload1);
@@ -270,9 +270,10 @@ public class BulkProcessorObjectFactoryTest {
 
         // then
         ArgumentCaptor<BulkRequest> captor = ArgumentCaptor.forClass(BulkRequest.class);
-        verify(client, times(1)).bulk(captor.capture(), Mockito.any());
+        verify(client, times(1)).bulk(captor.capture(), any());
 
         assertEquals(payload1, new BulkRequestIntrospector().items(captor.getValue()).iterator().next());
+
     }
 
     @Test
@@ -309,11 +310,11 @@ public class BulkProcessorObjectFactoryTest {
         verify(handler, times(1)).apply(captor.capture());
 
         assertEquals(payload1, new BulkRequestIntrospector().items(captor.getValue()).iterator().next());
+
     }
 
     @Test
-    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided()
-    {
+    public void defaultValueResolverIsUsedWheNoConfigurationOrValueResolverProvided() {
 
         // given
         BulkProcessorObjectFactory.Builder builder = createTestObjectFactoryBuilder()
@@ -330,8 +331,7 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @Test
-    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided()
-    {
+    public void log4j2ConfigurationBasedValueResolverIsUsedWhenConfigurationProvided() {
 
         // given
         Configuration configuration = mock(Configuration.class);
@@ -363,8 +363,7 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @Test
-    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided()
-    {
+    public void providedValueResolverIsUsedWhenBothConfigurationAndValueResolverProvided() {
 
         // given
         ValueResolver valueResolver = mock(ValueResolver.class);
@@ -392,7 +391,7 @@ public class BulkProcessorObjectFactoryTest {
     }
 
     @Test
-    public void defaultBatchListenerDoesNotThrow() {
+    public void defaultBatchListenerDoesntThrow() {
 
         // given
         BulkProcessorObjectFactory factory = createTestObjectFactoryBuilder().build();

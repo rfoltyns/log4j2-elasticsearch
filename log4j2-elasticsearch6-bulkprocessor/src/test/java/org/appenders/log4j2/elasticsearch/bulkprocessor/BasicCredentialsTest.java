@@ -23,14 +23,14 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials.XPACK_SECURITY_USER;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class BasicCredentialsTest {
 
@@ -87,7 +87,6 @@ public class BasicCredentialsTest {
 
     }
 
-
     @Test
     public void objectIsConfiguredWhenAllParamsAreSet() {
 
@@ -106,4 +105,5 @@ public class BasicCredentialsTest {
         assertEquals(TEST_USER + ":" + TEST_PASSWORD, settings.get(XPACK_SECURITY_USER));
 
     }
+
 }

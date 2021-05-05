@@ -22,13 +22,13 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.elasticsearch.action.bulk.BulkProcessor;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
-public class BulkProcessorDelgateTest {
+public class BulkProcessorDelegateTest {
 
     @Test
     public void lifecycleStart() {

@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,20 +26,18 @@ import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 public class BulkProcessorOperationFactoryDispatcherTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void createsIndexTemplate() {
@@ -71,11 +69,11 @@ public class BulkProcessorOperationFactoryDispatcherTest {
 
         OpSource opSource = new TestOpSource();
 
-        expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(TestOpSource.class.getSimpleName() + " is not supported");
-
         // when
-        factory.handleMissing(opSource);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> factory.handleMissing(opSource));
+
+        // then
+        assertThat(exception.getMessage(), equalTo(TestOpSource.class.getSimpleName() + " is not supported"));
 
     }
 

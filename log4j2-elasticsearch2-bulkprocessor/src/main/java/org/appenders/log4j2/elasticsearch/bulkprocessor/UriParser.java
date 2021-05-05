@@ -34,7 +34,7 @@ public class UriParser {
         try {
             return new URI(s).getHost();
         } catch (URISyntaxException e) {
-            throw new ConfigurationException(e.getMessage());
+            throw new ConfigurationException(e);
         }
     }
 
@@ -42,7 +42,7 @@ public class UriParser {
         try {
             return new URI(serverUri).getPort();
         } catch (URISyntaxException e) {
-            throw new ConfigurationException(e.getMessage());
+            throw new ConfigurationException(e);
         }
     }
 }

@@ -22,15 +22,15 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class UriParserTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void parserReturnsHostGivenHttpUrl() {
@@ -43,7 +43,8 @@ public class UriParserTest {
         String parsedHost = uriParser.getHost(url);
 
         // then
-        Assert.assertEquals("localhost", parsedHost);
+        assertEquals("localhost", parsedHost);
+
     }
 
     @Test
@@ -57,7 +58,8 @@ public class UriParserTest {
         String parsedHost = uriParser.getHost(url);
 
         // then
-        Assert.assertEquals("10.120.10.10", parsedHost);
+        assertEquals("10.120.10.10", parsedHost);
+
     }
 
     @Test
@@ -71,7 +73,8 @@ public class UriParserTest {
         int parsedPort = uriParser.getPort(url);
 
         // then
-        Assert.assertEquals(8080, parsedPort);
+        assertEquals(8080, parsedPort);
+
     }
 
     @Test
@@ -85,7 +88,8 @@ public class UriParserTest {
         int parsedPort = uriParser.getPort(url);
 
         // then
-        Assert.assertEquals(8080, parsedPort);
+        assertEquals(8080, parsedPort);
+
     }
 
     @Test
@@ -95,10 +99,12 @@ public class UriParserTest {
         String url = "${";
         UriParser uriParser = new UriParser();
 
-        expectedException.expect(ConfigurationException.class);
-
         // when
-        uriParser.getHost(url);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> uriParser.getHost(url));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Illegal character in path at index 1: ${"));
+
     }
 
     @Test
@@ -108,10 +114,11 @@ public class UriParserTest {
         String url = "%s";
         UriParser uriParser = new UriParser();
 
-        expectedException.expect(ConfigurationException.class);
-
         // when
-        uriParser.getPort(url);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> uriParser.getPort(url));
+
+        // then
+        assertThat(exception.getMessage(), equalTo("java.net.URISyntaxException: Malformed escape pair at index 0: %s"));
 
     }
 

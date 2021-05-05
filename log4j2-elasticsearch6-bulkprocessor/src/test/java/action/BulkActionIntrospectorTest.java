@@ -26,8 +26,9 @@ import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 import org.elasticsearch.action.index.BulkActionIntrospector;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BulkActionIntrospectorTest {
 
@@ -43,7 +44,8 @@ public class BulkActionIntrospectorTest {
         String payload = (String) introspector.getPayload(action);
 
         // then
-        Assert.assertEquals(testPayload, payload);
+        assertEquals(testPayload, payload);
+
     }
 
 }
