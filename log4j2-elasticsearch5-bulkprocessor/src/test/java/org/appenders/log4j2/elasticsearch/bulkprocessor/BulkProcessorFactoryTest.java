@@ -26,14 +26,14 @@ import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 import java.util.Random;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -53,7 +53,8 @@ public class BulkProcessorFactoryTest {
         boolean result = emitterFactory.accepts(BulkProcessorObjectFactory.class);
 
         // then
-        Assert.assertTrue(result);
+        assertTrue(result);
+
     }
 
     @Test
@@ -66,7 +67,8 @@ public class BulkProcessorFactoryTest {
         boolean result = emitterFactory.accepts(ExtendedBulkProcessorObjectFactory.class);
 
         // then
-        Assert.assertTrue(result);
+        assertTrue(result);
+
     }
 
     @Test
@@ -151,4 +153,5 @@ public class BulkProcessorFactoryTest {
             super(serverUris, auth);
         }
     }
+
 }

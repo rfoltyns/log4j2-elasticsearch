@@ -25,9 +25,9 @@ import org.elasticsearch.action.ActionRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.support.master.TestAcknowledgedResponse;
 import org.elasticsearch.client.transport.TransportClient;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BulkProcessorSetupStepTest {
 

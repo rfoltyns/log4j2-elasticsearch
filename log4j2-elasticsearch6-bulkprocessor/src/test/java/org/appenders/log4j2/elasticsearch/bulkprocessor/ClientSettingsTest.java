@@ -21,12 +21,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.TEST_NAME;
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.TEST_VALUE;
 import static org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettingTest.createDefaultTestClientSettingBuilder;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ClientSettingsTest {
 

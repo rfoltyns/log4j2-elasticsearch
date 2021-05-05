@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,21 +25,22 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
 public class XPackAuthTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Captor
     private ArgumentCaptor<Settings.Builder> builderArgumentCaptor;
@@ -60,7 +61,7 @@ public class XPackAuthTest {
         XPackAuth xPackAuth = builder.build();
 
         // then
-        Assert.assertNotNull(xPackAuth);
+        assertNotNull(xPackAuth);
 
     }
 
@@ -68,7 +69,7 @@ public class XPackAuthTest {
     public void appliesCredentialsIfConfigured() {
 
         // given
-        Credentials<Settings.Builder> credentials = Mockito.mock(Credentials.class);
+        Credentials<Settings.Builder> credentials = mock(Credentials.class);
 
         Settings.Builder settingsBuilder = Settings.builder();
 
@@ -80,8 +81,8 @@ public class XPackAuthTest {
         xPackAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(credentials).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        verify(credentials).applyTo(builderArgumentCaptor.capture());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -92,11 +93,11 @@ public class XPackAuthTest {
         XPackAuth.Builder builder = createTestBuilder()
                 .withCredentials(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("credentials");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No credentials provided for " + XPackAuth.PLUGIN_NAME));
 
     }
 
@@ -104,7 +105,7 @@ public class XPackAuthTest {
     public void appliesCertInfoIfConfigured() {
 
         // given
-        CertInfo<Settings.Builder> certInfo = Mockito.mock(CertInfo.class);
+        CertInfo<Settings.Builder> certInfo = mock(CertInfo.class);
 
         Settings.Builder settingsBuilder = Settings.builder();
 
@@ -116,8 +117,8 @@ public class XPackAuthTest {
         xPackAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(certInfo).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        verify(certInfo).applyTo(builderArgumentCaptor.capture());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -128,11 +129,11 @@ public class XPackAuthTest {
         XPackAuth.Builder builder = createTestBuilder()
                 .withCertInfo(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("certInfo");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No certInfo provided for " + XPackAuth.PLUGIN_NAME));
 
     }
 

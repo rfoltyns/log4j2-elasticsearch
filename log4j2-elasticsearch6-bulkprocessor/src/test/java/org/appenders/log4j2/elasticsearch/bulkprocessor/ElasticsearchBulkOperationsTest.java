@@ -9,9 +9,9 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,24 +21,21 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.BulkActionIntrospector;
 import org.elasticsearch.action.index.IndexRequest;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 
 public class ElasticsearchBulkOperationsTest {
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void throwsOnBatchBuilderCreate() {
@@ -46,10 +43,11 @@ public class ElasticsearchBulkOperationsTest {
         // given
         BatchOperations<BulkRequest> batchOperations = createDefaultTestBulkRequestBatchOperations();
 
-        expectedException.expect(UnsupportedOperationException.class);
-
         // when
-        batchOperations.createBatchBuilder();
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, batchOperations::createBatchBuilder);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No need to create BatchBuilder for ElasticsearchBulkProcessor"));
 
     }
 
@@ -66,8 +64,8 @@ public class ElasticsearchBulkOperationsTest {
         IndexRequest batchItem = (IndexRequest) batchOperations.createBatchItem("testIndex", expectedPayload);
 
         // then
-        Assert.assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));
-        Assert.assertEquals("index", batchItem.opType().getLowercase());
+        assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));
+        assertEquals("index", batchItem.opType().getLowercase());
 
     }
 
@@ -84,8 +82,8 @@ public class ElasticsearchBulkOperationsTest {
         IndexRequest batchItem = (IndexRequest) batchOperations.createBatchItem("testIndex", itemSource);
 
         // then
-        Assert.assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));
-        Assert.assertEquals("index", batchItem.opType().getLowercase());
+        assertEquals(expectedPayload, new BulkActionIntrospector().getPayload(batchItem));
+        assertEquals("index", batchItem.opType().getLowercase());
 
     }
 

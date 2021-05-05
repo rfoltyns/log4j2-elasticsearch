@@ -25,21 +25,23 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
 public class ShieldAuthTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Captor
     private ArgumentCaptor<Settings.Builder> builderArgumentCaptor;
@@ -60,7 +62,7 @@ public class ShieldAuthTest {
         ShieldAuth shieldAuth = builder.build();
 
         // then
-        Assert.assertNotNull(shieldAuth);
+        assertNotNull(shieldAuth);
 
     }
 
@@ -80,8 +82,8 @@ public class ShieldAuthTest {
         shieldAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(credentials).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        verify(credentials).applyTo(builderArgumentCaptor.capture());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -92,11 +94,11 @@ public class ShieldAuthTest {
         ShieldAuth.Builder builder = createTestBuilder()
                 .withCredentials(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("credentials");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("No credentials provided for " + ShieldAuth.PLUGIN_NAME));
 
     }
 
@@ -116,8 +118,8 @@ public class ShieldAuthTest {
         shieldAuth.configure(settingsBuilder);
 
         // then
-        Mockito.verify(certInfo).applyTo(builderArgumentCaptor.capture());
-        Assert.assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
+        verify(certInfo).applyTo(builderArgumentCaptor.capture());
+        assertEquals(settingsBuilder, builderArgumentCaptor.getValue());
 
     }
 
@@ -128,11 +130,11 @@ public class ShieldAuthTest {
         ShieldAuth.Builder builder = createTestBuilder()
                 .withCertInfo(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("certInfo");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No certInfo provided for " + ShieldAuth.PLUGIN_NAME));
 
     }
 

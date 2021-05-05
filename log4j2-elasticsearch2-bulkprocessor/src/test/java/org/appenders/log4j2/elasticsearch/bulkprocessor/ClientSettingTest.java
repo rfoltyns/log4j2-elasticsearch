@@ -21,19 +21,17 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ClientSettingTest {
 
     static final String TEST_NAME = "testClientSettingName";
     static final String TEST_VALUE = "testClientSettingValue";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void builderFailsWhenNameIsNull() {
@@ -42,11 +40,11 @@ public class ClientSettingTest {
         ClientSetting.Builder clientSetting = createDefaultTestClientSettingBuilder()
                 .withName(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No name provided for " + ClientSetting.NAME);
-
         // when
-        clientSetting.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, clientSetting::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No name provided for " + ClientSetting.NAME));
 
     }
 
@@ -57,11 +55,11 @@ public class ClientSettingTest {
         ClientSetting.Builder clientSetting = createDefaultTestClientSettingBuilder()
                 .withValue(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("No value provided for " + ClientSetting.NAME);
-
         // when
-        clientSetting.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, clientSetting::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No value provided for " + ClientSetting.NAME));
 
     }
 

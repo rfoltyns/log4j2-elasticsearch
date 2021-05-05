@@ -21,16 +21,15 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class SecureClientProviderTest {
 
@@ -45,7 +44,8 @@ public class SecureClientProviderTest {
         clientProvider.createClient();
 
         // then
-        Mockito.verify(auth).configure(any());
+        verify(auth).configure(any());
+
     }
 
     @Test
@@ -60,7 +60,7 @@ public class SecureClientProviderTest {
         clientProvider.createClient();
 
         // then
-        Mockito.verify(clientSettings).applyTo(any());
+        verify(clientSettings).applyTo(any());
     }
 
 }

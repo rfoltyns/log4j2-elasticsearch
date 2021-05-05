@@ -23,8 +23,12 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PEMCertInfoTest {
 
@@ -50,7 +54,7 @@ public class PEMCertInfoTest {
         CertInfo certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
@@ -66,7 +70,7 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertTrue(Boolean.valueOf(settings.get(PEMCertInfo.XPACK_SECURITY_TRANSPORT_SSL_ENABLED)));
+        assertTrue(Boolean.valueOf(settings.get(PEMCertInfo.XPACK_SECURITY_TRANSPORT_SSL_ENABLED)));
 
     }
 
@@ -87,10 +91,11 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertEquals(TEST_KEY_PATH, settings.get(PEMCertInfo.XPACK_SSL_KEY));
-        Assert.assertEquals(TEST_KEY_PASSPHRASE, settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
-        Assert.assertEquals(TEST_CLIENT_CERT_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE));
-        Assert.assertEquals(TEST_CA_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
+        assertEquals(TEST_KEY_PATH, settings.get(PEMCertInfo.XPACK_SSL_KEY));
+        assertEquals(TEST_KEY_PASSPHRASE, settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
+        assertEquals(TEST_CLIENT_CERT_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE));
+        assertEquals(TEST_CA_PATH, settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
+
     }
 
     @Test
@@ -107,7 +112,7 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_KEY));
+        assertNull(settings.get(PEMCertInfo.XPACK_SSL_KEY));
 
     }
 
@@ -125,7 +130,7 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE));
+        assertNull(settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE));
 
     }
 
@@ -143,7 +148,7 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
+        assertNull(settings.get(PEMCertInfo.XPACK_SSL_CERTIFICATE_AUTHORITIES));
 
     }
 
@@ -161,7 +166,8 @@ public class PEMCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
+        assertNull(settings.get(PEMCertInfo.XPACK_SSL_KEY_PASSPHRASE));
 
     }
+
 }

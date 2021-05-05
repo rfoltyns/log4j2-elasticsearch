@@ -24,10 +24,16 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.elasticsearch.common.settings.Settings;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+
+import static java.lang.Boolean.parseBoolean;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class JKSCertInfoTest {
 
@@ -35,9 +41,6 @@ public class JKSCertInfoTest {
     public static final String TEST_KEYSTORE_PASSWORD = "testKeyStorePassword";
     public static final String TEST_TRUSTSTORE_PATH = "testClientCertPath";
     public static final String TEST_TRUSTSTORE_PASSWORD = "testTruststorePassword";
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     public static JKSCertInfo.Builder createTestCertInfoBuilder() {
         return JKSCertInfo.newBuilder()
@@ -55,7 +58,7 @@ public class JKSCertInfoTest {
         CertInfo certInfo = builder.build();
 
         // then
-        Assert.assertNotNull(certInfo);
+        assertNotNull(certInfo);
 
     }
 
@@ -71,7 +74,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertTrue(Boolean.valueOf(settings.get(JKSCertInfo.SHIELD_TRANSPORT_SSL_ENABLED)));
+        assertTrue(parseBoolean(settings.get(JKSCertInfo.SHIELD_TRANSPORT_SSL_ENABLED)));
 
     }
 
@@ -92,10 +95,11 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertEquals(TEST_KEYSTORE_PATH, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PATH));
-        Assert.assertEquals(TEST_KEYSTORE_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
-        Assert.assertEquals(TEST_TRUSTSTORE_PATH, settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PATH));
-        Assert.assertEquals(TEST_TRUSTSTORE_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PASSWORD));
+        assertEquals(TEST_KEYSTORE_PATH, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PATH));
+        assertEquals(TEST_KEYSTORE_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
+        assertEquals(TEST_TRUSTSTORE_PATH, settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PATH));
+        assertEquals(TEST_TRUSTSTORE_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PASSWORD));
+
     }
 
     @Test
@@ -112,7 +116,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PATH));
+        assertNull(settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PATH));
 
     }
 
@@ -123,11 +127,11 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder= JKSCertInfo.newBuilder()
                 .withKeystorePassword(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("keystorePassword");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No keystorePassword provided for " + JKSCertInfo.PLUGIN_NAME));
 
     }
 
@@ -144,7 +148,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertEquals(JKSCertInfo.Builder.EMPTY_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
+        assertEquals(JKSCertInfo.Builder.EMPTY_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
 
     }
 
@@ -162,7 +166,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertNull(settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PATH));
+        assertNull(settings.get(JKSCertInfo.SHIELD_SSL_TRUSTSTORE_PATH));
 
     }
 
@@ -173,13 +177,14 @@ public class JKSCertInfoTest {
         JKSCertInfo.Builder builder= JKSCertInfo.newBuilder()
                 .withTruststorePassword(null);
 
-        expectedException.expect(ConfigurationException.class);
-        expectedException.expectMessage("truststorePassword");
-
         // when
-        builder.build();
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), equalTo("No truststorePassword provided for " + JKSCertInfo.PLUGIN_NAME));
 
     }
+
     @Test
     public void truststorePasswordIsSetToDefaultIfNotConfigured() {
 
@@ -193,7 +198,7 @@ public class JKSCertInfoTest {
         certInfo.applyTo(settings);
 
         // then
-        Assert.assertEquals(JKSCertInfo.Builder.EMPTY_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
+        assertEquals(JKSCertInfo.Builder.EMPTY_PASSWORD, settings.get(JKSCertInfo.SHIELD_SSL_KEYSTORE_PASSWORD));
 
     }
 
