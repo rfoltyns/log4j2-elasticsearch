@@ -20,10 +20,39 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Queue;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+
 public class JCToolsBulkEmitterTest extends BulkEmitterTest {
 
     static {
         System.setProperty("org.appenders." + BulkEmitter.class.getSimpleName() + ".jctools.enabled", "true");
+    }
+
+    @Test
+    public void canUseGivenQueueImplementation() {
+
+        // given
+        final Queue queue = mock(Queue.class);
+
+        final BulkEmitter emitter = new BulkEmitter(2,
+                0,
+                mock(BatchOperations.class),
+                queue);
+
+        final Object batchItem = new Object();
+
+        // when
+        emitter.add(batchItem);
+
+        // then
+        verify(queue).add(batchItem);
+
     }
 
 }
