@@ -24,6 +24,7 @@ import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
 import org.jctools.queues.MpscUnboundedArrayQueue;
+import org.jctools.queues.SpscUnboundedArrayQueue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -53,6 +54,9 @@ public class QueueFactoryTest {
 
     @SuppressWarnings("rawtypes")
     private final Class mpmcQueueClass = MpmcUnboundedXaddArrayQueue.class;
+
+    @SuppressWarnings("rawtypes")
+    private final Class spscQueueClass = SpscUnboundedArrayQueue.class;
 
     @SuppressWarnings("rawtypes")
     private final Class fallbackQueueClass = ConcurrentLinkedQueue.class;
@@ -93,6 +97,21 @@ public class QueueFactoryTest {
     }
 
     @Test
+    public void shouldCreateSpscQueueIfEnabled() {
+
+        // given
+        String name = UUID.randomUUID().toString();
+        System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
+
+        // when
+        Queue<Object> queue = createDefaultTestFactory().tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+
+        // then
+        assertSame(spscQueueClass, queue.getClass());
+
+    }
+
+    @Test
     public void shouldNotCreateMpmcQueueIfDisabled() {
 
         // given
@@ -119,6 +138,21 @@ public class QueueFactoryTest {
 
         // then
         assertNotSame(mpscQueueClass, queue.getClass());
+
+    }
+
+    @Test
+    public void shouldNotCreateSpscQueueIfDisabled() {
+
+        // given
+        String name = UUID.randomUUID().toString();
+        System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
+
+        // when
+        Queue<Object> queue = createDefaultTestFactory().tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+
+        // then
+        assertNotSame(spscQueueClass, queue.getClass());
 
     }
 
@@ -165,6 +199,27 @@ public class QueueFactoryTest {
     }
 
     @Test
+    public void shouldNotCreateSpscQueueIfClassNotFound() {
+
+        // given
+        String name = UUID.randomUUID().toString();
+        System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
+
+        QueueFactory queueFactory = spy(createDefaultTestFactory());
+        when(queueFactory.hasClass(name, spscQueueClass.getName())).thenReturn(false);
+
+        Logger logger = mockTestLogger();
+
+        // when
+        Queue<Object> queue = queueFactory.tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+
+        // then
+        assertNotSame(spscQueueClass, queue.getClass());
+        verify(logger).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
+
+    }
+
+    @Test
     public void mpmcQueueShouldResize() {
 
         // given
@@ -203,6 +258,27 @@ public class QueueFactoryTest {
 
         // then
         assertSame(mpscQueueClass, queue.getClass());
+        assertEquals(10000, queue.size());
+
+    }
+
+    @Test
+    public void spscQueueShouldResize() {
+
+        // given
+        String name = UUID.randomUUID().toString();
+        System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
+
+        QueueFactory queueFactory = createDefaultTestFactory();
+        Queue<Object> queue = queueFactory.tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+
+        // when
+        for (int i = 0; i < 10000; i++) {
+            queue.offer(new Object());
+        }
+
+        // then
+        assertSame(spscQueueClass, queue.getClass());
         assertEquals(10000, queue.size());
 
     }
