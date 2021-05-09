@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
@@ -46,11 +47,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
     private final AtomicInteger size = new AtomicInteger();
 
-    // FIXME: Switch to MpSc after batch assembly refactoring
-    // FIXME: Current API makes initialSize difficult to inject
-    private final Queue<Object> items = getQueueFactoryInstance().tryCreateMpmcQueue(
-            BulkEmitter.class.getSimpleName(),
-            Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".initialSize", "65536")));
+    private final Queue<Object> items;
 
     private final AtomicBoolean notifying = new AtomicBoolean();
     private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));
@@ -72,10 +69,17 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private Function<BATCH_TYPE, Boolean> listener;
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
+        this(atSize, intervalInMillis, batchOperations, getQueueFactoryInstance().tryCreateMpmcQueue(
+                BulkEmitter.class.getSimpleName(),
+                Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".initialSize", "65536"))));
+    }
+
+    public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations, Queue<Object> queue) {
         this.maxSize = atSize;
         this.deliveryInterval = intervalInMillis;
         this.batchOperations = batchOperations;
         this.scheduler = new Timer("BatchNotifier");
+        this.items = queue;
     }
 
     /**
