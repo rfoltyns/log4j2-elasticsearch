@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
 import org.jctools.queues.MpscUnboundedArrayQueue;
+import org.jctools.queues.SpscUnboundedArrayQueue;
 
 import java.util.AbstractQueue;
 import java.util.ArrayList;
@@ -57,6 +58,10 @@ public class QueueFactory {
         return tryCreate(name, "org.jctools.queues.MpscUnboundedArrayQueue", initialSize);
     }
 
+    public final <T> Queue<T> tryCreateSpscQueue(final String name, final int initialSize) {
+        return tryCreate(name, "org.jctools.queues.SpscUnboundedArrayQueue", initialSize);
+    }
+
     public final <T> Queue<T> tryCreateMpmcQueue(final String name, final int initialSize) {
         return tryCreate(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue", initialSize);
     }
@@ -68,6 +73,8 @@ public class QueueFactory {
             switch (queueClassName) {
                 case "org.jctools.queues.MpmcUnboundedXaddArrayQueue":
                     return new MpmcUnboundedXaddArrayQueue<>(initialSize);
+                case "org.jctools.queues.SpscUnboundedArrayQueue":
+                    return new SpscUnboundedArrayQueue<>(initialSize);
                 case "org.jctools.queues.MpscUnboundedArrayQueue":
                     return new MpscUnboundedArrayQueue<>(initialSize);
                 default:
