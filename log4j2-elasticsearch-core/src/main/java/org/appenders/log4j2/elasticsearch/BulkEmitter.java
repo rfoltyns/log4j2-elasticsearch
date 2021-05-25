@@ -56,7 +56,9 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
     private final int deliveryInterval;
     private final BatchOperations<BATCH_TYPE> batchOperations;
     private final Timer scheduler;
-    private final DelayedShutdown delayedShutdown = new DelayedShutdown(this::doStop)
+    private final int shutdownDecrementMillis = Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".shutdownDecrementMillis", "1000"));
+    final DelayedShutdown delayedShutdown = new DelayedShutdown(this::doStop)
+            .decrementInMillis(shutdownDecrementMillis)
             .onDecrement(remaining -> {
                 getLogger().info(
                         "Waiting for last items... {}s, {} items enqueued",
