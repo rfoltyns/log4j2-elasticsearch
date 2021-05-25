@@ -56,7 +56,7 @@
         <httpclient.version>4.5.11</httpclient.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
         <httpcore.version>4.4.13</httpcore.version>
-        <net.openhft.chroniclemap.version>3.19.40</net.openhft.chroniclemap.version>
+        <net.openhft.chroniclemap.version>3.21ea60</net.openhft.chroniclemap.version>
         <jctools.version>3.1.0</jctools.version>
         <junit.version>4.13.1</junit.version>
         <jupyter.version>5.7.1</jupyter.version>
