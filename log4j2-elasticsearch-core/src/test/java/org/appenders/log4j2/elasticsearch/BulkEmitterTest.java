@@ -21,6 +21,8 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.appenders.core.logging.InternalLoggingTest;
+import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -35,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
@@ -293,6 +296,40 @@ public abstract class BulkEmitterTest {
         // then
         // stop() notifies explicitly, hence +1
         verify(dummyObserver, times(invocations + 1)).apply(any());
+
+    }
+
+    @Test
+    public void listenerIsNotifiedIsShutdownDecrementFitsStopTimeout() throws InterruptedException {
+
+        // given
+        assertTrue(TEST_BATCH_SIZE > 1);
+
+        System.setProperty("appenders." + BulkEmitter.class.getSimpleName() + ".shutdownDecrementMillis", "10");
+
+        BulkEmitter emitter = createTestBulkEmitter(2, 10, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        emitter.start();
+
+        final Logger logger = InternalLoggingTest.mockTestLogger();
+
+        // when
+        emitter.add(new Object());
+        int invocations = Mockito.mockingDetails(dummyObserver).getInvocations().size();
+        emitter.stop(5000, true);
+        Thread.sleep(10);
+        emitter.add(new Object());
+        Thread.sleep(10);
+
+        // then
+        final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(logger, atLeastOnce()).info(captor.capture(), any());
+
+        verify(dummyObserver, times(invocations + 2)).apply(any());
+
+        System.clearProperty("appenders." + BulkEmitter.class.getSimpleName() + ".shutdownDecrementMillis");
 
     }
 
