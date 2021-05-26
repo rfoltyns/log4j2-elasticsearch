@@ -22,15 +22,15 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import java.util.Queue;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryInstance;
@@ -43,19 +43,18 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
  */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
-    private volatile State state = State.STOPPED;
-
     private final AtomicInteger size = new AtomicInteger();
-
     private final Queue<Object> items;
-
-    private final AtomicBoolean notifying = new AtomicBoolean();
-    private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));
-
     private final int maxSize;
+    private final AtomicBoolean notifying = new AtomicBoolean();
+
+    private final ScheduledExecutorService executor;
     private final int deliveryInterval;
     private final BatchOperations<BATCH_TYPE> batchOperations;
-    private final Timer scheduler;
+    private Function<BATCH_TYPE, Boolean> listener;
+    private final AtomicReference<CountDownLatch> latchHolder = new AtomicReference<>(new CountDownLatch(1));
+
+    private volatile State state = State.STOPPED;
     private final int shutdownDecrementMillis = Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".shutdownDecrementMillis", "1000"));
     final DelayedShutdown delayedShutdown = new DelayedShutdown(this::doStop)
             .decrementInMillis(shutdownDecrementMillis)
@@ -68,8 +67,6 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
                 notifyListener();
             });
 
-    private Function<BATCH_TYPE, Boolean> listener;
-
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
         this(atSize, intervalInMillis, batchOperations, getQueueFactoryInstance().tryCreateMpmcQueue(
                 BulkEmitter.class.getSimpleName(),
@@ -80,7 +77,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
         this.maxSize = atSize;
         this.deliveryInterval = intervalInMillis;
         this.batchOperations = batchOperations;
-        this.scheduler = new Timer("BatchNotifier");
+        this.executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "BatchNotifier"));
         this.items = queue;
     }
 
@@ -160,13 +157,40 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
         this.listener = onReadyListener;
     }
 
+    @SuppressWarnings("DuplicatedCode")
+    void shutdownExecutor(long timeout) {
+
+        executor.shutdown();
+
+        try {
+
+            final boolean terminated = executor.awaitTermination(timeout, TimeUnit.MILLISECONDS);
+            getLogger().info(
+                    "{}: Executor was {}shutdown gracefully",
+                    getClass().getSimpleName(),
+                    terminated ? "" : "not ");
+        } catch (InterruptedException e) {
+            getLogger().error(
+                    "{}: Executor shutdown interrupted",
+                    getClass().getSimpleName());
+            Thread.currentThread().interrupt();
+        }
+
+    }
+
     // ==========
     // LIFECYCLE
     // ==========
 
     @Override
     public void start() {
-        this.scheduler.scheduleAtFixedRate(createNotificationTask(), 1000, deliveryInterval);
+
+        long startDelayInMillis = Long.parseLong(System.getProperty(
+                "appenders." + BulkEmitter.class.getSimpleName() + ".startDelay",
+                Integer.toString(deliveryInterval)));
+
+        this.executor.scheduleAtFixedRate(createNotificationTask(), startDelayInMillis, deliveryInterval, TimeUnit.MILLISECONDS);
+
         state = State.STARTED;
     }
 
@@ -186,8 +210,8 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
             getLogger().debug("Stopping {}. Flushing last batch if possible.", getClass().getSimpleName());
 
             notifyListener();
-            scheduler.cancel();
-            scheduler.purge();
+
+            shutdownExecutor(1000);
 
             state = State.STOPPED;
 

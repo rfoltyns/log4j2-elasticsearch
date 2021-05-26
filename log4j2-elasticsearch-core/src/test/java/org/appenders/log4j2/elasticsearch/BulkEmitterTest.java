@@ -31,6 +31,9 @@ import org.mockito.Mockito;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -99,6 +102,68 @@ public abstract class BulkEmitterTest {
 
         // then
         verify(listener, times(1)).apply(any());
+
+    }
+
+    @Test
+    public void interruptedExceptionOnShutdownIsHandled() {
+
+        // given
+        Function<Collection, Boolean> listener = spy(new Function<Collection, Boolean>() {
+            @Override
+            public Boolean apply(Collection collection) {
+                try {
+                    new CountDownLatch(1).await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return true;
+            }
+        });
+
+        BulkEmitter<Collection> emitter = new BulkEmitter<>(2, 10000, new BatchOperations<Collection>() {
+            @Override
+            public Object createBatchItem(String indexName, Object source) {
+                return source;
+            }
+
+            @Override
+            public Object createBatchItem(String indexName, ItemSource source) {
+                return source;
+            }
+
+            @Override
+            public BatchBuilder<Collection> createBatchBuilder() {
+                return createTestBatchBuilder();
+            }
+
+        });
+
+        emitter.addListener(listener);
+
+        final Logger logger = InternalLoggingTest.mockTestLogger();
+
+        System.setProperty("appenders." + BulkEmitter.class.getSimpleName() + ".startDelay", "0");
+
+        // when
+        emitter.start();
+        emitter.add(new Object());
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
+
+        final Thread stoppingThread = new Thread(() -> emitter.shutdownExecutor(100));
+
+        stoppingThread.start();
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+        stoppingThread.interrupt();
+
+        // then
+        verify(listener, times(1)).apply(any());
+
+        verify(logger, timeout(1000)).error("{}: Executor shutdown interrupted", BulkEmitter.class.getSimpleName());
+
+        emitter.stop();
 
     }
 
@@ -330,6 +395,57 @@ public abstract class BulkEmitterTest {
         verify(dummyObserver, times(invocations + 2)).apply(any());
 
         System.clearProperty("appenders." + BulkEmitter.class.getSimpleName() + ".shutdownDecrementMillis");
+
+    }
+
+    @Test
+    public void listenerIsNotifiedWithStartDelayIfConfigured() {
+
+        // given
+        Function<Collection, Boolean> listener = spy(new Function<Collection, Boolean>() {
+            @Override
+            public Boolean apply(Collection collection) {
+                return true;
+            }
+        });
+
+        BulkEmitter<Collection> emitter = new BulkEmitter<>(2, 10000, new BatchOperations<Collection>() {
+            @Override
+            public Object createBatchItem(String indexName, Object source) {
+                return source;
+            }
+
+            @Override
+            public Object createBatchItem(String indexName, ItemSource source) {
+                return source;
+            }
+
+            @Override
+            public BatchBuilder<Collection> createBatchBuilder() {
+                return createTestBatchBuilder();
+            }
+
+        });
+
+        emitter.addListener(listener);
+
+        System.setProperty("appenders." + BulkEmitter.class.getSimpleName() + ".startDelay", "100");
+
+        // when
+        emitter.start();
+        emitter.add(new Object());
+
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+
+        verify(listener, never()).apply(any());
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+
+        // then
+        verify(listener, timeout(500)).apply(any());
+
+        emitter.stop();
+
+        System.clearProperty("appenders." + BulkEmitter.class.getSimpleName() + ".startDelay");
 
     }
 
