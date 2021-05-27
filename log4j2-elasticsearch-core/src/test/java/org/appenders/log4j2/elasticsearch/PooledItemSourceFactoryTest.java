@@ -499,4 +499,19 @@ public class PooledItemSourceFactoryTest {
         return createDefaultTestSourceFactoryConfig().build();
     }
 
+    public static class Introspector {
+
+        public int getInitialSize(final PooledItemSourceFactory factory) {
+            return factory.bufferedItemSourcePool.getInitialSize();
+        }
+
+        public int getTotalSize(final PooledItemSourceFactory factory) {
+            return factory.bufferedItemSourcePool.getTotalSize();
+        }
+
+        public int getAvailablelSize(final PooledItemSourceFactory factory) {
+            return factory.bufferedItemSourcePool.getAvailableSize();
+        }
+
+    }
 }
