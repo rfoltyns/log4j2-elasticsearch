@@ -67,6 +67,15 @@
             <scope>provided</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+        </dependency>
+
         <!-- TEST -->
         <dependency>
             <groupId>org.appenders.logging</groupId>

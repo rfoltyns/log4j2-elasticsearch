@@ -62,6 +62,7 @@
         <jupyter.version>5.7.1</jupyter.version>
         <mockito.version>3.8.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
+        <jmh.version>1.32</jmh.version>
     </properties>
 
     <modules>
@@ -178,6 +179,30 @@
                 <groupId>org.jctools</groupId>
                 <artifactId>jctools-core</artifactId>
                 <version>${jctools.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.11</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.openjdk.jmh</groupId>
+                        <artifactId>jmh-generator-annprocess</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>${jmh.version}</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.version}</version>
                 <scope>provided</scope>
             </dependency>
 
