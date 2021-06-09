@@ -62,6 +62,8 @@
         <mockito.version>3.8.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
         <jmh.version>1.32</jmh.version>
+        <e2e.gc.logging/>
+        <e2e.jvm.args/>
     </properties>
 
     <modules>

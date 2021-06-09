@@ -210,6 +210,7 @@
                             <includes>
                                 <include>*/**/smoke/*Test.java</include>
                             </includes>
+                            <argLine>${e2e.jvm.args} ${e2e.gc.logging}</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
