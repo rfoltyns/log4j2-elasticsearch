@@ -208,13 +208,13 @@ public abstract class SmokeTestBase {
 
     protected FailoverPolicy resolveFailoverPolicy() {
 
-        if (!getConfig().getProperty("chronicleMap.enabled", Boolean.class)) {
+        if (!getConfig().getProperty("chroniclemap.enabled", Boolean.class)) {
             return new NoopFailoverPolicy.Builder().build();
         }
 
         KeySequenceSelector keySequenceSelector =
                 new Log4j2SingleKeySequenceSelector.Builder()
-                        .withSequenceId(getConfig().getProperty("chronicleMap.sequenceId", Integer.class))
+                        .withSequenceId(getConfig().getProperty("chroniclemap.sequenceId", Integer.class))
                         .build();
 
         return new ChronicleMapRetryFailoverPolicy.Builder()
@@ -314,7 +314,7 @@ public abstract class SmokeTestBase {
             .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
             .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"))
             .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")))
-            .add("chronicleMap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
+            .add("chroniclemap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
 
         }
 

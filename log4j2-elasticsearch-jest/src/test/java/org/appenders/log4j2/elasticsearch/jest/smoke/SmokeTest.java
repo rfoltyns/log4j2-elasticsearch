@@ -71,7 +71,7 @@ public class SmokeTest extends SmokeTestBase {
                 .add("initialBatchPoolSize", initialBatchPoolSize)
                 .add("indexName", indexName)
                 .add("ecs.enabled", ecsEnabled)
-                .add("chronicleMap.sequenceId", 2);
+                .add(   "chroniclemap.sequenceId", 2);
 
         getLogger().info("Running SmokeTest {}", getConfig().getAll());
 
