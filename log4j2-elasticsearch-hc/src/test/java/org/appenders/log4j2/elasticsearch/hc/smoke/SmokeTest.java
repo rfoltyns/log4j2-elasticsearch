@@ -107,7 +107,7 @@ public class SmokeTest extends SmokeTestBase {
                 .add("ecs.enabled", ecsEnabled)
                 .add("servicediscovery.enabled", serviceDiscoveryEnabled)
                 .add("servicediscovery.nodesFilter", nodesFilter)
-                .add("chronicleMap.sequenceId", 1);
+                .add("chroniclemap.sequenceId", 1);
 
         getLogger().info("{}", getConfig().getAll());
 
