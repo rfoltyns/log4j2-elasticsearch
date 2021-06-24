@@ -51,7 +51,7 @@
         <org.appenders.st.jackson.version>1.0.1</org.appenders.st.jackson.version>
         <org.appenders.logging.version>1.0</org.appenders.logging.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <jacoco.version>0.8.6</jacoco.version>
+        <jacoco.version>0.8.7</jacoco.version>
         <jackson.version>2.12.0</jackson.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpasyncclient.version>4.1.4</httpasyncclient.version>
@@ -373,11 +373,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.0.0-M5</version>
                 <configuration>
                     <excludes>
                         <exclude>%regex[.*smoke.*Test.*]</exclude>
                     </excludes>
+                    <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                     <systemPropertyVariables>
                         <jacoco-agent.destfile>target/jacoco.exec</jacoco-agent.destfile>
                     </systemPropertyVariables>
