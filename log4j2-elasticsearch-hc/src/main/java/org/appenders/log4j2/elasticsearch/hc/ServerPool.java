@@ -37,7 +37,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  */
 public class ServerPool implements ServerInfoListener {
 
-    private final int waitForHostsInterval = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.interval", "500"));
+    private final int waitForHostsInterval = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.interval", "200"));
     private final int waitForHostsRetries = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.retries", "5"));
 
     private final AtomicInteger currentIndex = new AtomicInteger();
