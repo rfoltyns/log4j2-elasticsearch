@@ -86,42 +86,7 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
     }
 
     protected ResponseHandler<BatchResult> createResultHandler(BatchRequest request, Function<BatchRequest, Boolean> failureHandler) {
-        return new ResponseHandler<BatchResult>() {
-
-            @Override
-            public void completed(BatchResult result) {
-
-                getLogger().debug("Cluster service time: {}", result.getTook());
-
-                backoffPolicy.deregister(request);
-
-                if (!result.isSucceeded()) {
-                    // TODO: filter only failed indexRequests when retry is ready.
-                    // failing whole request for now
-                    failureHandler.apply(request);
-                }
-                request.completed();
-
-            }
-
-            @Override
-            public void failed(Exception ex) {
-
-                getLogger().warn(ex.getMessage(), ex);
-
-                backoffPolicy.deregister(request);
-
-                failureHandler.apply(request);
-                request.completed();
-
-            }
-
-            @Override
-            public BatchResult deserializeResponse(InputStream responseBody) throws IOException {
-                return objectReader.readValue(responseBody);
-            }
-
-        };
+        return new HCResponseHandler(request, failureHandler);
     }
 
     public static class Builder extends BatchingClientObjectFactory.Builder<BatchRequest, IndexRequest> {
@@ -196,4 +161,49 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         LifeCycle.of(operationFactory).stop();
     }
 
+    private class HCResponseHandler implements ResponseHandler<BatchResult> {
+
+        private final BatchRequest request;
+        private final Function<BatchRequest, Boolean> failureHandler;
+
+        public HCResponseHandler(BatchRequest request, Function<BatchRequest, Boolean> failureHandler) {
+
+            this.request = request;
+            this.failureHandler = failureHandler;
+        }
+
+        @Override
+        public void completed(BatchResult result) {
+
+            getLogger().debug("Cluster service time: {}", result.getTook());
+
+            backoffPolicy.deregister(request);
+
+            if (!result.isSucceeded()) {
+                // TODO: filter only failed indexRequests when retry is ready.
+                // failing whole request for now
+                failureHandler.apply(request);
+            }
+            request.completed();
+
+        }
+
+        @Override
+        public void failed(Exception ex) {
+
+            getLogger().warn(ex.getMessage(), ex);
+
+            backoffPolicy.deregister(request);
+
+            failureHandler.apply(request);
+            request.completed();
+
+        }
+
+        @Override
+        public BatchResult deserializeResponse(InputStream responseBody) throws IOException {
+            return objectReader.readValue(responseBody);
+        }
+
+    }
 }
