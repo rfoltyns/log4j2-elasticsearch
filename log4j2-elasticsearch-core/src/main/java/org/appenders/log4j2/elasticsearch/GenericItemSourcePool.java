@@ -81,6 +81,24 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                                  boolean monitored,
                                  long monitorTaskInterval,
                                  int initialPoolSize) {
+        this(poolName,
+                pooledObjectOps,
+                resizePolicy,
+                resizeTimeout,
+                monitored,
+                monitorTaskInterval,
+                initialPoolSize,
+                getQueueFactoryInstance().tryCreateMpmcQueue(GenericItemSourcePool.class.getSimpleName(), initialPoolSize));
+    }
+
+    GenericItemSourcePool(String poolName,
+                          PooledObjectOps<T> pooledObjectOps,
+                          ResizePolicy resizePolicy,
+                          long resizeTimeout,
+                          boolean monitored,
+                          long monitorTaskInterval,
+                          int initialPoolSize,
+                          Queue<ItemSource<T>> objectPool) {
         this.poolName = poolName;
         this.pooledObjectOps = pooledObjectOps;
         this.resizePolicy = resizePolicy;
@@ -88,7 +106,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         this.initialPoolSize = initialPoolSize;
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
-        this.objectPool = getQueueFactoryInstance().tryCreateMpmcQueue(getClass().getSimpleName(), initialPoolSize);
+        this.objectPool = objectPool;
     }
 
     private void startRecyclerTask() {
