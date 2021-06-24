@@ -181,21 +181,21 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
 
         /* extension point */
         ItemSourcePool configuredItemSourcePool() {
-
-            UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
-            ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
-                    byteBufAllocator,
-                    new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, maxItemSizeInBytes));
-
             return new GenericItemSourcePool<>(
                     poolName,
-                    pooledObjectOps,
+                    configuredPooledObjectOps(new UnpooledByteBufAllocator(false, false, false)),
                     resizePolicy,
                     resizeTimeout,
                     monitored,
                     monitorTaskInterval,
                     initialPoolSize
             );
+        }
+
+        ByteBufPooledObjectOps configuredPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator) {
+            return new ByteBufPooledObjectOps(
+                    byteBufAllocator,
+                    new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, maxItemSizeInBytes));
         }
 
         /**
