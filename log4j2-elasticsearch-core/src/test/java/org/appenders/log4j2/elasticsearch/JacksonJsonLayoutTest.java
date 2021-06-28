@@ -29,11 +29,15 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.Message;
+import org.apache.logging.log4j.message.SimpleMessage;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
@@ -541,6 +545,30 @@ public class JacksonJsonLayoutTest {
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
 
+    }
+
+    @Test
+    public void resolvesMdcVirtualProperties() throws Exception {
+
+        JacksonJsonLayout layout = createDefaultTestBuilder()
+            .withVirtualProperties(VirtualProperty.newBuilder()
+                    .withName("myVirtualProperty")
+                    .withValue("${ctx:myMdcProperty}")
+                    .withDynamic(true)
+                    .build())
+            .build();
+
+        ThreadContext.put("myMdcProperty", "myMdcValue");
+        LogEvent event = new Log4jLogEvent("logger", null, "logger", null, Level.INFO, new SimpleMessage("hello"), null, null);
+
+        // in the async appender, a copy of the event is created
+        event = Log4jLogEvent.createMemento(event);
+
+        // we clear the context map since the thread which serializes the event does not have the same context map as the thread that created the event
+        ThreadContext.clearMap();
+
+        String serialized = (String) layout.serialize(event).getSource();
+        assertThat(serialized, CoreMatchers.containsString("myMdcValue"));
     }
 
     private LifeCycle createLifeCycleTestObject() {
