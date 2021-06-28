@@ -20,6 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.LogEvent;
+
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.SerializationConfig;
@@ -112,7 +114,7 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
 
             VirtualProperty property = virtualProperties[i];
 
-            String resolved = valueResolver.resolve(property);
+            String resolved = valueResolver.resolve(property, (bean instanceof LogEvent) ? (LogEvent) bean : null);
             if (isExcluded(property, resolved)) {
                 continue;
             }

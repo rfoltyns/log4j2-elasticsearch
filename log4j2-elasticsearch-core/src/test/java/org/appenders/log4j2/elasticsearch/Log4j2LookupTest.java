@@ -20,6 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.junit.jupiter.api.Test;
@@ -29,11 +31,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 public class Log4j2LookupTest {
 
@@ -63,19 +66,16 @@ public class Log4j2LookupTest {
 
         StrSubstitutor strSubstitutor = spy(createDefaultTestStrSubstitutor());
         Log4j2Lookup lookup = createDefaultTestLog4j2Lookup(strSubstitutor);
+        LogEvent event1 = mock(LogEvent.class);
+        LogEvent event2 = mock(LogEvent.class);
 
         // when
-        lookup.resolve(virtualProperty);
-        lookup.resolve(virtualProperty);
+        lookup.resolve(virtualProperty, event1);
+        lookup.resolve(virtualProperty, event2);
 
         // then
-        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-
-        verify(strSubstitutor, times(2)).replace(captor.capture());
-
-        assertEquals(expectedValue, captor.getAllValues().get(0));
-        assertEquals(expectedValue, captor.getAllValues().get(1));
-
+        verify(strSubstitutor).replace(event1, expectedValue);
+        verify(strSubstitutor).replace(event2, expectedValue);
     }
 
     @Test
@@ -91,12 +91,12 @@ public class Log4j2LookupTest {
         Log4j2Lookup lookup = spy(createDefaultTestLog4j2Lookup(createDefaultTestStrSubstitutor()));
 
         // when
-        lookup.resolve(virtualProperty);
+        lookup.resolve(virtualProperty, null);
 
         // then
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 
-        verify(lookup, times(1)).resolve(captor.capture());
+        verify(lookup, times(1)).resolve(captor.capture(), any());
 
         assertEquals(expectedValue, captor.getValue());
 
@@ -117,7 +117,7 @@ public class Log4j2LookupTest {
         lookup.resolve(virtualProperty);
 
         // then
-        verify(strSubstitutor, never()).replace(anyString());
+        verifyNoInteractions(strSubstitutor);
 
     }
 

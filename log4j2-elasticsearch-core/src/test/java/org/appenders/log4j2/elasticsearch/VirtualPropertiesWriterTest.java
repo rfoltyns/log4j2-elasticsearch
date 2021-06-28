@@ -166,7 +166,7 @@ public class VirtualPropertiesWriterTest {
         writer.serializeAsField(new Object(), mock(JsonGenerator.class), mock(SerializerProvider.class));
 
         // then
-        verify(valueResolver).resolve(eq(virtualProperty));
+        verify(valueResolver).resolve(virtualProperty, null);
 
     }
 
@@ -284,7 +284,7 @@ public class VirtualPropertiesWriterTest {
 
     private ValueResolver createTestValueResolver(VirtualProperty virtualProperty, String expectedValue) {
         ValueResolver valueResolver = mock(ValueResolver.class);
-        when(valueResolver.resolve(virtualProperty)).thenReturn(expectedValue);
+        when(valueResolver.resolve(virtualProperty, null)).thenReturn(expectedValue);
         return valueResolver;
     }
 

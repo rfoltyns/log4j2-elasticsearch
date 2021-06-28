@@ -22,13 +22,15 @@ package org.appenders.log4j2.elasticsearch;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
+import org.apache.logging.log4j.core.LogEvent;
+
 public class NonEmptyFilter implements VirtualPropertyFilter {
 
     /**
      * Allows to determine inclusion based on presence and length of given value.
      *
      * @param fieldName Name to be logged on exclusion
-     * @param resolvedValue result of {@link ValueResolver#resolve(VirtualProperty)}
+     * @param resolvedValue result of {@link ValueResolver#resolve(VirtualProperty, LogEvent)}
      *
      * @return <i>true</i>, if {@code resolvedValue} is not null and it's length is greater than 0, <i>false</i> otherwise
      */

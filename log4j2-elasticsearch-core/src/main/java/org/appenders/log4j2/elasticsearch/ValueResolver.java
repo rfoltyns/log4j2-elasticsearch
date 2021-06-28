@@ -20,24 +20,34 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.LogEvent;
+
 public interface ValueResolver {
 
     ValueResolver NO_OP = new ValueResolver() {
 
         @Override
-        public String resolve(String unresolved) {
+        public String resolve(String unresolved, LogEvent logEvent) {
             return unresolved;
         }
 
         @Override
-        public String resolve(VirtualProperty property) {
+        public String resolve(VirtualProperty property, LogEvent logEvent) {
             return property.getValue();
         }
 
     };
 
-    String resolve(String unresolved);
+    default String resolve(String unresolved) {
+        return resolve(unresolved, null);
+    }
 
-    String resolve(VirtualProperty property);
+    String resolve(String unresolved, LogEvent logEvent);
+
+    default String resolve(VirtualProperty property) {
+        return resolve(property, null);
+    }
+
+    String resolve(VirtualProperty property, LogEvent logEvent);
 
 }

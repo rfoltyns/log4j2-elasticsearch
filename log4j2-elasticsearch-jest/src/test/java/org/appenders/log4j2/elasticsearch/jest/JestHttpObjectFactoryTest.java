@@ -235,7 +235,7 @@ public class JestHttpObjectFactoryTest {
         // given
         Configuration configuration = mock(Configuration.class);
         StrSubstitutor strSubstitutor = mock(StrSubstitutor.class);
-        when(strSubstitutor.replace((String)any())).thenReturn(UUID.randomUUID().toString());
+        when(strSubstitutor.replace(eq(null), (String)any())).thenReturn(UUID.randomUUID().toString());
 
         when(configuration.getStrSubstitutor()).thenReturn(strSubstitutor);
 
@@ -257,7 +257,7 @@ public class JestHttpObjectFactoryTest {
 
         // then
         assertTrue(factory.valueResolver() instanceof Log4j2Lookup);
-        verify(strSubstitutor).replace(eq(expectedSource));
+        verify(strSubstitutor).replace(null, expectedSource);
 
     }
 

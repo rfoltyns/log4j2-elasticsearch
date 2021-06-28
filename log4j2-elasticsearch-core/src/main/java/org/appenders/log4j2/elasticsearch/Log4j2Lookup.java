@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
+import org.apache.logging.log4j.core.LogEvent;
 
 public class Log4j2Lookup implements ValueResolver {
 
@@ -34,19 +35,20 @@ public class Log4j2Lookup implements ValueResolver {
      * Resolves given {@link VirtualProperty} if {@link VirtualProperty#isDynamic()} is true
      *
      * @param property property to resolve
+     * @param logEvent optional
      * @return resolved value
      */
     @Override
-    public String resolve(VirtualProperty property) {
+    public String resolve(VirtualProperty property, LogEvent logEvent) {
         if (property.isDynamic()) {
-            return resolve(property.getValue());
+            return resolve(property.getValue(), logEvent);
         }
         return property.getValue();
     }
 
     @Override
-    public String resolve(String unresolved) {
-        return strSubstitutor.replace(unresolved);
+    public String resolve(String unresolved, LogEvent logEvent) {
+        return strSubstitutor.replace(logEvent, unresolved);
     }
 
 }
