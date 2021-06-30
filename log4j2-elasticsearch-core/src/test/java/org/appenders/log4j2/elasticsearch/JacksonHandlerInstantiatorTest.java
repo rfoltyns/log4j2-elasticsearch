@@ -77,6 +77,24 @@ public class JacksonHandlerInstantiatorTest {
     }
 
     @Test
+    public void virtualPropertyWriterInstanceReturnsNullForUnrelatedTypes() {
+
+        // given
+        VirtualProperty[] customProperties = new VirtualProperty[0];
+        ValueResolver valueResolver = Mockito.mock(ValueResolver.class);
+        JacksonHandlerInstantiator handlerInstantiator = createTestHandlerInstantiator(customProperties, valueResolver);
+
+        MapperConfig config = new ObjectMapper().getSerializationConfig();
+
+        // when
+        VirtualPropertiesWriter instance = handlerInstantiator.virtualPropertyWriterInstance(config, VirtualBeanPropertyWriter.class);
+
+        // then
+        assertNull(instance);
+
+    }
+
+    @Test
     public void deserializerInstanceReturnsNull() {
 
         // given

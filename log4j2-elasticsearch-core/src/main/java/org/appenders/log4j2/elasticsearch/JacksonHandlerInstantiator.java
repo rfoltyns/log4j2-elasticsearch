@@ -89,6 +89,10 @@ public class JacksonHandlerInstantiator extends HandlerInstantiator {
      */
     @Override
     public VirtualPropertiesWriter virtualPropertyWriterInstance(MapperConfig<?> config, Class<?> implClass) {
+        if (implClass != VirtualPropertiesWriter.class) {
+            // Jackson will instantiate the class if null is returned
+            return null;
+        }
         if (instance == null) {
             instance = new VirtualPropertiesWriter(
                     virtualProperties,
