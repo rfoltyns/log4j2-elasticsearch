@@ -108,7 +108,7 @@ public class SmokeTest extends SmokeTestBase {
             jestHttpObjectFactoryBuilder.withServerUris("https://localhost:9200")
                     .withAuth(getAuth());
         } else {
-            jestHttpObjectFactoryBuilder.withServerUris("http://localhost:9200");
+            jestHttpObjectFactoryBuilder.withServerUris(getSystemPropertyOrStartElasticsearchContainer("smokeTest.elasticsearchUrl", "http", 9200));
         }
 
         ComponentTemplate indexSettings = new ComponentTemplate.Builder()
