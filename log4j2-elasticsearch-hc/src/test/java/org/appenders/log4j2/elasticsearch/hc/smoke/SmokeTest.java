@@ -80,6 +80,7 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,6 +91,7 @@ import java.util.stream.Collectors;
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
+@Disabled
 public class SmokeTest extends SmokeTestBase {
 
     @BeforeEach
