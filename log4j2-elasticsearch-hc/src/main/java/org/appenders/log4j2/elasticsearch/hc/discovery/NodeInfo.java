@@ -23,6 +23,8 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class NodeInfo {
 

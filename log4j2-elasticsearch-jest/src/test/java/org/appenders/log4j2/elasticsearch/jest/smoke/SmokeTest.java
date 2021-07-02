@@ -213,11 +213,6 @@ public class SmokeTest extends SmokeTestBase {
     }
 
     private String getServerList(final boolean secured, final String hostPortList) {
-
-        final String property = getConfig().getProperty("thatcontainerproperty..", String.class);
-
-        final String anotherProperty = getSystemPropertyOrStartElasticsearchContainer("smokeTest.elasticsearchUrl", "http", 9200);
-
         return SplitUtil.split(hostPortList, ";").stream()
                 .map(uri -> String.format("%s://%s", (secured ? "https" : "http"), uri))
                 .collect(Collectors.joining(";"));

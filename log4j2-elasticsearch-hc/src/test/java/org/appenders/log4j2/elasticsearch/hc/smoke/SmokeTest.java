@@ -70,8 +70,10 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.Security;
+import org.appenders.log4j2.elasticsearch.hc.ServerPool;
 import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
+import org.appenders.log4j2.elasticsearch.hc.discovery.NodeInfo;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryRequest;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
@@ -79,25 +81,45 @@ import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
-@Disabled
 public class SmokeTest extends SmokeTestBase {
+
+    private ContainerRunner containerRunner;
+
+    @AfterEach
+    public void afterEach() {
+
+        if (containerRunner != null) {
+            containerRunner.stop();
+        }
+
+    }
 
     @BeforeEach
     public void beforeEach() {
         super.beforeEach();
         configure();
+
+        final TestConfig config = getConfig();
+        final boolean containersEnabled = config.getProperty("containers.enabled", Boolean.class);
+        if (containersEnabled) {
+            containerRunner = new ContainerRunner(config);
+            config.add("serverList", (Supplier<String>) () -> String.join(";", containerRunner.start()));
+        }
+
     }
 
     protected void configure() {
@@ -245,8 +267,23 @@ public class SmokeTest extends SmokeTestBase {
 
         final boolean secure = getConfig().getProperty("secure", Boolean.class);
         final String scheme = secure ? "https" : "http";
-        return new ElasticsearchNodesQuery(scheme, nodesFilter);
 
+        if (getConfig().getProperty("containers.enabled", Boolean.class)) {
+            // TODO: disabling discovery might be the way to go..
+            return new ElasticsearchNodesQuery(scheme, nodesFilter) {
+
+                final ServerPool serverPool = new ServerPool(getServerList(secure, getConfig().getProperty("serverList", String.class)));
+
+                @Override
+                protected String formatAddress(NodeInfo info) {
+                    return serverPool.getNext();
+                }
+
+            };
+
+        } else {
+            return new ElasticsearchNodesQuery(scheme, nodesFilter);
+        }
     }
 
     private PooledItemSourceFactory.Builder batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
