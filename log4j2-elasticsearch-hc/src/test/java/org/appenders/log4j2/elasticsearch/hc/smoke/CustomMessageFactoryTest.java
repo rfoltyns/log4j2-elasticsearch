@@ -28,8 +28,10 @@ import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class CustomMessageFactoryTest extends SmokeTest {
 
     @BeforeAll

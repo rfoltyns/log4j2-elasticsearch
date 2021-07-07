@@ -37,7 +37,10 @@ import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -60,6 +63,14 @@ public abstract class SmokeTestBase {
     public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
     public static final long ONE_SECOND = TimeUnit.MILLISECONDS.toNanos(1000);
 
+    private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("7.13.2");
+
+    // will be started on-demand
+    public static final ElasticsearchContainer ELASTICSEARCH_CONTAINER = new ElasticsearchContainer(ELASTICSEARCH_IMAGE)
+        // In addition to this setter, reuse needs to be enabled, see org.testcontainers.utility.TestcontainersConfiguration.environmentSupportsReuse().
+        // If reuse is not fully enabled, the container will automatically be killed once the JVM exits. This is what the ryuk container does.
+        .withReuse(true);
+
     private final SmokeTestConfig config = new SmokeTestConfig();
 
     private final Random random = new Random();
@@ -70,6 +81,19 @@ public abstract class SmokeTestBase {
 
     protected final SmokeTestConfig getConfig() {
         return config;
+    }
+
+    protected static String getSystemPropertyOrStartElasticsearchContainer(String property, String scheme, int port) {
+        String value = System.getProperty(property);
+        if (value != null) {
+            return value;
+        }
+
+        ELASTICSEARCH_CONTAINER.start();
+        String url = String.format("%s://%s:%s", scheme, ELASTICSEARCH_CONTAINER.getContainerIpAddress(),
+                ELASTICSEARCH_CONTAINER.getMappedPort(port));
+        System.out.println("Elasticsearch running at " + url);
+        return url;
     }
 
     protected Function<Configuration, AsyncLoggerConfigDelegate> createAsyncLoggerConfigDelegateProvider() {
@@ -161,6 +185,7 @@ public abstract class SmokeTestBase {
     }
 
     @Test
+    @Disabled
     public void fileOutputTest() throws InterruptedException {
 
         System.setProperty("log4j.configurationFile", "log4j2-file.xml");
@@ -175,6 +200,7 @@ public abstract class SmokeTestBase {
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
     }
 
+    @Disabled
     @Test
     public void xmlConfigTest() throws InterruptedException {
 
@@ -199,11 +225,21 @@ public abstract class SmokeTestBase {
     @Test
     public void propertiesConfigTest() throws InterruptedException {
 
+        String originalProperty = System.getProperty("smokeTest.elasticsearchUrl");
+
+        System.setProperty("smokeTest.elasticsearchUrl", getSystemPropertyOrStartElasticsearchContainer("smokeTest.elasticsearchUrl", "http", 9200));
         System.setProperty("log4j.configurationFile", "log4j2.properties");
         AtomicInteger counter = new AtomicInteger();
 
         Logger logger = LogManager.getLogger("elasticsearch");
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> "Message " + counter.incrementAndGet());
+
+        if (originalProperty != null) {
+            System.setProperty("smokeTest.elasticsearchUrl", originalProperty);
+        } else {
+            System.clearProperty("smokeTest.elasticsearchUrl");
+        }
+
     }
 
     protected FailoverPolicy resolveFailoverPolicy() {

@@ -35,9 +35,11 @@ import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettings;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.junit.Ignore;
 
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
+@Ignore
 public class SmokeTest extends SmokeTestBase {
 
     @Override

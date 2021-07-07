@@ -74,6 +74,7 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
+import org.junit.jupiter.api.Disabled;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -84,6 +85,7 @@ import java.util.stream.Collectors;
 import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
+@Disabled
 public class SmokeTest extends SmokeTestBase {
 
     @Override
