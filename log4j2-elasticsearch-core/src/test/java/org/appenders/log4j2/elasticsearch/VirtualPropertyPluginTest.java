@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2019 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,31 +20,32 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.hamcrest.core.IsEqual;
+import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class VirtualPropertyTest {
+public class VirtualPropertyPluginTest {
 
     @Test
     public void builderFailsWhenNameIsNull() {
 
         // given
-        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withName(null);
 
         // then
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), IsEqual.equalTo("No name provided for " + VirtualProperty.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("No name provided for " + VirtualProperty.class.getSimpleName()));
 
     }
 
@@ -52,14 +53,14 @@ public class VirtualPropertyTest {
     public void builderFailsWhenValueIsNull() {
 
         // given
-        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withValue(null);
 
         // then
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), IsEqual.equalTo("No value provided for " + VirtualProperty.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("No value provided for " + VirtualProperty.class.getSimpleName()));
 
     }
 
@@ -68,7 +69,7 @@ public class VirtualPropertyTest {
 
         // given
         String expectedName = UUID.randomUUID().toString();
-        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withName(expectedName);
 
         // when
@@ -84,7 +85,7 @@ public class VirtualPropertyTest {
 
         // given
         String expectedName = UUID.randomUUID().toString();
-        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withName(expectedName);
 
         // when
@@ -99,7 +100,7 @@ public class VirtualPropertyTest {
     public void builderSetsDynamic() {
 
         // given
-        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
                 .withDynamic(true);
 
         // when
@@ -147,8 +148,8 @@ public class VirtualPropertyTest {
 
     }
 
-    public static VirtualProperty.Builder createDefaultVirtualPropertyBuilder() {
-        return new VirtualProperty.Builder()
+    public static VirtualPropertyPlugin.Builder createDefaultVirtualPropertyBuilder() {
+        return VirtualPropertyPlugin.newBuilder()
                 .withName(UUID.randomUUID().toString())
                 .withValue(UUID.randomUUID().toString())
                 .withDynamic(false);

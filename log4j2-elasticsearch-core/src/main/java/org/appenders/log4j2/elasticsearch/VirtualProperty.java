@@ -20,28 +20,19 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-
 /**
  * Allows to define a property which will be appended to JSON output.
- * Similar to Log4j2 KeyValuePair, value resolution is done with {@code org.apache.logging.log4j.core.lookup.StrSubstitutor}.
- * Value may be static (resolved) or in a resolvable format defined by <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>
+ * Value may be static (resolved) or in format resolvable by configured {@link ValueResolver}.
  */
-@Plugin(name = VirtualProperty.PLUGIN_NAME, category = Node.CATEGORY, printObject = true)
 public class VirtualProperty {
 
-    public static final String PLUGIN_NAME = "VirtualProperty";
     private final String name;
     private String value;
     private final boolean dynamic;
 
     /**
      * @param name Name
-     * @param value May be static or in a resolvable format defined by <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>
+     * @param value May be static or in a any format resolvable by configured {@link ValueResolver}
      * @param isDynamic In case of resolvable properties, this flag indicates that resolved value may change over time
      */
     public VirtualProperty(final String name, final String value, final boolean isDynamic) {
@@ -76,34 +67,29 @@ public class VirtualProperty {
         return String.format("%s=%s", name, value);
     }
 
-    @PluginBuilderFactory
-    public static Builder newBuilder() {
-        return new Builder();
-    }
+    public static class Builder {
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<VirtualProperty> {
-
-        @PluginBuilderAttribute
         private String name;
-
-        @PluginBuilderAttribute
         private String value;
-
-        @PluginBuilderAttribute
         private boolean dynamic;
 
-        @Override
         public VirtualProperty build() {
 
+            validate();
+
+            return new VirtualProperty(name, value, dynamic);
+
+        }
+
+        public void validate() {
+
             if (name == null) {
-                throw new ConfigurationException("No name provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("No name provided for " + VirtualProperty.class.getSimpleName());
             }
 
             if (value == null) {
-                throw new ConfigurationException("No value provided for " + PLUGIN_NAME);
+                throw new IllegalArgumentException("No value provided for " + VirtualProperty.class.getSimpleName());
             }
-
-            return new VirtualProperty(name, value, dynamic);
 
         }
 
