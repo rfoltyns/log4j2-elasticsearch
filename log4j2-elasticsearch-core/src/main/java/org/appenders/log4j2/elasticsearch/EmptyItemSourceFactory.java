@@ -20,13 +20,13 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-public interface EmptyItemSourceFactory {
+public interface EmptyItemSourceFactory<R> {
 
     /**
      * Creates empty {@link ItemSource} container.
      *
      * @return empty {@link ItemSource}
      */
-    ItemSource createEmptySource();
+    ItemSource<R> createEmptySource();
 
 }

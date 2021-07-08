@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -30,16 +29,10 @@ import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.impl.Log4jLogEvent;
-import org.apache.logging.log4j.message.Message;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
-import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -47,9 +40,8 @@ import java.util.UUID;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -62,16 +54,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class JacksonJsonLayoutTest {
+public class JacksonSerializerTest {
 
     @Test
     public void builderBuildsSuccessfully() {
 
         // given
-        JacksonJsonLayout.Builder builder = createDefaultTestBuilder();
+        final JacksonSerializer.Builder<Object> builder = createDefaultTestBuilder();
 
         // when
-        JacksonJsonLayout layout = builder.build();
+        final Serializer<Object> layout = builder.build();
 
         // then
         assertNotNull(layout);
@@ -79,89 +71,10 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
-    public void contentTypeIsNotNull() {
-
-        // given
-        JacksonJsonLayout layout = createDefaultTestBuilder().build();
-
-        // when
-        String contentType = layout.getContentType();
-
-        // then
-        assertNotNull(contentType);
-    }
-
-    @Test
-    public void throwsOnByteArrayCreationAttempt() {
-
-        // given
-        JacksonJsonLayout layout = createDefaultTestBuilder().build();
-
-        // when
-        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, () -> layout.toByteArray(new Log4jLogEvent()));
-
-        // then
-        assertThat(exception.getMessage(), IsEqual.equalTo("Cannot return unwrapped byte array. Use ItemSource based API"));
-
-    }
-
-    @Test
-    public void throwsOnNullConfiguration() {
-
-        // given
-        JacksonJsonLayout.Builder builder = createDefaultTestBuilder()
-                .setConfiguration(null);
-
-        // when
-        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
-
-        // then
-        assertThat(exception.getMessage(), IsEqual.equalTo("No Configuration instance provided for " + JacksonJsonLayoutPlugin.PLUGIN_NAME));
-
-    }
-
-
-    @Test
-    public void builderBuildsLayoutWithDefaultItemSourceFactoryIfNotConfigured() {
-
-        // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
-        JacksonJsonLayout layout = builder.build();
-
-        LogEvent logEvent = new Log4jLogEvent();
-
-        // when
-        ItemSource itemSource = layout.toSerializable(logEvent);
-
-        // then
-        assertEquals(StringItemSource.class, itemSource.getClass());
-
-    }
-
-    @Test
-    public void builderBuildsLayoutWithProvidedItemSourceFactoryIfConfigured() {
-
-        // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
-        builder.withItemSourceFactory(new LayoutTestItemSourceFactory());
-
-        JacksonJsonLayout layout = builder.build();
-
-        LogEvent logEvent = new Log4jLogEvent();
-
-        // when
-        ItemSource itemSource = layout.toSerializable(logEvent);
-
-        // then
-        assertEquals(LayoutTestItemSource.class, itemSource.getClass());
-
-    }
-
-    @Test
     public void builderBuildsMapperWithAfterburnerIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder())
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder())
                 .withAfterburner(true);
 
         ObjectMapper objectMapper = spy(new ObjectMapper());
@@ -181,7 +94,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsMapperWithMixInsIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
         builder.withMixins(JacksonMixInTest.createDefaultTestBuilder().build());
 
         ObjectMapper objectMapper = spy(ObjectMapper.class);
@@ -205,7 +118,7 @@ public class JacksonJsonLayoutTest {
     public void builderBuildsMapperWithCustomHandlerInstantiator() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ObjectMapper objectMapper = spy(ObjectMapper.class);
 
@@ -224,10 +137,30 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
+    public void builderUsesConfiguredValueResolver() {
+
+        // given
+        final ValueResolver valueResolver = mock(ValueResolver.class);
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder())
+                .withValueResolver(valueResolver);
+
+        // when
+        builder.build();
+
+        verify(builder).createValueResolver();
+
+        final ValueResolver result = builder.createValueResolver();
+
+        // then
+        assertSame(valueResolver, result);
+
+    }
+
+    @Test
     public void builderResolvesNonDynamicVirtualProperties() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(builder.createValueResolver()).thenReturn(valueResolver);
@@ -257,7 +190,7 @@ public class JacksonJsonLayoutTest {
         // given
         VirtualPropertyFilter filter = mock(VirtualPropertyFilter.class);
 
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder()
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder()
                 .withVirtualPropertyFilters(new VirtualPropertyFilter[] { filter }));
 
         ValueResolver valueResolver = mock(ValueResolver.class);
@@ -282,7 +215,7 @@ public class JacksonJsonLayoutTest {
     public void builderDoesNotResolveDynamicVirtualProperties() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ValueResolver valueResolver = mock(ValueResolver.class);
         when(builder.createValueResolver()).thenReturn(valueResolver);
@@ -308,7 +241,7 @@ public class JacksonJsonLayoutTest {
     public void builderConfiguresDefaultJacksonModules() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ObjectMapper objectMapper = spy(new ObjectMapper());
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
@@ -328,7 +261,7 @@ public class JacksonJsonLayoutTest {
     public void builderConfiguresAdditionalJacksonModulesIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ObjectMapper objectMapper = new ObjectMapper();
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
@@ -350,7 +283,7 @@ public class JacksonJsonLayoutTest {
     public void builderDoesNotAllowToOverrideModulesWithTheSameClassName() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
         ObjectMapper objectMapper = new ObjectMapper();
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
@@ -372,7 +305,7 @@ public class JacksonJsonLayoutTest {
     public void builderCreatesExtendedObjectWriter() {
 
         // given
-        JacksonJsonLayout.Builder builder  = createDefaultTestBuilder();
+        final JacksonSerializer.Builder<Object> builder  = createDefaultTestBuilder();
 
         // when
         ObjectWriter writer = builder.createConfiguredWriter();
@@ -385,7 +318,7 @@ public class JacksonJsonLayoutTest {
     public void builderConfiguresExtendedObjectWriter() {
 
         // given
-        JacksonJsonLayout.Builder builder  = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder  = spy(createDefaultTestBuilder());
 
         // when
         builder.build();
@@ -396,16 +329,16 @@ public class JacksonJsonLayoutTest {
     }
 
     @Test
-    public void builderCreatesLog4j2ValueResolver() {
+    public void builderCreatesDefaultValueResolverIfNotConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder  = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder  = spy(createDefaultTestBuilder());
 
         // when
         ValueResolver result = builder.createValueResolver();
 
         // then
-        assertTrue(result instanceof Log4j2Lookup);
+        assertEquals(ValueResolver.NO_OP, result);
 
     }
 
@@ -413,7 +346,7 @@ public class JacksonJsonLayoutTest {
     public void createsSingleThreadJsonFactoryIfConfigured() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
         builder.withSingleThread(true);
 
         // when
@@ -425,11 +358,12 @@ public class JacksonJsonLayoutTest {
 
     }
 
+
     @Test
     public void createsJsonFactoryByDefault() {
 
         // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
         builder.withSingleThread(false);
 
         // when
@@ -441,131 +375,8 @@ public class JacksonJsonLayoutTest {
 
     }
 
-    private JacksonJsonLayout.Builder createDefaultTestBuilder() {
-        return JacksonJsonLayout.newBuilder()
-                .setConfiguration(LoggerContext.getContext(false).getConfiguration());
-    }
-
-    @Test
-    public void messageSerializationDelegatesToItemSourceFactory() {
-
-        // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
-        LayoutTestItemSourceFactory itemSourceFactory = spy(new LayoutTestItemSourceFactory());
-        builder.withItemSourceFactory(itemSourceFactory);
-
-        JacksonJsonLayout layout = builder.build();
-
-        LogEvent logEvent = new Log4jLogEvent();
-        Message message = logEvent.getMessage();
-
-        // when
-        layout.serialize(message);
-
-        // then
-        verify(itemSourceFactory).create(eq(message), any(ObjectWriter.class));
-
-    }
-
-    @Test
-    public void logEventSerializationDelegatesToItemSourceFactory() {
-
-        // given
-        JacksonJsonLayout.Builder builder = spy(createDefaultTestBuilder());
-        LayoutTestItemSourceFactory itemSourceFactory = spy(new LayoutTestItemSourceFactory());
-        builder.withItemSourceFactory(itemSourceFactory);
-
-        JacksonJsonLayout layout = builder.build();
-
-        LogEvent logEvent = new Log4jLogEvent();
-
-        // when
-        layout.toSerializable(logEvent);
-
-        // then
-        verify(itemSourceFactory).create(eq(logEvent), any(ObjectWriter.class));
-
-    }
-
-    @Test
-    public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
-
-        // given
-        ItemSourceFactory itemSourceFactory = mock(ItemSourceFactory.class);
-        when(itemSourceFactory.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
-
-        JacksonJsonLayout layout = createDefaultTestBuilder()
-                .withItemSourceFactory(itemSourceFactory)
-                .build();
-
-        // when
-        layout.stop();
-        layout.stop();
-
-        // then
-        verify(itemSourceFactory).stop();
-    }
-
-    @Test
-    public void lifecycleStart() {
-
-        // given
-        LifeCycle lifeCycle = createLifeCycleTestObject();
-
-        assertTrue(lifeCycle.isStopped());
-
-        // when
-        lifeCycle.start();
-
-        // then
-        assertFalse(lifeCycle.isStopped());
-        assertTrue(lifeCycle.isStarted());
-
-    }
-
-    @Test
-    public void lifecycleStop() {
-
-        // given
-        LifeCycle lifeCycle = createLifeCycleTestObject();
-
-        assertTrue(lifeCycle.isStopped());
-
-        lifeCycle.start();
-        assertTrue(lifeCycle.isStarted());
-
-        // when
-        lifeCycle.stop();
-
-        // then
-        assertFalse(lifeCycle.isStarted());
-        assertTrue(lifeCycle.isStopped());
-
-    }
-
-    private LifeCycle createLifeCycleTestObject() {
-        return createDefaultTestBuilder().build();
-    }
-
-    public static class LayoutTestItemSourceFactory extends StringItemSourceFactory {
-
-        @Override
-        public ItemSource create(Object event, ObjectWriter objectWriter) {
-            try {
-                return new LayoutTestItemSource(objectWriter.writeValueAsString(event));
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    public static class LayoutTestItemSource extends StringItemSource {
-
-        public LayoutTestItemSource(String source) {
-            super(source);
-        }
-
+    private JacksonSerializer.Builder<Object> createDefaultTestBuilder() {
+        return new JacksonSerializer.Builder<>();
     }
 
     private static class TestJacksonModule extends SimpleModule implements JacksonModule {

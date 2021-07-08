@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,18 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-/**
- * Allows to wraps serialization of given object using different mechanisms/serializers
- */
-public interface ItemSourceLayout<T, R> {
+import java.io.OutputStream;
 
-    ItemSource<R> serialize(T source);
+/**
+ *
+ * Allows to serialize given objects.
+ * @param <T> serialized type
+ *
+ */
+public interface Serializer<T> {
+
+    void write(OutputStream outputStream, T source) throws Exception;
+
+    String writeAsString(T event) throws Exception;
 
 }

@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,112 +27,76 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.layout.AbstractLayout;
-import org.apache.logging.log4j.message.Message;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
+import org.appenders.st.jackson.SingleThreadJsonFactory;
 
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 
-/**
- * Allows to customize serialization of incoming events. See {@link Builder} API docs for more details
- *
- * @deprecated As of 1.7, this class will be removed. Use {@link GenericItemSourceLayout}
- * (or {@link JacksonJsonLayoutPlugin} for Log4j2 XML config support) instead.
- */
-@Deprecated
-public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements LegacyItemSourceLayout, LifeCycle {
+public class JacksonSerializer<T> implements Serializer<T> {
 
-    private volatile State state = State.STOPPED;
+    protected final ObjectWriter objectWriter;
 
-    private final ObjectWriter objectWriter;
-    private final ItemSourceFactory itemSourceFactory;
-
-    protected JacksonJsonLayout(Configuration config, ObjectWriter configuredWriter, ItemSourceFactory itemSourceFactory) {
-        super(config, null, null);
-        this.objectWriter = configuredWriter;
-        this.itemSourceFactory = itemSourceFactory;
+    public JacksonSerializer(ObjectWriter objectWriter) {
+        this.objectWriter = objectWriter;
     }
 
     @Override
-    public String getContentType() {
-        return "application/json";
+    public void write(OutputStream outputStream, T source) throws Exception {
+        objectWriter.writeValue(outputStream, source);
     }
 
     @Override
-    public byte[] toByteArray(LogEvent event) {
-        throw new UnsupportedOperationException("Cannot return unwrapped byte array. Use ItemSource based API");
+    public String writeAsString(T event) throws Exception {
+        return objectWriter.writeValueAsString(event);
     }
 
-    @Override
-    public final ItemSource toSerializable(LogEvent event) {
-        return serialize(event);
-    }
-
-    @Override
-    public final ItemSource serialize(LogEvent event) {
-        return itemSourceFactory.create(event, objectWriter);
-    }
-
-    @Override
-    public final ItemSource serialize(Message message) {
-        return itemSourceFactory.create(message, objectWriter);
-    }
-
-    @Override
-    public final ItemSource serialize(Object source) {
-        return itemSourceFactory.create(source, objectWriter);
-    }
-
-    public static JacksonJsonLayout.Builder newBuilder() {
-        return new JacksonJsonLayout.Builder();
-    }
-
-    public static class Builder extends org.apache.logging.log4j.core.layout.AbstractLayout.Builder<JacksonJsonLayout.Builder> implements org.apache.logging.log4j.core.util.Builder<JacksonJsonLayout> {
-
-        /**
-         * Default: {@link StringItemSourceFactory}
-         */
-        static final ItemSourceFactory DEFAULT_SOURCE_FACTORY = StringItemSourceFactory.newBuilder().build();
+    public static class Builder<T> {
 
         /**
          * Default: {@code [ExtendedLog4j2JsonModule]}
          */
-        static final JacksonModule[] DEFAULT_JACKSON_MODULES = new JacksonModule[]{
+        public static final JacksonModule[] DEFAULT_JACKSON_MODULES = new JacksonModule[]{
                 new ExtendedLog4j2JsonModule()
         };
 
-        private ItemSourceFactory itemSourceFactory = DEFAULT_SOURCE_FACTORY;
-        private JacksonMixIn[] mixins = new JacksonMixIn[0];
+        /**
+         * Default: {@code []}
+         */
+
+        public static final VirtualProperty[] DEFAULT_VIRTUAL_PROPERTIES = new VirtualProperty[0];
+
+        /**
+         * Default: {@code []}
+         */
+
+        public static final VirtualPropertyFilter[] DEFAULT_VIRTUAL_PROPERTY_FILTERS = new VirtualPropertyFilter[0];
+
+        /**
+         * Default: {@code []}
+         */
+        public static final JacksonMixIn[] DEFAULT_MIX_INS = new JacksonMixIn[0];
+
+        private JacksonMixIn[] mixins = DEFAULT_MIX_INS;
         private JacksonModule[] jacksonModules = DEFAULT_JACKSON_MODULES;
-        private VirtualProperty[] virtualProperties = new VirtualProperty[0];
-        private VirtualPropertyFilter[] virtualPropertyFilters = new VirtualPropertyFilter[0];
+        private VirtualProperty[] virtualProperties = DEFAULT_VIRTUAL_PROPERTIES;
+        private VirtualPropertyFilter[] virtualPropertyFilters = DEFAULT_VIRTUAL_PROPERTY_FILTERS;
+        private ValueResolver valueResolver = ValueResolver.NO_OP;
         private boolean useAfterburner;
         private boolean singleThread;
 
-        @Override
-        public JacksonJsonLayout build() {
-
-            if (getConfiguration() == null) {
-                throw new ConfigurationException("No Configuration instance provided for " + JacksonJsonLayout.class.getSimpleName());
-            }
-
-            return new JacksonJsonLayout(
-                    getConfiguration(),
-                    createConfiguredWriter(),
-                    itemSourceFactory
-            );
+        public Serializer<T> build() {
+            return new JacksonSerializer<T>(createConfiguredWriter());
         }
 
         protected ObjectWriter createConfiguredWriter() {
-            ObjectMapper objectMapper = createDefaultObjectMapper();
+
+            final ObjectMapper objectMapper = createDefaultObjectMapper();
 
             return configureModules(objectMapper, getJacksonModules())
                     .configureMixins(objectMapper, Arrays.asList(mixins))
@@ -150,7 +114,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
                 linkedList.add(new JacksonAfterburnerModuleConfigurer());
             }
 
-            return new JacksonModulesList(linkedList);
+            return new JacksonSerializer.Builder.JacksonModulesList(linkedList);
 
         }
 
@@ -158,7 +122,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
             return objectMapper.writer(new MinimalPrettyPrinter());
         }
 
-        protected Builder configureModules(ObjectMapper objectMapper, Collection<JacksonModule> modules) {
+        protected JacksonSerializer.Builder<T> configureModules(ObjectMapper objectMapper, Collection<JacksonModule> modules) {
 
             for (JacksonModule module : modules) {
                 module.applyTo(objectMapper);
@@ -167,7 +131,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
             return this;
         }
 
-        protected Builder configureMixins(ObjectMapper objectMapper, List<JacksonMixIn> mixins) {
+        protected JacksonSerializer.Builder<T> configureMixins(ObjectMapper objectMapper, List<JacksonMixIn> mixins) {
 
             for (JacksonMixIn mixin : mixins) {
                 objectMapper.addMixIn(mixin.getTargetClass(), mixin.getMixInClass());
@@ -176,9 +140,9 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
 
         }
 
-        protected Builder configureVirtualProperties(ObjectMapper objectMapper, VirtualProperty[] virtualProperties, VirtualPropertyFilter[] virtualPropertyFilters) {
+        protected JacksonSerializer.Builder<T> configureVirtualProperties(ObjectMapper objectMapper, VirtualProperty[] virtualProperties, VirtualPropertyFilter[] virtualPropertyFilters) {
 
-            ValueResolver valueResolver = createValueResolver();
+            final ValueResolver valueResolver = createValueResolver();
 
             for (VirtualProperty property : virtualProperties) {
                 if (!property.isDynamic()) {
@@ -202,7 +166,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
          * @return resolver used when {@link VirtualProperty}(-ies) configured
          */
         protected ValueResolver createValueResolver() {
-            return new Log4j2Lookup(getConfiguration().getStrSubstitutor());
+            return valueResolver;
         }
 
         protected ObjectMapper createDefaultObjectMapper() {
@@ -213,34 +177,24 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
 
         protected JsonFactory createJsonFactory() {
             if (singleThread) {
-                return new SingleThreadJsonFactoryProvider().create();
+                return new SingleThreadJsonFactory();
             }
             return new JsonFactory();
         }
 
         /**
-         * @param itemSourceFactory {@link ItemSource} producer
-         * @return this
-         */
-        public Builder withItemSourceFactory(ItemSourceFactory itemSourceFactory) {
-            this.itemSourceFactory = itemSourceFactory;
-            return this;
-        }
-
-        /**
-         * Allows to customize {@link LogEvent} and {@link Message} serialization,
-         * including user-provided {@link org.apache.logging.log4j.message.ObjectMessage}
+         * Allows to customize serialization
          *
          * @param mixins mixins to be applied
          * @return this
          */
-        public Builder withMixins(JacksonMixIn... mixins) {
+        public JacksonSerializer.Builder<T> withMixins(JacksonMixIn... mixins) {
             this.mixins = mixins;
             return this;
         }
 
         /**
-         * Allows to append properties to serialized {@link LogEvent} and {@link Message}.
+         * Allows to append properties to serialized objects.
          *
          * Non-dynamic properties ({@code VirtualProperty#dynamic == false}) will be resolved on {@link #build()} call.
          *
@@ -251,7 +205,7 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
          * @param virtualProperties properties to be appended to JSON output
          * @return this
          */
-        public Builder withVirtualProperties(VirtualProperty... virtualProperties) {
+        public JacksonSerializer.Builder<T> withVirtualProperties(VirtualProperty... virtualProperties) {
             this.virtualProperties = virtualProperties;
             return this;
         }
@@ -262,33 +216,33 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
          * @param virtualPropertyFilters filters to be applied to each configured {@link VirtualProperty}
          * @return this
          */
-        public Builder withVirtualPropertyFilters(VirtualPropertyFilter[] virtualPropertyFilters) {
+        public JacksonSerializer.Builder<T> withVirtualPropertyFilters(VirtualPropertyFilter[] virtualPropertyFilters) {
             this.virtualPropertyFilters = virtualPropertyFilters;
             return this;
         }
 
         /**
-         * Allows to configure {@link AfterburnerModule} - (de)serialization optimizer
+         * Allows to configure {@link com.fasterxml.jackson.module.afterburner.AfterburnerModule} - (de)serialization optimizer
          *
-         * @param useAfterburner if true, {@link AfterburnerModule} will be used, false otherwise
+         * @param useAfterburner if true, {@link com.fasterxml.jackson.module.afterburner.AfterburnerModule} will be used, false otherwise
          * @return this
          */
-        public Builder withAfterburner(boolean useAfterburner) {
+        public JacksonSerializer.Builder<T> withAfterburner(boolean useAfterburner) {
             this.useAfterburner = useAfterburner;
             return this;
         }
 
         /**
-         * Allows to configure {@code org.appenders.st.jackson.SingleThreadJsonFactory}
+         * Allows to configure {@link SingleThreadJsonFactory}
          *
-         * NOTE: Use ONLY when {@link JacksonJsonLayout#serialize(LogEvent)}/{@link JacksonJsonLayout#serialize(Message)}
+         * NOTE: Use ONLY when {@link GenericItemSourceLayout#serialize(Object)}
          * are called exclusively by a one thread at a time, e.g. with AsyncLogger
          *
-         * @param singleThread if true, {@code org.appenders.st.jackson.SingleThreadJsonFactory} will be used to create serializers,
+         * @param singleThread if true, {@link SingleThreadJsonFactory} will be used to create serializers,
          *                    otherwise {@code com.fasterxml.jackson.core.JsonFactory} will be used
          * @return this
          */
-        public Builder withSingleThread(boolean singleThread) {
+        public JacksonSerializer.Builder<T> withSingleThread(boolean singleThread) {
             this.singleThread = singleThread;
             return this;
         }
@@ -299,8 +253,19 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
          * @param modules Jackson modules to register on {@link #build()}
          * @return this
          */
-        public Builder withJacksonModules(JacksonModule... modules) {
-            this.jacksonModules = modules;
+        public JacksonSerializer.Builder<T> withJacksonModules(JacksonModule... modules) {
+            this.jacksonModules = Stream.of(modules).flatMap(Stream::of)
+                    .toArray(JacksonModule[]::new);
+            return this;
+        }
+
+        /**
+         * Allows to configure value resolver
+         *
+         * @param valueResolver value reslver to use
+         */
+        public JacksonSerializer.Builder<T> withValueResolver(ValueResolver valueResolver) {
+            this.valueResolver = valueResolver;
             return this;
         }
 
@@ -351,37 +316,6 @@ public class JacksonJsonLayout extends AbstractLayout<ItemSource> implements Leg
 
         }
 
-    }
-
-    // ==========
-    // LIFECYCLE
-    // ==========
-
-    @Override
-    public void start() {
-        itemSourceFactory.start();
-        state = State.STARTED;
-    }
-
-    @Override
-    public void stop() {
-
-        if (!itemSourceFactory.isStopped()) {
-            itemSourceFactory.stop();
-        }
-
-        state = State.STOPPED;
-
-    }
-
-    @Override
-    public boolean isStarted() {
-        return state == State.STARTED;
-    }
-
-    @Override
-    public boolean isStopped() {
-        return state == State.STOPPED;
     }
 
 }

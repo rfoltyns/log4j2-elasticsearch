@@ -40,16 +40,16 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * Uses underlying {@link ItemSourcePool} to get {@link ItemSource} instances.
  */
 @Plugin(name = PooledItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
-public class PooledItemSourceFactory implements ItemSourceFactory {
+public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
 
     public static final String PLUGIN_NAME = "PooledItemSourceFactory";
 
     private volatile State state = State.STOPPED;
 
-    final ItemSourcePool bufferedItemSourcePool;
+    final ItemSourcePool<R> bufferedItemSourcePool;
 
-    protected PooledItemSourceFactory(ItemSourcePool bufferedItemSourcePool) {
-        this.bufferedItemSourcePool = bufferedItemSourcePool;
+    protected PooledItemSourceFactory(ItemSourcePool<R> itemSourcePool) {
+        this.bufferedItemSourcePool = itemSourcePool;
     }
 
     /**
@@ -68,22 +68,33 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
      * @throws IllegalStateException if underlying pool cannot provide {@link ByteBufItemSource}
      * @throws IllegalArgumentException if serialization failed
      * @return {@link ByteBufItemSource} with serialized event
+     * @deprecated As of 1.7, this method will be removed. Use {@link #create(Object, Serializer)} instead.
      */
     @Override
     public ItemSource create(Object source, ObjectWriter objectWriter) {
-        ItemSource<ByteBuf> pooled;
-        try {
-            pooled = bufferedItemSourcePool.getPooled();
-        } catch (PoolResourceException e) {
-            // FIXME: stop throwing and redirect to failover policy here
-            throw new IllegalStateException(e);
-        }
+
+        final ItemSource<R> pooled = createEmptySource();
 
         try {
-            OutputStream byteBufOutputStream = new ReusableByteBufOutputStream(pooled.getSource());
+            OutputStream byteBufOutputStream = new ReusableByteBufOutputStream((ByteBuf) pooled.getSource());
             objectWriter.writeValue(byteBufOutputStream, source);
             return pooled;
         } catch (IOException e) {
+            pooled.release();
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    @Override
+    public ItemSource<R> create(T source, Serializer<T> serializer) {
+
+        final ItemSource<R> pooled = createEmptySource();
+
+        try {
+            final OutputStream byteBufOutputStream = new ReusableByteBufOutputStream((ByteBuf) pooled.getSource());
+            serializer.write(byteBufOutputStream, source);
+            return pooled;
+        } catch (Exception e) {
             pooled.release();
             throw new IllegalArgumentException(e);
         }
@@ -93,7 +104,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
      * @return {@link ByteBufItemSource} with no content
      */
     @Override
-    public ItemSource createEmptySource() {
+    public ItemSource<R> createEmptySource() {
         try {
             return bufferedItemSourcePool.getPooled();
         } catch (PoolResourceException e) {
@@ -102,11 +113,11 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
     }
 
     @PluginBuilderFactory
-    public static PooledItemSourceFactory.Builder newBuilder() {
-        return new PooledItemSourceFactory.Builder();
+    public static PooledItemSourceFactory.Builder<Object, ByteBuf> newBuilder() {
+        return new PooledItemSourceFactory.Builder<>();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<PooledItemSourceFactory> {
+    public static class Builder<T, R> implements org.apache.logging.log4j.core.util.Builder<PooledItemSourceFactory<T, R>> {
 
         public static final long DEFAULT_RESIZE_TIMEOUT = 1000L;
         public static final long DEFAULT_MONITOR_TASK_INTERVAL = 30000L;
@@ -136,7 +147,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         protected int maxItemSizeInBytes = Integer.MAX_VALUE;
 
         @Override
-        public PooledItemSourceFactory build() {
+        public PooledItemSourceFactory<T, R> build() {
 
             if (initialPoolSize <= 0) {
                 throw new ConfigurationException("initialPoolSize must be higher than 0 for " + PLUGIN_NAME);
@@ -167,7 +178,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
                 this.resizePolicy = resizePolicy;
             }
 
-            return new PooledItemSourceFactory(configuredItemSourcePool());
+            return new PooledItemSourceFactory<>(configuredItemSourcePool());
 
         }
 
@@ -180,7 +191,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         }
 
         /* extension point */
-        ItemSourcePool configuredItemSourcePool() {
+        ItemSourcePool<R> configuredItemSourcePool() {
             return new GenericItemSourcePool<>(
                     poolName,
                     configuredPooledObjectOps(new UnpooledByteBufAllocator(false, false, false)),
@@ -192,8 +203,8 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
             );
         }
 
-        ByteBufPooledObjectOps configuredPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator) {
-            return new ByteBufPooledObjectOps(
+        PooledObjectOps<R> configuredPooledObjectOps(UnpooledByteBufAllocator byteBufAllocator) {
+            return (PooledObjectOps<R>) new ByteBufPooledObjectOps(
                     byteBufAllocator,
                     new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, maxItemSizeInBytes));
         }
@@ -202,7 +213,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param itemSizeInBytes initial pooled item size
          * @return this
          */
-        public Builder withItemSizeInBytes(int itemSizeInBytes) {
+        public Builder<T, R> withItemSizeInBytes(int itemSizeInBytes) {
             this.itemSizeInBytes = itemSizeInBytes;
             return this;
         }
@@ -211,7 +222,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param maxItemSizeInBytes maximum pooled item size (target size if oversized in runtime)
          * @return this
          */
-        public Builder withMaxItemSizeInBytes(int maxItemSizeInBytes) {
+        public Builder<T, R> withMaxItemSizeInBytes(int maxItemSizeInBytes) {
             this.maxItemSizeInBytes = maxItemSizeInBytes;
             return this;
         }
@@ -220,7 +231,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param initialPoolSize pool size before resizing
          * @return this
          */
-        public Builder withInitialPoolSize(int initialPoolSize) {
+        public Builder<T, R> withInitialPoolSize(int initialPoolSize) {
             this.initialPoolSize = initialPoolSize;
             return this;
         }
@@ -231,7 +242,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param poolName name of underlying pool
          * @return this
          */
-        public Builder withPoolName(String poolName) {
+        public Builder<T, R> withPoolName(String poolName) {
             this.poolName = poolName;
             return this;
         }
@@ -242,7 +253,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param resizePolicy policy to be applied when underlying pool run out of elements
          * @return this
          */
-        public Builder withResizePolicy(ResizePolicy resizePolicy) {
+        public Builder<T, R> withResizePolicy(ResizePolicy resizePolicy) {
             this.resizePolicy = resizePolicy;
             return this;
         }
@@ -252,7 +263,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          *                  no metrics logging otherwise
          * @return this
          */
-        public Builder withMonitored(boolean monitored) {
+        public Builder<T, R> withMonitored(boolean monitored) {
             this.monitored = monitored;
             return this;
         }
@@ -261,7 +272,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param monitorTaskInterval milliseconds between two metrics snapshots
          * @return this
          */
-        public Builder withMonitorTaskInterval(long monitorTaskInterval) {
+        public Builder<T, R> withMonitorTaskInterval(long monitorTaskInterval) {
             this.monitorTaskInterval = monitorTaskInterval;
             return this;
         }
@@ -270,7 +281,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
          * @param resizeTimeout milliseconds to wait until {@link ResizePolicy} is applied
          * @return this
          */
-        public Builder withResizeTimeout(long resizeTimeout) {
+        public Builder<T, R> withResizeTimeout(long resizeTimeout) {
             this.resizeTimeout = resizeTimeout;
             return this;
         }

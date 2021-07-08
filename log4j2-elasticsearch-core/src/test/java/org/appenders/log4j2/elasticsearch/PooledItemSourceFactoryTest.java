@@ -331,7 +331,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void createWritesItemSource() throws IOException, PoolResourceException {
+    public void deprecatedCreateWithObjectWriterWritesItemSource() throws IOException, PoolResourceException {
 
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
@@ -353,7 +353,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void createExceptionReleasesPooledElement() throws IOException, PoolResourceException {
+    public void deprecatedCreateWithObjectWriterExceptionReleasesPooledElement() throws IOException, PoolResourceException {
 
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
@@ -381,6 +381,66 @@ public class PooledItemSourceFactoryTest {
         // then
         assertNull(result);
         verify(bufferedItemSource).release();
+        assertEquals(IllegalArgumentException.class, caught.getClass());
+
+    }
+
+    @Test
+    public void createWithSerializerWritesItemSource() throws IOException, PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
+        when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
+
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<LogEvent, ByteBuf>(mockedPool);
+
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        final JacksonSerializer<LogEvent> serializer = new JacksonSerializer<>(objectWriter);
+
+        // when
+        pooledItemSourceFactory.create(logEvent, serializer);
+
+        // then
+        verify(objectWriter).writeValue(any(OutputStream.class), eq(logEvent));
+
+    }
+
+    @Test
+    public void createWithSerializerExceptionReleasesPooledElement() throws Exception {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final ItemSource<ByteBuf> bufferedItemSource = spy(createTestItemSource());
+        when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
+
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<LogEvent, ByteBuf>(mockedPool);
+
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = new ObjectMapper().writerFor(LogEvent.class);
+
+        final Serializer<LogEvent> serializer = spy(new JacksonSerializer<>(objectWriter));
+
+        doThrow(new IOException("test exception")).when(serializer).write(any(OutputStream.class), eq(logEvent));
+
+        ItemSource<ByteBuf> result = null;
+        Exception caught = null;
+
+        // when
+        try {
+            result = pooledItemSourceFactory.create(logEvent, serializer);
+        } catch (Exception e) {
+            caught = e;
+        }
+
+        // then
+        assertNull(result);
+        verify(bufferedItemSource).release();
+        assertNotNull(caught);
         assertEquals(IllegalArgumentException.class, caught.getClass());
 
     }

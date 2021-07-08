@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,18 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-/**
- * Allows to wraps serialization of given object using different mechanisms/serializers
- */
-public interface ItemSourceLayout<T, R> {
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.message.Message;
 
-    ItemSource<R> serialize(T source);
+/**
+ * @param <R> serialized type
+ * @deprecated As of 1.7, this class will be removed. Use {@link ItemSourceLayout} instead.
+ */
+@Deprecated
+public interface LegacyItemSourceLayout<R> extends ItemSourceLayout<Object, R> {
+
+    ItemSource serialize(LogEvent event);
+
+    ItemSource serialize(Message message);
 
 }

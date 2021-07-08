@@ -73,16 +73,16 @@ public class StringItemSourceFactoryTest {
     }
 
     @Test
-    public void createWritesItemSource() throws IOException {
+    public void deprecatedCreateWithObjectWriterWritesItemSource() throws IOException {
 
         // given
-        StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
+        final StringItemSourceFactory<LogEvent> factory = createDefaultTestStringItemSourceFactory();
 
-        LogEvent logEvent = mock(LogEvent.class);
-        ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
 
         // when
-        ItemSource itemSource = factory.create(logEvent, objectWriter);
+        final ItemSource itemSource = factory.create(logEvent, objectWriter);
 
         // then
         assertNotNull(itemSource);
@@ -91,18 +91,59 @@ public class StringItemSourceFactoryTest {
     }
 
     @Test
-    public void createFailureIsHandled() throws IOException {
+    public void deprecatedCreateWithObjectWriterFailureIsHandled() throws IOException {
 
         // given
-        StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
+        final StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
 
-        LogEvent logEvent = mock(LogEvent.class);
-        ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
 
         doThrow(JsonMappingException.fromUnexpectedIOE(new IOException("test exception"))).when(objectWriter).writeValueAsString(eq(logEvent));
 
         // when
-        ItemSource itemSource = factory.create(logEvent, objectWriter);
+        final ItemSource itemSource = factory.create(logEvent, objectWriter);
+
+        // then
+        assertNull(itemSource);
+
+    }
+
+    @Test
+    public void createWithSerializerWritesItemSource() throws IOException {
+
+        // given
+        final StringItemSourceFactory<LogEvent> factory = createDefaultTestStringItemSourceFactory();
+
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        final Serializer<LogEvent> serializer = new JacksonSerializer<>(objectWriter);
+
+        // when
+        final ItemSource<String> itemSource = factory.create(logEvent, serializer);
+
+        // then
+        assertNotNull(itemSource);
+        verify(objectWriter).writeValueAsString(eq(logEvent));
+
+    }
+
+    @Test
+    public void createWithSerializerFailureIsHandled() throws Exception {
+
+        // given
+        final StringItemSourceFactory factory = createDefaultTestStringItemSourceFactory();
+
+        final LogEvent logEvent = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        final Serializer<LogEvent> serializer = spy(new JacksonSerializer<>(objectWriter));
+
+        doThrow(JsonMappingException.fromUnexpectedIOE(new IOException("test exception"))).when(serializer).writeAsString(eq(logEvent));
+
+        // when
+        final ItemSource itemSource = factory.create(logEvent, serializer);
 
         // then
         assertNull(itemSource);

@@ -214,7 +214,7 @@ public class ItemAppenderFactoryTest {
         return mock(LogEvent.class);
     }
 
-    private static class TestItemSourceLayout implements ItemSourceLayout, Layout {
+    private static class TestItemSourceLayout implements LegacyItemSourceLayout, Layout {
 
         @Override
         public byte[] getFooter() {
@@ -249,6 +249,11 @@ public class ItemAppenderFactoryTest {
         @Override
         public void encode(Object source, ByteBufferDestination destination) {
 
+        }
+
+        @Override
+        public ItemSource serialize(Object source) {
+            return null;
         }
 
         @Override

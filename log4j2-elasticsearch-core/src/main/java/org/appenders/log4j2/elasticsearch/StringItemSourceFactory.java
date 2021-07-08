@@ -29,7 +29,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 @Plugin(name = StringItemSourceFactory.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)
-public class StringItemSourceFactory implements ItemSourceFactory {
+public class StringItemSourceFactory<T> implements ItemSourceFactory<T, String> {
 
     static final String PLUGIN_NAME = "StringItemSourceAppender";
 
@@ -62,6 +62,17 @@ public class StringItemSourceFactory implements ItemSourceFactory {
     }
 
     @Override
+    public ItemSource<String> create(T source, Serializer<T> serializer) {
+        try {
+            return new StringItemSource(serializer.writeAsString(source));
+        } catch (Exception e) {
+            // dev's error. returning null to resurface
+            getLogger().error("Cannot write item source: " + e.getMessage());
+            return null;
+        }
+    }
+
+    @Override
     public ItemSource createEmptySource() {
         throw new UnsupportedOperationException(getClass().getSimpleName() + " cannot create empty source. Use buffer-based classes instead");
     }
@@ -75,7 +86,7 @@ public class StringItemSourceFactory implements ItemSourceFactory {
 
         @Override
         public StringItemSourceFactory build() {
-            return new StringItemSourceFactory();
+            return new StringItemSourceFactory<>();
         }
 
     }

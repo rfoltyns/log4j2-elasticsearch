@@ -27,7 +27,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
  * All existing implementations that use {@link LifeCycle} API should implement it directly and
  * use {@link LifeCycle#of(Object)} instead to access the API.
  */
-public interface ItemSourceFactory extends EmptyItemSourceFactory, LifeCycle {
+public interface ItemSourceFactory<T, R> extends EmptyItemSourceFactory<R>, LifeCycle {
 
     String ELEMENT_TYPE = "itemSourceFactory";
 
@@ -41,10 +41,21 @@ public interface ItemSourceFactory extends EmptyItemSourceFactory, LifeCycle {
     /**
      * Creates {@link ItemSource} from given source using provided {@link ObjectWriter}
      *
-     * @param source log item
+     * @param source item to serialize
      * @param objectWriter writer to be used to serialize given item
-     * @return {@link ItemSource} containing serialized log
+     * @return {@link ItemSource} containing serialized item
+     * @deprecated as of 1.7, will be removed. Use {@link #create(Object, Serializer)} instead
      */
-    ItemSource create(Object source, ObjectWriter objectWriter);
+    @Deprecated
+    ItemSource<R> create(Object source, ObjectWriter objectWriter);
+
+    /**
+     * Creates {@link ItemSource} from given source using provided {@link ObjectWriter}
+     *
+     * @param source item serialize
+     * @param serializer item serializer
+     * @return {@link ItemSource} containing serialized item
+     */
+    ItemSource<R> create(T source, Serializer<T> serializer);
 
 }
