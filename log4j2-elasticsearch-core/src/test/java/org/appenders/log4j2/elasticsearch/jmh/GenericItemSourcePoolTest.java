@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.jmh;
  */
 
 import io.netty.buffer.ByteBuf;
-import net.openhft.affinity.AffinityLock;
 import org.appenders.log4j2.elasticsearch.ExtendedPooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
@@ -35,7 +34,6 @@ import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.concurrent.TimeUnit;

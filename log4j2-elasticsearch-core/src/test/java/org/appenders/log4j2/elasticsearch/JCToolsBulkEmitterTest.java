@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Queue;
 
