@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="${sys:log4j2.level:-WARN}">
 
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%highlight{%d [%t] %-5level: %msg%n%throwable}" />
+        </Console>
+    </Appenders>
+
     <Loggers>
+        <!-- No AsyncLogger HERE! AsyncLoggerContextSelector handles it nicely -->
+        <Logger level="debug" name="org.appenders.logging" additivity="false" >
+            <AppenderRef ref="CONSOLE" />
+        </Logger>
+        <Logger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" additivity="false">
+            <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
+        </Logger>
         <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 

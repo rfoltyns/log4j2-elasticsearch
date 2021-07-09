@@ -100,7 +100,7 @@ public class SmokeTest extends SmokeTestBase {
                 .setConfiguration(LoggerContext.getContext(false).getConfiguration()).build();
 
         return ElasticsearchAppender.newBuilder()
-                .withName("elasticsearch")
+                .withName(getConfig().getProperty("appenderName", String.class))
                 .withLayout(jacksonJsonLayout)
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)

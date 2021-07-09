@@ -25,12 +25,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.LifeCycle;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.async.AsyncLoggerConfig;
 import org.apache.logging.log4j.core.async.AsyncLoggerConfigDelegate;
-import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.appenders.core.logging.InternalLogging;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
@@ -52,12 +51,12 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapUtil.resolveChronicleMapFilePath;
 
 public abstract class SmokeTestBase {
 
-    public static final String DEFAULT_APPENDER_NAME = "elasticsearchAppender";
     public static final long ONE_SECOND = TimeUnit.MILLISECONDS.toNanos(1000);
 
     private final SmokeTestConfig config = new SmokeTestConfig();
@@ -84,28 +83,18 @@ public abstract class SmokeTestBase {
         return new String(bytes);
     }
 
-    public final void createLoggerProgrammatically(Supplier<ElasticsearchAppender.Builder> appenderBuilder, Function<Configuration, AsyncLoggerConfigDelegate> delegateSupplier) {
+    public final void createLoggerProgrammatically(Supplier<ElasticsearchAppender.Builder> appenderBuilder) {
 
         LoggerContext ctx = LoggerContext.getContext(false);
-
-        final Configuration config = ctx.getConfiguration();
 
         Appender appender = appenderBuilder.get().build();
         appender.start();
 
-        AppenderRef ref = AppenderRef.createAppenderRef(DEFAULT_APPENDER_NAME, Level.INFO, null);
-        AppenderRef[] refs = new AppenderRef[] {ref};
-
-        // set up disruptor forcefully
-        ((LifeCycle)delegateSupplier.apply(config)).start();
-
-        AsyncLoggerConfig loggerConfig = (AsyncLoggerConfig) AsyncLoggerConfig.createLogger(false, Level.INFO, getConfig().getProperty("defaultLoggerName", String.class),
-                "false", refs, null, config, null );
-
+        final String loggerName = getConfig().getProperty("loggerName", String.class);
+        final LoggerConfig loggerConfig = ctx.getConfiguration().getLoggerConfig(loggerName);
         loggerConfig.addAppender(appender, Level.INFO, null);
 
-        config.addAppender(appender);
-        config.addLogger(getConfig().getProperty("defaultLoggerName", String.class), loggerConfig);
+        ctx.updateLoggers();
 
     }
 
@@ -122,8 +111,7 @@ public abstract class SmokeTestBase {
                 () -> createElasticsearchAppenderBuilder(
                         false,
                         getConfig().getProperty("pooled", Boolean.class),
-                        getConfig().getProperty("secure", Boolean.class)),
-                createAsyncLoggerConfigDelegateProvider());
+                        getConfig().getProperty("secure", Boolean.class)));
 
         String loggerThatReferencesElasticsearchAppender = "elasticsearch";
         Logger log = LogManager.getLogger(loggerThatReferencesElasticsearchAppender);
@@ -147,14 +135,15 @@ public abstract class SmokeTestBase {
         System.setProperty("AsyncLoggerConfig.RingBufferSize", "16384");
         System.setProperty("AsyncLoggerConfig.WaitStrategy", "sleep");
 
+        setLogger(new Log4j2Delegate(LogManager.getLogger("org.appenders.logging")));
+
         createLoggerProgrammatically(
                 () -> createElasticsearchAppenderBuilder(
                         false,
                         getConfig().getProperty("pooled", Boolean.class),
-                        getConfig().getProperty("secure", Boolean.class)),
-                createAsyncLoggerConfigDelegateProvider());
+                        getConfig().getProperty("secure", Boolean.class)));
 
-        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class));
+        Logger logger = LogManager.getLogger(getConfig().getProperty("loggerName", String.class));
 
         final String log = createLog();
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
@@ -191,7 +180,7 @@ public abstract class SmokeTestBase {
 
         context.setConfigLocation(uri);
 
-        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class));
+        Logger logger = LogManager.getLogger(getConfig().getProperty("loggerName", String.class));
         final String log = createLog();
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> log);
     }
@@ -312,7 +301,8 @@ public abstract class SmokeTestBase {
             .add("numberOfProducers", getInt("smokeTest.noOfProducers", 5))
             .add("producerBatchSize", getInt("smokeTest.producerBatchSize", 10))
             .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
-            .add("defaultLoggerName", System.getProperty("smokeTest.loggerName", "elasticsearch"))
+            .add("loggerName", System.getProperty("smokeTest.loggerName", "elasticsearch-logger"))
+            .add("appenderName", System.getProperty("smokeTest.appenderName", "elasticsearch-appender"))
             .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")))
             .add("chroniclemap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
 

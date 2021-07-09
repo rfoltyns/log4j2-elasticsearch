@@ -51,11 +51,10 @@ public class CustomMessageFactoryTest extends SmokeTest {
         createLoggerProgrammatically(
                 () -> createElasticsearchAppenderBuilder(true,
                         false,
-                        getConfig().getProperty("secure", Boolean.class)),
-                Configuration::getAsyncLoggerConfigDelegate);
+                        getConfig().getProperty("secure", Boolean.class)));
 
         ObjectMapper objectMapper = configuredMapper();
-        Logger logger = LogManager.getLogger(getConfig().getProperty("defaultLoggerName", String.class),
+        Logger logger = LogManager.getLogger(getConfig().getProperty("loggerName", String.class),
                 new SerializedMessageFactory(objectMapper));
 
         logger.info(new LogObject("Hello, World!"));

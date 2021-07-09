@@ -182,6 +182,8 @@
                         <jksCertInfo.keystorePassword>password</jksCertInfo.keystorePassword>
                         <jksCertInfo.truststorePath>${project.build.testOutputDirectory}/jks/truststore.jks</jksCertInfo.truststorePath>
                         <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
+                        <smokeTest.loggerName>elasticsearch-logger</smokeTest.loggerName>
+                        <smokeTest.appenderName>elasticsearch-appender</smokeTest.appenderName>
                         <smokeTest.indexName>${project.artifactId}</smokeTest.indexName>
                         <smokeTest.batchSize>10000</smokeTest.batchSize>
                         <smokeTest.initialBatchPoolSize>4</smokeTest.initialBatchPoolSize>

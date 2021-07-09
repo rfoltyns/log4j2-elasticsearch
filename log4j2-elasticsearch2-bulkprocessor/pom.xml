@@ -113,6 +113,8 @@
                         <jksCertInfo.truststorePath>${project.build.testOutputDirectory}/jks/truststore.jks</jksCertInfo.truststorePath>
                         <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
                         <clusterName>log4j2-elasticsearch</clusterName>
+                        <smokeTest.loggerName>elasticsearch-logger</smokeTest.loggerName>
+                        <smokeTest.appenderName>elasticsearch-appender</smokeTest.appenderName>
                         <smokeTest.batchSize>10000</smokeTest.batchSize>
                         <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>

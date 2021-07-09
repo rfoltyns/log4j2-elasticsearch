@@ -234,7 +234,7 @@ public class SmokeTest extends SmokeTestBase {
         }
 
         return ElasticsearchAppender.newBuilder()
-                .withName(DEFAULT_APPENDER_NAME)
+                .withName(getConfig().getProperty("appenderName", String.class))
                 .withMessageOnly(messageOnly)
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)

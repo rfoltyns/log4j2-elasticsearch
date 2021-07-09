@@ -163,6 +163,8 @@
                         <jksCertInfo.truststorePassword>password</jksCertInfo.truststorePassword>
                         <indexTemplate.indexPatterns>log4j2*</indexTemplate.indexPatterns>
                         <indexTemplate.settings.index.refreshInterval>5s</indexTemplate.settings.index.refreshInterval>
+                        <smokeTest.loggerName>elasticsearch-logger</smokeTest.loggerName>
+                        <smokeTest.appenderName>elasticsearch-appender</smokeTest.appenderName>
                         <smokeTest.indexName>${project.artifactId}</smokeTest.indexName>
                         <smokeTest.batchSize>10000</smokeTest.batchSize>
                         <smokeTest.initialBatchPoolSize>4</smokeTest.initialBatchPoolSize>
