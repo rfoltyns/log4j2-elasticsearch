@@ -51,7 +51,6 @@ public class SysOutLogger implements Logger {
 
     private void log(String messageFormat, Object[] parameters) {
         System.out.printf((messageFormat.replace("{}", "%s")) + "%n", parameters);
-        System.out.println();
     }
 
 }
