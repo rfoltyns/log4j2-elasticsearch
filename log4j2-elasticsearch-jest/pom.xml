@@ -173,6 +173,7 @@
                 <version>2.22.2</version>
                 <configuration>
                     <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
                         <pemCertInfo.keyPathWithPassphrase>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.pass.key</pemCertInfo.keyPathWithPassphrase>
                         <pemCertInfo.keyPath>${project.build.testOutputDirectory}/certificate-bundle/localhost/localhost.key</pemCertInfo.keyPath>
                         <pemCertInfo.keyPassphrase>changeme</pemCertInfo.keyPassphrase>
@@ -195,11 +196,31 @@
                         <ilmPolicy.hot.maxAge>1h</ilmPolicy.hot.maxAge>
                         <ilmPolicy.cold.minAge>1h</ilmPolicy.cold.minAge>
                         <ilmPolicy.delete.minAge>2h</ilmPolicy.delete.minAge>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+
+    <profiles>
+        <profile>
+            <id>e2e</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.22.2</version>
+                        <configuration>
+                            <includes>
+                                <include>*/**/smoke/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

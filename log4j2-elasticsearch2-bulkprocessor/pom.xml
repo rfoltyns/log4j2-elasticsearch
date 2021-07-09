@@ -14,6 +14,21 @@
         <elasticsearch.version>2.4.0</elasticsearch.version>
     </properties>
 
+    <!-- XPack, etc -->
+    <repositories>
+        <!-- elasticsearch repo - see https://github.com/elastic/elasticsearch/issues/21286 -->
+        <repository>
+            <id>elasticsearch-releases</id>
+            <url>https://artifacts.elastic.co/maven</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.appenders.log4j</groupId>
@@ -108,6 +123,7 @@
                 <version>2.22.2</version>
                 <configuration>
                     <systemPropertyVariables>
+                        <buildDirectory>${project.build.directory}</buildDirectory>
                         <jksCertInfo.keystorePath>${project.build.testOutputDirectory}/jks/node01.jks</jksCertInfo.keystorePath>
                         <jksCertInfo.keystorePassword>password</jksCertInfo.keystorePassword>
                         <jksCertInfo.truststorePath>${project.build.testOutputDirectory}/jks/truststore.jks</jksCertInfo.truststorePath>
@@ -116,7 +132,6 @@
                         <smokeTest.loggerName>elasticsearch-logger</smokeTest.loggerName>
                         <smokeTest.appenderName>elasticsearch-appender</smokeTest.appenderName>
                         <smokeTest.batchSize>10000</smokeTest.batchSize>
-                        <buildDirectory>${project.build.directory}</buildDirectory>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
@@ -125,23 +140,21 @@
 
     <profiles>
         <profile>
-            <id>defaultBuild</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <repositories>
-                <!-- elasticsearch repo - see https://github.com/elastic/elasticsearch/issues/21286 -->
-                <repository>
-                    <id>elasticsearch-releases</id>
-                    <url>https://artifacts.elastic.co/maven</url>
-                    <releases>
-                        <enabled>true</enabled>
-                    </releases>
-                    <snapshots>
-                        <enabled>false</enabled>
-                    </snapshots>
-                </repository>
-            </repositories>
+            <id>e2e</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>2.22.2</version>
+                        <configuration>
+                            <includes>
+                                <include>*/**/smoke/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 
