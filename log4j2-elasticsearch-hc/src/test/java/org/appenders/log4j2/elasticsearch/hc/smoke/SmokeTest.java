@@ -46,6 +46,7 @@ import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
+import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ResourceUtil;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
@@ -98,6 +99,7 @@ public class SmokeTest extends SmokeTestBase {
         final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
         final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
         final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
+        final String version = System.getProperty("smokeTest.api.version", "7.10.2");
 
         getConfig().add("batchSize", batchSize)
                 .add("initialBatchPoolSize", initialBatchPoolSize)
@@ -107,7 +109,8 @@ public class SmokeTest extends SmokeTestBase {
                 .add("ecs.enabled", ecsEnabled)
                 .add("servicediscovery.enabled", serviceDiscoveryEnabled)
                 .add("servicediscovery.nodesFilter", nodesFilter)
-                .add("chroniclemap.sequenceId", 1);
+                .add("chroniclemap.sequenceId", 1)
+                .add("api.version", version);
 
         getLogger().info("{}", getConfig().getAll());
 
@@ -129,7 +132,7 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
-                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory))
+                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType(version)))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8));
 
@@ -145,7 +148,7 @@ public class SmokeTest extends SmokeTestBase {
                     .withPooledResponseBuffersSizeInBytes(4096));
 
             ClientProviderPolicy<HttpClient> clientProviderPolicy = new ClientProviderPoliciesRegistry().get(
-                    new HashSet<>(Collections.singletonList("none")),
+                    new HashSet<>(Collections.singletonList("security")),
                     serviceDiscoveryClientProvider);
 
             ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(
@@ -164,38 +167,11 @@ public class SmokeTest extends SmokeTestBase {
                         new SyncStepProcessor(clientProvider, configuredReader()),
                         new Log4j2Lookup(configuration.getStrSubstitutor())));
 
-
-        ComponentTemplate indexSettings = new ComponentTemplate.Builder()
-                .withName(indexName + "-settings")
-                .withPath("classpath:componentTemplate-7-settings.json")
-                .build();
-
-        ComponentTemplate indexSettingsIlm = new ComponentTemplate.Builder()
-                .withName(indexName + "-settings-ilm")
-                .withPath("classpath:componentTemplate-7-settings-ilm.json")
-                .build();
-
-        ComponentTemplate indexMappings = new ComponentTemplate.Builder()
-                .withName(indexName + "-mappings")
-                .withPath(ecsEnabled ? "classpath:componentTemplate-7-mappings-ecs.json": "classpath:componentTemplate-7-mappings.json")
-                .build();
-
-        IndexTemplate componentIndexTemplate = new IndexTemplate.Builder()
-                .withApiVersion(8)
-                .withName(indexName + "-composed-index-template")
-                .withPath("classpath:composableIndexTemplate-7.json")
-                .build();
-
-        ILMPolicy ilmPolicy = new ILMPolicy(
-                indexName + "-ilm-policy",
-                indexName,
-                ResourceUtil.loadResource("classpath:ilmPolicy-7.json"));
-
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize)
                 .withDeliveryInterval(1000)
-                .withSetupOpSources(indexSettings, indexSettingsIlm, indexMappings, componentIndexTemplate, ilmPolicy)
+                .withSetupOpSources(setupOpSources(version, indexName, ecsEnabled))
                 .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
                 .build();
@@ -277,7 +253,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withCaPath(System.getProperty("pemCertInfo.caPath"))
                 .build();
 
-//        CertInfo certInfo = JKSCertInfo.newBuilder()
+//        CertInfo<HttpClientFactory.Builder> certInfo = JKSCertInfo.newBuilder()
 //                .withKeystorePath(System.getProperty("jksCertInfo.keystorePath"))
 //                .withKeystorePassword(System.getProperty("jksCertInfo.keystorePassword"))
 //                .withTruststorePath(System.getProperty("jksCertInfo.truststorePath"))
@@ -293,6 +269,53 @@ public class SmokeTest extends SmokeTestBase {
                 .withCertInfo(certInfo)
                 .withCredentials(credentials)
                 .build();
+    }
+
+    private OpSource[] setupOpSources(final String version, final String indexName, boolean ecsEnabled) {
+
+        final ArrayList<OpSource> result = new ArrayList<>();
+
+        if (version.compareTo("7.8.0") >= 0) {
+            result.add(new ComponentTemplate.Builder()
+                    .withName(indexName + "-settings")
+                    .withPath("classpath:componentTemplate-7-settings.json")
+                    .build());
+
+            result.add(new ComponentTemplate.Builder()
+                    .withName(indexName + "-settings-ilm")
+                    .withPath("classpath:componentTemplate-7-settings-ilm.json")
+                    .build());
+
+            result.add(new ComponentTemplate.Builder()
+                    .withName(indexName + "-mappings")
+                    .withPath(ecsEnabled ? "classpath:componentTemplate-7-mappings-ecs.json": "classpath:componentTemplate-7-mappings.json")
+                    .build());
+
+            result.add(new IndexTemplate.Builder()
+                    .withApiVersion(8)
+                    .withName(indexName + "-composed-index-template")
+                    .withPath("classpath:composableIndexTemplate-7.json")
+                    .build());
+        } else {
+            result.add(new IndexTemplate.Builder()
+                    .withApiVersion(7)
+                    .withName(indexName + "-index-template")
+                    .withPath("classpath:indexTemplate-" + version.charAt(0) + ".json")
+                    .build());
+        }
+
+        if (version.compareTo("7.2.0") >= 0) {
+            result.add(new ILMPolicy(
+                    indexName + "-ilm-policy",
+                    indexName,
+                    ResourceUtil.loadResource("classpath:ilmPolicy-7.json")));
+        }
+
+        return result.toArray(new OpSource[0]);
+    }
+
+    private String mappingType(String version) {
+        return version.compareTo("7.0.0") >= 0 ? "_doc" : "index";
     }
 
 }
