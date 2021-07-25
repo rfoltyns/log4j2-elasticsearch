@@ -200,6 +200,10 @@
     <profiles>
         <profile>
             <id>e2e</id>
+            <properties>
+                <e2e.gc.logging/>
+                <e2e.jvm.args/>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
