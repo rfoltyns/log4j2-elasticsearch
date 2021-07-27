@@ -75,6 +75,8 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
+import org.appenders.log4j2.elasticsearch.util.Version;
+import org.appenders.log4j2.elasticsearch.util.VersionUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -132,7 +134,7 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
-                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType(version)))
+                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType(VersionUtil.parse(version))))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8));
 
@@ -171,7 +173,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize)
                 .withDeliveryInterval(1000)
-                .withSetupOpSources(setupOpSources(version, indexName, ecsEnabled))
+                .withSetupOpSources(setupOpSources(VersionUtil.parse(version), indexName, ecsEnabled))
                 .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
                 .build();
@@ -271,11 +273,11 @@ public class SmokeTest extends SmokeTestBase {
                 .build();
     }
 
-    private OpSource[] setupOpSources(final String version, final String indexName, boolean ecsEnabled) {
+    private OpSource[] setupOpSources(final Version version, final String indexName, boolean ecsEnabled) {
 
         final ArrayList<OpSource> result = new ArrayList<>();
 
-        if (version.compareTo("7.8.0") >= 0) {
+        if (!version.lowerThan("7.8.0")) {
             result.add(new ComponentTemplate.Builder()
                     .withName(indexName + "-settings")
                     .withPath("classpath:componentTemplate-7-settings.json")
@@ -300,11 +302,11 @@ public class SmokeTest extends SmokeTestBase {
             result.add(new IndexTemplate.Builder()
                     .withApiVersion(7)
                     .withName(indexName + "-index-template")
-                    .withPath("classpath:indexTemplate-" + version.charAt(0) + ".json")
+                    .withPath("classpath:indexTemplate-" + version.major() + ".json")
                     .build());
         }
 
-        if (version.compareTo("7.2.0") >= 0) {
+        if (!version.lowerThan("7.2.0")) {
             result.add(new ILMPolicy(
                     indexName + "-ilm-policy",
                     indexName,
@@ -314,8 +316,8 @@ public class SmokeTest extends SmokeTestBase {
         return result.toArray(new OpSource[0]);
     }
 
-    private String mappingType(String version) {
-        return version.compareTo("7.0.0") >= 0 ? "_doc" : "index";
+    private String mappingType(final Version version) {
+        return !version.lowerThan("7.0.0") ? "_doc" : "index";
     }
 
 }
