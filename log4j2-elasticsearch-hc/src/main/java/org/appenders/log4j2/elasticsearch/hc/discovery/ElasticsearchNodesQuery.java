@@ -84,7 +84,7 @@ public class ElasticsearchNodesQuery implements ServiceDiscoveryRequest<HttpClie
 
     }
 
-    private String formatAddress(NodeInfo info) {
+    protected String formatAddress(NodeInfo info) {
         return String.format("%s://%s", resultScheme, info.getHttpPublishAddress().getPublishAddress());
     }
 
