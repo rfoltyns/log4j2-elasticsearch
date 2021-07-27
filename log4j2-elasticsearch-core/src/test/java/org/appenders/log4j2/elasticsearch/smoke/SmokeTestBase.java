@@ -29,19 +29,16 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.async.AsyncLoggerConfigDelegate;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.failover.KeySequenceSelector;
 import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelector;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -59,7 +56,7 @@ public abstract class SmokeTestBase {
 
     public static final long ONE_SECOND = TimeUnit.MILLISECONDS.toNanos(1000);
 
-    private final SmokeTestConfig config = new SmokeTestConfig();
+    final TestConfig config = new TestConfig();
 
     private final Random random = new Random();
     private final AtomicInteger localCounter = new AtomicInteger();
@@ -67,8 +64,25 @@ public abstract class SmokeTestBase {
 
     public abstract ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured);
 
-    protected final SmokeTestConfig getConfig() {
+    protected final TestConfig getConfig() {
         return config;
+    }
+
+    protected TestConfig configure(final TestConfig target) {
+        return target.add("limitTotal", getInt("smokeTest.limitTotal", 10))
+            .add("limitPerSec", getInt("smokeTest.limitPerSec", 10000))
+            .add("pooled", Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true")))
+            .add("secure", Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false")))
+            .add("logSizeInBytes", getInt("smokeTest.logSizeInBytes", 1))
+            .add("lifecycleStopDelayMillis", getInt("smokeTest.lifecycleStopDelayMillis", 10000))
+            .add("exitDelayMillis", getInt("smokeTest.exitDelayMillis", 10000))
+            .add("numberOfProducers", getInt("smokeTest.noOfProducers", 5))
+            .add("producerBatchSize", getInt("smokeTest.producerBatchSize", 10))
+            .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
+            .add("loggerName", System.getProperty("smokeTest.loggerName", "elasticsearch-logger"))
+            .add("appenderName", System.getProperty("smokeTest.appenderName", "elasticsearch-appender"))
+            .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")))
+            .add("chroniclemap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
     }
 
     protected Function<Configuration, AsyncLoggerConfigDelegate> createAsyncLoggerConfigDelegateProvider() {
@@ -96,6 +110,11 @@ public abstract class SmokeTestBase {
 
         ctx.updateLoggers();
 
+    }
+
+    @BeforeEach
+    public void beforeEach() {
+        configure(config);
     }
 
     @Test
@@ -193,6 +212,7 @@ public abstract class SmokeTestBase {
 
         Logger logger = LogManager.getLogger("elasticsearch");
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> "Message " + counter.incrementAndGet());
+
     }
 
     protected FailoverPolicy resolveFailoverPolicy() {
@@ -279,57 +299,6 @@ public abstract class SmokeTestBase {
             localCounter.incrementAndGet();
             totalCounter.incrementAndGet();
         }
-    }
-
-    public static class SmokeTestConfig {
-
-        protected final Map<String, Object> paramsMap = new LinkedHashMap<>();
-
-        protected void initParams() {
-
-            if (!paramsMap.isEmpty()) {
-                return;
-            }
-
-            add("limitTotal", getInt("smokeTest.limitTotal", 1000000))
-            .add("limitPerSec", getInt("smokeTest.limitPerSec", 10000))
-            .add("pooled", Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true")))
-            .add("secure", Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false")))
-            .add("logSizeInBytes", getInt("smokeTest.logSizeInBytes", 1))
-            .add("lifecycleStopDelayMillis", getInt("smokeTest.lifecycleStopDelayMillis", 10000))
-            .add("exitDelayMillis", getInt("smokeTest.exitDelayMillis", 10000))
-            .add("numberOfProducers", getInt("smokeTest.noOfProducers", 5))
-            .add("producerBatchSize", getInt("smokeTest.producerBatchSize", 10))
-            .add("producerSleepMillis", getInt("smokeTest.initialProducerSleepMillis", 20))
-            .add("loggerName", System.getProperty("smokeTest.loggerName", "elasticsearch-logger"))
-            .add("appenderName", System.getProperty("smokeTest.appenderName", "elasticsearch-appender"))
-            .add("singleThread", Boolean.parseBoolean(System.getProperty("smokeTest.singleThread", "true")))
-            .add("chroniclemap.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.chroniclemap.enabled", "false")));
-
-        }
-
-        public SmokeTestConfig add(final String name, Object value) {
-            paramsMap.put(name, value);
-            return this;
-        }
-
-        public Map<String, Object> getAll() {
-            return new HashMap<>(paramsMap);
-        }
-
-        public <T> T getProperty(String propertyName, Class<T> type) {
-            initParams();
-            //noinspection unchecked
-            return (T) paramsMap.get(propertyName);
-        }
-
-        @Override
-        public String toString() {
-            return getClass().getName() + "{ " +
-                    "paramsMap=" + paramsMap +
-                    '}';
-        }
-
     }
 
 }

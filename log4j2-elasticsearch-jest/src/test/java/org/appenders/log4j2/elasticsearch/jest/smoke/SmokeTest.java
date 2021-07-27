@@ -33,7 +33,6 @@ import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
-import org.appenders.log4j2.elasticsearch.ILMPolicyPlugin;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
@@ -51,9 +50,11 @@ import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory;
 import org.appenders.log4j2.elasticsearch.jest.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.jest.XPackAuth;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -63,25 +64,43 @@ import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public class SmokeTest extends SmokeTestBase {
 
+    @BeforeEach
+    public void beforeEach() {
+        super.beforeEach();
+        configure();
+    }
+
+    protected TestConfig configure() {
+        return addSecurityConfig(getConfig())
+                .add("serverList", System.getProperty("smokeTest.serverList", "localhost:9200"))
+                .add("batchSize", getInt("smokeTest.batchSize", 10000))
+                .add("initialItemPoolSize", getInt("smokeTest.initialItemPoolSize", 40000))
+                .add("initialItemBufferSizeInBytes", getInt("smokeTest.initialItemBufferSizeInBytes", 1024))
+                .add("initialBatchPoolSize", getInt("smokeTest.initialBatchPoolSize", 4))
+                .add("indexName", System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-jest"))
+                .add("ecs.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false")))
+                .add("chroniclemap.sequenceId", 2)
+                .add("api.version", System.getProperty("smokeTest.api.version", "7.10.2"));
+
+    }
+
+    private TestConfig addSecurityConfig(TestConfig target) {
+        return target.add("pemCertInfo.keyPath", System.getProperty("pemCertInfo.keyPath"))
+                .add("pemCertInfo.keyPassphrase", System.getProperty("pemCertInfo.keyPassphrase"))
+                .add("pemCertInfo.clientCertPath", System.getProperty("pemCertInfo.clientCertPath"))
+                .add("pemCertInfo.caPath", System.getProperty("pemCertInfo.caPath"));
+    }
+
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
-        final int batchSize = getInt("smokeTest.batchSize", 10000);
-        final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
-        final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
-        final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
-        final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-jest");
-        final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
-        final String version = System.getProperty("smokeTest.api.version", "7.10.2");
-
-        getConfig().add("batchSize", batchSize)
-                .add("initialBatchPoolSize", initialBatchPoolSize)
-                .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
-                .add("initialBatchPoolSize", initialBatchPoolSize)
-                .add("indexName", indexName)
-                .add("ecs.enabled", ecsEnabled)
-                .add("chroniclemap.sequenceId", 2)
-                .add("api.version", version);
+        final int batchSize = getConfig().getProperty("batchSize", Integer.class);
+        final int initialItemPoolSize = getConfig().getProperty("initialItemPoolSize", Integer.class);
+        final int initialItemBufferSizeInBytes = getConfig().getProperty("initialItemBufferSizeInBytes", Integer.class);
+        final int initialBatchPoolSize = getConfig().getProperty("initialBatchPoolSize", Integer.class);
+        final String indexName = getConfig().getProperty("indexName", String.class);
+        final boolean ecsEnabled = getConfig().getProperty("ecs.enabled", Boolean.class);
+        final String version = getConfig().getProperty("api.version", String.class);
 
         getLogger().info("Running SmokeTest {}", getConfig().getAll());
 
@@ -114,7 +133,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withMappingType(mappingType(VersionUtil.parse(version)))
                 .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()));
 
-        final String serverList = getServerList(secured, "localhost:9200");
+        final String serverList = getServerList(secured, getConfig().getProperty("serverList", String.class));
         jestHttpObjectFactoryBuilder.withServerUris(serverList);
 
         if (secured) {

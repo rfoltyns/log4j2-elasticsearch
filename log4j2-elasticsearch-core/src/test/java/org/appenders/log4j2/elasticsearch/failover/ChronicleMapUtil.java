@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +35,7 @@ public class ChronicleMapUtil {
     @Test
     public void readChronicleMap() throws IOException {
 
-        final SmokeTestBase.SmokeTestConfig testConfig = new SmokeTestBase.SmokeTestConfig();
+        final TestConfig testConfig = new TestConfig();
         testConfig.add("indexName", System.getProperty("smokeTest.indexName"));
 
         final ChronicleMapRetryFailoverPolicy.Builder chronicleMapFactory = new ChronicleMapRetryFailoverPolicy.Builder()

@@ -73,13 +73,16 @@ import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryRequest;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,30 +92,45 @@ import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public class SmokeTest extends SmokeTestBase {
 
+    @BeforeEach
+    public void beforeEach() {
+        super.beforeEach();
+        configure();
+    }
+
+    protected void configure() {
+        addSecurityConfig(getConfig())
+                .add("serverList", System.getProperty("smokeTest.serverList", "localhost:9200"))
+                .add("batchSize", getInt("smokeTest.batchSize", 10000))
+                .add("initialItemPoolSize", getInt("smokeTest.initialItemPoolSize", 40000))
+                .add("initialItemBufferSizeInBytes", getInt("smokeTest.initialItemBufferSizeInBytes", 1024))
+                .add("initialBatchPoolSize", getInt("smokeTest.initialBatchPoolSize", 4))
+                .add("indexName", System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc"))
+                .add("ecs.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false")))
+                .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
+                .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
+                .add("chroniclemap.sequenceId", 1)
+                .add("api.version", System.getProperty("smokeTest.api.version", "7.10.2"));
+    }
+
+    private TestConfig addSecurityConfig(TestConfig target) {
+        return target.add("pemCertInfo.keyPath", System.getProperty("pemCertInfo.keyPath"))
+            .add("pemCertInfo.keyPassphrase", System.getProperty("pemCertInfo.keyPassphrase"))
+            .add("pemCertInfo.clientCertPath", System.getProperty("pemCertInfo.clientCertPath"))
+            .add("pemCertInfo.caPath", System.getProperty("pemCertInfo.caPath"));
+    }
+
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
 
-        final int batchSize = getInt("smokeTest.batchSize", 10000);
-        final int initialItemPoolSize = getInt("smokeTest.initialItemPoolSize", 40000);
-        final int initialItemBufferSizeInBytes = getInt("smokeTest.initialItemBufferSizeInBytes", 1024);
-        final int initialBatchPoolSize = getInt("smokeTest.initialBatchPoolSize", 4);
-        final String indexName = System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc");
-        final boolean ecsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false"));
-        final boolean serviceDiscoveryEnabled = Boolean.parseBoolean(System.getProperty("appenders.servicediscovery.enabled", "true"));
-        final String serviceDiscoveryList = System.getProperty("smokeTest.servicediscovery.serverList", "localhost:9200");
-        final String nodesFilter = System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER);
-        final String version = System.getProperty("smokeTest.api.version", "7.10.2");
-
-        getConfig().add("batchSize", batchSize)
-                .add("initialBatchPoolSize", initialBatchPoolSize)
-                .add("initialItemBufferSizeInBytes", initialItemBufferSizeInBytes)
-                .add("initialBatchPoolSize", initialBatchPoolSize)
-                .add("indexName", indexName)
-                .add("ecs.enabled", ecsEnabled)
-                .add("servicediscovery.enabled", serviceDiscoveryEnabled)
-                .add("servicediscovery.nodesFilter", nodesFilter)
-                .add("chroniclemap.sequenceId", 1)
-                .add("api.version", version);
+        final int batchSize = getConfig().getProperty("batchSize", Integer.class);
+        final int initialItemPoolSize = getConfig().getProperty("initialItemPoolSize", Integer.class);
+        final int initialItemBufferSizeInBytes = getConfig().getProperty("initialItemBufferSizeInBytes", Integer.class);
+        final int initialBatchPoolSize = getConfig().getProperty("initialBatchPoolSize", Integer.class);
+        final String indexName = getConfig().getProperty("indexName", String.class);
+        final boolean ecsEnabled = getConfig().getProperty("ecs.enabled", Boolean.class);
+        final boolean serviceDiscoveryEnabled = getConfig().getProperty("servicediscovery.enabled", Boolean.class);
+        final String version = getConfig().getProperty("api.version", String.class);
 
         getLogger().info("{}", getConfig().getAll());
 
@@ -121,8 +139,9 @@ public class SmokeTest extends SmokeTestBase {
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
         PooledItemSourceFactory pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes).build();
 
+        final List<String> serverList = getServerList(secured, getConfig().getProperty("serverList", String.class));
         HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
-                .withServerList(new ArrayList<>())
+                .withServerList(serverList)
                 .withConnTimeout(500)
                 .withReadTimeout(10000)
                 .withIoThreadCount(8)
@@ -141,7 +160,7 @@ public class SmokeTest extends SmokeTestBase {
         if (serviceDiscoveryEnabled) {
 
             HttpClientProvider serviceDiscoveryClientProvider = new HttpClientProvider(new HttpClientFactory.Builder()
-                    .withServerList(getServerList(secured, serviceDiscoveryList))
+                    .withServerList(serverList)
                     .withReadTimeout(1000)
                     .withConnTimeout(500)
                     .withMaxTotalConnections(1)
@@ -150,12 +169,12 @@ public class SmokeTest extends SmokeTestBase {
                     .withPooledResponseBuffersSizeInBytes(4096));
 
             ClientProviderPolicy<HttpClient> clientProviderPolicy = new ClientProviderPoliciesRegistry().get(
-                    new HashSet<>(Collections.singletonList("security")),
+                    new HashSet<>(Arrays.asList("serverList", "security")),
                     serviceDiscoveryClientProvider);
 
             ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(
                     clientProviderPolicy,
-                    new ElasticsearchNodesQuery(secured ? "https" : "http", nodesFilter),
+                    serviceDiscoveryQuery(getConfig().getProperty("serviceDiscovery.nodesFilter", String.class)),
                     5000L
             );
 
@@ -220,6 +239,14 @@ public class SmokeTest extends SmokeTestBase {
                 .withIgnoreExceptions(false);
     }
 
+    private ServiceDiscoveryRequest<HttpClient> serviceDiscoveryQuery(String nodesFilter) {
+
+        final boolean secure = getConfig().getProperty("secure", Boolean.class);
+        final String scheme = secure ? "https" : "http";
+        return new ElasticsearchNodesQuery(scheme, nodesFilter);
+
+    }
+
     private PooledItemSourceFactory.Builder batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
         return PooledItemSourceFactory.newBuilder()
                 .withPoolName("batchPool")
@@ -247,12 +274,12 @@ public class SmokeTest extends SmokeTestBase {
                 .readerFor(BatchResult.class);
     }
 
-    private static Auth<HttpClientFactory.Builder> getAuth() {
+    private Auth<HttpClientFactory.Builder> getAuth() {
         CertInfo<HttpClientFactory.Builder> certInfo = PEMCertInfo.newBuilder()
-                .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
-                .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
-                .withClientCertPath(System.getProperty("pemCertInfo.clientCertPath"))
-                .withCaPath(System.getProperty("pemCertInfo.caPath"))
+                .withKeyPath(getConfig().getProperty("pemCertInfo.keyPath", String.class))
+                .withKeyPassphrase(getConfig().getProperty("pemCertInfo.keyPassphrase", String.class))
+                .withClientCertPath(getConfig().getProperty("pemCertInfo.clientCertPath", String.class))
+                .withCaPath(getConfig().getProperty("pemCertInfo.caPath", String.class))
                 .build();
 
 //        CertInfo<HttpClientFactory.Builder> certInfo = JKSCertInfo.newBuilder()
