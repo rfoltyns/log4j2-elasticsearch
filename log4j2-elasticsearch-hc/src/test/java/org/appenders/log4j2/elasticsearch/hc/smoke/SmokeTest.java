@@ -89,7 +89,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -112,14 +111,6 @@ public class SmokeTest extends SmokeTestBase {
     public void beforeEach() {
         super.beforeEach();
         configure();
-
-        final TestConfig config = getConfig();
-        final boolean containersEnabled = config.getProperty("containers.enabled", Boolean.class);
-        if (containersEnabled) {
-            containerRunner = new ContainerRunner(config);
-            config.add("serverList", (Supplier<String>) () -> String.join(";", containerRunner.start()));
-        }
-
     }
 
     protected void configure() {
@@ -134,7 +125,11 @@ public class SmokeTest extends SmokeTestBase {
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
-                .add("api.version", System.getProperty("smokeTest.api.version", "7.10.2"));
+                .add("api.version", System.getProperty("smokeTest.api.version", "7.10.2"))
+                .add("containers.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.containers.enabled", "false")));
+
+        configureContainerRunner();
+
     }
 
     private TestConfig addSecurityConfig(TestConfig target) {
@@ -142,6 +137,20 @@ public class SmokeTest extends SmokeTestBase {
             .add("pemCertInfo.keyPassphrase", System.getProperty("pemCertInfo.keyPassphrase"))
             .add("pemCertInfo.clientCertPath", System.getProperty("pemCertInfo.clientCertPath"))
             .add("pemCertInfo.caPath", System.getProperty("pemCertInfo.caPath"));
+    }
+
+    private void configureContainerRunner() {
+        final TestConfig config = getConfig();
+        final boolean containersEnabled = config.getProperty("containers.enabled", Boolean.class);
+        if (containersEnabled) {
+
+            // TODO: move somewhere else..
+            getConfig().add("containers.startup.maxChecks", Integer.parseInt(System.getProperty("smokeTest.containers.startup.maxChecks", "6")));
+            getConfig().add("containers.startup.timeoutSeconds", Integer.parseInt(System.getProperty("smokeTest.containers.startup.timeoutSeconds", "30")));
+
+            containerRunner = new ContainerRunner(config);
+            config.add("serverList", (Supplier<String>) () -> String.join(";", containerRunner.start()));
+        }
     }
 
     @Override

@@ -70,7 +70,7 @@ public abstract class SmokeTestBase {
     }
 
     protected TestConfig configure(final TestConfig target) {
-        return target.add("limitTotal", getInt("smokeTest.limitTotal", 10))
+        return target.add("limitTotal", getInt("smokeTest.limitTotal", 100000))
             .add("limitPerSec", getInt("smokeTest.limitPerSec", 10000))
             .add("pooled", Boolean.parseBoolean(System.getProperty("smokeTest.pooled", "true")))
             .add("secure", Boolean.parseBoolean(System.getProperty("smokeTest.secure", "false")))

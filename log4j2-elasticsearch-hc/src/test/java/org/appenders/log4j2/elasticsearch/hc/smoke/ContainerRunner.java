@@ -1,28 +1,28 @@
 package org.appenders.log4j2.elasticsearch.hc.smoke;
 
 import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
-import org.testcontainers.containers.BindMode;
+import org.appenders.log4j2.elasticsearch.util.Version;
+import org.appenders.log4j2.elasticsearch.util.VersionUtil;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 public class ContainerRunner {
 
     private static final DockerImageName ELASTICSEARCH_IMAGE = DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch");
-    public static final String CERT_BUNDLE_NAME = "certificate-bundle";
-    public static final String CONTAINER_PATH = "";
-    public static final String CERT_DIR_NAME = "certificate-bundle";
 
+    private final ThreadLocal<ContainerCallback<List<String>>> resultRefs = new ThreadLocal<>();
+    // TODO: move to thread local?
     private final List<ElasticsearchContainer> containers = new ArrayList<>();
 
-    private final AtomicBoolean initialized = new AtomicBoolean();
-    private final List<String> containerAddresses = new ArrayList<>();
     private final TestConfig config;
 
     public ContainerRunner(TestConfig config) {
@@ -35,69 +35,77 @@ public class ContainerRunner {
 
     protected List<String> startContainers() {
 
-        final List<String> newContainers = new ArrayList<>();
+        if (resultRefs.get() == null) {
 
-        if (initialized.compareAndSet(false, true)) {
+            final ContainerCallback<List<String>> callback = new ContainerCallback<>();
+            resultRefs.set(callback);
 
-            int size = 1;
-
-            while (size-- > 0) {
-                containers.add(startContainer());
-            }
-
-            for (final ElasticsearchContainer container : containers) {
-                final String httpHostAddress = container.getHttpHostAddress();
-                newContainers.add(httpHostAddress);
-            }
-
-            containerAddresses.addAll(newContainers);
+            final Thread startInBackground = new StartContainerTask(30000, callback);
+            startInBackground.start();
 
         }
 
-        if (containerAddresses.isEmpty()) {
+        return startContainers(
+                config.getProperty("containers.startup.maxChecks", Integer.class),
+                TimeUnit.SECONDS.toMillis(config.getProperty("containers.startup.timeoutSeconds", Integer.class)));
+
+    }
+
+    private List<String> startContainers(int retries, long timeout) {
+
+        long retryInterval = timeout / retries;
+
+        while (resultRefs.get().completed() && retries > 0) {
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(retryInterval));
+            getLogger().info("Containers not started yet. Timing out in {}s", retries * TimeUnit.MILLISECONDS.toSeconds(retryInterval));
+        }
+
+        if (resultRefs.get().completed()) {
             throw new IllegalStateException("Unable to start containers on time");
         }
 
-        return containerAddresses;
+        return resultRefs.get().getResult();
 
     }
 
     private ElasticsearchContainer startContainer() {
-        final String apiVersion = config.getProperty("api.version", String.class);
-        final String secure = Boolean.toString(config.getProperty("secure", Boolean.class));
-        final String containerCertPath = "/usr/share/elasticsearch/config/" + CERT_DIR_NAME;
-        final ElasticsearchContainer container = new ElasticsearchContainer(ELASTICSEARCH_IMAGE.withTag(apiVersion))
-                .withClasspathResourceMapping(CERT_BUNDLE_NAME, containerCertPath, BindMode.READ_ONLY)
+
+        final Version apiVersion = VersionUtil.parse(config.getProperty("api.version", String.class));
+        final boolean secure = config.getProperty("secure", Boolean.class);
+
+        final ElasticsearchContainer container = new ElasticsearchContainer(ELASTICSEARCH_IMAGE.withTag(apiVersion.toString()))
                 .withReuse(false)
                 .withLogConsumer(outputFrame -> getLogger().warn(outputFrame.getUtf8String()))
                 .withExposedPorts(9200)
-                .withNetwork(Network.SHARED)
-                .withEnv("CERTS_DIR", containerCertPath)
-                .withPassword("doesntMatter")
-                .withEnv("xpack.security.enabled", secure)
-                .withEnv("xpack.security.http.ssl.enabled", secure)
-                .withEnv("xpack.security.http.ssl.key", containerCertPath("pemCertInfo.keyPath"))
-                .withEnv("xpack.security.http.ssl.certificate_authorities", containerCertPath("pemCertInfo.caPath"))
-                .withEnv("xpack.security.http.ssl.certificate", containerCertPath("pemCertInfo.clientCertPath"))
-                .withEnv("xpack.security.transport.ssl.enabled", secure)
-                .withEnv("xpack.security.transport.ssl.verification_mode", "none")
-                .withEnv("xpack.security.transport.ssl.certificate_authorities", containerCertPath("pemCertInfo.caPath"))
-                .withEnv("xpack.security.transport.ssl.certificate", containerCertPath("pemCertInfo.clientCertPath"))
-                .withEnv("xpack.security.transport.ssl.key", containerCertPath("pemCertInfo.keyPath"));
+                .withNetwork(Network.SHARED);
 
+        resolveConfigurer(apiVersion).configure(container, apiVersion, config);
         container.start();
 
         return container;
     }
 
-    private String containerCertPath(final String propertyName) {
-        return ContainerRunner.CONTAINER_PATH + trimBefore(CERT_DIR_NAME, config.getProperty(propertyName, String.class));
-    }
+    private ElasticsearchContainerConfigurer resolveConfigurer(Version apiVersion) {
 
-    private String trimBefore(final String match, final String value) {
-        return value.substring(value.indexOf(match));
-    }
+        if (apiVersion.lowerThan("5.0.0")) {
+            throw new UnsupportedOperationException("Elasticsearch container version not supported: " + apiVersion);
+        }
 
+        if (apiVersion.lowerThan("6.0.0")) {
+            return new Elasticsearch5Configurer();
+        }
+
+        if (apiVersion.lowerThan("7.0.0")) {
+            return new Elasticsearch6Configurer();
+        }
+
+        if (apiVersion.lowerThan("8.0.0")) {
+            return new Elasticsearch7Configurer();
+        }
+
+        throw new UnsupportedOperationException("Elasticsearch container version not supported: " + apiVersion);
+
+    }
 
     public void stop() {
 
@@ -106,4 +114,49 @@ public class ContainerRunner {
         }
 
     }
+
+    private class StartContainerTask extends Thread {
+
+        private final int timeout;
+
+        private final ContainerCallback<List<String>> callback;
+
+        public StartContainerTask(final int timeout, final ContainerCallback<List<String>> callback) {
+            this.timeout = timeout;
+            this.callback = callback;
+        }
+
+        @Override
+        public void run() {
+
+            final ElasticsearchContainer container = startContainer();
+            containers.add(container);
+
+            callback.completed(Collections.singletonList(container.getHttpHostAddress()));
+
+        }
+
+        public int getTimeout() {
+            return timeout;
+        }
+
+    }
+
+    private static class ContainerCallback<T> {
+
+        private volatile T result;
+
+        void completed(T result) {
+            this.result = result;
+        }
+
+        public boolean completed() {
+            return result == null;
+        }
+
+        public T getResult() {
+            return result;
+        }
+    }
+
 }
