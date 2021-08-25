@@ -44,7 +44,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +55,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,7 +80,8 @@ public class PooledItemSourceFactoryTest {
                 .withInitialPoolSize(DEFAULT_TEST_POOL_SIZE)
                 .withPooledObjectOps(new ByteBufPooledObjectOps(
                         UnpooledByteBufAllocator.DEFAULT,
-                        new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)));
+                        new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)))
+                .withReuseStreams(false);
     }
 
     public static PooledItemSourceFactory.Builder<Object, ByteBuf> createTestItemSourceFactoryBuilder(Function<ItemSourcePool<ByteBuf>, ItemSourcePool<ByteBuf>> wrapper) {
@@ -333,7 +337,7 @@ public class PooledItemSourceFactoryTest {
         PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool);
 
         // when
-        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.createEmptySource());
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, pooledItemSourceFactory::createEmptySource);
 
         // then
         assertThat(exception.getMessage(), containsString(expectedMessage));
@@ -472,6 +476,34 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
+    public void deprecatedCreateWithObjectWriterReusesStreamIfConfigured() throws IOException, PoolResourceException {
+
+        // given
+        ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
+        when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
+
+        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new ReusableOutputStreamProvider<>());
+
+        LogEvent logEvent1 = mock(LogEvent.class);
+        LogEvent logEvent2 = mock(LogEvent.class);
+        ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        // when
+        pooledItemSourceFactory.create(logEvent1, objectWriter);
+        pooledItemSourceFactory.create(logEvent2, objectWriter);
+
+        // then
+        ArgumentCaptor<OutputStream> captor = ArgumentCaptor.forClass(OutputStream.class);
+        verify(objectWriter, times(2)).writeValue(captor.capture(), any());
+
+        assertEquals(2, captor.getAllValues().size());
+        assertSame(captor.getAllValues().get(0), captor.getAllValues().get(1));
+
+    }
+
+    @Test
     public void createWithSerializerWritesItemSource() throws IOException, PoolResourceException {
 
         // given
@@ -480,7 +512,7 @@ public class PooledItemSourceFactoryTest {
         final ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
-        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<LogEvent, ByteBuf>(mockedPool);
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool);
 
         final LogEvent logEvent = mock(LogEvent.class);
         final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
@@ -528,6 +560,84 @@ public class PooledItemSourceFactoryTest {
         verify(bufferedItemSource).release();
         assertNotNull(caught);
         assertEquals(IllegalArgumentException.class, caught.getClass());
+
+    }
+
+    @Test
+    public void createWithSerializerReusesStreamIfConfigured() throws IOException, PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
+        when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
+
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory.Builder<LogEvent, ByteBuf>() {
+            @Override
+            ItemSourcePool<ByteBuf> configuredItemSourcePool() {
+                return mockedPool;
+            }
+        }
+        .withInitialPoolSize(2)
+        .withReuseStreams(true)
+        .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)))
+        .build();
+
+        final LogEvent logEvent1 = mock(LogEvent.class);
+        final LogEvent logEvent2 = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        final JacksonSerializer<LogEvent> serializer = new JacksonSerializer<>(objectWriter);
+
+        // when
+        pooledItemSourceFactory.create(logEvent1, serializer);
+        pooledItemSourceFactory.create(logEvent2, serializer);
+
+        // then
+        ArgumentCaptor<OutputStream> captor = ArgumentCaptor.forClass(OutputStream.class);
+        verify(objectWriter, times(2)).writeValue(captor.capture(), any());
+
+        assertEquals(2, captor.getAllValues().size());
+        assertSame(captor.getAllValues().get(0), captor.getAllValues().get(1));
+
+    }
+
+    @Test
+    public void createWithSerializerDoesNotReuseStreamIfNotConfigured() throws IOException, PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final ItemSource<ByteBuf> bufferedItemSource = createTestItemSource();
+        when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
+
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory.Builder<LogEvent, ByteBuf>() {
+            @Override
+            ItemSourcePool<ByteBuf> configuredItemSourcePool() {
+                return mockedPool;
+            }
+        }
+        .withInitialPoolSize(2)
+        .withReuseStreams(false)
+        .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)))
+        .build();
+
+        final LogEvent logEvent1 = mock(LogEvent.class);
+        final LogEvent logEvent2 = mock(LogEvent.class);
+        final ObjectWriter objectWriter = spy(new ObjectMapper().writerFor(LogEvent.class));
+
+        final JacksonSerializer<LogEvent> serializer = new JacksonSerializer<>(objectWriter);
+
+        // when
+        pooledItemSourceFactory.create(logEvent1, serializer);
+        pooledItemSourceFactory.create(logEvent2, serializer);
+
+        // then
+        ArgumentCaptor<OutputStream> captor = ArgumentCaptor.forClass(OutputStream.class);
+        verify(objectWriter, times(2)).writeValue(captor.capture(), any());
+
+        assertEquals(2, captor.getAllValues().size());
+        assertNotSame(captor.getAllValues().get(0), captor.getAllValues().get(1));
 
     }
 

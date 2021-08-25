@@ -21,14 +21,16 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import io.netty.buffer.ByteBuf;
+import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 /**
  * {@code io.netty.buffer.ByteBuf} backed {@link ItemSource}.
  * When it's no longer needed, {@link #release()} MUST be called to release underlying resources.
  */
-public class ByteBufItemSource implements ItemSource<ByteBuf> {
+public class ByteBufItemSource implements ItemSource<ByteBuf>, OutputStreamSource {
 
     private final ByteBuf source;
     private final ReleaseCallback<ByteBuf> releaseCallback;
@@ -49,6 +51,24 @@ public class ByteBufItemSource implements ItemSource<ByteBuf> {
     public void release() {
         source.clear();
         releaseCallback.completed(this);
+    }
+
+    @Override
+    public OutputStream asOutputStream() {
+        return new ReusableByteBufOutputStream(source);
+    }
+
+    @Override
+    public final OutputStream asOutputStream(final OutputStream outputStream) {
+
+        if (outputStream instanceof ReusableOutputStream) {
+            //noinspection unchecked
+            ((ReusableOutputStream<ByteBuf>)outputStream).reset(source);
+            return outputStream;
+        }
+
+        throw new IllegalArgumentException("Not an instance of " + ReusableOutputStream.class.getSimpleName());
+
     }
 
     @Override

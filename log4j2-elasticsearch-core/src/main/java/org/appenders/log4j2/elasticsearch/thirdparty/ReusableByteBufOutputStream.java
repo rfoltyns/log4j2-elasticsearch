@@ -18,12 +18,14 @@
  *           writeUTF8(String) not supported
  *           utf8out removed to stop allocating java.io.DataOutputStream (40 bytes)
  *           writtenBytes() removed - wrong results when reused
+ *           reset(ByteBuf) added to implement ReusableOutputStream
  */
 package org.appenders.log4j2.elasticsearch.thirdparty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.util.CharsetUtil;
+import org.appenders.log4j2.elasticsearch.ReusableOutputStream;
 
 import java.io.DataOutput;
 import java.io.OutputStream;
@@ -41,9 +43,9 @@ import java.io.OutputStream;
  *
  * @see ByteBufInputStream
  */
-public class ReusableByteBufOutputStream extends OutputStream implements DataOutput {
+public class ReusableByteBufOutputStream extends OutputStream implements DataOutput, ReusableOutputStream<ByteBuf> {
 
-    private final ByteBuf buffer;
+    private volatile ByteBuf buffer;
 
     /**
      * Creates a new stream which writes data to the specified {@code buffer}.
@@ -139,6 +141,11 @@ public class ReusableByteBufOutputStream extends OutputStream implements DataOut
      */
     public ByteBuf buffer() {
         return buffer;
+    }
+
+    @Override
+    public void reset(ByteBuf buffer) {
+        this.buffer = buffer;
     }
 
 }

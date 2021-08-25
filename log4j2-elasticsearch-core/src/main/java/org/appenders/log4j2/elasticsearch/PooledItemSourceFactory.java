@@ -21,12 +21,9 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import com.fasterxml.jackson.databind.ObjectWriter;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.appenders.log4j2.elasticsearch.thirdparty.ReusableByteBufOutputStream;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
@@ -37,10 +34,16 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
 
     private volatile State state = State.STOPPED;
 
+    private final OutputStreamProvider<R> outputStreamProvider;
     final ItemSourcePool<R> bufferedItemSourcePool;
 
-    protected PooledItemSourceFactory(ItemSourcePool<R> itemSourcePool) {
+    protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool) {
+        this(itemSourcePool, new DefaultOutputStreamProvider<>());
+    }
+
+    protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider) {
         this.bufferedItemSourcePool = itemSourcePool;
+        this.outputStreamProvider = outputStreamProvider;
     }
 
     /**
@@ -67,8 +70,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         final ItemSource<R> pooled = createEmptySource();
 
         try {
-            OutputStream byteBufOutputStream = new ReusableByteBufOutputStream((ByteBuf) pooled.getSource());
-            objectWriter.writeValue(byteBufOutputStream, source);
+            objectWriter.writeValue(outputStreamProvider.asOutputStream(pooled), source);
             return pooled;
         } catch (IOException e) {
             pooled.release();
@@ -82,8 +84,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         final ItemSource<R> pooled = createEmptySource();
 
         try {
-            final OutputStream byteBufOutputStream = new ReusableByteBufOutputStream((ByteBuf) pooled.getSource());
-            serializer.write(byteBufOutputStream, source);
+            serializer.write(outputStreamProvider.asOutputStream(pooled), source);
             return pooled;
         } catch (Exception e) {
             pooled.release();
@@ -117,6 +118,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         protected long monitorTaskInterval = DEFAULT_MONITOR_TASK_INTERVAL;
         protected long resizeTimeout = DEFAULT_RESIZE_TIMEOUT;
         protected PooledObjectOps<R> pooledObjectOps;
+        private boolean reuseStreams;
 
         /**
          * @deprecated As of 1.7, this field will be removed. Use {@link #pooledObjectOps} instead.
@@ -169,8 +171,12 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
                 this.resizePolicy = resizePolicy;
             }
 
-            return new PooledItemSourceFactory<>(configuredItemSourcePool());
+            return new PooledItemSourceFactory<>(configuredItemSourcePool(), createOutputStreamProvider());
 
+        }
+
+        private OutputStreamProvider<R> createOutputStreamProvider() {
+            return reuseStreams ? new ReusableOutputStreamProvider<>() : new DefaultOutputStreamProvider<>();
         }
 
         /**
@@ -224,7 +230,9 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         /**
          * @param itemSizeInBytes initial pooled item size
          * @return this
+         * @deprecated As of 1.7, this method will be removed. Use {@link SizeLimitPolicy} at {@link PooledObjectOps} instead.
          */
+        @Deprecated
         public Builder<T, R> withItemSizeInBytes(int itemSizeInBytes) {
 
             if (pooledObjectOps != null) {
@@ -239,7 +247,9 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         /**
          * @param maxItemSizeInBytes maximum pooled item size (target size if oversized in runtime)
          * @return this
+         * @deprecated As of 1.7, this method will be removed. Use {@link SizeLimitPolicy} at {@link PooledObjectOps} instead.
          */
+        @Deprecated
         public Builder<T, R> withMaxItemSizeInBytes(int maxItemSizeInBytes) {
 
             if (pooledObjectOps != null) {
@@ -307,6 +317,11 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
          */
         public Builder<T, R> withResizeTimeout(long resizeTimeout) {
             this.resizeTimeout = resizeTimeout;
+            return this;
+        }
+
+        public Builder<T, R> withReuseStreams(boolean reuseStreams) {
+            this.reuseStreams = reuseStreams;
             return this;
         }
 
