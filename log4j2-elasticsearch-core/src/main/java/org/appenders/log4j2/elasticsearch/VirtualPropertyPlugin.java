@@ -31,10 +31,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
  * Similar to Log4j2 KeyValuePair, value resolution is done with {@code org.apache.logging.log4j.core.lookup.StrSubstitutor}.
  * Value may be static (resolved) or in a resolvable format defined by <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>
  */
-@Plugin(name = VirtualPropertyPlugin.PLUGIN_NAME, category = Node.CATEGORY, printObject = true)
+@Plugin(name = VirtualPropertyPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = VirtualPropertyPlugin.ELEMENT_NAME, printObject = true)
 public class VirtualPropertyPlugin extends VirtualProperty {
 
     public static final String PLUGIN_NAME = "VirtualProperty";
+    public static final String ELEMENT_NAME = "virtualProperty";
 
     /**
      * @param name Name
