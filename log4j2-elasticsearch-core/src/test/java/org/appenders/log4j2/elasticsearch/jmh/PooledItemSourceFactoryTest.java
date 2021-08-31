@@ -87,7 +87,7 @@ public class PooledItemSourceFactoryTest {
     public void prepare() {
 
         this.itemPool = new PooledItemSourceFactory.Builder()
-                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes)))
+                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes * 2)))
                 .withInitialPoolSize(poolSize)
                 .withPoolName("itemPool")
                 .build();
