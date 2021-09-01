@@ -47,7 +47,7 @@ public class BatchRequest implements Batch<IndexRequest> {
     protected final Collection<IndexRequest> indexRequests;
 
     protected BatchRequest(Builder builder) {
-        this.indexRequests = getQueueFactoryInstance().toIterable(builder.items);
+        this.indexRequests = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).toIterable(builder.items);
         this.objectWriter = builder.objectWriter;
         this.itemSource = builder.itemSource;
     }
@@ -141,9 +141,9 @@ public class BatchRequest implements Batch<IndexRequest> {
 
     public static class Builder {
 
-        protected final Collection<IndexRequest> items = getQueueFactoryInstance().tryCreateMpscQueue(
-                BatchRequest.class.getSimpleName(),
-                Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "10000")));
+        private static final int INITIAL_SIZE = Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "10000"));
+
+        protected final Collection<IndexRequest> items = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).tryCreateMpscQueue(INITIAL_SIZE);
 
         private ItemSource<ByteBuf> itemSource;
         private ObjectWriter objectWriter;

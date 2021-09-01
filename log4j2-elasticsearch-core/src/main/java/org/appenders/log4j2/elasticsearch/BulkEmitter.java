@@ -43,6 +43,7 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
  */
 public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
 
+    public static final int INITIAL_SIZE = Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".initialSize", "65536"));
     private final AtomicInteger size = new AtomicInteger();
     private final Queue<Object> items;
     private final int maxSize;
@@ -68,9 +69,7 @@ public class BulkEmitter<BATCH_TYPE> implements BatchEmitter {
             });
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations) {
-        this(atSize, intervalInMillis, batchOperations, getQueueFactoryInstance().tryCreateMpmcQueue(
-                BulkEmitter.class.getSimpleName(),
-                Integer.parseInt(System.getProperty("appenders." + BulkEmitter.class.getSimpleName() + ".initialSize", "65536"))));
+        this(atSize, intervalInMillis, batchOperations, getQueueFactoryInstance(BulkEmitter.class.getSimpleName()).tryCreateMpmcQueue(INITIAL_SIZE));
     }
 
     public BulkEmitter(int atSize, int intervalInMillis, BatchOperations<BATCH_TYPE> batchOperations, Queue<Object> queue) {

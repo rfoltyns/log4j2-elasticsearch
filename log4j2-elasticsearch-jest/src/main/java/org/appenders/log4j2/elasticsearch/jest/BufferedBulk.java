@@ -52,7 +52,7 @@ public class BufferedBulk extends Bulk {
 
     public BufferedBulk(BufferedBulk.Builder builder) {
         super(builder);
-        this.actions = getQueueFactoryInstance().toIterable(builder.actions);
+        this.actions = getQueueFactoryInstance(BufferedBulk.class.getSimpleName()).toIterable(builder.actions);
         this.objectWriter = builder.objectWriter;
         this.objectReader = builder.objectReader;
         this.bulkSource = builder.bufferedSource;
@@ -140,10 +140,9 @@ public class BufferedBulk extends Bulk {
 
     public static class Builder extends Bulk.Builder {
 
-        protected final Collection<BulkableAction> actions = getQueueFactoryInstance().tryCreateMpscQueue(
-                BufferedBulk.class.getSimpleName(),
-                Integer.parseInt(System.getProperty("appenders." + BufferedBulk.class.getSimpleName() + ".initialSize", "10000"))
-        );
+        private static final int INITIAL_SIZE = Integer.parseInt(System.getProperty("appenders." + BufferedBulk.class.getSimpleName() + ".initialSize", "10000"));
+
+        protected final Collection<BulkableAction> actions = getQueueFactoryInstance(BufferedBulk.class.getSimpleName()).tryCreateMpscQueue(INITIAL_SIZE);
 
         private ItemSource<ByteBuf> bufferedSource;
         private ObjectWriter objectWriter;

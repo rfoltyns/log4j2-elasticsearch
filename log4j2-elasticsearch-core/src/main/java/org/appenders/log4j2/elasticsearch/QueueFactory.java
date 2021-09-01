@@ -26,8 +26,11 @@ import org.jctools.queues.SpscUnboundedArrayQueue;
 
 import java.util.AbstractQueue;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -48,27 +51,40 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  */
 public class QueueFactory {
 
-    private static final QueueFactory INSTANCE = new QueueFactory();
+    private static final Map<String, QueueFactory> CACHED_INSTANCES = new HashMap<>();
 
-    public static QueueFactory getQueueFactoryInstance() {
-        return INSTANCE;
+    private final String name;
+    private final Features features;
+
+    // visible for testing
+    QueueFactory(final String name) {
+        this.name = name;
+        this.features = Features.builder()
+                .configure(Features.Feature.JCTOOLS_QUEUES,
+                        Boolean.parseBoolean(System.getProperty(String.format("appenders.%s.%s.enabled", name, "jctools"), Boolean.toString(Features.Feature.JCTOOLS_QUEUES.isEnabled()))))
+                .build();
+        CACHED_INSTANCES.put(name, this);
     }
 
-    public final <T> Queue<T> tryCreateMpscQueue(final String name, final int initialSize) {
+    public static QueueFactory getQueueFactoryInstance(final String name) {
+        return CACHED_INSTANCES.computeIfAbsent(name, QueueFactory::new);
+    }
+
+    public final <T> Queue<T> tryCreateMpscQueue(final int initialSize) {
         return tryCreate(name, "org.jctools.queues.MpscUnboundedArrayQueue", initialSize);
     }
 
-    public final <T> Queue<T> tryCreateSpscQueue(final String name, final int initialSize) {
+    public final <T> Queue<T> tryCreateSpscQueue(final int initialSize) {
         return tryCreate(name, "org.jctools.queues.SpscUnboundedArrayQueue", initialSize);
     }
 
-    public final <T> Queue<T> tryCreateMpmcQueue(final String name, final int initialSize) {
+    public final <T> Queue<T> tryCreateMpmcQueue(final int initialSize) {
         return tryCreate(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue", initialSize);
     }
 
     final <T> Queue<T> tryCreate(final String name, final String queueClassName, final int initialSize) {
 
-        if (isEnabled(name, "jctools") && hasClass(name, queueClassName)) {
+        if (features.isEnabled(Features.Feature.JCTOOLS_QUEUES) && hasClass(name, queueClassName)) {
             getLogger().debug("{}: Using {}", name, queueClassName);
             switch (queueClassName) {
                 case "org.jctools.queues.MpmcUnboundedXaddArrayQueue":
@@ -89,11 +105,6 @@ public class QueueFactory {
                 fallback.getClass().getName());
 
         return fallback;
-    }
-
-    private boolean isEnabled(final String name, final String featureName) {
-        final String propertyName = String.format("appenders.%s.%s.enabled", name, featureName);
-        return Boolean.parseBoolean(System.getProperty(propertyName, "true"));
     }
 
     /* visible for testing */
@@ -140,6 +151,53 @@ public class QueueFactory {
 
         return items;
 
+    }
+
+    private static class Features {
+
+        private final BitSet state;
+
+        public Features(BitSet state) {
+            this.state = state;
+        }
+
+        public final boolean isEnabled(final Feature feature) {
+            return this.state.get(feature.ordinal());
+        }
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        private static class Builder {
+
+            private final BitSet state = new BitSet();
+
+            Builder configure(final Feature feature, final boolean enabled) {
+                state.set(feature.ordinal(), enabled);
+                return this;
+            }
+
+            public Features build() {
+                return new Features(state);
+            }
+        }
+
+        private enum Feature {
+
+            JCTOOLS_QUEUES(true);
+
+            private final boolean enabled;
+
+            Feature(final boolean enabled) {
+                this.enabled = enabled;
+            }
+
+            public final boolean isEnabled() {
+                return enabled;
+            }
+
+        }
     }
 
 }

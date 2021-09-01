@@ -88,7 +88,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                 monitored,
                 monitorTaskInterval,
                 initialPoolSize,
-                getQueueFactoryInstance().tryCreateMpmcQueue(GenericItemSourcePool.class.getSimpleName(), initialPoolSize));
+                getQueueFactoryInstance(GenericItemSourcePool.class.getSimpleName()).tryCreateMpmcQueue(initialPoolSize));
     }
 
     GenericItemSourcePool(String poolName,

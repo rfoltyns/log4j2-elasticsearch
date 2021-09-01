@@ -74,7 +74,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateMpmcQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertSame(mpmcQueueClass, queue.getClass());
@@ -89,7 +89,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateMpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateMpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertSame(mpscQueueClass, queue.getClass());
@@ -104,7 +104,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateSpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertSame(spscQueueClass, queue.getClass());
@@ -119,7 +119,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateMpmcQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpmcQueueClass, queue.getClass());
@@ -134,7 +134,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateMpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateMpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpscQueueClass, queue.getClass());
@@ -149,7 +149,7 @@ public class QueueFactoryTest {
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
 
         // when
-        Queue<Object> queue = createDefaultTestFactory().tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = createDefaultTestFactory(name).tryCreateSpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(spscQueueClass, queue.getClass());
@@ -163,13 +163,17 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = spy(createDefaultTestFactory());
-        when(queueFactory.hasClass(name, mpmcQueueClass.getName())).thenReturn(false);
+        QueueFactory queueFactory = new QueueFactory(name) {
+            @Override
+            boolean hasClass(String name, String className) {
+                return false;
+            }
+        };
 
         Logger logger = mockTestLogger();
 
         // when
-        Queue<Object> queue = queueFactory.tryCreateMpmcQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpmcQueueClass, queue.getClass());
@@ -184,13 +188,17 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = spy(createDefaultTestFactory());
-        when(queueFactory.hasClass(name, mpscQueueClass.getName())).thenReturn(false);
+        QueueFactory queueFactory = new QueueFactory(name) {
+            @Override
+            boolean hasClass(String name, String className) {
+                return false;
+            }
+        };
 
         Logger logger = mockTestLogger();
 
         // when
-        Queue<Object> queue = queueFactory.tryCreateMpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = queueFactory.tryCreateMpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpscQueueClass, queue.getClass());
@@ -205,13 +213,17 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = spy(createDefaultTestFactory());
-        when(queueFactory.hasClass(name, spscQueueClass.getName())).thenReturn(false);
+        QueueFactory queueFactory = new QueueFactory(name) {
+            @Override
+            boolean hasClass(String name, String className) {
+                return false;
+            }
+        };
 
         Logger logger = mockTestLogger();
 
         // when
-        Queue<Object> queue = queueFactory.tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = queueFactory.tryCreateSpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(spscQueueClass, queue.getClass());
@@ -226,9 +238,9 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = spy(createDefaultTestFactory());
+        QueueFactory queueFactory = spy(createDefaultTestFactory(name));
 
-        Queue<Object> queue = queueFactory.tryCreateMpmcQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> queue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // when
         for (int i = 0; i < 10000; i++) {
@@ -248,8 +260,8 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = createDefaultTestFactory();
-        Queue<Object> queue = queueFactory.tryCreateMpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        QueueFactory queueFactory = createDefaultTestFactory(name);
+        Queue<Object> queue = queueFactory.tryCreateMpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // when
         for (int i = 0; i < 10000; i++) {
@@ -269,8 +281,8 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
-        QueueFactory queueFactory = createDefaultTestFactory();
-        Queue<Object> queue = queueFactory.tryCreateSpscQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        QueueFactory queueFactory = createDefaultTestFactory(name);
+        Queue<Object> queue = queueFactory.tryCreateSpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // when
         for (int i = 0; i < 10000; i++) {
@@ -290,7 +302,7 @@ public class QueueFactoryTest {
         String caller = UUID.randomUUID().toString();
         String className = UUID.randomUUID().toString();
 
-        QueueFactory queueFactory = spy(createDefaultTestFactory());
+        QueueFactory queueFactory = spy(createDefaultTestFactory(caller));
         when(queueFactory.hasClass(caller, className)).thenReturn(true);
 
         // when
@@ -307,10 +319,10 @@ public class QueueFactoryTest {
     public void classCheckLogs() {
 
         // given
-        QueueFactory queueFactory = createDefaultTestFactory();
+        String caller = UUID.randomUUID().toString();
+        QueueFactory queueFactory = createDefaultTestFactory(caller);
         Logger logger = mockTestLogger();
 
-        String caller = UUID.randomUUID().toString();
         String className = UUID.randomUUID().toString();
 
         // when
@@ -325,9 +337,10 @@ public class QueueFactoryTest {
     public void canConvertNonIterable() {
 
         // given
-        QueueFactory queueFactory = createDefaultTestFactory();
+        final String caller = UUID.randomUUID().toString();
+        QueueFactory queueFactory = createDefaultTestFactory(caller);
 
-        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(UUID.randomUUID().toString(), DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         assertSame(mpmcQueueClass, mpmcQueue.getClass());
 
@@ -343,9 +356,10 @@ public class QueueFactoryTest {
     public void convertNonIterableCopiesAllItems() {
 
         // given
-        QueueFactory queueFactory = createDefaultTestFactory();
+        final String caller = UUID.randomUUID().toString();
+        QueueFactory queueFactory = createDefaultTestFactory(caller);
 
-        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(UUID.randomUUID().toString(), DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         assertSame(mpmcQueueClass, mpmcQueue.getClass());
 
@@ -366,9 +380,9 @@ public class QueueFactoryTest {
         // given
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
-        QueueFactory queueFactory = createDefaultTestFactory();
+        QueueFactory queueFactory = createDefaultTestFactory(name);
 
-        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(name, DEFAULT_TEST_INITIAL_SIZE);
+        Queue<Object> mpmcQueue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         assertSame(fallbackQueueClass, mpmcQueue.getClass());
 
@@ -386,7 +400,7 @@ public class QueueFactoryTest {
         // given
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "false");
-        QueueFactory queueFactory = createDefaultTestFactory();
+        QueueFactory queueFactory = createDefaultTestFactory(name);
 
         Collection<Object> collection = new ArrayList<>();
 
@@ -398,8 +412,8 @@ public class QueueFactoryTest {
 
     }
 
-    private QueueFactory createDefaultTestFactory() {
-        return new QueueFactory();
+    private QueueFactory createDefaultTestFactory(String name) {
+        return QueueFactory.getQueueFactoryInstance(name);
     }
 
 }
