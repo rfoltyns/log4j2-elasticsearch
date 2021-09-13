@@ -33,7 +33,6 @@ import java.util.UUID;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -252,14 +251,14 @@ public class ByteBufItemSourceFactoryPluginTest {
         // given
         final Logger logger = mockTestLogger();
 
+        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay", "0");
+
         final String expectedPoolName = UUID.randomUUID().toString();
 
         final ByteBufItemSourceFactoryPlugin.Builder builder = createDefaultTestSourceFactoryConfig()
                 .withPoolName(expectedPoolName)
                 .withMonitored(true)
-                .withMonitorTaskInterval(1000);
-
-        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "0");
+                .withMonitorTaskInterval(100);
 
         final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = builder.build();
 

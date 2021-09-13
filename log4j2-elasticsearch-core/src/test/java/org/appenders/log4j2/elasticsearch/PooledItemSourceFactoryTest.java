@@ -28,7 +28,6 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -69,11 +68,6 @@ public class PooledItemSourceFactoryTest {
 
     private static final int DEFAULT_TEST_POOL_SIZE = 10;
     private static final int DEFAULT_TEST_ITEM_SIZE_IN_BYTES = 512;
-
-    @AfterEach
-    public void tearDown() {
-        InternalLogging.setLogger(null);
-    }
 
     public static PooledItemSourceFactory.Builder<Object, ByteBuf> createDefaultTestSourceFactoryConfig() {
         return new PooledItemSourceFactory.Builder<Object, ByteBuf>()
@@ -647,14 +641,14 @@ public class PooledItemSourceFactoryTest {
         // given
         final Logger logger = mockTestLogger();
 
+        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay", "0");
+
         final String expectedPoolName = UUID.randomUUID().toString();
 
         final PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPoolName(expectedPoolName)
                 .withMonitored(true)
-                .withMonitorTaskInterval(1000);
-
-        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "0");
+                .withMonitorTaskInterval(100);
 
         final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = builder.build();
 
@@ -663,11 +657,13 @@ public class PooledItemSourceFactoryTest {
 
         // then
         final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(logger, timeout(500).atLeastOnce()).info(captor.capture());
+        verify(logger, timeout(1000).atLeastOnce()).info(captor.capture());
 
         assertThat(captor.getValue(), containsString(expectedPoolName));
 
         itemSourceFactory.stop();
+
+        InternalLogging.setLogger(null);
 
     }
 

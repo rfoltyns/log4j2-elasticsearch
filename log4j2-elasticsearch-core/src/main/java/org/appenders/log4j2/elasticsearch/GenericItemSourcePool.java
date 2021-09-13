@@ -121,7 +121,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      */
     void startMonitorTask(long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
         executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", this.new PoolMetrics(), additionalMetricsSupplier),
-                Long.parseLong(System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "1000")),
+                Long.parseLong(System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay", "1000")),
                 monitorTaskInterval,
                 TimeUnit.MILLISECONDS
         );
