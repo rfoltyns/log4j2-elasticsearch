@@ -29,7 +29,6 @@ import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.core.layout.ByteBufferDestination;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.core.logging.InternalLogging;
-import org.hamcrest.CoreMatchers;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
