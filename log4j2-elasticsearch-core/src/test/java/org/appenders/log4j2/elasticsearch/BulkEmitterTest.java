@@ -365,7 +365,7 @@ public abstract class BulkEmitterTest {
     }
 
     @Test
-    public void listenerIsNotifiedIsShutdownDecrementFitsStopTimeout() throws InterruptedException {
+    public void listenerIsNotifiedIsShutdownDecrementFitsStopTimeout() {
 
         // given
         assertTrue(TEST_BATCH_SIZE > 1);
@@ -384,9 +384,9 @@ public abstract class BulkEmitterTest {
         emitter.add(new Object());
         int invocations = Mockito.mockingDetails(dummyObserver).getInvocations().size();
         emitter.stop(5000, true);
-        Thread.sleep(10);
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
         emitter.add(new Object());
-        Thread.sleep(10);
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(100));
 
         // then
         final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
