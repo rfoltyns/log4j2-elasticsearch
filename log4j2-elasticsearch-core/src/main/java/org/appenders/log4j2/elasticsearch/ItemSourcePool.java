@@ -45,6 +45,10 @@ public interface ItemSourcePool<T> extends LifeCycle {
      */
     ItemSource<T> getPooled() throws PoolResourceException;
 
+    default ItemSource<T> getPooledOrNull() {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /**
      * Removes ONE pooled element from the pool
      *
