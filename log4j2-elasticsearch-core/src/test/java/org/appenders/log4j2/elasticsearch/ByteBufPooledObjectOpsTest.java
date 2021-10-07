@@ -161,11 +161,11 @@ public class ByteBufPooledObjectOpsTest {
         assertEquals(0, itemSource.getSource().writerIndex());
     }
 
-    private ByteBufPooledObjectOps createTestPooledObjectOps() {
+    static ByteBufPooledObjectOps createTestPooledObjectOps() {
         return createTestPooledObjectOps(DEFAULT_TEST_SOURCE_SIZE);
     }
 
-    private ByteBufPooledObjectOps createTestPooledObjectOps(int expectedEstimatedSourceSize) {
+    static ByteBufPooledObjectOps createTestPooledObjectOps(int expectedEstimatedSourceSize) {
         return new ByteBufPooledObjectOps(
                 UnpooledByteBufAllocator.DEFAULT,
                 new ByteBufBoundedSizeLimitPolicy(expectedEstimatedSourceSize, expectedEstimatedSourceSize));

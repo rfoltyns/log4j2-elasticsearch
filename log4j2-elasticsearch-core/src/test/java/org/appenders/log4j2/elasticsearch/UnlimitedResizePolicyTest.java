@@ -99,6 +99,20 @@ public class UnlimitedResizePolicyTest {
     }
 
     @Test
+    public void canResizeByDefault() {
+
+        // given
+        final UnlimitedResizePolicy policy = UnlimitedResizePolicy.newBuilder().build();
+
+        // when
+        final boolean result = policy.canResize(null);
+
+        // then
+        assertTrue(result);
+
+    }
+
+    @Test
     public void increaseThrowsWhenResizeWouldNotTakeAnyEffect() {
 
         // given

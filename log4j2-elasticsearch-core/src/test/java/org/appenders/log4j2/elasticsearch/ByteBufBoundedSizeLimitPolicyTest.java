@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import io.netty.buffer.ByteBuf;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class ByteBufBoundedSizeLimitPolicyTest {
     public void shrinksBufferIfOversized() {
 
         // given
-        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE, DEFAULT_TEST_MAX_SIZE);
+        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = createDefaultTestBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE);
 
         ByteBuf byteBuf = ByteBufItemSourceTest.createDefaultTestByteBuf();
 
@@ -60,7 +61,7 @@ public class ByteBufBoundedSizeLimitPolicyTest {
 
         // given
         int expectedCapacity = DEFAULT_TEST_MAX_SIZE / 2;
-        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = new ByteBufBoundedSizeLimitPolicy(expectedCapacity, DEFAULT_TEST_MAX_SIZE);
+        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = createDefaultTestBoundedSizeLimitPolicy(expectedCapacity);
 
         ByteBuf byteBuf = ByteBufItemSourceTest.createDefaultTestByteBuf();
 
@@ -79,7 +80,7 @@ public class ByteBufBoundedSizeLimitPolicyTest {
     public void doesNotChangeCapacityIfBetweenBounds() {
 
         // given
-        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE, DEFAULT_TEST_MAX_SIZE);
+        SizeLimitPolicy<ByteBuf> sizeLimitPolicy = createDefaultTestBoundedSizeLimitPolicy(DEFAULT_TEST_MIN_SIZE);
 
         ByteBuf byteBuf = ByteBufItemSourceTest.createDefaultTestByteBuf();
         byteBuf.capacity(DEFAULT_TEST_MIN_SIZE + 1);
@@ -96,6 +97,10 @@ public class ByteBufBoundedSizeLimitPolicyTest {
         // then
         assertEquals(expectedCapacity, byteBuf.capacity());
 
+    }
+
+    static ByteBufBoundedSizeLimitPolicy createDefaultTestBoundedSizeLimitPolicy(int expectedCapacity) {
+        return new ByteBufBoundedSizeLimitPolicy(expectedCapacity, DEFAULT_TEST_MAX_SIZE);
     }
 
 }

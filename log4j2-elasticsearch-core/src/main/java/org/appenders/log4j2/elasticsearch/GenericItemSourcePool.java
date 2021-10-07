@@ -47,8 +47,7 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
 public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
-    // TODO: make configurable via system property
-    private static final int MAX_RESIZE_INTERNAL_STACK_DEPTH = 50;
+    private static final String RESIZE_FAILED = String.format("Unable to resize. Creation of %s was unsuccessful", ItemSource.class.getSimpleName());
     public static final String THREAD_NAME_FORMAT = "%s-%s";
 
     private volatile State state = State.STOPPED;
@@ -64,8 +63,22 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     private final AtomicBoolean resizing = new AtomicBoolean();
     private final AtomicReference<CountDownLatch> countDownLatch = new AtomicReference<>(new CountDownLatch(1));
 
+    private final Consumer<Boolean> unlatchAndResetResizing = result -> {
+        this.countDownLatch.get().countDown();
+        resizing.set(false);
+    };
+
+    private final Consumer<Boolean> resetResizing = result -> {
+        resizing.set(false);
+    };
+
+    private final int maxRetries = Integer.parseInt(
+            System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".resize.retries", "5"));
+
     private final int initialPoolSize;
     private final AtomicInteger totalPoolSize = new AtomicInteger();
+
+    private final PoolMetrics metrics;
 
     private final boolean monitored;
     private final long monitorTaskInterval;
@@ -73,6 +86,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     private final AtomicInteger thIndex = new AtomicInteger();
 
     ScheduledExecutorService executor;
+    private final String resizeAttemptLog;
 
     public GenericItemSourcePool(String poolName,
                                  PooledObjectOps<T> pooledObjectOps,
@@ -100,6 +114,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                           int initialPoolSize,
                           Queue<ItemSource<T>> objectPool) {
         this.poolName = poolName;
+        this.resizeAttemptLog = String.format("Pool [%s] attempting to resize using policy [%s]", poolName, resizePolicy.getClass().getName());
         this.pooledObjectOps = pooledObjectOps;
         this.resizePolicy = resizePolicy;
         this.resizeTimeout = resizeTimeout;
@@ -107,6 +122,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
         this.objectPool = objectPool;
+        this.metrics = this.new PoolMetrics();
     }
 
     private void startRecyclerTask() {
@@ -120,8 +136,8 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      * @param additionalMetricsSupplier metrics added on top of defaults
      */
     void startMonitorTask(long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
-        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", this.new PoolMetrics(), additionalMetricsSupplier),
-                Long.parseLong(System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "1000")),
+        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", metrics, additionalMetricsSupplier),
+                Long.parseLong(System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay", "1000")),
                 monitorTaskInterval,
                 TimeUnit.MILLISECONDS
         );
@@ -169,21 +185,66 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     }
 
     /**
-     * Elements returned by this method MUST be returned to the pool by calling {@link ItemSource#release()}.
-     * If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements.
+     * <p>Elements returned by this method MUST be returned to the pool with {@link ItemSource#release()}.</p>
+     * <p>If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements. Will throw on failure.</p>
      *
-     * @throws PoolResourceException if {@link ResizePolicy} was not sufficient or didn't create any new elements or thread calling this method was interrupted
-     * @return pooled {@link ItemSource}
+     * @throws PoolResourceException if {@link ResizePolicy} was not sufficient or didn't create any new elements
+     * @throws IllegalStateException  if thread was interrupted while awaiting resizing
+     * @return pooled {@link ItemSource} if not empty or resized, throws otherwise
      */
     @Override
     public final ItemSource<T> getPooled() throws PoolResourceException {
         return removeInternal(INITIAL_RESIZE_INTERNAL_STACK_DEPTH);
     }
 
+    /**
+     * <p>Elements returned by this method MUST be returned to the pool with {@link ItemSource#release()}.</p>
+     * <p>This call ignore <code>"appenders.GenericItemSourcePool.resize.retries"</code> setting.</p>
+     * <p>If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements ONCE. Will return null on failure.</p>
+     *
+     * @return pooled {@link ItemSource} if not empty or resized, <tt>null</tt> otherwise
+     */
+    @Override
+    public final ItemSource<T> getPooledOrNull() {
+
+        try {
+
+            if (objectPool.isEmpty() && !resizeNow()){
+                return null;
+            }
+
+            return objectPool.remove();
+
+        } catch (NoSuchElementException e) {
+
+            metrics.noSuchElement();
+
+            // don't push it on races. just bail.
+            return null;
+
+        }
+
+    }
+
+    private boolean resizeNow() {
+
+        if (!resizePolicy.canResize(this)) {
+            return false;
+        }
+
+        // let's allow only one thread to get in
+        if (resizing.compareAndSet(false, true)) {
+            return resize(resetResizing);
+        }
+
+        return false;
+
+    }
+
     @Override
     public final boolean remove() {
         try {
-            ItemSource<T> pooled = removeInternal(MAX_RESIZE_INTERNAL_STACK_DEPTH);
+            ItemSource<T> pooled = removeInternal(maxRetries);
             pooledObjectOps.purge(pooled);
             totalPoolSize.getAndDecrement();
         } catch (PoolResourceException e) {
@@ -196,26 +257,27 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
         try {
 
-            if (objectPool.isEmpty()) {
-                tryResize(depth);
+            if (objectPool.isEmpty()){
+                awaitResize(depth);
             }
 
             return objectPool.remove();
 
         } catch (NoSuchElementException e) {
-            tryResize(depth);
+            // TODO: add backoff policy
+            metrics.noSuchElement();
         }
 
         // let's go recursive to handle case when resize is smaller than number of threads arriving at the latch
         return removeInternal(++depth);
     }
 
-    private boolean tryResize(int depth) throws PoolResourceException {
+    private boolean awaitResize(int depth) throws PoolResourceException {
 
         // NOTE: let's prevent stack overflow when pool resizing is not sufficient and thread gets stuck doing recursive calls, either:
         // * application is in bad shape already or
         // * initialPoolSize is insufficient and/or ResizePolicy is not configured properly
-        if (depth > MAX_RESIZE_INTERNAL_STACK_DEPTH) {
+        if (depth > maxRetries) {
             // this will not get anywhere.. throwing to resurface
             throw new PoolResourceException(
                     String.format("ResizePolicy is ineffective. Pool %s has to be reconfigured to handle current load.",
@@ -225,10 +287,12 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         // let's allow only one thread to get in
         if (resizing.compareAndSet(false, true)) {
             this.countDownLatch.set(new CountDownLatch(1));
-            return resize(result -> {
-                this.countDownLatch.get().countDown();
-                resizing.set(false);
-            });
+            final boolean resized = resize(unlatchAndResetResizing);
+            if (!resized) {
+                // TODO: remove when limited resize policy is ready
+                // throw to resurface issues
+                throw new PoolResourceException(RESIZE_FAILED);
+            }
         }
 
         try {
@@ -241,27 +305,21 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     }
 
-    private boolean resize(Consumer<Boolean> callback) throws PoolResourceException {
+    private boolean resize(Consumer<Boolean> callback) {
 
         boolean resized = false;
 
         try {
-            getLogger().info("Pool [{}] attempting to resize using policy [{}]",
-                    getName(), resizePolicy.getClass().getName());
-
+            // TODO: add to metrics
+            getLogger().info(resizeAttemptLog);
             resized = resizePolicy.increase(this);
-//            return resized;
-            if (!resized) {
-                // TODO: remove when limited resize policy is ready
-                // throw to resurface issues
-                throw new PoolResourceException(String.format("Unable to resize. Creation of %s was unsuccessful",
-                        ItemSource.class.getSimpleName()));
-            }
+
         } finally {
             callback.accept(resized);
         }
 
         return resized;
+
     }
 
     @Override
@@ -305,6 +363,10 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
         getLogger().debug("{} shutdown complete", poolName);
 
+    }
+
+    PoolMetrics metrics() {
+        return metrics;
     }
 
     class PooledItemSourceReleaseCallback implements ReleaseCallback<T> {
@@ -357,26 +419,34 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
     class PoolMetrics {
 
+        final AtomicInteger noSuchElementTotal = new AtomicInteger();
+
         @Override
         public String toString() {
             return formattedMetrics(null);
         }
 
-        public String formattedMetrics(String additionalMetrics) {
+        public String formattedMetrics(final String additionalMetrics) {
 
-            int capacity = additionalMetrics != null ? 384: 96; // roughly with or without allocator metrics
+            final int capacity = additionalMetrics != null ? additionalMetrics.length() + 384 : 128; // because we love less garbage
 
-            StringBuilder sb = new StringBuilder(capacity)
+            final StringBuilder sb = new StringBuilder(capacity)
                     .append('{')
                     .append(" poolName: ").append(getName())
                     .append(", initialPoolSize: ").append(getInitialSize())
                     .append(", totalPoolSize: ").append(getTotalSize())
-                    .append(", availablePoolSize: ").append(getAvailableSize());
+                    .append(", availablePoolSize: ").append(getAvailableSize())
+                    .append(", totalNoSuchElementCaught: ").append(noSuchElementTotal.get());
 
             if (additionalMetrics != null) {
                 sb.append(", additionalMetrics: ").append(additionalMetrics);
             }
+
             return sb.append('}').toString();
+        }
+
+        public void noSuchElement() {
+            noSuchElementTotal.incrementAndGet();
         }
 
     }

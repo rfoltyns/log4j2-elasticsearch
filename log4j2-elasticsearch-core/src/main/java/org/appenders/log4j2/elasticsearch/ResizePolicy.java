@@ -40,4 +40,13 @@ public interface ResizePolicy {
      */
     boolean decrease(ItemSourcePool itemSourcePool);
 
+
+    /**
+     * @param itemSourcePool pool to be resized
+     * @return true, if any resizing is possible, false otherwise
+     */
+    default boolean canResize(ItemSourcePool itemSourcePool) {
+        return true;
+    }
+
 }
