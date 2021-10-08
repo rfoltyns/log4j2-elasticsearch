@@ -293,6 +293,7 @@
                     <version>${jacoco.version}</version>
                     <configuration>
                         <excludes>
+                            <exclude>**/jmh/*</exclude>
                             <exclude>**/thirdparty/*</exclude>
                             <exclude>**/*MixIn.*</exclude>
                         </excludes>
