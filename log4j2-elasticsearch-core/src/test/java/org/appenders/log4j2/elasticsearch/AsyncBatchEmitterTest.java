@@ -221,7 +221,7 @@ public class AsyncBatchEmitterTest {
         Mockito.reset(logger);
         verify(logger, times(0)).info("Dummy notified"); // sanity check
 
-        verify(logger, timeout(500)).info("Dummy notified"); // wait until last notification gap grows beyond interval
+        verify(logger, timeout(1000)).info("Dummy notified"); // wait until last notification gap grows beyond interval
 
         // then
         verify(dummyObserver, times(2)).apply(any());
