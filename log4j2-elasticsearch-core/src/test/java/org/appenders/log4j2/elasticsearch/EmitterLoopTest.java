@@ -1,31 +1,22 @@
 package org.appenders.log4j2.elasticsearch;
 
-import net.openhft.chronicle.core.util.Ints;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.AsyncBatchEmitter.EmitterLoop;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class EmitterLoopTest {
@@ -82,9 +73,9 @@ class EmitterLoopTest {
         final Thread thread = new Thread(emitterLoop);
         thread.start();
 
-        verify(action, never()).run();
-
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+
+        verify(action, never()).run();
 
         // when
         emitterLoop.poke();
@@ -120,6 +111,9 @@ class EmitterLoopTest {
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
 
         emitterLoop.run(); // that's the 'fly-through' - exiting immediately
+
+        verify(logger, never()).info(eq("{}: Ignoring wakeup while not running"), eq(AsyncBatchEmitter.EmitterLoop.class.getSimpleName()));
+
         emitterLoop.stop(); // unlatch and hit the logger
 
         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));

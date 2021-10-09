@@ -189,8 +189,8 @@ public class AsyncBatchEmitter<BATCH_TYPE> implements BatchEmitter {
         private final long interval;
         private final Runnable action;
 
-        EmitterLoop(final long intervalNanos, final Runnable action) {
-            this.interval = intervalNanos;
+        EmitterLoop(final long intervalMillis, final Runnable action) {
+            this.interval = intervalMillis;
             this.action = action;
         }
 

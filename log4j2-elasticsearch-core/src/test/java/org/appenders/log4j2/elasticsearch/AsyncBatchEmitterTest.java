@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2021 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import edu.emory.mathcs.backport.java.util.concurrent.CountDownLatch;
 import org.appenders.core.logging.InternalLogging;
-import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,9 +33,7 @@ import org.mockito.Mockito;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -132,6 +130,133 @@ public class AsyncBatchEmitterTest {
 
         // then
         verify(dummyObserver, never()).apply(any());
+
+    }
+
+    @Test
+    public void listenerIsNotNotifiedWhenAlreadyNotifying() {
+
+        // given
+        final Logger logger = mockTestLogger();
+        final AsyncBatchEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, TEST_DELIVERY_INTERVAL, new TestBatchOperations());
+        final CountDownLatch latch = new CountDownLatch(1);
+        final Function<TestBatch, Boolean> dummyObserver = spy(new Function<TestBatch, Boolean>() {
+            @Override
+            public Boolean apply(TestBatch testBatch) {
+                try {
+                    getLogger().info("Notified");
+                    latch.await();
+                    return true;
+                } catch (InterruptedException e) {
+                    return false;
+                }
+            }
+        });
+        emitter.addListener(dummyObserver);
+
+        emitter.add(new TestBatchItem(TEST_DATA));
+
+        // when
+        new Thread(emitter::notifyListener).start();
+
+        verify(logger, timeout(500)).info("Notified");
+
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.notifyListener();
+
+        latch.countDown();
+
+        // then
+        verify(dummyObserver, times(1)).apply(any());
+
+        setLogger(null);
+
+    }
+
+    @Test
+    public void listenerIsNotNotifiedWithIncompleteBatchIfNotShuttingDown() {
+
+        // given
+        final Logger logger = mockTestLogger();
+        final AsyncBatchEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, TEST_DELIVERY_INTERVAL, new TestBatchOperations());
+        final Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+
+        // when
+        new Thread(emitter::notifyListener).start();
+
+        verify(logger, timeout(500)).info("Dummy notified");
+
+        emitter.notifyListener();
+
+        // then
+        verify(dummyObserver, times(1)).apply(any());
+
+        setLogger(null);
+
+    }
+
+    @Test
+    public void listenerIsNotNotifiedWithIncompleteBatchIfLastNotificationPeriodLowerThanDeliveryInterval() {
+
+        // given
+        final Logger logger = mockTestLogger();
+        final AsyncBatchEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 500, new TestBatchOperations());
+        final Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+
+        emitter.start();
+        verify(logger, timeout(500)).info("Dummy notified");
+        verify(dummyObserver, times(1)).apply(any());
+
+        // when
+        Mockito.reset(logger);
+        verify(logger, times(0)).info("Dummy notified"); // sanity check
+
+        verify(logger, timeout(500)).info("Dummy notified"); // wait until last notification gap grows beyond interval
+
+        // then
+        verify(dummyObserver, times(2)).apply(any());
+
+        setLogger(null);
+
+    }
+
+    @Test
+    public void listenerIsNotifiedWithIncompleteBatchIfLastNotificationPeriodLowerThanDeliveryIntervalIfShuttingDown() {
+
+        // given
+        final Logger logger = mockTestLogger();
+        final AsyncBatchEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 500, new TestBatchOperations());
+        final Function<TestBatch, Boolean> dummyObserver = dummyObserver();
+        emitter.addListener(dummyObserver);
+
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+        emitter.add(new TestBatchItem(TEST_DATA));
+
+        emitter.start();
+        verify(logger, timeout(500)).info("Dummy notified");
+        verify(dummyObserver, times(1)).apply(any());
+
+        // when
+        Mockito.reset(logger);
+        verify(logger, times(0)).info("Dummy notified"); // sanity check
+
+        emitter.stop();
+
+        // then
+        verify(dummyObserver, times(2)).apply(any());
+
+        setLogger(null);
 
     }
 
