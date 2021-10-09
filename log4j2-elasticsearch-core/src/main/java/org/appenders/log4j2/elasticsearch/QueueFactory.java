@@ -63,7 +63,6 @@ public class QueueFactory {
                 .configure(Features.Feature.JCTOOLS_QUEUES,
                         Boolean.parseBoolean(System.getProperty(String.format("appenders.%s.%s.enabled", name, "jctools"), Boolean.toString(Features.Feature.JCTOOLS_QUEUES.isEnabled()))))
                 .build();
-        CACHED_INSTANCES.put(name, this);
     }
 
     public static QueueFactory getQueueFactoryInstance(final String name) {
