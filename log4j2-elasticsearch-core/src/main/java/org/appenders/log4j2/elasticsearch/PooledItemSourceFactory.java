@@ -35,6 +35,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
     private volatile State state = State.STOPPED;
 
     private final OutputStreamProvider<R> outputStreamProvider;
+    private final PoolInvocationHandler<R> poolInvocationHandler;
     final ItemSourcePool<R> bufferedItemSourcePool;
 
     protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool) {
@@ -42,8 +43,13 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
     }
 
     protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider) {
+        this(itemSourcePool, outputStreamProvider, true);
+    }
+
+    protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider, final boolean throwOnEmptyPool) {
         this.bufferedItemSourcePool = itemSourcePool;
         this.outputStreamProvider = outputStreamProvider;
+        this.poolInvocationHandler = throwOnEmptyPool ? new ThrowOnEmptyPoolHandler<>() : new NullOnEmptyPoolHandler();
     }
 
     /**
@@ -69,6 +75,10 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
 
         final ItemSource<R> pooled = createEmptySource();
 
+        if (pooled == null) {
+            return null;
+        }
+
         try {
             objectWriter.writeValue(outputStreamProvider.asOutputStream(pooled), source);
             return pooled;
@@ -82,6 +92,10 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
     public ItemSource<R> create(T source, Serializer<T> serializer) {
 
         final ItemSource<R> pooled = createEmptySource();
+
+        if (pooled == null) {
+            return null;
+        }
 
         try {
             serializer.write(outputStreamProvider.asOutputStream(pooled), source);
@@ -97,11 +111,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
      */
     @Override
     public ItemSource<R> createEmptySource() {
-        try {
-            return bufferedItemSourcePool.getPooled();
-        } catch (PoolResourceException e) {
-            throw new IllegalStateException(e);
-        }
+        return poolInvocationHandler.tryGetPooled(bufferedItemSourcePool);
     }
 
     public static class Builder<T, R> {
@@ -355,6 +365,34 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
     @Override
     public boolean isStopped() {
         return state == State.STOPPED;
+    }
+
+    private interface PoolInvocationHandler<R> {
+        ItemSource<R> tryGetPooled(ItemSourcePool<R> itemSourcePool);
+    }
+
+    private static class ThrowOnEmptyPoolHandler<R> implements PoolInvocationHandler<R> {
+
+        @Override
+        public ItemSource<R> tryGetPooled(final ItemSourcePool<R> itemSourcePool) {
+
+            try {
+                return itemSourcePool.getPooled();
+            } catch (PoolResourceException e) {
+                throw new IllegalStateException(e);
+            }
+
+        }
+
+    }
+
+    private class NullOnEmptyPoolHandler implements PoolInvocationHandler<R> {
+
+        @Override
+        public ItemSource<R> tryGetPooled(ItemSourcePool<R> itemSourcePool) {
+            return itemSourcePool.getPooledOrNull();
+        }
+
     }
 
 }

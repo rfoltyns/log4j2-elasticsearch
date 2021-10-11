@@ -303,24 +303,42 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void throwsWhenCreateCantGetPooledElement() throws PoolResourceException {
+    public void throwsWhenCreateCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
+
         // given
         ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
 
         String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
 
         // when
         final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class)));
 
         // then
         assertThat(exception.getMessage(), containsString(expectedMessage));
+
     }
 
     @Test
-    public void throwsWhenCreateEmptySourceCantGetPooledElement() throws PoolResourceException {
+    public void returnsNullWhenCreateCantGetPooledElementAndThrowOnNullNotConfigured() {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+
+        // when
+        final ItemSource itemSource = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+
+        // then
+        assertNull(itemSource);
+
+    }
+
+    @Test
+    public void throwsWhenCreateWithSerializerCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
 
         // given
         ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
@@ -328,13 +346,70 @@ public class PooledItemSourceFactoryTest {
         String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
+
+        final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writerFor(LogEvent.class));
+
+        // when
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            pooledItemSourceFactory.create(mock(LogEvent.class), serializer);
+        });
+
+        // then
+        assertThat(exception.getMessage(), containsString(expectedMessage));
+
+    }
+
+    @Test
+    public void returnsNullWhenCreateWithSerializerCantGetPooledElementAndThrowOnNullNotConfigured() throws PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+
+        final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writerFor(LogEvent.class));
+
+        // when
+        final ItemSource itemSource = pooledItemSourceFactory.create(mock(LogEvent.class), serializer);
+
+        // then
+        assertNull(itemSource);
+
+    }
+
+    @Test
+    public void throwsWhenCreateEmptySourceCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final String expectedMessage = UUID.randomUUID().toString();
+        when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
+
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
 
         // when
         final IllegalStateException exception = assertThrows(IllegalStateException.class, pooledItemSourceFactory::createEmptySource);
 
         // then
         assertThat(exception.getMessage(), containsString(expectedMessage));
+
+    }
+
+    @Test
+    public void returnNullWhenCreateEmptySourceCantGetPooledElementAndThrowOnNullNotConfigured() {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+
+        // when
+        final ItemSource itemSource = pooledItemSourceFactory.createEmptySource();
+
+        // then
+        assertNull(itemSource);
 
     }
 
