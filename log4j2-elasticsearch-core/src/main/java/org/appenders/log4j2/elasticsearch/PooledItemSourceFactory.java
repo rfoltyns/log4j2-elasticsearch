@@ -43,13 +43,20 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
     }
 
     protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider) {
-        this(itemSourcePool, outputStreamProvider, true);
+        this(itemSourcePool, outputStreamProvider, false);
     }
 
-    protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider, final boolean throwOnEmptyPool) {
+
+    /**
+     * @param itemSourcePool pool of reusable buffers
+     * @param outputStreamProvider pooled item to {@code java.io.OutputStream} wrapper factory
+     * @param nullOnEmptyPool If <i>false</i>, exception will be thrown if {@link #create(Object, ObjectWriter)} can't obtain pooled element via {@link ItemSourcePool#getPooled()}.
+     *                     Otherwise {@link ItemSourcePool#getPooledOrNull()} will be used instead and <i>null</i> returned if pool is empty after resize attempt.
+     */
+    protected PooledItemSourceFactory(final ItemSourcePool<R> itemSourcePool, final OutputStreamProvider<R> outputStreamProvider, final boolean nullOnEmptyPool) {
         this.bufferedItemSourcePool = itemSourcePool;
         this.outputStreamProvider = outputStreamProvider;
-        this.poolInvocationHandler = throwOnEmptyPool ? new ThrowOnEmptyPoolHandler<>() : new NullOnEmptyPoolHandler();
+        this.poolInvocationHandler = nullOnEmptyPool ? new NullOnEmptyPoolHandler() : new ThrowOnEmptyPoolHandler<>();
     }
 
     /**
@@ -130,6 +137,10 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         protected PooledObjectOps<R> pooledObjectOps;
         private boolean reuseStreams;
 
+        // This parameter will not be exposed for Log4j2 configuration as there's no support for it in ElasticsearchAppender
+        // It's meant to be used with programmatic config only, where ResizePolicy may not be able to resize and returned null is handled
+        private boolean nullOnEmptyPool;
+
         /**
          * @deprecated As of 1.7, this field will be removed. Use {@link #pooledObjectOps} instead.
          */
@@ -181,7 +192,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
                 this.resizePolicy = resizePolicy;
             }
 
-            return new PooledItemSourceFactory<>(configuredItemSourcePool(), createOutputStreamProvider());
+            return new PooledItemSourceFactory<>(configuredItemSourcePool(), createOutputStreamProvider(), nullOnEmptyPool);
 
         }
 
@@ -335,6 +346,15 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
             return this;
         }
 
+        /**
+         * @param nullOnEmptyPool If <i>false</i> (default), exception will be thrown if {@link #create(Object, ObjectWriter)} can't obtain pooled element via {@link ItemSourcePool#getPooled()}.
+         *                     Otherwise {@link ItemSourcePool#getPooledOrNull()} will be used instead and <i>null</i> returned if pool is empty after resize attempt.
+         * @return this
+         */
+        public Builder<T, R> withNullOnEmptyPool(boolean nullOnEmptyPool) {
+            this.nullOnEmptyPool = nullOnEmptyPool;
+            return this;
+        }
     }
 
     // ==========

@@ -156,7 +156,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedItemSizeInBytesUsedOnTopOfPooledObjectOps() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(ByteBufPooledObjectOpsTest.createTestPooledObjectOps());
 
         // when
@@ -171,7 +171,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedMaxItemSizeInBytesUsedOnTopOfPooledObjectOps() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(ByteBufPooledObjectOpsTest.createTestPooledObjectOps());
 
         // when
@@ -186,7 +186,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnPooledObjectOpsUsedOnTopOfDeprecatedItemSizeInBytes() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withItemSizeInBytes(1);
 
@@ -202,7 +202,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnPooledObjectOpsUsedOnTopOfDeprecatedMaxItemSizeInBytes() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withMaxItemSizeInBytes(1);
 
@@ -218,7 +218,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedItemSizeInBytesZero() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withItemSizeInBytes(0);
 
@@ -235,7 +235,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedItemSizeInBytesLessThanZero() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withItemSizeInBytes(-1);
 
@@ -252,7 +252,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnMaxItemSizeInBytesZero() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withItemSizeInBytes(1)
                 .withMaxItemSizeInBytes(0);
@@ -270,7 +270,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedMaxItemSizeInBytesLessThanZero() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withItemSizeInBytes(1)
                 .withMaxItemSizeInBytes(-1);
@@ -288,7 +288,7 @@ public class PooledItemSourceFactoryTest {
     public void builderThrowsOnDeprecatedMaxItemSizeInBytesLowerThanItemSizeInBytes() {
 
         // given
-        PooledItemSourceFactory.Builder builder = createDefaultTestSourceFactoryConfig()
+        PooledItemSourceFactory.Builder<Object, ByteBuf> builder = createDefaultTestSourceFactoryConfig()
                 .withPooledObjectOps(null)
                 .withMaxItemSizeInBytes(1)
                 .withItemSizeInBytes(2);
@@ -303,7 +303,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void throwsWhenCreateCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
+    public void throwsWhenCreateCantGetPooledElementAndNullOnEmptyNotConfigured() throws PoolResourceException {
 
         // given
         ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
@@ -311,7 +311,7 @@ public class PooledItemSourceFactoryTest {
         String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
 
         // when
         final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class)));
@@ -322,23 +322,60 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void returnsNullWhenCreateCantGetPooledElementAndThrowOnNullNotConfigured() {
+    public void returnsNullWhenCreateCantGetPooledElementAndNullOnEmptyPoolConfigured() {
 
         // given
-        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withResizePolicy(new ResizePolicy() {
+                    int pooledElementsLeft = 1;
+                    @Override
+                    public boolean increase(ItemSourcePool itemSourcePool) {
+                        itemSourcePool.incrementPoolSize(pooledElementsLeft--);
+                        return true;
+                    }
 
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+                    @Override
+                    public boolean decrease(ItemSourcePool itemSourcePool) {
+                        return false;
+                    }
+                })
+                .withInitialPoolSize(1)
+                .withNullOnEmptyPool(true)
+                .build();
 
         // when
-        final ItemSource itemSource = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+        final ItemSource<ByteBuf> itemSource1 = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+        final ItemSource<ByteBuf> itemSource2 = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
 
         // then
-        assertNull(itemSource);
+        assertNotNull(itemSource1);
+        assertNull(itemSource2);
 
     }
 
     @Test
-    public void throwsWhenCreateWithSerializerCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
+    public void throwsWhenCreateEmptySourceCantGetPooledElementAndNullOnEmptyPoolNotConfigured() throws PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final String expectedMessage = UUID.randomUUID().toString();
+        when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
+
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+
+        // when
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+            pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+        });
+
+        // then
+        assertThat(exception.getMessage(), containsString(expectedMessage));
+
+    }
+
+    @Test
+    public void throwsWhenCreateWithSerializerCantGetPooledElementAndNullOnEmptyPoolNotConfigured() throws PoolResourceException {
 
         // given
         ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
@@ -346,7 +383,7 @@ public class PooledItemSourceFactoryTest {
         String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
 
         final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writerFor(LogEvent.class));
 
@@ -361,17 +398,17 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void returnsNullWhenCreateWithSerializerCantGetPooledElementAndThrowOnNullNotConfigured() throws PoolResourceException {
+    public void returnsNullWhenCreateWithSerializerCantGetPooledElementAndNullOnEmptyPoolConfigured() {
 
         // given
         final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
 
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
 
         final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writerFor(LogEvent.class));
 
         // when
-        final ItemSource itemSource = pooledItemSourceFactory.create(mock(LogEvent.class), serializer);
+        final ItemSource<ByteBuf> itemSource = pooledItemSourceFactory.create(mock(LogEvent.class), serializer);
 
         // then
         assertNull(itemSource);
@@ -379,37 +416,34 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void throwsWhenCreateEmptySourceCantGetPooledElementAndThrowOnNullConfigured() throws PoolResourceException {
+    public void returnNullWhenCreateEmptySourceCantGetPooledElementAndNullOnEmptyPoolConfigured() {
 
         // given
-        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withResizePolicy(new ResizePolicy() {
+                    int pooledElementsLeft = 1;
+                    @Override
+                    public boolean increase(ItemSourcePool itemSourcePool) {
+                        itemSourcePool.incrementPoolSize(pooledElementsLeft--);
+                        return true;
+                    }
 
-        final String expectedMessage = UUID.randomUUID().toString();
-        when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
-
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), true);
-
-        // when
-        final IllegalStateException exception = assertThrows(IllegalStateException.class, pooledItemSourceFactory::createEmptySource);
-
-        // then
-        assertThat(exception.getMessage(), containsString(expectedMessage));
-
-    }
-
-    @Test
-    public void returnNullWhenCreateEmptySourceCantGetPooledElementAndThrowOnNullNotConfigured() {
-
-        // given
-        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
-
-        final PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool, new DefaultOutputStreamProvider<>(), false);
+                    @Override
+                    public boolean decrease(ItemSourcePool itemSourcePool) {
+                        return false;
+                    }
+                })
+                .withInitialPoolSize(1)
+                .withNullOnEmptyPool(true)
+                .build();
 
         // when
-        final ItemSource itemSource = pooledItemSourceFactory.createEmptySource();
+        final ItemSource<ByteBuf> itemSource1 = pooledItemSourceFactory.createEmptySource();
+        final ItemSource<ByteBuf> itemSource2 = pooledItemSourceFactory.createEmptySource();
 
         // then
-        assertNull(itemSource);
+        assertNotNull(itemSource1);
+        assertNull(itemSource2);
 
     }
 
@@ -605,7 +639,7 @@ public class PooledItemSourceFactoryTest {
         final ItemSource<ByteBuf> bufferedItemSource = spy(createTestItemSource());
         when(mockedPool.getPooled()).thenReturn(bufferedItemSource);
 
-        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<LogEvent, ByteBuf>(mockedPool);
+        final PooledItemSourceFactory<LogEvent, ByteBuf> pooledItemSourceFactory = new PooledItemSourceFactory<>(mockedPool);
 
         final LogEvent logEvent = mock(LogEvent.class);
         final ObjectWriter objectWriter = new ObjectMapper().writerFor(LogEvent.class);
