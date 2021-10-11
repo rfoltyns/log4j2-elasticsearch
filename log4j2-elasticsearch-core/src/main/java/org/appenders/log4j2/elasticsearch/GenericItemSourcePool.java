@@ -293,6 +293,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                 // throw to resurface issues
                 throw new PoolResourceException(RESIZE_FAILED);
             }
+            return true;
         }
 
         try {

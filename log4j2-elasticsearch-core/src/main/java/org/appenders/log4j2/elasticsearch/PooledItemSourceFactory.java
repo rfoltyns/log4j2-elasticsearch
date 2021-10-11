@@ -46,10 +46,24 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
 
     private volatile State state = State.STOPPED;
 
+    private final PoolInvocationHandler<ByteBuf> poolInvocationHandler;
     final ItemSourcePool bufferedItemSourcePool;
 
-    protected PooledItemSourceFactory(ItemSourcePool bufferedItemSourcePool) {
-        this.bufferedItemSourcePool = bufferedItemSourcePool;
+    protected PooledItemSourceFactory(final ItemSourcePool itemSourcePool) {
+        this(itemSourcePool, false);
+    }
+
+    /**
+     * <i>throwOnEmpty</i> feature is being back-ported from master (1.6) and is experimental. Final API will change in 1.6
+     *
+     * @param itemSourcePool pool of reusable buffers
+     * @param nullOnEmptyPool If <i>false</i>, exception will be thrown if {@link #create(Object, ObjectWriter)} can't obtain pooled element via {@link ItemSourcePool#getPooled()}.
+     *                     Otherwise {@link ItemSourcePool#getPooledOrNull()} will be used instead and <i>null</i> returned if pool is empty after resize attempt.
+     */
+    @Deprecated
+    protected PooledItemSourceFactory(final ItemSourcePool itemSourcePool, final boolean nullOnEmptyPool) {
+        this.bufferedItemSourcePool = itemSourcePool;
+        this.poolInvocationHandler = nullOnEmptyPool ? new NullOnEmptyPoolHandler<>() : new ThrowOnEmptyPoolHandler<>();
     }
 
     /**
@@ -71,12 +85,11 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
      */
     @Override
     public ItemSource create(Object source, ObjectWriter objectWriter) {
-        ItemSource<ByteBuf> pooled;
-        try {
-            pooled = bufferedItemSourcePool.getPooled();
-        } catch (PoolResourceException e) {
-            // FIXME: stop throwing and redirect to failover policy here
-            throw new IllegalStateException(e);
+
+        final ItemSource<ByteBuf> pooled = createEmptySource();
+
+        if (pooled == null) {
+            return null;
         }
 
         try {
@@ -94,11 +107,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
      */
     @Override
     public ItemSource createEmptySource() {
-        try {
-            return bufferedItemSourcePool.getPooled();
-        } catch (PoolResourceException e) {
-            throw new IllegalStateException(e);
-        }
+        return poolInvocationHandler.tryGetPooled(bufferedItemSourcePool);
     }
 
     @PluginBuilderFactory
@@ -135,6 +144,10 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
         @PluginBuilderAttribute
         protected int maxItemSizeInBytes = Integer.MAX_VALUE;
 
+        // This parameter will not be exposed for Log4j2 configuration as there's no support for it in ElasticsearchAppender
+        // It's meant to be used with programmatic config only, where ResizePolicy may not be able to resize and returned null can be handled properly
+        private boolean nullOnEmptyPool;
+
         @Override
         public PooledItemSourceFactory build() {
 
@@ -167,7 +180,7 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
                 this.resizePolicy = resizePolicy;
             }
 
-            return new PooledItemSourceFactory(configuredItemSourcePool());
+            return new PooledItemSourceFactory(configuredItemSourcePool(), nullOnEmptyPool);
 
         }
 
@@ -275,6 +288,16 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
             return this;
         }
 
+        /**
+         * This was back-ported from 1.6 and may change in future releases. Consider it experimental
+         * @param nullOnEmptyPool If <i>false</i> (default), exception will be thrown if {@link #create(Object, ObjectWriter)} can't obtain pooled element via {@link ItemSourcePool#getPooled()}.
+         *                     Otherwise {@link ItemSourcePool#getPooledOrNull()} will be used instead and <i>null</i> returned if pool is empty after resize attempt.
+         * @return this
+         */
+        public Builder withNullOnEmptyPool(boolean nullOnEmptyPool) {
+            this.nullOnEmptyPool = nullOnEmptyPool;
+            return this;
+        }
     }
 
     // ==========
@@ -305,6 +328,34 @@ public class PooledItemSourceFactory implements ItemSourceFactory {
     @Override
     public boolean isStopped() {
         return state == State.STOPPED;
+    }
+
+    private interface PoolInvocationHandler<R> {
+        ItemSource<R> tryGetPooled(ItemSourcePool<R> itemSourcePool);
+    }
+
+    private static class ThrowOnEmptyPoolHandler<R> implements PoolInvocationHandler<R> {
+
+        @Override
+        public ItemSource<R> tryGetPooled(final ItemSourcePool<R> itemSourcePool) {
+
+            try {
+                return itemSourcePool.getPooled();
+            } catch (PoolResourceException e) {
+                throw new IllegalStateException(e);
+            }
+
+        }
+
+    }
+
+    private class NullOnEmptyPoolHandler<R> implements PoolInvocationHandler<R> {
+
+        @Override
+        public ItemSource<R> tryGetPooled(ItemSourcePool itemSourcePool) {
+            return itemSourcePool.getPooledOrNull();
+        }
+
     }
 
 }

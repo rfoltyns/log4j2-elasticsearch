@@ -219,38 +219,104 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void throwsWhenCreateCantGetPooledElement() throws PoolResourceException {
+    public void throwsWhenCreateCantGetPooledElementAndNullOnEmptyNotConfigured() throws PoolResourceException {
+
         // given
         ItemSourcePool mockedPool = mock(ItemSourcePool.class);
 
         String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
+        final PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool, false);
 
         // when
         final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class)));
 
         // then
         assertThat(exception.getMessage(), containsString(expectedMessage));
+
     }
 
     @Test
-    public void throwsWhenCreateEmptySourceCantGetPooledElement() throws PoolResourceException {
+    public void returnsNullWhenCreateCantGetPooledElementAndNullOnEmptyPoolConfigured() {
 
         // given
-        ItemSourcePool mockedPool = mock(ItemSourcePool.class);
+        final PooledItemSourceFactory pooledItemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withResizePolicy(new ResizePolicy() {
+                    int pooledElementsLeft = 1;
+                    @Override
+                    public boolean increase(ItemSourcePool itemSourcePool) {
+                        itemSourcePool.incrementPoolSize(pooledElementsLeft--);
+                        return true;
+                    }
 
-        String expectedMessage = UUID.randomUUID().toString();
+                    @Override
+                    public boolean decrease(ItemSourcePool itemSourcePool) {
+                        return false;
+                    }
+                })
+                .withInitialPoolSize(1)
+                .withNullOnEmptyPool(true)
+                .build();
+
+        // when
+        final ItemSource itemSource1 = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+        final ItemSource itemSource2 = pooledItemSourceFactory.create(mock(LogEvent.class), new ObjectMapper().writerFor(LogEvent.class));
+
+        // then
+        assertNotNull(itemSource1);
+        assertNull(itemSource2);
+
+    }
+
+    @Test
+    public void throwsWhenCreateEmptySourceCantGetPooledElementAndNullOnEmptyPoolNotConfigured() throws PoolResourceException {
+
+        // given
+        final ItemSourcePool<ByteBuf> mockedPool = mock(ItemSourcePool.class);
+
+        final String expectedMessage = UUID.randomUUID().toString();
         when(mockedPool.getPooled()).thenThrow(new PoolResourceException(expectedMessage));
 
-        PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool);
+        final PooledItemSourceFactory pooledItemSourceFactory = new PooledItemSourceFactory(mockedPool, false);
 
         // when
         final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> pooledItemSourceFactory.createEmptySource());
 
         // then
         assertThat(exception.getMessage(), containsString(expectedMessage));
+
+    }
+
+    @Test
+    public void returnNullWhenCreateEmptySourceCantGetPooledElementAndNullOnEmptyConfigured() {
+
+        // given
+        final PooledItemSourceFactory pooledItemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withResizePolicy(new ResizePolicy() {
+                    int pooledElementsLeft = 1;
+                    @Override
+                    public boolean increase(ItemSourcePool itemSourcePool) {
+                        itemSourcePool.incrementPoolSize(pooledElementsLeft--);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean decrease(ItemSourcePool itemSourcePool) {
+                        return false;
+                    }
+                })
+                .withInitialPoolSize(1)
+                .withNullOnEmptyPool(true)
+                .build();
+
+        // when
+        final ItemSource itemSource1 = pooledItemSourceFactory.createEmptySource();
+        final ItemSource itemSource2 = pooledItemSourceFactory.createEmptySource();
+
+        // then
+        assertNotNull(itemSource1);
+        assertNull(itemSource2);
 
     }
 
