@@ -20,18 +20,16 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import io.netty.buffer.ByteBuf;
+public class ExtendedPooledItemSourceFactory<T, R> extends PooledItemSourceFactory<T, R> {
 
-public class ExtendedPooledItemSourceFactory extends PooledItemSourceFactory {
-
-    protected ExtendedPooledItemSourceFactory(ItemSourcePool bufferedItemSourcePool) {
-        super(bufferedItemSourcePool);
+    public ExtendedPooledItemSourceFactory(ItemSourcePool<R> bufferedItemSourcePool, OutputStreamProvider<R> outputStreamProvider) {
+        super(bufferedItemSourcePool, outputStreamProvider);
     }
 
-    public static class Builder extends PooledItemSourceFactory.Builder {
+    public static class Builder<T, R> extends PooledItemSourceFactory.Builder<T, R> {
 
         @Override
-        public ItemSourcePool<ByteBuf> configuredItemSourcePool() {
+        public ItemSourcePool<R> configuredItemSourcePool() {
             return super.configuredItemSourcePool();
         }
 

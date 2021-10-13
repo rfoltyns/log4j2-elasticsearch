@@ -20,19 +20,22 @@ package org.appenders.log4j2.elasticsearch.jmh;
  * #L%
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import net.openhft.affinity.AffinityLock;
+import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
 import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
+import org.appenders.log4j2.elasticsearch.ExtendedPooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.ReusableOutputStreamProvider;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -45,7 +48,6 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
@@ -60,6 +62,8 @@ import java.util.concurrent.TimeUnit;
 })
 public class PooledItemSourceFactoryTest {
 
+    private static final int ENVELOPE_SIZE = 1000;
+
     @Param(value = {
             "1",
             "10",
@@ -70,49 +74,69 @@ public class PooledItemSourceFactoryTest {
     public int poolSize;
 
     @Param(value = {
-            "512",
-            "2048",
             "8192",
             "16384",
     })
     public int itemSizeInBytes;
 
-    private PooledItemSourceFactory itemPool;
-    private ObjectWriter objectWriter;
-    private byte[] bytes;
-
-    private AffinityLock al;
+    private PooledItemSourceFactory<LogEvent, ByteBuf> itemPool;
+    private LogEventGenerator logEventGenerator;
+    private JacksonSerializer<LogEvent> serializer;
+    private int resizeCount;
 
     @Setup
     public void prepare() {
 
-        this.itemPool = new PooledItemSourceFactory.Builder()
-                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes * 2)))
+        final ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf> builder = (ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>) new ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>()
+                .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, (itemSizeInBytes + ENVELOPE_SIZE) * 2)))
                 .withInitialPoolSize(poolSize)
-                .withPoolName("itemPool")
-                .build();
+                .withPoolName("itemPool");
 
-        this.objectWriter = new JhmJacksonJsonLayout.Builder()
+        this.itemPool = new ExtendedPooledItemSourceFactory<>(builder.configuredItemSourcePool(), new ReusableOutputStreamProvider<>());
+
+        serializer = new JacksonSerializer<>(new JhmJacksonJsonLayout.Builder()
                 .withSingleThread(true)
-                .createConfiguredWriter();
+                .createConfiguredWriter());
 
-        this.bytes = new byte[itemSizeInBytes];
+        this.itemPool.start();
 
-        new Random().nextBytes(bytes);
+        logEventGenerator = ensureLogEventFitsBuffer();
 
-        itemPool.start();
+    }
 
+    private LogEventGenerator ensureLogEventFitsBuffer() {
+
+        int envelopeSize = ENVELOPE_SIZE;
+        int retries = 10;
+        while (retries-- > 0) {
+            final int messageSize = itemSizeInBytes / 2 - envelopeSize;
+            final LogEventGenerator logEventGenerator = new LogEventGenerator(messageSize);
+            final LogEvent next = logEventGenerator.next();
+            final ItemSource<ByteBuf> itemSource = itemPool.create(next, serializer);
+            try {
+                if (itemSource.getSource().writerIndex() < itemSizeInBytes) {
+                    System.out.println("Envelope size: " + envelopeSize);
+                    System.out.println("Message size: " + messageSize);
+                    System.out.println("Serialized event size: " + itemSource.getSource().writerIndex());
+                    return logEventGenerator;
+                }
+                envelopeSize -= envelopeSize * 0.1;
+            } finally {
+                itemSource.release();
+            }
+        }
+        throw new RuntimeException("Unable to create LogEventGenerator");
     }
 
     @Benchmark
     public void smokeTest(Blackhole fox) {
-        final ItemSource itemSource = itemPool.create(bytes, objectWriter);
-        itemSource.release();
+        final ItemSource<ByteBuf> itemSource = itemPool.create(logEventGenerator.next(), serializer);
         fox.consume(itemSource);
+        itemSource.release();
     }
 
     private static class JhmJacksonJsonLayout extends JacksonJsonLayout {
-        protected JhmJacksonJsonLayout(Configuration config, ObjectWriter configuredWriter, ItemSourceFactory itemSourceFactory) {
+        protected JhmJacksonJsonLayout(Configuration config, ObjectWriter configuredWriter, ItemSourceFactory<LogEvent, ByteBuf> itemSourceFactory) {
             super(config, configuredWriter, itemSourceFactory);
         }
 
@@ -126,11 +150,6 @@ public class PooledItemSourceFactoryTest {
             @Override
             protected ObjectWriter createConfiguredWriter() {
                 return super.createConfiguredWriter();
-            }
-
-            @Override
-            protected ObjectMapper createDefaultObjectMapper() {
-                return super.createDefaultObjectMapper();
             }
 
             @Override
