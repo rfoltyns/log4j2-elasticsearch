@@ -23,7 +23,6 @@ package org.appenders.log4j2.elasticsearch;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.TestPooledByteBufAllocatorMetric;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -35,9 +34,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
 import static org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicyTest.createDefaultTestBoundedSizeLimitPolicy;
 import static org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOpsTest.createTestPooledObjectOps;
