@@ -398,7 +398,9 @@ public class PooledItemSourceFactoryTest {
                 .withMonitored(true)
                 .withMonitorTaskInterval(1000);
 
-        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + "metrics.start.delay", "0");
+        final String propertyName = "appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay";
+        final String previous = System.getProperty(propertyName, "1000");
+        System.setProperty(propertyName, "0");
 
         final PooledItemSourceFactory itemSourceFactory = builder.build();
 
@@ -407,11 +409,13 @@ public class PooledItemSourceFactoryTest {
 
         // then
         final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
-        verify(logger, timeout(500).atLeastOnce()).info(captor.capture());
+        verify(logger, timeout(1000).atLeastOnce()).info(captor.capture());
 
         assertThat(captor.getValue(), containsString(expectedPoolName));
 
         itemSourceFactory.stop();
+
+        System.setProperty(propertyName, previous);
 
     }
 
