@@ -50,7 +50,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <org.appenders.st.jackson.version>1.0.1</org.appenders.st.jackson.version>
         <org.appenders.logging.version>1.0</org.appenders.logging.version>
-        <log4j2.version>2.15.0</log4j2.version>
+        <log4j2.version>2.17.1</log4j2.version>
         <jacoco.version>0.8.6</jacoco.version>
         <jackson.version>2.12.0</jackson.version>
         <httpclient.version>4.5.13</httpclient.version>
