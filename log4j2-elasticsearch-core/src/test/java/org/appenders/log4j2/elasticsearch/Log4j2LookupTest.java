@@ -61,8 +61,8 @@ public class Log4j2LookupTest {
                 .withDynamic(true)
                 .build();
 
-        StrSubstitutor strSubstitutor = spy(createDefaultTestStrSubstitutor());
-        Log4j2Lookup lookup = createDefaultTestLog4j2Lookup(strSubstitutor);
+        StrSubstitutor strSubstitutor = createDefaultTestStrSubstitutor();
+        Log4j2Lookup lookup = spy(createDefaultTestLog4j2Lookup(strSubstitutor));
 
         // when
         lookup.resolve(virtualProperty);
@@ -71,7 +71,7 @@ public class Log4j2LookupTest {
         // then
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
 
-        verify(strSubstitutor, times(2)).replace(captor.capture());
+        verify(lookup, times(2)).resolve(captor.capture());
 
         assertEquals(expectedValue, captor.getAllValues().get(0));
         assertEquals(expectedValue, captor.getAllValues().get(1));
@@ -110,14 +110,14 @@ public class Log4j2LookupTest {
                 .withDynamic(false)
                 .build();
 
-        StrSubstitutor strSubstitutor = spy(createDefaultTestStrSubstitutor());
-        Log4j2Lookup lookup = createDefaultTestLog4j2Lookup(strSubstitutor);
+        StrSubstitutor strSubstitutor = createDefaultTestStrSubstitutor();
+        Log4j2Lookup lookup = spy(createDefaultTestLog4j2Lookup(strSubstitutor));
 
         // when
         lookup.resolve(virtualProperty);
 
         // then
-        verify(strSubstitutor, never()).replace(anyString());
+        verify(lookup, never()).resolve(anyString());
 
     }
 
