@@ -41,9 +41,10 @@ public class VirtualPropertyPlugin extends VirtualProperty {
      * @param name Name
      * @param value May be static or in a resolvable format defined by <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>
      * @param isDynamic In case of resolvable properties, this flag indicates that resolved value may change over time
+     * @param writeRaw Indicates that the value is a valid, structured object (e.g JSON string) and should be written as such.
      */
-    public VirtualPropertyPlugin(final String name, final String value, final boolean isDynamic) {
-        super(name, value, isDynamic);
+    public VirtualPropertyPlugin(final String name, final String value, final boolean isDynamic, final boolean writeRaw) {
+        super(name, value, isDynamic, writeRaw);
     }
 
     @PluginBuilderFactory
@@ -62,19 +63,24 @@ public class VirtualPropertyPlugin extends VirtualProperty {
         @PluginBuilderAttribute
         private boolean dynamic;
 
+        @PluginBuilderAttribute
+        private boolean writeRaw;
+
         @Override
         public VirtualPropertyPlugin build() {
 
             final VirtualProperty.Builder builder = new VirtualProperty.Builder()
                     .withName(name)
                     .withValue(value)
-                    .withDynamic(dynamic);
+                    .withDynamic(dynamic)
+                    .withWriteRaw(writeRaw);
 
             try {
                 final VirtualProperty virtualProperty = builder.build();
                 return new VirtualPropertyPlugin(virtualProperty.getName(),
                         virtualProperty.getValue(),
-                        virtualProperty.isDynamic());
+                        virtualProperty.isDynamic(),
+                        virtualProperty.isWriteRaw());
             } catch (Exception e) {
                 throw new ConfigurationException(e);
             }
@@ -96,6 +102,10 @@ public class VirtualPropertyPlugin extends VirtualProperty {
             return this;
         }
 
+        public Builder withWriteRaw(boolean writeRaw) {
+            this.writeRaw = writeRaw;
+            return this;
+        }
     }
 
 }

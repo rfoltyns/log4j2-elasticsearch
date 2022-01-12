@@ -112,6 +112,21 @@ public class VirtualPropertyPluginTest {
     }
 
     @Test
+    public void builderSetsWriteRaw() {
+
+        // given
+        VirtualPropertyPlugin.Builder builder = createDefaultVirtualPropertyBuilder()
+                .withWriteRaw(true);
+
+        // when
+        VirtualProperty property = builder.build();
+
+        // then
+        assertTrue(property.isWriteRaw());
+
+    }
+
+    @Test
     public void valueCanBeOverridenAfterCreation() {
 
         // given

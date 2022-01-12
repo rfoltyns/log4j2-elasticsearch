@@ -118,7 +118,11 @@ public class VirtualPropertiesWriter extends VirtualBeanPropertyWriter {
             }
 
             gen.writeFieldName(property.getName());
-            gen.writeString(resolved);
+            if (property.isWriteRaw()) {
+                gen.writeRawValue(resolved);
+            } else {
+                gen.writeString(resolved);
+            }
 
         }
     }
