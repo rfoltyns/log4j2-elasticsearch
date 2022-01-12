@@ -319,8 +319,21 @@ Config property | Type | Required | Default | Description
 name | Attribute | yes | n/a |
 value | Attribute | yes | n/a | Static value or contextual variable resolvable with <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>.
 dynamic | Attribute | no | false | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4j2Lookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4j2Lookup.java)). Otherwise, will be resolved only on startup.
+writeRaw (since 1.6) | Attribute | no | false | indicates that the value is a valid, structured object (e.g JSON string) and should be written as such.
+
+Since 1.6, one can put a valid, structured object (e.g. a JSON string) into a VirtualProperty's value, set `writeRaw` to `true` and it will be written without quotes when serialized.
+
+###### Example:
+
+```xml
+<NonEmptyFilter/>
+<VirtualProperty name="jsonStringField" 
+	value="$${ctx:myJsonObject:-}" 
+	dynamic="true" writeRaw="true"/>
+```
 
 Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
+
 
 ##### Virtual Property Filters
 
@@ -333,6 +346,7 @@ Available filters:
 Custom filtering can be implemented with [`VirtualPropertyFilter`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/VirtualPropertyFilter.java).
 
 Example:
+
 ```xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     ...
