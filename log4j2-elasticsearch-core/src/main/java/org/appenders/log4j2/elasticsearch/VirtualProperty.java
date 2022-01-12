@@ -38,6 +38,7 @@ public class VirtualProperty {
     private final String name;
     private String value;
     private final boolean dynamic;
+    private final boolean writeRaw;
 
     /**
      * @param name Name
@@ -45,9 +46,20 @@ public class VirtualProperty {
      * @param isDynamic In case of resolvable properties, this flag indicates that resolved value may change over time
      */
     public VirtualProperty(final String name, final String value, final boolean isDynamic) {
+        this(name, value, isDynamic, false);
+    }
+
+    /**
+     * @param name Name
+     * @param value May be static or in a any format resolvable by configured {@link ValueResolver}
+     * @param isDynamic In case of resolvable properties, this flag indicates that resolved value may change over time
+     * @param writeRaw Indicates that the value is a valid, structured object (e.g JSON string) and should be written as such.
+     */
+    public VirtualProperty(final String name, final String value, final boolean isDynamic, boolean writeRaw) {
         this.name = name;
         this.value = value;
         this.dynamic = isDynamic;
+        this.writeRaw = writeRaw;
     }
 
     public String getName() {
@@ -71,6 +83,10 @@ public class VirtualProperty {
         return dynamic;
     }
 
+    public boolean isWriteRaw() {
+        return writeRaw;
+    }
+
     @Override
     public String toString() {
         return String.format("%s=%s", name, value);
@@ -92,8 +108,19 @@ public class VirtualProperty {
         @PluginBuilderAttribute
         private boolean dynamic;
 
+        @PluginBuilderAttribute
+        private boolean writeRaw;
+
         @Override
         public VirtualProperty build() {
+
+            validate();
+
+            return new VirtualProperty(name, value, dynamic, writeRaw);
+
+        }
+
+        public void validate() {
 
             if (name == null) {
                 throw new ConfigurationException("No name provided for " + PLUGIN_NAME);
@@ -102,8 +129,6 @@ public class VirtualProperty {
             if (value == null) {
                 throw new ConfigurationException("No value provided for " + PLUGIN_NAME);
             }
-
-            return new VirtualProperty(name, value, dynamic);
 
         }
 
@@ -122,6 +147,10 @@ public class VirtualProperty {
             return this;
         }
 
+        public Builder withWriteRaw(boolean writeRaw) {
+            this.writeRaw = writeRaw;
+            return this;
+        }
     }
 
 }

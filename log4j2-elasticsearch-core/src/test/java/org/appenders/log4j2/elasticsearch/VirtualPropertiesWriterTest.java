@@ -246,6 +246,31 @@ public class VirtualPropertiesWriterTest {
     }
 
     @Test
+    public void serializeAsFieldWritesGivenPropertiesAsRawValuesIfConfigured() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        String expectedValue = "{\"value\":1}";
+
+        VirtualProperty jsonVirtualProperty = createNonDynamicRawVirtualProperty(expectedName, expectedValue);
+
+        VirtualPropertiesWriter writer = new VirtualPropertiesWriter(
+                new VirtualProperty[] { jsonVirtualProperty },
+                ValueResolver.NO_OP
+        );
+
+        JsonGenerator jsonGenerator = mock(JsonGenerator.class);
+
+        // when
+        writer.serializeAsField(new Object(), jsonGenerator, mock(SerializerProvider.class));
+
+        // then
+        verify(jsonGenerator).writeFieldName(eq(expectedName));
+        verify(jsonGenerator).writeRawValue(eq(expectedValue));
+
+    }
+
+    @Test
     public void serializeAsFieldDoesNotWritePropertiesIfNoPropertiesProvided() throws Exception {
 
         // given
@@ -344,6 +369,21 @@ public class VirtualPropertiesWriterTest {
         }
 
         return builder.withDynamic(false).build();
+    }
+
+    private VirtualProperty createNonDynamicRawVirtualProperty(String expectedName, String expectedValue) {
+
+        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder();
+
+        if (expectedName != null) {
+            builder.withName(expectedName);
+        }
+
+        if (expectedValue != null) {
+            builder.withValue(expectedValue);
+        }
+
+        return builder.withDynamic(false).withWriteRaw(true).build();
     }
 
     private VirtualPropertyFilter createNonExcludingTestVirtualPropertyFilter(String expectedName, String expectedValue) {

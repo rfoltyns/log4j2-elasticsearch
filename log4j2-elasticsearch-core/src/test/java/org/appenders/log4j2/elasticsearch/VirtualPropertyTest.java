@@ -112,6 +112,21 @@ public class VirtualPropertyTest {
     }
 
     @Test
+    public void builderSetsWriteRaw() {
+
+        // given
+        VirtualProperty.Builder builder = createDefaultVirtualPropertyBuilder()
+                .withWriteRaw(true);
+
+        // when
+        VirtualProperty property = builder.build();
+
+        // then
+        assertTrue(property.isWriteRaw());
+
+    }
+
+    @Test
     public void valueCanBeOverridenAfterCreation() {
 
         // given
@@ -152,7 +167,8 @@ public class VirtualPropertyTest {
         return VirtualProperty.newBuilder()
                 .withName(UUID.randomUUID().toString())
                 .withValue(UUID.randomUUID().toString())
-                .withDynamic(false);
+                .withDynamic(false)
+                .withWriteRaw(false);
     }
 
 }
