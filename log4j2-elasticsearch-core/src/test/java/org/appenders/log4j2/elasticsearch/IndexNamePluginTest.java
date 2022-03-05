@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-public class NoopIndexNameFormatterTest {
+public class IndexNamePluginTest {
 
     public static final String TEST_INDEX_NAME = "testIndexName";
 
@@ -40,24 +40,25 @@ public class NoopIndexNameFormatterTest {
     public void returnsIndexNameUnchangedOnLogEvent() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final IndexNamePlugin.Builder builder = IndexNamePlugin.newBuilder();
         builder.withIndexName(TEST_INDEX_NAME);
-        final NoopIndexNameFormatter formatter = builder.build();
+        final IndexNamePlugin formatter = builder.build();
 
         // when
         final String formattedIndexName = formatter.format(Mockito.mock(LogEvent.class));
 
         // then
         assertEquals(TEST_INDEX_NAME, formattedIndexName);
+
     }
 
     @Test
     public void returnsIndexNameUnchangedOnMillis() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final IndexNamePlugin.Builder builder = IndexNamePlugin.newBuilder();
         builder.withIndexName(TEST_INDEX_NAME);
-        final NoopIndexNameFormatter formatter = builder.build();
+        final IndexNamePlugin formatter = builder.build();
 
         final LogEvent logEvent = Mockito.mock(LogEvent.class);
         when(logEvent.getTimeMillis()).thenReturn(System.currentTimeMillis());
@@ -67,19 +68,21 @@ public class NoopIndexNameFormatterTest {
 
         // then
         assertEquals(TEST_INDEX_NAME, formattedIndexName);
+
     }
 
     @Test
     public void builderThrowsWhenNameIsNull() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final IndexNamePlugin.Builder builder = IndexNamePlugin.newBuilder();
 
         // when
         final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("indexName"));
+
     }
 
 }

@@ -83,9 +83,9 @@ public class ElasticsearchAppender extends AbstractAppender {
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<ElasticsearchAppender>  {
 
         /**
-         * Default: {@link NoopIndexNameFormatter}
+         * Default: {@link IndexNamePlugin}
          */
-        public static final IndexNameFormatter DEFAULT_INDEX_NAME_FORMATTER = NoopIndexNameFormatter.newBuilder().withIndexName("log4j2").build();
+        public static final IndexNameFormatter DEFAULT_INDEX_NAME_FORMATTER = IndexNamePlugin.newBuilder().withIndexName("log4j2").build();
 
         @PluginBuilderAttribute
         @Required(message = "No name provided for Elasticsearch appender")

@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,65 +21,63 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+
+import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
-public class NoopIndexNameFormatterTest {
+public class SimpleIndexNameTest {
 
     public static final String TEST_INDEX_NAME = "testIndexName";
 
     @Test
-    public void returnsIndexNameUnchangedOnLogEvent() {
+    public void returnsIndexNameUnchangedOnAnyObject() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final SimpleIndexName.Builder<Object> builder = new SimpleIndexName.Builder<>();
         builder.withIndexName(TEST_INDEX_NAME);
-        final NoopIndexNameFormatter formatter = builder.build();
+        final SimpleIndexName<Object> formatter = builder.build();
 
         // when
-        final String formattedIndexName = formatter.format(Mockito.mock(LogEvent.class));
+        final String formattedIndexName = formatter.format(new Object());
 
         // then
         assertEquals(TEST_INDEX_NAME, formattedIndexName);
+
     }
 
     @Test
-    public void returnsIndexNameUnchangedOnMillis() {
+    public void returnsIndexNameUnchangedOnAnyMillis() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final SimpleIndexName.Builder<Object> builder = new SimpleIndexName.Builder<>();
         builder.withIndexName(TEST_INDEX_NAME);
-        final NoopIndexNameFormatter formatter = builder.build();
-
-        final LogEvent logEvent = Mockito.mock(LogEvent.class);
-        when(logEvent.getTimeMillis()).thenReturn(System.currentTimeMillis());
+        final SimpleIndexName<Object> formatter = builder.build();
 
         // when
-        final String formattedIndexName = formatter.format(logEvent.getTimeMillis());
+        final String formattedIndexName = formatter.format(new Random().nextLong());
 
         // then
         assertEquals(TEST_INDEX_NAME, formattedIndexName);
+
     }
 
     @Test
     public void builderThrowsWhenNameIsNull() {
 
         // given
-        final NoopIndexNameFormatter.Builder builder = NoopIndexNameFormatter.newBuilder();
+        final SimpleIndexName.Builder<Object> builder = new SimpleIndexName.Builder<>();
 
         // when
-        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("indexName"));
+
     }
 
 }

@@ -99,7 +99,6 @@ public class RollingIndexNameFormatterTest {
 
     }
 
-
     @Test
     public void builderThrowsWhenPatternIsNull() {
 
@@ -262,15 +261,11 @@ public class RollingIndexNameFormatterTest {
     @Test
     public void concurrencyTest() throws InterruptedException {
 
-        // given
-//        TestFormatter.TEST_PATTERN_PROCESSOR = Mockito.spy(new PatternProcessor("%d{" + DATE_PATTERN_WITH_MINUTES + "}"));
-
         for (int ii = 0; ii < 100; ii++) {
             IndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
             runSingleConcurrencyTest(formatter, 20);
         }
 
-//        Mockito.verify(TestFormatter.TEST_PATTERN_PROCESSOR, Mockito.times(100)).getNextTime(Mockito.any(long.class), Mockito.eq(1), Mockito.eq(false));
     }
 
     private void runSingleConcurrencyTest(IndexNameFormatter formatter, int numberOfThreads) throws InterruptedException {

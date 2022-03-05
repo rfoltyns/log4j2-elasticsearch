@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,10 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 /**
- *
- * @param <T> type to use to derive or extend index name
+ * @param <T> formatted type
  */
-public interface IndexNameFormatter<T> extends ObjectFormatter<T>, MillisFormatter  {
+public interface ObjectFormatter<T> {
 
-    String ELEMENT_TYPE = "indexNameFormatter";
+    String format(T obj);
 
 }

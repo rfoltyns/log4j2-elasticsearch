@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,54 +23,42 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.apache.logging.log4j.core.config.Node;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
 
-/**
- * @deprecated As of 2.0, this class will be removed. Use {@link IndexNamePlugin} instead.
- */
-@Deprecated
-public class NoopIndexNameFormatter implements IndexNameFormatter<LogEvent> {
+@Plugin(name = IndexNamePlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = IndexNamePlugin.ELEMENT_TYPE, printObject = true)
+public class IndexNamePlugin extends SimpleIndexName<LogEvent> {
 
     static final String PLUGIN_NAME = "IndexName";
+    static final String ELEMENT_TYPE = "indexNameFormatter";
 
-    private final String indexName;
-
-    protected NoopIndexNameFormatter(String indexName) {
-        this.indexName = indexName;
-    }
-
-    @Override
-    public String format(LogEvent logEvent) {
-        return this.indexName;
-    }
-
-    @Override
-    public String format(long millis) {
-        return this.indexName;
+    protected IndexNamePlugin(String indexName) {
+        super(indexName);
     }
 
     @PluginBuilderFactory
-    public static NoopIndexNameFormatter.Builder newBuilder() {
-        return new NoopIndexNameFormatter.Builder();
+    public static IndexNamePlugin.Builder newBuilder() {
+        return new IndexNamePlugin.Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<NoopIndexNameFormatter> {
+    public static class Builder implements org.apache.logging.log4j.core.util.Builder<IndexNamePlugin> {
 
         @PluginBuilderAttribute
-        @Required(message = "No indexName provided for IndexName")
+        @Required(message = "No indexName provided for " + PLUGIN_NAME)
         private String indexName;
 
         @Override
-        public NoopIndexNameFormatter build() {
+        public IndexNamePlugin build() {
             if (indexName == null) {
-                throw new ConfigurationException("No indexName provided for IndexName");
+                throw new ConfigurationException("No indexName provided for " + PLUGIN_NAME);
             }
-            return new NoopIndexNameFormatter(indexName);
+            return new IndexNamePlugin(indexName);
         }
 
-        public NoopIndexNameFormatter.Builder withIndexName(String indexName) {
+        public Builder withIndexName(String indexName) {
             this.indexName = indexName;
             return this;
         }
