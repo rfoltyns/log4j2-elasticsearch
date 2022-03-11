@@ -131,7 +131,6 @@ public class RollingIndexNameFormatterTest {
         assertEquals("testIndexName-2017-12-20-23.54", formattedIndexName);
     }
 
-
     @Test
     public void returnsNextRolloverTimeIfEventTimeIsAfterRolloverTime() {
 
@@ -146,6 +145,25 @@ public class RollingIndexNameFormatterTest {
 
         // then
         assertEquals("testIndexName-2017-12-21-00.54", formattedIndexName);
+    }
+
+    @Test
+    public void returnsNextRolloverTimeAlignedWithEventTimeIfEventTimeIsAfterNextFewRolloverTimes() {
+
+        // given
+        LogEvent logEvent = mock(LogEvent.class);
+        when(logEvent.getTimeMillis()).thenReturn(getTestTimeInMillis() + TimeUnit.HOURS.toMillis(3));
+
+        RollingIndexNameFormatter formatter = createRollingIndexNameFormatterBuilder().build();
+
+        assertEquals(getTestTimeInMillis(), formatter.getNextRolloverTime());
+
+        // when
+        String formattedIndexName = formatter.format(logEvent);
+
+        // then
+        assertEquals("testIndexName-2017-12-21-02.54", formattedIndexName);
+
     }
 
     @Test

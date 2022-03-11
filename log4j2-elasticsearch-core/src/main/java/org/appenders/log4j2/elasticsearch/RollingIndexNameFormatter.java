@@ -35,9 +35,11 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Thread-safe, time-based rolling index name formatter. Caches formatted index name between rolls to minimize overhead.
+ * Time-based rolling index name formatter. Caches formatted index name between rolls to minimize overhead.
  * <p>
  * Format: {@code <indexName>-<datePattern>}
+ * <p>
+ * This class is NOT thread-safe!
  */
 @Plugin(name = "RollingIndexName", category = Node.CATEGORY, elementType = IndexNameFormatter.ELEMENT_TYPE, printObject = true)
 public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
@@ -101,9 +103,13 @@ public class RollingIndexNameFormatter implements IndexNameFormatter<LogEvent> {
         }
 
         // rollover
-        if (eventTimeInMillis >= nextRolloverTime && rollingOver.compareAndSet(false, true)) {
-            rollover(indexName, eventTimeInMillis);
-            rollingOver.set(false);
+        while (eventTimeInMillis >= nextRolloverTime) {
+            if (rollingOver.compareAndSet(false, true)) {
+                rollover(indexName, eventTimeInMillis);
+                rollingOver.set(false);
+                continue;
+            }
+            break;
         }
 
         // happy path - have to check for pending rollover to avoid race conditions
