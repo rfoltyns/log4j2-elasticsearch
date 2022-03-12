@@ -58,8 +58,8 @@
         <httpcore.version>4.4.14</httpcore.version>
         <net.openhft.chroniclemap.version>3.21ea60</net.openhft.chroniclemap.version>
         <jctools.version>3.1.0</jctools.version>
-        <jupyter.version>5.7.1</jupyter.version>
-        <mockito.version>3.8.0</mockito.version>
+        <jupiter.version>5.8.2</jupiter.version>
+        <mockito.version>4.4.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
         <jmh.version>1.32</jmh.version>
     </properties>
@@ -216,13 +216,13 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>${jupyter.version}</version>
+                <version>${jupiter.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter-engine</artifactId>
-                <version>${jupyter.version}</version>
+                <version>${jupiter.version}</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
