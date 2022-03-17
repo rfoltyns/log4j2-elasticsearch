@@ -31,11 +31,13 @@ import java.util.Random;
 
 public class LogEventGenerator {
 
-    private long counter = System.currentTimeMillis();
+    private long current = System.currentTimeMillis();
 
     private final MutableLogEvent logEvent;
+    private final long nextDelta;
 
-    public LogEventGenerator(int size) {
+    public LogEventGenerator(int size, long nextDelta) {
+        this.nextDelta = nextDelta;
 
         final byte[] bytes = new byte[size];
         new Random().nextBytes(bytes);
@@ -52,8 +54,13 @@ public class LogEventGenerator {
 
     }
 
+    public LogEventGenerator(int messageSize) {
+        this(messageSize, 1);
+    }
+
     public LogEvent next() {
-        ((MutableInstant)logEvent.getInstant()).initFromEpochMilli(counter++, 0);
+        current += nextDelta;
+        ((MutableInstant)logEvent.getInstant()).initFromEpochMilli(current, 0);
         return logEvent;
     }
 
