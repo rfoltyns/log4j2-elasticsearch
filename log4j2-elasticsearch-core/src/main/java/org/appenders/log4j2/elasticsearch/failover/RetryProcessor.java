@@ -128,7 +128,7 @@ class RetryProcessor implements Runnable {
         try {
             while (selectedKeys.hasNext()) {
                 CharSequence next = selectedKeys.next();
-                retryInternal(next);
+                retry(next);
             }
         } catch (Exception e) {
             readFailureCount.incrementAndGet();
@@ -142,7 +142,7 @@ class RetryProcessor implements Runnable {
 
     }
 
-    private void retryInternal(CharSequence next) {
+    private void retry(CharSequence next) {
 
         // consider removing on release()
         ItemSource failedItem = items.remove(next);

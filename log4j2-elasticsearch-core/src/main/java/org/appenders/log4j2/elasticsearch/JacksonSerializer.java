@@ -91,7 +91,7 @@ public class JacksonSerializer<T> implements Serializer<T> {
         private boolean singleThread;
 
         public Serializer<T> build() {
-            return new JacksonSerializer<T>(createConfiguredWriter());
+            return new JacksonSerializer<>(createConfiguredWriter());
         }
 
         protected ObjectWriter createConfiguredWriter() {
@@ -254,7 +254,7 @@ public class JacksonSerializer<T> implements Serializer<T> {
          * @return this
          */
         public JacksonSerializer.Builder<T> withJacksonModules(JacksonModule... modules) {
-            this.jacksonModules = Stream.of(modules).flatMap(Stream::of)
+            this.jacksonModules = Stream.of(modules)
                     .toArray(JacksonModule[]::new);
             return this;
         }
@@ -262,7 +262,8 @@ public class JacksonSerializer<T> implements Serializer<T> {
         /**
          * Allows to configure value resolver
          *
-         * @param valueResolver value reslver to use
+         * @param valueResolver value resolver to use
+         * @return this
          */
         public JacksonSerializer.Builder<T> withValueResolver(ValueResolver valueResolver) {
             this.valueResolver = valueResolver;
