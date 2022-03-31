@@ -186,18 +186,7 @@ public abstract class SmokeTestBase {
     @Test
     public void xmlConfigTest() throws InterruptedException {
 
-        // let's test https://github.com/rfoltyns/log4j2-elasticsearch/issues/15
-        URI uri = URI.create("log4j2.xml");
-        LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getFactory().getContext(
-                LogManager.class.getName(),
-                SmokeTestBase.class.getClassLoader(),
-                null,
-                false,
-                uri,
-                null
-        );
-
-        context.setConfigLocation(uri);
+        System.setProperty("log4j.configurationFile", "log4j2.xml");
 
         Logger logger = LogManager.getLogger(getConfig().getProperty("loggerName", String.class));
         final String log = createLog();
@@ -210,7 +199,7 @@ public abstract class SmokeTestBase {
         System.setProperty("log4j.configurationFile", "log4j2.properties");
         AtomicInteger counter = new AtomicInteger();
 
-        Logger logger = LogManager.getLogger("elasticsearch");
+        Logger logger = LogManager.getLogger(getConfig().getProperty("loggerName", String.class));
         indexLogs(logger, null, getConfig().getProperty("numberOfProducers", Integer.class), () -> "Message " + counter.incrementAndGet());
 
     }

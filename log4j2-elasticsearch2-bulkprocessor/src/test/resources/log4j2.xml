@@ -23,7 +23,7 @@
 <Configuration status="WARN">
 
     <Appenders>
-        <Elasticsearch name="elasticsearchAsyncBatch">
+        <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
             <JsonLayout compact="true" />
             <IndexName indexName="log4j2_test_es2" />
             <AsyncBatchDelivery batchSize="10000"
@@ -44,14 +44,14 @@
                 <NoopFailoverPolicy />
             </AsyncBatchDelivery>
         </Elasticsearch>
-        <Async name="asyncLogger">
-            <AppenderRef ref="elasticsearchAsyncBatch" />
+        <Async name="asyncAppender">
+            <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
         </Async>
     </Appenders>
 
     <Loggers>
-        <AsyncLogger name="elasticsearch" level="info" additivity="false">
-            <AppenderRef ref="asyncLogger" />
+        <AsyncLogger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" level="info" additivity="false">
+            <AppenderRef ref="asyncAppender" />
         </AsyncLogger>
         <Root level="${sys:log4j2.level:-info}" />
     </Loggers>

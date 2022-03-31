@@ -12,7 +12,7 @@
         <Logger level="debug" name="org.appenders.logging" additivity="false" >
             <AppenderRef ref="CONSOLE" />
         </Logger>
-        <Logger name="${sys:smokeTest.loggerName:-elasticsearch}" additivity="false">
+        <Logger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" additivity="false">
             <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
         </Logger>
         <Root level="${sys:log4j2.level:-info}" />

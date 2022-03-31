@@ -3,7 +3,7 @@
 <Configuration status="${sys:log4j2.level:-WARN}">
 
     <Appenders>
-        <Elasticsearch name="elasticsearchAsyncBatch">
+        <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
             <IndexName indexName="log4j2-elasticsearch-jest" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
@@ -64,8 +64,8 @@
     </Appenders>
 
     <Loggers>
-        <AsyncLogger name="elasticsearch" level="info" additivity="false">
-            <AppenderRef ref="elasticsearchAsyncBatch" />
+        <AsyncLogger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" level="info" additivity="false">
+            <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
         </AsyncLogger>
     </Loggers>
 
