@@ -36,6 +36,7 @@ import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ReusableOutputStreamProvider;
+import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -82,7 +83,6 @@ public class PooledItemSourceFactoryTest {
     private PooledItemSourceFactory<LogEvent, ByteBuf> itemPool;
     private LogEventGenerator logEventGenerator;
     private JacksonSerializer<LogEvent> serializer;
-    private int resizeCount;
 
     @Setup
     public void prepare() {
@@ -90,6 +90,7 @@ public class PooledItemSourceFactoryTest {
         final ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf> builder = (ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>) new ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>()
                 .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, (itemSizeInBytes + ENVELOPE_SIZE) * 2)))
                 .withInitialPoolSize(poolSize)
+                .withResizePolicy(UnlimitedResizePolicy.newBuilder().build())
                 .withPoolName("itemPool");
 
         this.itemPool = new ExtendedPooledItemSourceFactory<>(builder.configuredItemSourcePool(), new ReusableOutputStreamProvider<>());
