@@ -3,7 +3,7 @@
 
     <Appenders>
         <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
-            <IndexName indexName="log4j2-elasticsearch-hc" />
+            <RollingIndexName indexName="log4j2-elasticsearch-hc" pattern="dd-HH-mm"/>
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
                 <NonEmptyFilter/>

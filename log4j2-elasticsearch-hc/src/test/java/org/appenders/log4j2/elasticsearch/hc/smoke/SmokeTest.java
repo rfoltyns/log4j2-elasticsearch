@@ -49,10 +49,11 @@ import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
-import org.appenders.log4j2.elasticsearch.NoopIndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ResourceUtil;
+import org.appenders.log4j2.elasticsearch.RollingIndexNamePlugin;
+import org.appenders.log4j2.elasticsearch.SimpleIndexName;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
@@ -204,8 +205,9 @@ public class SmokeTest extends SmokeTestBase {
                 .withShutdownDelayMillis(10000)
                 .build();
 
-        IndexNameFormatter<LogEvent> indexNameFormatter = NoopIndexNameFormatter.newBuilder()
+        final IndexNameFormatter<LogEvent> indexNameFormatter = new RollingIndexNamePlugin.Builder()
                 .withIndexName(indexName)
+                .withPattern("yyyy-MM-dd-HH")
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
