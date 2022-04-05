@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.spi;
 
 
 import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.TestHttpObjectFactory;
@@ -52,7 +51,7 @@ public class BatchEmitterServiceProviderTest {
         BatchEmitterServiceProvider serviceProvider = new BatchEmitterServiceProvider(Collections.emptyList());
 
         // when
-        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> serviceProvider.createInstance(TEST_BATCH_SIZE,
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> serviceProvider.createInstance(TEST_BATCH_SIZE,
                 LARGE_TEST_INTERVAL,
                 createTestObjectFactoryBuilder().build(),
                 createTestFailoverPolicy("testRefAppender", mock(Configuration.class))
@@ -90,7 +89,7 @@ public class BatchEmitterServiceProviderTest {
         when(emitterFactory.accepts(ArgumentMatchers.<Class<TestHttpObjectFactory>>any())).thenReturn(false);
 
         // when
-        final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createWithTestValues(serviceProvider));
+        final IllegalStateException exception = assertThrows(IllegalStateException.class, () -> createWithTestValues(serviceProvider));
 
         // then
         assertThat(exception.getMessage(), containsString("No compatible BatchEmitter implementations"));

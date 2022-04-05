@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.spi;
  */
 
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchEmitter;
 import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
@@ -104,7 +103,7 @@ public class BatchEmitterServiceProvider {
 
         }
 
-        throw new ConfigurationException(String.format(
+        throw new IllegalStateException(String.format(
                 "No compatible BatchEmitter implementations for %s found",
                 clientObjectFactory.getClass().getName()));
     }
