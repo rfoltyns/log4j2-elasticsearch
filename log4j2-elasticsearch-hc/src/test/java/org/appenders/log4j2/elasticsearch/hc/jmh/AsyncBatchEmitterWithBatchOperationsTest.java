@@ -155,7 +155,7 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
                 .withMonitored(false)
                 .withMonitorTaskInterval(1000)
                 .withPoolName("batchPool")
-                .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(0.5).build())
+                .withResizePolicy(new UnlimitedResizePolicy.Builder().withResizeFactor(0.5).build())
                 .withResizeTimeout(100)
                 .build();
 

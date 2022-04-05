@@ -64,7 +64,7 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
                 .withItemSizeInBytes(4096)
                 .withMaxItemSizeInBytes(4096)
                 .withInitialPoolSize(1)
-                .withResizePolicy(UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build())
+                .withResizePolicy(new UnlimitedResizePolicy.Builder().withResizeFactor(1).build())
                 .build();
     }
 

@@ -86,7 +86,7 @@ public class SimpleInputBufferObjectOpsTest {
     }
 
     public static GenericItemSourcePool<SimpleInputBuffer> createDefaultTestGenericItemSourcePool(int initialSize, boolean monitored) {
-        ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().build();
+        ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder().build();
         return createDefaultTestGenericItemSourcePool(initialSize, monitored, resizePolicy);
     }
 
