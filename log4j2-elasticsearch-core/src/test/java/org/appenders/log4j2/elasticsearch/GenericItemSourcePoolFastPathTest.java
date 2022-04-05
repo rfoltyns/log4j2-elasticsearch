@@ -189,7 +189,7 @@ public abstract class GenericItemSourcePoolFastPathTest {
         GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
-                UnlimitedResizePolicy.newBuilder().withResizeFactor(1).build(),
+                new UnlimitedResizePolicy.Builder().withResizeFactor(1).build(),
                 DEFAULT_TEST_RESIZE_TIMEOUT,
                 false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
@@ -452,7 +452,7 @@ public abstract class GenericItemSourcePoolFastPathTest {
     }
 
     public static GenericItemSourcePool createDefaultTestGenericItemSourcePool(int initialSize, boolean monitored) {
-        ResizePolicy resizePolicy = UnlimitedResizePolicy.newBuilder().build();
+        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder().build();
         ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
 
         return new GenericItemSourcePool<>(

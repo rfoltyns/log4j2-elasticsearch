@@ -205,7 +205,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
          * @return {@link UnlimitedResizePolicy}
          */
         ResizePolicy createResizePolicy() {
-            return UnlimitedResizePolicy.newBuilder().build();
+            return new UnlimitedResizePolicy.Builder().build();
         }
 
         /* extension point */

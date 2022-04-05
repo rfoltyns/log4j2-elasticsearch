@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -37,13 +39,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class UnlimitedResizePolicyTest {
+public class UnlimitedResizePolicyPluginTest {
 
     @Test
     public void builderBuildsSuccessfully() {
 
         // given
-        final UnlimitedResizePolicy.Builder builder = new UnlimitedResizePolicy.Builder();
+        final UnlimitedResizePolicyPlugin.Builder builder = createTestResizePolicyBuilder();
 
         // when
         final ResizePolicy policy = builder.build();
@@ -53,15 +55,20 @@ public class UnlimitedResizePolicyTest {
 
     }
 
+    @NotNull
+    private UnlimitedResizePolicyPlugin.Builder createTestResizePolicyBuilder() {
+        return UnlimitedResizePolicyPlugin.newBuilder();
+    }
+
     @Test
     public void builderThrowsWhenResizeFactorIsZero() {
 
         // given
-        final UnlimitedResizePolicy.Builder builder = new UnlimitedResizePolicy.Builder()
+        final UnlimitedResizePolicyPlugin.Builder builder = createTestResizePolicyBuilder()
                 .withResizeFactor(0);
 
         // when
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("resizeFactor must be higher than 0"));
@@ -72,11 +79,11 @@ public class UnlimitedResizePolicyTest {
     public void builderThrowsWhenResizeFactorIsLowerThanZero() {
 
         // given
-        final UnlimitedResizePolicy.Builder builder = new UnlimitedResizePolicy.Builder()
+        final UnlimitedResizePolicyPlugin.Builder builder = createTestResizePolicyBuilder()
                 .withResizeFactor(-0.1);
 
         // when
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("resizeFactor must be higher than 0"));
@@ -87,11 +94,11 @@ public class UnlimitedResizePolicyTest {
     public void builderThrowsWhenResizeFactorIsHigherThanOne() {
 
         // given
-        final UnlimitedResizePolicy.Builder builder = new UnlimitedResizePolicy.Builder()
+        final UnlimitedResizePolicyPlugin.Builder builder = createTestResizePolicyBuilder()
                 .withResizeFactor(1.01);
 
         // when
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
 
         // then
         assertThat(exception.getMessage(), containsString("resizeFactor must be lower or equal 1"));
@@ -102,7 +109,7 @@ public class UnlimitedResizePolicyTest {
     public void canResizeByDefault() {
 
         // given
-        final UnlimitedResizePolicy policy = new UnlimitedResizePolicy.Builder().build();
+        final UnlimitedResizePolicy policy = UnlimitedResizePolicyPlugin.newBuilder().build();
 
         // when
         final boolean result = policy.canResize(null);
@@ -116,7 +123,7 @@ public class UnlimitedResizePolicyTest {
     public void increaseThrowsWhenResizeWouldNotTakeAnyEffect() {
 
         // given
-        final ResizePolicy policy = new UnlimitedResizePolicy.Builder()
+        final ResizePolicy policy = createTestResizePolicyBuilder()
                 .withResizeFactor(0.1)
                 .build();
 
@@ -137,7 +144,7 @@ public class UnlimitedResizePolicyTest {
 
         // given
         final double resizeFactor = 0.2;
-        final ResizePolicy policy = new UnlimitedResizePolicy.Builder()
+        final ResizePolicy policy = createTestResizePolicyBuilder()
                 .withResizeFactor(resizeFactor)
                 .build();
 
@@ -167,7 +174,7 @@ public class UnlimitedResizePolicyTest {
         final int expectedResizedTotalSize = 80;
         final double resizeFactor = 0.2;
 
-        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder()
+        final ResizePolicy resizePolicy = createTestResizePolicyBuilder()
                 .withResizeFactor(resizeFactor)
                 .build();
 
@@ -193,7 +200,7 @@ public class UnlimitedResizePolicyTest {
         final double resizeFactor = 0.75;
         final int expectedResizedTotalSize = initialSize + 5; // 5 will be in use
 
-        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder()
+        final ResizePolicy resizePolicy = createTestResizePolicyBuilder()
                 .withResizeFactor(resizeFactor)
                 .build();
 
@@ -232,7 +239,7 @@ public class UnlimitedResizePolicyTest {
         final double resizeFactor = 0.55;
         final int expectedResizedTotalSize = initialSize + additionalSize;
 
-        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder()
+        final ResizePolicy resizePolicy = createTestResizePolicyBuilder()
                 .withResizeFactor(resizeFactor)
                 .build();
 

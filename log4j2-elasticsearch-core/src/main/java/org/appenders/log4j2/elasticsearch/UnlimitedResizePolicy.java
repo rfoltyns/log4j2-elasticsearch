@@ -20,23 +20,14 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.apache.logging.log4j.core.config.Node;
-import org.apache.logging.log4j.core.config.plugins.Plugin;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
-import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
-
 /**
  * {@link ResizePolicy} resizing without upper limits to given {@link ItemSourcePool} size.
  */
-@Plugin(name = UnlimitedResizePolicy.PLUGIN_NAME, category = Node.CATEGORY, elementType = ResizePolicy.ELEMENT_TYPE, printObject = true)
-public final class UnlimitedResizePolicy implements ResizePolicy {
-
-    public static final String PLUGIN_NAME = "UnlimitedResizePolicy";
+public class UnlimitedResizePolicy implements ResizePolicy {
 
     private final double resizeFactor;
 
-    private UnlimitedResizePolicy(double resizeFactor) {
+    protected UnlimitedResizePolicy(final double resizeFactor) {
         this.resizeFactor = resizeFactor;
     }
 
@@ -48,17 +39,17 @@ public final class UnlimitedResizePolicy implements ResizePolicy {
      * Single resize operation will never increase pool's size by more than 100%
      *
      * @param itemSourcePool pool to be resized
-     * @throws ConfigurationException when {@code resizeFactor * initialPoolSize == 0}
+     * @throws IllegalStateException when {@code resizeFactor * initialPoolSize == 0}
      * @return true, if resize operation was successful, false otherwise
      */
     @Override
-    public boolean increase(ItemSourcePool itemSourcePool) {
+    public final boolean increase(final ItemSourcePool itemSourcePool) {
 
         int initialPoolSize = itemSourcePool.getInitialSize();
         int additionalPoolSize = (int) (initialPoolSize * resizeFactor);
 
         if (additionalPoolSize == 0) {
-            throw new ConfigurationException(String.format("Applying %s with resizeFactor %s will not resize given pool [%s] with initialPoolSize %s",
+            throw new IllegalArgumentException(String.format("Applying %s with resizeFactor %s will not resize given pool [%s] with initialPoolSize %s",
                     ResizePolicy.class.getSimpleName(),
                     resizeFactor,
                     itemSourcePool.getName(),
@@ -81,7 +72,7 @@ public final class UnlimitedResizePolicy implements ResizePolicy {
      * @return true, if resize operation was successful, false otherwise
      */
     @Override
-    public boolean decrease(ItemSourcePool itemSourcePool) {
+    public final boolean decrease(final ItemSourcePool itemSourcePool) {
 
         int availableSize = itemSourcePool.getAvailableSize();
         int decreaseSize = (int)(itemSourcePool.getTotalSize() * resizeFactor);
@@ -102,30 +93,23 @@ public final class UnlimitedResizePolicy implements ResizePolicy {
 
     }
 
-    @PluginBuilderFactory
-    public static Builder newBuilder() {
-        return new Builder();
-    }
-
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<UnlimitedResizePolicy> {
+    public static class Builder {
 
         /**
          * Default resize factor
          */
         public static final double DEFAULT_RESIZE_FACTOR = 0.50;
 
-        @PluginBuilderAttribute
         private double resizeFactor = DEFAULT_RESIZE_FACTOR;
 
-        @Override
         public UnlimitedResizePolicy build() {
 
             if (resizeFactor <= 0) {
-                throw new ConfigurationException("resizeFactor must be higher than 0");
+                throw new IllegalArgumentException("resizeFactor must be higher than 0");
             }
 
             if (resizeFactor > 1) {
-                throw new ConfigurationException("resizeFactor must be lower or equal 1");
+                throw new IllegalArgumentException("resizeFactor must be lower or equal 1");
             }
 
             return new UnlimitedResizePolicy(resizeFactor);
@@ -138,7 +122,7 @@ public final class UnlimitedResizePolicy implements ResizePolicy {
          *                     THEN total pooled items is 250
          * @return this
          */
-        public Builder withResizeFactor(double resizeFactor) {
+        public Builder withResizeFactor(final double resizeFactor) {
             this.resizeFactor = resizeFactor;
             return this;
         }

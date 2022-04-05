@@ -90,7 +90,7 @@ public class PooledItemSourceFactoryTest {
         final ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf> builder = (ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>) new ExtendedPooledItemSourceFactory.Builder<Object, ByteBuf>()
                 .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, (itemSizeInBytes + ENVELOPE_SIZE) * 2)))
                 .withInitialPoolSize(poolSize)
-                .withResizePolicy(UnlimitedResizePolicy.newBuilder().build())
+                .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
                 .withPoolName("itemPool");
 
         this.itemPool = new ExtendedPooledItemSourceFactory<>(builder.configuredItemSourcePool(), new ReusableOutputStreamProvider<>());

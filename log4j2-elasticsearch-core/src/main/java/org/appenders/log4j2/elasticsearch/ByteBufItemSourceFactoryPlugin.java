@@ -122,7 +122,7 @@ public class ByteBufItemSourceFactoryPlugin extends PooledItemSourceFactory<Obje
          * @return {@link UnlimitedResizePolicy}
          */
         ResizePolicy createResizePolicy() {
-            return UnlimitedResizePolicy.newBuilder().build();
+            return UnlimitedResizePolicyPlugin.newBuilder().build();
         }
 
         /* extension point */
