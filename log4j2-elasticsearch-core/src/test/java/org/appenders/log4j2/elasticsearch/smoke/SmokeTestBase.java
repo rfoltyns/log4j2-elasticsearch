@@ -38,7 +38,6 @@ import org.appenders.log4j2.elasticsearch.failover.Log4j2SingleKeySequenceSelect
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

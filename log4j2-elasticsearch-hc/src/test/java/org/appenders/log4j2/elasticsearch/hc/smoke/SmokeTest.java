@@ -53,7 +53,6 @@ import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ResourceUtil;
 import org.appenders.log4j2.elasticsearch.RollingIndexNamePlugin;
-import org.appenders.log4j2.elasticsearch.SimpleIndexName;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
