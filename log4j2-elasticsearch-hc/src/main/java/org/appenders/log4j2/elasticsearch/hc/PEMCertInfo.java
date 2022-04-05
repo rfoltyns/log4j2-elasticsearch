@@ -92,14 +92,13 @@ public final class PEMCertInfo implements CertInfo<HttpClientFactory.Builder> {
         return new PEMCertInfo.Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<PEMCertInfo> {
+    public static class Builder {
 
         private String keyPath;
         private String clientCertPath;
         private String caPath;
         private String keyPassphrase;
 
-        @Override
         public PEMCertInfo build() {
             if (keyPath == null) {
                 throw new IllegalArgumentException("No keyPath provided for " + getClass().getSimpleName());

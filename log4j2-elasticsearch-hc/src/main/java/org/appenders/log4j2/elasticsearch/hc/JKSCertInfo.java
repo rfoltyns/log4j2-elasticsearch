@@ -85,7 +85,7 @@ public class JKSCertInfo implements CertInfo<HttpClientFactory.Builder> {
         return new Builder();
     }
 
-    public static class Builder implements org.apache.logging.log4j.core.util.Builder<JKSCertInfo> {
+    public static class Builder {
 
         public static final String EMPTY_PASSWORD = "";
 
@@ -94,7 +94,6 @@ public class JKSCertInfo implements CertInfo<HttpClientFactory.Builder> {
         private String truststorePath;
         private String truststorePassword = EMPTY_PASSWORD;
 
-        @Override
         public JKSCertInfo build() {
             if (keystorePath == null) {
                 throw new IllegalArgumentException("No keystorePath provided for " + getClass().getSimpleName());
