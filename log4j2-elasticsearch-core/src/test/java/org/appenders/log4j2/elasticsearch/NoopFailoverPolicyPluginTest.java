@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,13 +30,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class NoopFailoverPolicyTest {
+public class NoopFailoverPolicyPluginTest {
 
     @Test
     public void minimalBuilderTest() {
 
         // given
-        final NoopFailoverPolicy.Builder builder = new NoopFailoverPolicy.Builder();
+        final NoopFailoverPolicyPlugin.Builder builder = NoopFailoverPolicyPlugin.newBuilder();
 
         // when
         final FailoverPolicy failoverPolicy = builder.build();
@@ -50,7 +50,7 @@ public class NoopFailoverPolicyTest {
     public void deliverFailedItemSourceDelegatesToGenericAPI() {
 
         // given
-        final NoopFailoverPolicy.Builder builder = new NoopFailoverPolicy.Builder();
+        final NoopFailoverPolicyPlugin.Builder builder = NoopFailoverPolicyPlugin.newBuilder();
         final FailoverPolicy<Object> failoverPolicy = spy(builder.build());
 
         final FailedItemSource<Object> failedItemSource = mock(FailedItemSource.class);

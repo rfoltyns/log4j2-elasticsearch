@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,20 +21,26 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
+import org.apache.logging.log4j.core.config.Node;
+import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
+
 /**
  * Default, no-op failure handler. Doesn't perform any action on failed item.
  */
-public class NoopFailoverPolicy implements FailoverPolicy<Object> {
+@Plugin(name = "NoopFailoverPolicy", category = Node.CATEGORY, elementType = FailoverPolicy.ELEMENT_TYPE, printObject = true)
+public class NoopFailoverPolicyPlugin extends NoopFailoverPolicy {
 
-    @Override
-    public void deliver(Object failedPayload) {
-        // noop
+    @PluginBuilderFactory
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
-    public static class Builder {
+    public static class Builder implements org.apache.logging.log4j.core.util.Builder<NoopFailoverPolicyPlugin> {
 
-        public NoopFailoverPolicy build() {
-            return new NoopFailoverPolicy();
+        @Override
+        public NoopFailoverPolicyPlugin build() {
+            return new NoopFailoverPolicyPlugin();
         }
 
     }
