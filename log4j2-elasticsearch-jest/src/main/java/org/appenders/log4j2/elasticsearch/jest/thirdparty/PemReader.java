@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -131,9 +132,9 @@ public final class PemReader
 
             CharBuffer buffer = CharBuffer.allocate(2048);
             while (reader.read(buffer) != -1) {
-                buffer.flip();
+                ((Buffer)buffer).flip();
                 stringBuilder.append(buffer);
-                buffer.clear();
+                ((Buffer)buffer).clear();
             }
             return stringBuilder.toString();
         }
