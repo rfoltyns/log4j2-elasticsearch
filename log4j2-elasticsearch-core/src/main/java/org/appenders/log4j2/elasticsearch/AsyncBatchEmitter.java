@@ -184,6 +184,7 @@ public class AsyncBatchEmitter<BATCH_TYPE> implements BatchEmitter {
 
     static final class EmitterLoop implements Runnable {
 
+        public static final String NAME = EmitterLoop.class.getSimpleName();
         private final AtomicBoolean running = new AtomicBoolean();
         private final AtomicReference<CountDownLatch> latch = new AtomicReference<>(new CountDownLatch(1));
         private final long interval;
@@ -208,25 +209,25 @@ public class AsyncBatchEmitter<BATCH_TYPE> implements BatchEmitter {
                     final boolean unlatched = latch.get().await(this.interval, TimeUnit.MILLISECONDS);
 
                     if (!running.get()) {
-                        getLogger().info("{}: Ignoring wakeup while not running", EmitterLoop.class.getSimpleName());
+                        getLogger().info("{}: Ignoring wakeup while not running", NAME);
                         return;
                     }
 
                     getLogger().debug(
-                            "{}: Executing on {}",
-                            EmitterLoop.class.getSimpleName(),
-                            unlatched ? "demand" : "interval");
+                            "{}: Executing on {}", NAME, unlatched ? "demand" : "interval");
 
                     action.run();
 
                 } catch (InterruptedException e) {
 
-                    getLogger().error("{}: Loop interrupted. Stopping", EmitterLoop.class.getSimpleName());
+                    getLogger().error("{}: Loop interrupted. Stopping", NAME);
 
                     stop();
 
                     Thread.currentThread().interrupt();
 
+                } catch (Exception e) {
+                    getLogger().error("{}: Execution failed: {}", NAME, e.getMessage());
                 }
 
             }

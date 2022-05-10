@@ -26,6 +26,8 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchEmitter.EmitterLoop;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -34,10 +36,15 @@ import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class EmitterLoopTest {
 
@@ -205,6 +212,36 @@ class EmitterLoopTest {
         // then
         verify(logger, timeout(500)).error(eq("{}: Loop interrupted. Stopping"), eq(AsyncBatchEmitter.EmitterLoop.class.getSimpleName()));
         verify(logger, timeout(500)).info(eq("{}: Stopped"), eq(AsyncBatchEmitter.EmitterLoop.class.getSimpleName()));
+
+    }
+
+    @Test
+    public void executionExceptionOnEmitterLoopIsHandled() {
+
+        // given
+        final Logger logger = mockTestLogger();
+
+        final AtomicReference<EmitterLoop> loopHandle = new AtomicReference<>();
+        final String exceptionMessage = UUID.randomUUID().toString();
+
+        final Runnable action = () -> {
+            loopHandle.get().reset();
+            throw new RuntimeException(exceptionMessage);
+        };
+
+        final EmitterLoop emitterLoop = new EmitterLoop(1000, action);
+        loopHandle.set(emitterLoop);
+
+        Thread t1 = new Thread(emitterLoop);
+
+        // when
+        t1.start();
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(50));
+        emitterLoop.poke();
+
+        // then
+        verify(logger, timeout(500)).error(eq("{}: Execution failed: {}"), eq(AsyncBatchEmitter.EmitterLoop.class.getSimpleName()), eq(exceptionMessage));
+        verify(logger, times(1)).debug(eq("{}: Executing on {}"), eq(AsyncBatchEmitter.EmitterLoop.class.getSimpleName()), eq("demand"));
 
     }
 
