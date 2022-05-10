@@ -18,6 +18,7 @@ package org.appenders.log4j2.elasticsearch.hc.thirdparty;
  * under the License.
  *
  * NOTE (rfoltyns): Source found at https://gist.github.com/dain/29ce5c135796c007f9ec88e82ab21822
+ * NOTE (rfoltyns): Cast to java.nio.Buffer added
  *
  */
 
@@ -29,6 +30,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
@@ -131,9 +133,9 @@ public final class PemReader
 
             CharBuffer buffer = CharBuffer.allocate(2048);
             while (reader.read(buffer) != -1) {
-                buffer.flip();
+                ((Buffer)buffer).flip();
                 stringBuilder.append(buffer);
-                buffer.clear();
+                ((Buffer)buffer).clear();
             }
             return stringBuilder.toString();
         }
