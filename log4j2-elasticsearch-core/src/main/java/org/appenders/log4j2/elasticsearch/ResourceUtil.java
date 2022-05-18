@@ -63,10 +63,8 @@ public class ResourceUtil {
     }
 
     private static String loadClasspathResource(final String path) {
-        try {
-            String resourcePath = path.replace(CLASSPATH_PREFIX, "");
+        try (InputStream resource = loadClasspathResource(path.replace(CLASSPATH_PREFIX, ""), getClassLoaders())){
 
-            InputStream resource = loadClasspathResource(resourcePath, getClassLoaders());
             if (resource == null) {
                 throw new IllegalArgumentException("Requested classpath resource was null: " + path);
             }
