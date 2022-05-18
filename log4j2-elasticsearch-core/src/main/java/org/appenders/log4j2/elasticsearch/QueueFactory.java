@@ -53,16 +53,21 @@ public class QueueFactory {
 
     private static final Map<String, QueueFactory> CACHED_INSTANCES = new HashMap<>();
 
-    private final String name;
     private final Features features;
+    private final Factory spsc;
+    private final Factory mpsc;
+    private final Factory mpmc;
 
     // visible for testing
     QueueFactory(final String name) {
-        this.name = name;
         this.features = Features.builder()
                 .configure(Features.Feature.JCTOOLS_QUEUES,
                         Boolean.parseBoolean(System.getProperty(String.format("appenders.%s.%s.enabled", name, "jctools"), Boolean.toString(Features.Feature.JCTOOLS_QUEUES.isEnabled()))))
                 .build();
+
+        spsc = resolveFactory(name, "org.jctools.queues.SpscUnboundedArrayQueue", SpscUnboundedArrayQueue::new);
+        mpsc = resolveFactory(name, "org.jctools.queues.MpscUnboundedArrayQueue", MpscUnboundedArrayQueue::new);
+        mpmc = resolveFactory(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue", MpmcUnboundedXaddArrayQueue::new);
     }
 
     public static QueueFactory getQueueFactoryInstance(final String name) {
@@ -70,40 +75,34 @@ public class QueueFactory {
     }
 
     public final <T> Queue<T> tryCreateMpscQueue(final int initialSize) {
-        return tryCreate(name, "org.jctools.queues.MpscUnboundedArrayQueue", initialSize);
+        //noinspection unchecked
+        return mpsc.create(initialSize);
     }
 
     public final <T> Queue<T> tryCreateSpscQueue(final int initialSize) {
-        return tryCreate(name, "org.jctools.queues.SpscUnboundedArrayQueue", initialSize);
+        //noinspection unchecked
+        return spsc.create(initialSize);
     }
 
     public final <T> Queue<T> tryCreateMpmcQueue(final int initialSize) {
-        return tryCreate(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue", initialSize);
+        //noinspection unchecked
+        return mpmc.create(initialSize);
     }
 
-    final <T> Queue<T> tryCreate(final String name, final String queueClassName, final int initialSize) {
+    private Factory resolveFactory(final String name, final String queueClassName, final Factory preferredFactory) {
 
-        if (features.isEnabled(Features.Feature.JCTOOLS_QUEUES) && hasClass(name, queueClassName)) {
-            getLogger().debug("{}: Using {}", name, queueClassName);
-            switch (queueClassName) {
-                case "org.jctools.queues.MpmcUnboundedXaddArrayQueue":
-                    return new MpmcUnboundedXaddArrayQueue<>(initialSize);
-                case "org.jctools.queues.SpscUnboundedArrayQueue":
-                    return new SpscUnboundedArrayQueue<>(initialSize);
-                case "org.jctools.queues.MpscUnboundedArrayQueue":
-                    return new MpscUnboundedArrayQueue<>(initialSize);
-                default:
-                    throw new UnsupportedOperationException(queueClassName + " is not supported");
+        if (features.isEnabled(Features.Feature.JCTOOLS_QUEUES)) {
+            if (hasClass(name, queueClassName)) {
+                getLogger().debug("{}: Using {}", name, queueClassName);
+                return preferredFactory;
             }
         }
 
-        final ConcurrentLinkedQueue<T> fallback = new ConcurrentLinkedQueue<>();
-
         getLogger().debug("{}: Falling back to {}",
                 name,
-                fallback.getClass().getName());
+                ConcurrentLinkedQueue.class.getName());
 
-        return fallback;
+        return size -> new ConcurrentLinkedQueue<>();
     }
 
     /* visible for testing */
@@ -197,6 +196,10 @@ public class QueueFactory {
             }
 
         }
+    }
+
+    private interface Factory<T> {
+        Queue<T> create(final int size);
     }
 
 }

@@ -35,15 +35,12 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class QueueFactoryTest {
 
@@ -163,6 +160,8 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
+        Logger logger = mockTestLogger();
+
         QueueFactory queueFactory = new QueueFactory(name) {
             @Override
             boolean hasClass(String name, String className) {
@@ -170,14 +169,12 @@ public class QueueFactoryTest {
             }
         };
 
-        Logger logger = mockTestLogger();
-
         // when
         Queue<Object> queue = queueFactory.tryCreateMpmcQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpmcQueueClass, queue.getClass());
-        verify(logger).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
+        verify(logger, times(3)).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
 
     }
 
@@ -188,6 +185,8 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
+        Logger logger = mockTestLogger();
+
         QueueFactory queueFactory = new QueueFactory(name) {
             @Override
             boolean hasClass(String name, String className) {
@@ -195,14 +194,12 @@ public class QueueFactoryTest {
             }
         };
 
-        Logger logger = mockTestLogger();
-
         // when
         Queue<Object> queue = queueFactory.tryCreateMpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(mpscQueueClass, queue.getClass());
-        verify(logger).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
+        verify(logger, times(3)).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
 
     }
 
@@ -213,6 +210,8 @@ public class QueueFactoryTest {
         String name = UUID.randomUUID().toString();
         System.setProperty(String.format("appenders.%s.jctools.enabled", name), "true");
 
+        Logger logger = mockTestLogger();
+
         QueueFactory queueFactory = new QueueFactory(name) {
             @Override
             boolean hasClass(String name, String className) {
@@ -220,14 +219,12 @@ public class QueueFactoryTest {
             }
         };
 
-        Logger logger = mockTestLogger();
-
         // when
         Queue<Object> queue = queueFactory.tryCreateSpscQueue(DEFAULT_TEST_INITIAL_SIZE);
 
         // then
         assertNotSame(spscQueueClass, queue.getClass());
-        verify(logger).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
+        verify(logger, times(3)).debug("{}: Falling back to {}", name, fallbackQueueClass.getName());
 
     }
 
@@ -292,26 +289,6 @@ public class QueueFactoryTest {
         // then
         assertSame(spscQueueClass, queue.getClass());
         assertEquals(10000, queue.size());
-
-    }
-
-    @Test
-    public void throwsOnNonSupportedClass() {
-
-        // given
-        String caller = UUID.randomUUID().toString();
-        String className = UUID.randomUUID().toString();
-
-        QueueFactory queueFactory = spy(createDefaultTestFactory(caller));
-        when(queueFactory.hasClass(caller, className)).thenReturn(true);
-
-        // when
-        final UnsupportedOperationException exception = assertThrows(
-                UnsupportedOperationException.class,
-                () -> queueFactory.tryCreate(caller, className, DEFAULT_TEST_INITIAL_SIZE));
-
-        // then
-        assertThat(exception.getMessage(), containsString(className + " is not supported"));
 
     }
 
