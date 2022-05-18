@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.mockito.invocation.Invocation;
 
 import java.util.Collection;
@@ -33,6 +32,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 public class LifeCycleTest {
 
@@ -75,7 +75,7 @@ public class LifeCycleTest {
         lifeCycle.stop();
 
         // then
-        Mockito.verify(lifeCycle).stop(anyLong(), anyBoolean());
+        verify(lifeCycle).stop(anyLong(), anyBoolean());
     }
 
     @Test

@@ -32,6 +32,7 @@ import static org.appenders.log4j2.elasticsearch.hc.HCHttpTest.createDefaultHttp
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 public class BulkEmitterFactoryTest {
 
@@ -74,7 +75,7 @@ public class BulkEmitterFactoryTest {
         factory.createInstance(1, 1, clientObjectFactory, failoverPolicy);
 
         // then
-        Mockito.verify(clientObjectFactory).createBatchListener(eq(failoverPolicy));
+        verify(clientObjectFactory).createBatchListener(eq(failoverPolicy));
 
     }
 
@@ -89,7 +90,7 @@ public class BulkEmitterFactoryTest {
         factory.createInstance(1, 1, clientObjectFactory, new NoopFailoverPolicy());
 
         // then
-        Mockito.verify(clientObjectFactory).createBatchOperations();
+        verify(clientObjectFactory).createBatchOperations();
 
     }
 

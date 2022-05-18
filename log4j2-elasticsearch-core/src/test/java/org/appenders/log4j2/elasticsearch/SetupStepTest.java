@@ -20,13 +20,13 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,7 +36,7 @@ public class SetupStepTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

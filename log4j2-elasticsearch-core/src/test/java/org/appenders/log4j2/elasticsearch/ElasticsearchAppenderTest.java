@@ -33,7 +33,6 @@ import org.apache.logging.log4j.core.impl.DefaultLogEventFactory;
 import org.apache.logging.log4j.core.layout.AbstractLayout;
 import org.apache.logging.log4j.core.layout.JsonLayout;
 import org.apache.logging.log4j.message.SimpleMessage;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender.Builder;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
@@ -43,6 +42,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -365,20 +365,20 @@ public class ElasticsearchAppenderTest {
     public void lifecycleStopResetsInternalLogging() {
 
         // given
-        Logger initialLogger = InternalLogging.getLogger();
+        Logger initialLogger = getLogger();
         assertNotNull(initialLogger);
 
         LifeCycle lifeCycle = createLifeCycleTestObject();
 
         lifeCycle.start();
 
-        assertSame(initialLogger, InternalLogging.getLogger());
+        assertSame(initialLogger, getLogger());
 
         // when
         lifeCycle.stop();
 
         // then
-        assertNotSame(initialLogger, InternalLogging.getLogger());
+        assertNotSame(initialLogger, getLogger());
 
     }
 

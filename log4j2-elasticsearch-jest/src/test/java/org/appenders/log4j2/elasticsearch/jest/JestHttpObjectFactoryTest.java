@@ -32,7 +32,6 @@ import io.searchbox.core.Index;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -60,6 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.log4j2.elasticsearch.IndexTemplateTest.createTestIndexTemplateBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -100,7 +100,7 @@ public class JestHttpObjectFactoryTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

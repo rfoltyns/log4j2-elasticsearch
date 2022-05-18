@@ -60,13 +60,13 @@ public class ChronicleMapRetryFailoverPolicyPlugin extends ChronicleMapRetryFail
         @PluginBuilderAttribute("numberOfEntries")
         protected long numberOfEntries;
 
-        @PluginBuilderAttribute(value = "averageValueSize")
+        @PluginBuilderAttribute("averageValueSize")
         protected int averageValueSize = ChronicleMapRetryFailoverPolicy.Builder.DEFAULT_AVERAGE_VALUE_SIZE;
 
-        @PluginBuilderAttribute(value = "batchSize")
+        @PluginBuilderAttribute("batchSize")
         protected int batchSize = ChronicleMapRetryFailoverPolicy.Builder.DEFAULT_BATCH_SIZE;
 
-        @PluginBuilderAttribute(value = "retryDelay")
+        @PluginBuilderAttribute("retryDelay")
         protected long retryDelay = ChronicleMapRetryFailoverPolicy.Builder.DEFAULT_RETRY_DELAY;
 
         @PluginElement("keySequenceSelector")
@@ -75,7 +75,7 @@ public class ChronicleMapRetryFailoverPolicyPlugin extends ChronicleMapRetryFail
         @PluginBuilderAttribute("monitored")
         protected boolean monitored;
 
-        @PluginBuilderAttribute(value = "monitorTaskInterval")
+        @PluginBuilderAttribute("monitorTaskInterval")
         protected long monitorTaskInterval = ChronicleMapRetryFailoverPolicy.Builder.DEFAULT_RETRY_DELAY;
 
         @Override

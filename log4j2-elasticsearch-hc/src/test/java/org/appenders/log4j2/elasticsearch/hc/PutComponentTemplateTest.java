@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -29,6 +28,7 @@ import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,7 +44,7 @@ public class PutComponentTemplateTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

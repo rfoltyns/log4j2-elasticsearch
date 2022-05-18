@@ -131,7 +131,7 @@ public class ILMPolicyPluginTest {
 
         // then
         assertThat(exception.getMessage(), containsString(
-                "Either path or source have to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+                "Either path or source must to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
 
     }
 
@@ -148,7 +148,7 @@ public class ILMPolicyPluginTest {
 
         // then
         assertThat(exception.getMessage(), containsString(
-                "Either path or source have to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
+                "Either path or source must to be provided for " + ILMPolicyPlugin.PLUGIN_NAME));
 
     }
 

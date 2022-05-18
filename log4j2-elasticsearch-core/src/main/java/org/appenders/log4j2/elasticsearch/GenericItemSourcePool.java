@@ -170,7 +170,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                 getName(),
                 delta,
                 getTotalSize(),
-                (System.currentTimeMillis() - start));
+                System.currentTimeMillis() - start);
 
     }
 

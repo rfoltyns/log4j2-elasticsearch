@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.junit.jupiter.api.Test;
@@ -36,6 +35,7 @@ import java.io.OutputStream;
 import java.util.UUID;
 import java.util.function.Function;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest.createTestItemSource;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -772,7 +772,7 @@ public class PooledItemSourceFactoryTest {
 
         itemSourceFactory.stop();
 
-        InternalLogging.setLogger(null);
+        setLogger(null);
 
     }
 

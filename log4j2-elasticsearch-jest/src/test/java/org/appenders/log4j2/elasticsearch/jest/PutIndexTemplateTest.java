@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 import io.searchbox.client.JestResult;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupContext;
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -45,7 +45,7 @@ public class PutIndexTemplateTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

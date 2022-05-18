@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.hash.ChronicleHashCorruption;
 import net.openhft.chronicle.map.ChronicleMap;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.log4j2.elasticsearch.DelayedShutdown;
 import org.appenders.log4j2.elasticsearch.ItemSource;
@@ -46,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.log4j2.elasticsearch.failover.UUIDSequenceTest.createDefaultTestKeySequence;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -84,7 +84,7 @@ public class ChronicleMapRetryFailoverPolicyTest {
 
     @AfterAll
     public static void globalTeardown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @BeforeEach

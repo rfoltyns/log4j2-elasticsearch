@@ -20,7 +20,6 @@ package org.appenders.core.util;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,7 +42,7 @@ public class PropertiesUtilTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

@@ -222,7 +222,7 @@ public class SmokeTest extends SmokeTestBase {
 
     private String getServerList(final boolean secured, final String hostPortList) {
         return SplitUtil.split(hostPortList, ";").stream()
-                .map(uri -> String.format("%s://%s", (secured ? "https" : "http"), uri))
+                .map(uri -> String.format("%s://%s", secured ? "https" : "http", uri))
                 .collect(Collectors.joining(";"));
     }
 

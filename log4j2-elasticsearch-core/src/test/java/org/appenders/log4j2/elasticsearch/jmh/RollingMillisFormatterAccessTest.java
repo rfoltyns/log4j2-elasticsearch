@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 })
 public class RollingMillisFormatterAccessTest {
 
-    @Param(value = {
+    @Param({
             "32",
             "64",
             "128",

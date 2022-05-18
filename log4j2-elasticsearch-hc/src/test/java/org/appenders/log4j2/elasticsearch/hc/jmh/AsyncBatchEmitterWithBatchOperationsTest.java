@@ -87,7 +87,7 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
 
     private final ByteBufAllocator byteBufAllocator = UnpooledByteBufAllocator.DEFAULT;
 
-    @Param(value = {
+    @Param({
             "1",
             "10",
             "1000",
@@ -96,7 +96,7 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
     })
     public int itemPoolSize;
 
-    @Param(value = {
+    @Param({
             "512",
             "2048",
             "4096",

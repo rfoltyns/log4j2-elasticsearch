@@ -71,7 +71,7 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s", bufferedBulk.getActions().size(), failover.getClass().getName()));
             try {
                 bufferedBulk.getActions().stream()
-                        .map(item -> failedItemOps.createItem(((BufferedIndex) item)))
+                        .map(item -> failedItemOps.createItem((BufferedIndex) item))
                         .forEach(failover::deliver);
                 return true;
             } catch (Exception e) {

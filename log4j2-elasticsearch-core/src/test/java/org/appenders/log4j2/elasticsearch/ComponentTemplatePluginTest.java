@@ -90,7 +90,7 @@ public class ComponentTemplatePluginTest {
         final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestComponentTemplate(TEST_TEMPLATE_NAME, null, null));
 
         // then
-        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("Either path or source must to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 
@@ -102,7 +102,7 @@ public class ComponentTemplatePluginTest {
 
         // then
         assertThat(exception.getMessage(), containsString(
-                "Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+                "Either path or source must to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 

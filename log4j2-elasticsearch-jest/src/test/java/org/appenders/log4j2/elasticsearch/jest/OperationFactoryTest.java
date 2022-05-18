@@ -24,7 +24,6 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.action.GenericJestRequestIntrospector;
 import io.searchbox.client.JestClient;
 import io.searchbox.client.JestResult;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -37,6 +36,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactoryTest.createTestObjectFactoryBuilder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,7 +52,7 @@ public class OperationFactoryTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test
@@ -144,7 +144,7 @@ public class OperationFactoryTest {
 
         //given
         Logger logger = mockTestLogger();
-        InternalLogging.setLogger(logger);
+        setLogger(logger);
 
         JestHttpObjectFactory factory = spy(createTestObjectFactoryBuilder().build());
 

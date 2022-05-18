@@ -55,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 public class GenericItemSourcePoolTest {
 
 
-    @Param(value = {
+    @Param({
             "1",
             "10",
             "1000",
@@ -64,7 +64,7 @@ public class GenericItemSourcePoolTest {
     })
     public int poolSize;
 
-    @Param(value = {
+    @Param({
             "512",
             "2048",
             "8192",

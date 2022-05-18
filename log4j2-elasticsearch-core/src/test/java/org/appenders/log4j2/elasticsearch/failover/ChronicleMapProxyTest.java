@@ -23,12 +23,12 @@ package org.appenders.log4j2.elasticsearch.failover;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class ChronicleMapProxyTest {
 
@@ -46,7 +46,7 @@ public class ChronicleMapProxyTest {
         proxy.put(key, value);
 
         // then
-        Mockito.verify(chronicleMap).put(eq(key), eq(value));
+        verify(chronicleMap).put(eq(key), eq(value));
 
     }
 
@@ -63,7 +63,7 @@ public class ChronicleMapProxyTest {
         proxy.remove(key);
 
         // then
-        Mockito.verify(chronicleMap).remove(eq(key));
+        verify(chronicleMap).remove(eq(key));
 
     }
 
@@ -80,7 +80,7 @@ public class ChronicleMapProxyTest {
         proxy.putAll(map);
 
         // then
-        Mockito.verify(chronicleMap).putAll(eq(map));
+        verify(chronicleMap).putAll(eq(map));
 
     }
 
@@ -98,7 +98,7 @@ public class ChronicleMapProxyTest {
         proxy.containsKey(key);
 
         // then
-        Mockito.verify(chronicleMap).containsKey(eq(key));
+        verify(chronicleMap).containsKey(eq(key));
 
     }
 
@@ -115,7 +115,7 @@ public class ChronicleMapProxyTest {
         proxy.get(key);
 
         // then
-        Mockito.verify(chronicleMap).get(eq(key));
+        verify(chronicleMap).get(eq(key));
 
     }
 
@@ -131,7 +131,7 @@ public class ChronicleMapProxyTest {
         proxy.clear();
 
         // then
-        Mockito.verify(chronicleMap).clear();
+        verify(chronicleMap).clear();
 
     }
 
@@ -148,7 +148,7 @@ public class ChronicleMapProxyTest {
         proxy.keySet();
 
         // then
-        Mockito.verify(chronicleMap).keySet();
+        verify(chronicleMap).keySet();
 
     }
 
@@ -165,7 +165,7 @@ public class ChronicleMapProxyTest {
         proxy.values();
 
         // then
-        Mockito.verify(chronicleMap).values();
+        verify(chronicleMap).values();
 
     }
 
@@ -182,7 +182,7 @@ public class ChronicleMapProxyTest {
         proxy.entrySet();
 
         // then
-        Mockito.verify(chronicleMap).entrySet();
+        verify(chronicleMap).entrySet();
 
     }
 
@@ -198,7 +198,7 @@ public class ChronicleMapProxyTest {
         proxy.size();
 
         // then
-        Mockito.verify(chronicleMap).size();
+        verify(chronicleMap).size();
 
     }
 
@@ -215,7 +215,7 @@ public class ChronicleMapProxyTest {
         proxy.isEmpty();
 
         // then
-        Mockito.verify(chronicleMap).isEmpty();
+        verify(chronicleMap).isEmpty();
 
     }
 
@@ -233,7 +233,7 @@ public class ChronicleMapProxyTest {
         proxy.containsValue(value);
 
         // then
-        Mockito.verify(chronicleMap).containsValue(eq(value));
+        verify(chronicleMap).containsValue(eq(value));
 
     }
 
@@ -249,7 +249,7 @@ public class ChronicleMapProxyTest {
         proxy.close();
 
         // then
-        Mockito.verify(chronicleMap).close();
+        verify(chronicleMap).close();
 
     }
 

@@ -65,7 +65,7 @@ public class PooledItemSourceFactoryTest {
 
     private static final int ENVELOPE_SIZE = 1000;
 
-    @Param(value = {
+    @Param({
             "1",
             "10",
             "1000",
@@ -74,7 +74,7 @@ public class PooledItemSourceFactoryTest {
     })
     public int poolSize;
 
-    @Param(value = {
+    @Param({
             "8192",
             "16384",
     })

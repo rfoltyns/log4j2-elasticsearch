@@ -127,7 +127,7 @@ public class IndexTemplatePluginTest {
         final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, null, null));
 
         // then
-        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("Either path or source must to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 
@@ -138,7 +138,7 @@ public class IndexTemplatePluginTest {
         final ConfigurationException exception = assertThrows(ConfigurationException.class, () -> createTestIndexTemplate(TEST_INDEX_TEMPLATE, TEST_PATH, TEST_SOURCE));
 
         // then
-        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("Either path or source must to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 

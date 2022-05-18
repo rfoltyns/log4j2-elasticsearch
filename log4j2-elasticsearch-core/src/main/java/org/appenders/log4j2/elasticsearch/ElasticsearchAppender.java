@@ -34,9 +34,10 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
-import org.appenders.core.logging.InternalLogging;
 
 import java.util.concurrent.TimeUnit;
+
+import static org.appenders.core.logging.InternalLogging.setLogger;
 
 
 /**
@@ -242,7 +243,7 @@ public class ElasticsearchAppender extends AbstractAppender {
             ((LifeCycle)getLayout()).stop();
         }
 
-        InternalLogging.setLogger(null);
+        setLogger(null);
 
     }
 

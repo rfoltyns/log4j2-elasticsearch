@@ -27,7 +27,6 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ResizePolicy;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_ITEM_POOL_NAME;
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.DEFAULT_TEST_ITEM_SIZE_IN_BYTES;
@@ -37,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +59,7 @@ public class SimpleInputBufferObjectOpsTest {
         pooledObjectOps.reset(itemSource);
 
         // then
-        Mockito.verify(inputBuffer, times(1)).reset();
+        verify(inputBuffer, times(1)).reset();
 
     }
 

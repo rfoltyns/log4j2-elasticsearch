@@ -33,7 +33,7 @@ import java.time.ZoneId;
 import java.util.concurrent.TimeUnit;
 
 @JCStressTest
-@Outcome.Outcomes(value = {
+@Outcome.Outcomes({
         @Outcome(id="jcstress-2017-12-20-23.59, jcstress-2017-12-21-00.00, jcstress-2017-12-21-00.01", expect = Expect.ACCEPTABLE, desc="OK"),
 })
 @State

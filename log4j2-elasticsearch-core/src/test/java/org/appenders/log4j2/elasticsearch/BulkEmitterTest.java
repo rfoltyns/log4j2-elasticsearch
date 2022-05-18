@@ -255,7 +255,7 @@ public abstract class BulkEmitterTest {
 
         // then
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
-        Mockito.verify(dummyObserver, Mockito.times(1)).apply(captor.capture());
+        verify(dummyObserver, Mockito.times(1)).apply(captor.capture());
         assertEquals(batchSize, captor.getValue().items.size());
     }
 
@@ -277,7 +277,7 @@ public abstract class BulkEmitterTest {
 
         // then
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
-        Mockito.verify(dummyObserver, Mockito.times(expectedNumberOfBatches)).apply(captor.capture());
+        verify(dummyObserver, Mockito.times(expectedNumberOfBatches)).apply(captor.capture());
         for (TestBatch batch : captor.getAllValues()) {
             assertEquals(TEST_BATCH_SIZE, batch.items.size());
         }

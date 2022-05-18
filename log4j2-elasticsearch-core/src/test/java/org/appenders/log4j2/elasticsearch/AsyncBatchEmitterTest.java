@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import edu.emory.mathcs.backport.java.util.concurrent.CountDownLatch;
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,7 +61,7 @@ public class AsyncBatchEmitterTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test
@@ -84,7 +83,7 @@ public class AsyncBatchEmitterTest {
 
         // then
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
-        Mockito.verify(dummyObserver, timeout(100)).apply(captor.capture());
+        verify(dummyObserver, timeout(100)).apply(captor.capture());
         assertEquals(batchSize, captor.getValue().items.size());
 
     }
@@ -110,7 +109,7 @@ public class AsyncBatchEmitterTest {
 
         // then
         ArgumentCaptor<TestBatch> captor = ArgumentCaptor.forClass(TestBatch.class);
-        Mockito.verify(dummyObserver, timeout(500).times(expectedNumberOfBatches)).apply(captor.capture());
+        verify(dummyObserver, timeout(500).times(expectedNumberOfBatches)).apply(captor.capture());
         for (TestBatch batch : captor.getAllValues()) {
             assertEquals(TEST_BATCH_SIZE, batch.items.size());
         }

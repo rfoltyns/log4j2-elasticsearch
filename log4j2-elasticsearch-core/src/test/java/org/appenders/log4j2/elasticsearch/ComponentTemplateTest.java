@@ -108,7 +108,7 @@ public class ComponentTemplateTest {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("Either path or source must to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 
@@ -124,7 +124,7 @@ public class ComponentTemplateTest {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), containsString("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), containsString("Either path or source must to be provided for " + ComponentTemplate.class.getSimpleName()));
 
     }
 

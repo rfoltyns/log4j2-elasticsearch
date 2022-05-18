@@ -76,8 +76,10 @@ public class ILMPolicyPlugin extends ILMPolicy {
                 throw new ConfigurationException("No rolloverAlias provided for " + PLUGIN_NAME);
             }
 
-            if ((path == null && source == null) || (path != null && source != null)) {
-                throw new ConfigurationException("Either path or source have to be provided for " + PLUGIN_NAME);
+            final boolean noneSet = path == null && source == null;
+            final boolean moreThanOneSet = path != null && source != null;
+            if (noneSet || moreThanOneSet) {
+                throw new ConfigurationException("Either path or source must to be provided for " + PLUGIN_NAME);
             }
 
             return new ILMPolicyPlugin(name, rolloverAlias, loadSource());

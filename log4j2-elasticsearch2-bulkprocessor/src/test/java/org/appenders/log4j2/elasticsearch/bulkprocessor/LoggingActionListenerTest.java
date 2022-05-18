@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -36,7 +36,7 @@ public class LoggingActionListenerTest {
 
     @AfterEach
     public void tearDown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

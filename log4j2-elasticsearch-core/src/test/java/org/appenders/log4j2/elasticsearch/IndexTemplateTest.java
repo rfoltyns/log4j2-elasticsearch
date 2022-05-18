@@ -146,7 +146,7 @@ public class IndexTemplateTest {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), equalTo("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), equalTo("Either path or source must to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 
@@ -162,7 +162,7 @@ public class IndexTemplateTest {
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
-        assertThat(exception.getMessage(), equalTo("Either path or source have to be provided for " + IndexTemplate.class.getSimpleName()));
+        assertThat(exception.getMessage(), equalTo("Either path or source must to be provided for " + IndexTemplate.class.getSimpleName()));
 
     }
 

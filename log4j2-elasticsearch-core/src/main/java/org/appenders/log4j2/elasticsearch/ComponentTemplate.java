@@ -83,8 +83,11 @@ public class ComponentTemplate implements OpSource {
             if (name == null) {
                 throw new IllegalArgumentException("No name provided for " + ComponentTemplate.class.getSimpleName());
             }
-            if ((path == null && source == null) || (path != null && source != null)) {
-                throw new IllegalArgumentException("Either path or source have to be provided for " + ComponentTemplate.class.getSimpleName());
+
+            final boolean noneSet = path == null && source == null;
+            final boolean moreThanOneSet = path != null && source != null;
+            if (noneSet || moreThanOneSet) {
+                throw new IllegalArgumentException("Either path or source must to be provided for " + ComponentTemplate.class.getSimpleName());
             }
         }
 

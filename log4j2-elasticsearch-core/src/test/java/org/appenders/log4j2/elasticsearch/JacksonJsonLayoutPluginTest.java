@@ -28,12 +28,12 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.core.layout.ByteBufferDestination;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
-import org.appenders.core.logging.InternalLogging;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -122,7 +122,7 @@ public class JacksonJsonLayoutPluginTest {
         verify(itemSourceFactory).create(eq(logEvent), any(Serializer.class));
         assertTrue(result.getSource().toString().contains(expectedValue));
 
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @Test

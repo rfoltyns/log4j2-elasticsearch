@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.failover;
  * #L%
  */
 
-import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.InternalLoggingTest;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicyTest.ExceptionMatcher;
@@ -36,6 +35,7 @@ import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapRetryFailoverPolicyTest.DEFAULT_TEST_MONITOR_TASK_INTERVAL;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,7 +69,7 @@ public class ChronicleMapRetryFailoverPolicyPluginTest {
 
     @AfterAll
     public static void globalTeardown() {
-        InternalLogging.setLogger(null);
+        setLogger(null);
     }
 
     @BeforeEach
