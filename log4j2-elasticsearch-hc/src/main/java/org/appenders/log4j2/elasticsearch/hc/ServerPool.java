@@ -37,6 +37,8 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  */
 public class ServerPool implements ServerInfoListener {
 
+    private static final String NAME = ServerPool.class.getSimpleName();
+
     private final int waitForHostsInterval = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.interval", "200"));
     private final int waitForHostsRetries = Integer.parseInt(System.getProperty("appenders.ServerPool.wait.retries", "5"));
 
@@ -81,7 +83,7 @@ public class ServerPool implements ServerInfoListener {
         int next = Math.abs(currentIndex.getAndIncrement() % serverInfos.size());
 
         String resolvedAddress = serverInfos.get(next).getResolvedAddress();
-        getLogger().debug("{}: Returning {}", ServerPool.class.getSimpleName(), resolvedAddress);
+        getLogger().debug("{}: Returning {}", NAME, resolvedAddress);
 
         return resolvedAddress;
 
