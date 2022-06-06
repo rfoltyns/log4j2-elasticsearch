@@ -41,6 +41,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  */
 public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
+    private static final String NAME = HCServiceDiscovery.class.getSimpleName();
     private volatile State state = State.STOPPED;
 
     private final ClientProvider<T> clientProvider;
@@ -81,10 +82,10 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
     public void refresh() {
 
         if (!isStarted()) {
-            throw new IllegalStateException(HCServiceDiscovery.class.getSimpleName() + " not started");
+            throw new IllegalStateException(NAME + " not started");
         }
 
-        getLogger().debug("{} : Refreshing address list", HCServiceDiscovery.class.getSimpleName());
+        getLogger().debug("{} : Refreshing address list", NAME);
 
         serviceDiscoveryRequest.execute(clientProvider.createClient(), new ServiceDiscoveryCallback());
 
@@ -124,7 +125,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
         if (!cache.containsKey(address)) {
             ServerInfo serverInfo = new ServerInfo(address);
             cache.put(address, serverInfo);
-            getLogger().info("{}: New address found: {}", HCServiceDiscovery.class.getSimpleName(), address);
+            getLogger().info("{}: New address found: {}", NAME, address);
         }
 
         return cache.get(address);
@@ -145,7 +146,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
         @Override
         public void onFailure(Exception e) {
-            getLogger().error(HCServiceDiscovery.class.getSimpleName() + ": Unable to refresh addresses: " + e.getMessage(), e);
+            getLogger().error(NAME + ": Unable to refresh addresses: " + e.getMessage(), e);
         }
 
     }
@@ -156,7 +157,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
             try {
                 refresh();
             } catch (Exception e) {
-                getLogger().error(HCServiceDiscovery.class.getSimpleName() + ": Unable to refresh addresses: " + e.getMessage(), e);
+                getLogger().error(NAME + ": Unable to refresh addresses: " + e.getMessage(), e);
             }
         }
 
@@ -174,11 +175,11 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
         LifeCycle.of(clientProvider).start();
 
-        getLogger().debug("{}: Starting executor", HCServiceDiscovery.class.getSimpleName());
+        getLogger().debug("{}: Starting executor", NAME);
 
         scheduleRefreshTask();
 
-        getLogger().debug("{}: Started", HCServiceDiscovery.class.getSimpleName());
+        getLogger().debug("{}: Started", NAME);
 
     }
 
@@ -202,7 +203,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
         // Shared client will cause cycles. State must be set here
         state = State.STOPPED;
 
-        getLogger().debug("{}: Shutting down executor", HCServiceDiscovery.class.getSimpleName());
+        getLogger().debug("{}: Shutting down executor", NAME);
 
         executor.shutdown();
 
@@ -210,7 +211,7 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
         listeners.clear();
 
-        getLogger().debug("{}: Stopped", HCServiceDiscovery.class.getSimpleName());
+        getLogger().debug("{}: Stopped", NAME);
 
 
     }
