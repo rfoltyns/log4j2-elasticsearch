@@ -361,6 +361,40 @@ public class AsyncBatchEmitterTest {
     }
 
     @Test
+    public void listenerExceptionsAreHandled() {
+
+        // given
+        final Logger logger = mockTestLogger();
+
+        assertTrue(TEST_BATCH_SIZE > 1);
+
+        AsyncBatchEmitter emitter = createTestBulkEmitter(TEST_BATCH_SIZE, 10000, new TestBatchOperations());
+        Function<TestBatch, Boolean> dummyObserver = testBatch -> {
+            throw new IllegalArgumentException("test");
+        };
+        emitter.addListener(dummyObserver);
+
+        emitter.start();
+
+        // when
+        emitter.add(new Object());
+        emitter.add(new Object());
+
+        verify(logger, timeout(500)).error("{}: Execution failed: {}", AsyncBatchEmitter.EmitterLoop.class.getSimpleName(), "test");
+        Mockito.reset(logger);
+
+        emitter.add(new Object());
+        emitter.add(new Object()); // second batch to ensure that loop was reset
+
+        // then
+        verify(logger, timeout(500)).error("{}: Execution failed: {}", AsyncBatchEmitter.EmitterLoop.class.getSimpleName(), "test");
+
+        emitter.stop(500, true);
+        setLogger(null);
+
+    }
+
+    @Test
     public void lifecycleStart() {
 
         // given

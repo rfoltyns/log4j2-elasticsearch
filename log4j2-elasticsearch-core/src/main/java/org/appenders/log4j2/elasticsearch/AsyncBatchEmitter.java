@@ -103,12 +103,13 @@ public class AsyncBatchEmitter<BATCH_TYPE> implements BatchEmitter {
                 return;
             }
 
-            drain();
-
-            emitterLoop.reset();
-
-            // switch back the gate condition
-            notifying.set(false);
+            try {
+                drain();
+            } finally {
+                emitterLoop.reset();
+                // switch back the gate condition
+                notifying.set(false);
+            }
 
             getLogger().debug("{}: Notification complete", AsyncBatchEmitter.class.getSimpleName());
 
