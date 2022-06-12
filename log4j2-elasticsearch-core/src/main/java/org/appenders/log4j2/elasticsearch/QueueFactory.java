@@ -20,10 +20,6 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
-import org.jctools.queues.MpmcUnboundedXaddArrayQueue;
-import org.jctools.queues.MpscUnboundedArrayQueue;
-import org.jctools.queues.SpscUnboundedArrayQueue;
-
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -54,8 +50,12 @@ public class QueueFactory {
     private static final Map<String, QueueFactory> CACHED_INSTANCES = new HashMap<>();
 
     private final Features features;
+
+    @SuppressWarnings("rawtypes")
     private final Factory spsc;
+    @SuppressWarnings("rawtypes")
     private final Factory mpsc;
+    @SuppressWarnings("rawtypes")
     private final Factory mpmc;
 
     // visible for testing
@@ -65,9 +65,9 @@ public class QueueFactory {
                         Boolean.parseBoolean(System.getProperty(String.format("appenders.%s.%s.enabled", name, "jctools"), Boolean.toString(Features.Feature.JCTOOLS_QUEUES.isEnabled()))))
                 .build();
 
-        spsc = resolveFactory(name, "org.jctools.queues.SpscUnboundedArrayQueue", SpscUnboundedArrayQueue::new);
-        mpsc = resolveFactory(name, "org.jctools.queues.MpscUnboundedArrayQueue", MpscUnboundedArrayQueue::new);
-        mpmc = resolveFactory(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue", MpmcUnboundedXaddArrayQueue::new);
+        spsc = resolveFactory(name, "org.jctools.queues.SpscUnboundedArrayQueue");
+        mpsc = resolveFactory(name, "org.jctools.queues.MpscUnboundedArrayQueue");
+        mpmc = resolveFactory(name, "org.jctools.queues.MpmcUnboundedXaddArrayQueue");
     }
 
     public static QueueFactory getQueueFactoryInstance(final String name) {
@@ -89,12 +89,13 @@ public class QueueFactory {
         return mpmc.create(initialSize);
     }
 
-    private Factory resolveFactory(final String name, final String queueClassName, final Factory preferredFactory) {
+    @SuppressWarnings("rawtypes")
+    private Factory resolveFactory(final String name, final String queueClassName) {
 
         if (features.isEnabled(Features.Feature.JCTOOLS_QUEUES)) {
             if (hasClass(name, queueClassName)) {
                 getLogger().debug("{}: Using {}", name, queueClassName);
-                return preferredFactory;
+                return new JCToolsFactory().create(queueClassName);
             }
         }
 
@@ -198,7 +199,7 @@ public class QueueFactory {
         }
     }
 
-    private interface Factory<T> {
+    interface Factory<T> {
         Queue<T> create(final int size);
     }
 
