@@ -12,6 +12,7 @@ Latest released code (1.5.x) is available [here](https://github.com/rfoltyns/log
 Project consists of:
 * `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
 * `log4j2-elasticsearch-hc` - optimized Apache Async HTTP client compatible with Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters
+* (Since 1.6.0) `log4j2-elasticsearch-ahc` - [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) compatible with Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters
 * `log4j2-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
 * `log4j2-elasticsearch2-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/java-docs-bulk-processor.html) compatible with 2.x clusters
 * `log4j2-elasticsearch5-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/java-docs-bulk-processor.html) compatible with 5.x and 6.x clusters
@@ -42,6 +43,7 @@ Project consists of:
 * (1.6) Elasticsearch 8.x support (`null` mapping type)
 * [Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) support
 * [Metrics](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#metrics)
+* [`log4j2-elasticsearch-ahc`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-ahc) module - HTTP client with GZIP support
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 

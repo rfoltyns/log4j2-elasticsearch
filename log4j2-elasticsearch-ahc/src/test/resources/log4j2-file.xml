@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="${sys:log4j2.level:-WARN}">
+
+    <Appenders>
+        <Console name="CONSOLE" level="DEBUG" />
+
+        <File name="fileAppender" fileName="${sys:logfile.path:-./}log4j2-elasticsearch-ahc.log">
+            <PatternLayout>
+                <Pattern>%d %p [%t] %m%n</Pattern>
+            </PatternLayout>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <AsyncLogger name="file" level="${sys:log4j2.level:-WARN}" additivity="false">
+            <AppenderRef ref="fileAppender" />
+        </AsyncLogger>
+        <Root level="${sys:log4j2.level:-info}" />
+    </Loggers>
+
+</Configuration>

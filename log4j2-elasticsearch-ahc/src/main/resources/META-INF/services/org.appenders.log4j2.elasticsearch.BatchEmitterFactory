@@ -1,0 +1,2 @@
+org.appenders.log4j2.elasticsearch.ahc.BulkEmitterFactory
+org.appenders.log4j2.elasticsearch.ahc.AsyncBatchEmitterFactory

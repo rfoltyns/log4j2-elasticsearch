@@ -1,0 +1,50 @@
+{
+  "policy" : {
+    "phases" : {
+      "warm" : {
+        "min_age" : "0ms",
+        "actions" : {
+          "allocate" : {
+            "number_of_replicas" : 0,
+            "include" : { },
+            "exclude" : { },
+            "require" : { }
+          },
+          "forcemerge" : {
+            "max_num_segments" : 1
+          },
+          "shrink" : {
+            "number_of_shards" : 1
+          }
+        }
+      },
+      "cold" : {
+        "min_age" : "${sys:ilmPolicy.cold.minAge}",
+        "actions" : {
+          "allocate" : {
+            "number_of_replicas" : 0,
+            "include" : { },
+            "exclude" : { },
+            "require" : { }
+          },
+          "freeze" : { }
+        }
+      },
+      "hot" : {
+        "min_age" : "0ms",
+        "actions" : {
+          "rollover" : {
+            "max_size" : "${sys:ilmPolicy.hot.maxSize}",
+            "max_age" : "${sys:ilmPolicy.hot.maxAge}"
+          }
+        }
+      },
+      "delete" : {
+        "min_age" : "${sys:ilmPolicy.delete.minAge}",
+        "actions" : {
+          "delete" : { }
+        }
+      }
+    }
+  }
+}

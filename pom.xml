@@ -60,8 +60,10 @@
         <httpclient.version>4.5.13</httpclient.version>
         <httpasyncclient.version>4.1.5</httpasyncclient.version>
         <httpcore.version>4.4.15</httpcore.version>
+        <org.asynchttpclient.version>2.12.3</org.asynchttpclient.version>
         <net.openhft.chroniclemap.version>3.21ea60</net.openhft.chroniclemap.version>
         <jctools.version>3.1.0</jctools.version>
+        <netty.version>4.1.60.Final</netty.version>
         <jupiter.version>5.8.2</jupiter.version>
         <mockito.version>4.4.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
@@ -70,6 +72,7 @@
 
     <modules>
         <module>log4j2-elasticsearch-core</module>
+        <module>log4j2-elasticsearch-ahc</module>
         <module>log4j2-elasticsearch-hc</module>
         <module>log4j2-elasticsearch-jest</module>
         <module>log4j2-elasticsearch2-bulkprocessor</module>
@@ -171,6 +174,13 @@
                 <artifactId>httpcore-nio</artifactId>
                 <version>${httpcore.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.asynchttpclient</groupId>
+                <artifactId>async-http-client-bom</artifactId>
+                <version>${org.asynchttpclient.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
 
             <dependency>
                 <groupId>net.openhft</groupId>
@@ -182,6 +192,13 @@
                 <groupId>org.jctools</groupId>
                 <artifactId>jctools-core</artifactId>
                 <version>${jctools.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-buffer</artifactId>
+                <version>${netty.version}</version>
                 <scope>provided</scope>
             </dependency>
 

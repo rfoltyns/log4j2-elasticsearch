@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="${sys:log4j2.level:-INFO}">
+
+    <Appenders>
+        <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
+            <IndexName indexName="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}" />
+            <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
+            <JacksonJsonLayout>
+                <NonEmptyFilter/>
+                <VirtualProperty name="field1" value="$${ctx:ctxVariable:-}" dynamic="true" />
+                <VirtualProperty name="field2" value="$${env:envVariable:-}" />
+                <JacksonModuleExample/>
+                <PooledItemSourceFactory poolName="itemPool"
+                                         itemSizeInBytes="${sys:smokeTest.initialItemBufferSizeInBytes:-1024}"
+                                         maxItemSizeInBytes="8192"
+                                         initialPoolSize="${sys:smokeTest.initialItemPoolSize:-40000}"
+                                         monitored="true"
+                                         monitorTaskInterval="10000"
+                                         resizeTimeout="500">
+                    <UnlimitedResizePolicy resizeFactor="0.6" />
+                    <Metrics>
+                        <Count name="total" />
+                        <Count name="available" />
+                    </Metrics>
+                </PooledItemSourceFactory>
+            </JacksonJsonLayout>
+            <AsyncBatchDelivery batchSize="${sys:smokeTest.batchSize:-10000}"
+                                deliveryInterval="10000" >
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}-mappings" path="classpath:componentTemplate-7-mappings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}-settings" path="classpath:componentTemplate-7-settings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}-settings-ilm" path="classpath:componentTemplate-7-settings-ilm.json" />
+                <IndexTemplate apiVersion="8" name="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}" path="classpath:composableIndexTemplate-7.json" />
+                <ILMPolicy name="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}-ilm-policy" rolloverAlias="${sys:smokeTest.indexName:-log4j2-elasticsearch-ahc}" path="classpath:ilmPolicy-7.json" />
+                <AHCHttp name="http-main"
+                         connTimeout="500"
+                        readTimeout="30000"
+                         gzipCompression="true"
+                        maxTotalConnections="8">
+                    <PooledItemSourceFactory poolName="batchPool"
+                                             itemSizeInBytes="5120000"
+                                             initialPoolSize="${sys:smokeTest.initialBatchPoolSize:-4}"
+                                             resizeTimeout="500">
+                        <UnlimitedResizePolicy resizeFactor="0.70" />
+                        <Metrics>
+                            <Count name="available" />
+                            <Count name="total" />
+                        </Metrics>
+                    </PooledItemSourceFactory>
+                    <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
+                    <ServiceDiscovery serverUris="https://localhost:9200"
+                                      targetScheme="https"
+                                      refreshInterval="5000"
+                                      configPolicies="security">
+                        <Metrics>
+                            <Count name="connectionsActive" />
+                        </Metrics>
+                    </ServiceDiscovery>
+                    <Security>
+                        <BasicCredentials username="admin" password="changeme" />
+<!--                        <JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->
+<!--                             keystorePassword="${sys:jksCertInfo.keystorePassword}"-->
+<!--                             truststorePath="${sys:jksCertInfo.truststorePath}"-->
+<!--                             truststorePassword="${sys:jksCertInfo.truststorePassword}" />-->
+                        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
+                             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                             caPath="${sys:pemCertInfo.caPath}" />
+                    </Security>
+                    <Metrics>
+                        <Count name="serverTookMs" />
+                        <Count name="itemsSent" />
+                        <Count name="itemsDelivered" />
+                        <Count name="itemsFailed" />
+                        <Count name="batchesFailed" />
+                        <Count name="failoverTookMs" />
+                        <Count name="backoffApplied" />
+                        <Count name="connectionsActive" />
+                        <Count name="connectionsTotal" />
+                    </Metrics>
+                </AHCHttp>
+<!--                <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-.}/failedItems-log4j2-elasticsearch-ahc.chronicleMap"-->
+<!--                                              numberOfEntries="${sys:appenders.failover.chroniclemap.numberOfEntries:-1000000}"-->
+<!--                                              averageValueSize="${sys:smokeTest.initialItemBufferSizeInBytes:-2048}"-->
+<!--                                              batchSize="5000"-->
+<!--                                              retryDelay="3000"-->
+<!--                                              monitored="true"-->
+<!--                                              monitorTaskInterval="30000">-->
+<!--                    <SingleKeySequenceSelector sequenceId="1"/>-->
+<!--                </ChronicleMapRetryFailoverPolicy>-->
+                <MetricsProcessor interval="1000">
+                    <MetricLog name="metric-log" />
+                </MetricsProcessor>
+            </AsyncBatchDelivery>
+        </Elasticsearch>
+    </Appenders>
+
+    <Loggers>
+        <AsyncLogger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" level="INFO" additivity="false">
+            <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
+        </AsyncLogger>
+        <Root level="${sys:log4j2.level:-info}" />
+    </Loggers>
+
+</Configuration>

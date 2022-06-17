@@ -1,0 +1,18 @@
+{
+  "index_patterns": [
+    "${sys:indexTemplate.indexPatterns}"
+  ],
+  "settings": {
+    "index": {
+      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}"
+    }
+  },
+  "mappings": {
+    "properties": {
+      "@timestamp": {
+        "type": "date",
+        "format": "epoch_millis"
+      }
+    }
+  }
+}

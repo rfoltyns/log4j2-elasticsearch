@@ -1,0 +1,37 @@
+{
+  "index_patterns": [
+    "${sys:indexTemplate.indexPatterns}"
+  ],
+  "settings": {
+    "index": {
+      "refresh_interval": "${sys:indexTemplate.settings.index.refreshInterval}",
+      "lifecycle.name": "log4j2-elasticsearch-ahc-ilm-policy",
+      "lifecycle.rollover_alias": "log4j2-elasticsearch-ahc",
+      "number_of_replicas" : 0,
+      "number_of_shards": 6
+    }
+  },
+  "mappings": {
+    "properties": {
+      "loggerName": {
+        "type": "keyword",
+        "index": false
+      },
+      "message": {
+        "type": "match_only_text"
+      },
+      "timeMillis": {
+        "type": "date",
+        "format": "epoch_millis"
+      },
+      "thread": {
+        "type": "keyword",
+        "index": false
+      },
+      "level": {
+        "type": "keyword",
+        "index": false
+      }
+    }
+  }
+}
