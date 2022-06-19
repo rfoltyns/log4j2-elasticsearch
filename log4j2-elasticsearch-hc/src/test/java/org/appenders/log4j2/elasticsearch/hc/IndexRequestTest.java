@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -66,17 +67,17 @@ public class IndexRequestTest {
     }
 
     @Test
-    public void builderFailsWhenMappingTypeIsNull() {
+    public void builderBuildsWhenMappingTypeIsNull() {
 
         // given
         IndexRequest.Builder builder = createIndexRequestBuilder()
                 .type(null);
 
         // when
-        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+        final IndexRequest request = builder.build();
 
         // then
-        assertThat(exception.getMessage(), containsString("type cannot be null"));
+        assertNotNull(request);
 
     }
 

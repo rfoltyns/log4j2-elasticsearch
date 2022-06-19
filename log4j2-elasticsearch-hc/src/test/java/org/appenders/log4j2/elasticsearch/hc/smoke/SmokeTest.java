@@ -114,7 +114,7 @@ public class SmokeTest extends SmokeTestBase {
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
-                .add("api.version", System.getProperty("smokeTest.api.version", "7.10.2"));
+                .add("api.version", System.getProperty("smokeTest.api.version", "8.3.2"));
     }
 
     private TestConfig addSecurityConfig(TestConfig target) {
@@ -357,7 +357,17 @@ public class SmokeTest extends SmokeTestBase {
     }
 
     private String mappingType(final Version version) {
-        return !version.lowerThan("7.0.0") ? "_doc" : "index";
+
+        if (version.lowerThan("7.0.0")) {
+            return "index";
+        }
+
+        if (version.lowerThan("8.0.0")) {
+            return "_doc";
+        }
+
+        return null;
+
     }
 
 }

@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -35,10 +34,10 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,7 +49,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-public class HCBatchOperationsTest {
+public abstract class AbstractHCBatchOperationsTest {
+
+    abstract public HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory);
+
+    abstract public HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory, String mappingType);
 
     @Test
     public void throwsOnStringSource() {
@@ -70,14 +73,6 @@ public class HCBatchOperationsTest {
 
     }
 
-    private HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory) {
-        return createDefaultBatchOperations(itemSourceFactory, "_doc");
-    }
-
-    private HCBatchOperations createDefaultBatchOperations(PooledItemSourceFactory itemSourceFactory, String mappingType) {
-        return new HCBatchOperations(itemSourceFactory, mappingType);
-    }
-
     @Test
     public void createsBatchBuilder() {
 
@@ -93,22 +88,22 @@ public class HCBatchOperationsTest {
     }
 
     @Test
-    public void createsConfiguredWriter() {
+    public void throwsOnDeprecatedConfiguredWriter() {
 
         // given
-        PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
-        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, null);
+        final PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        final HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, null);
 
         // when
-        ObjectWriter writer = batchOperations.configuredWriter();
+        final UnsupportedOperationException exception = assertThrows(UnsupportedOperationException.class, batchOperations::configuredWriter);
 
         // then
-        assertNotNull(writer);
+        assertThat(exception.getMessage(), containsString("Moved to ElasticsearchBulk"));
 
     }
 
     @Test
-    public void defaultWriterCanSerializeBatchRequest() throws IOException {
+    public void defaultWriterCanSerializeBatchRequest() throws Exception {
 
         // given
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();

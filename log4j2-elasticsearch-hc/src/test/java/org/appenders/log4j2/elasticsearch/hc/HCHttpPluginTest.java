@@ -23,7 +23,9 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
@@ -51,6 +53,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -223,6 +226,30 @@ public class HCHttpPluginTest {
         // then
         verify(serviceDiscoveryFactory).create(any());
         assertEquals(serviceDiscovery, plugin.clientProvider.getHttpClientFactoryBuilder().serviceDiscovery);
+
+    }
+
+    @Test
+    public void clientAPIFactoryIsUsedIfConfigured() {
+
+        // given
+        final ClientAPIFactory clientAPIFactory = mock(ClientAPIFactory.class);
+        when(clientAPIFactory.batchBuilder()).thenReturn(new BatchRequest.Builder());
+
+        final ItemSourceFactory itemSourceFactory = mock(ItemSourceFactory.class);
+        when(itemSourceFactory.createEmptySource()).thenReturn(ByteBufItemSourceTest.createTestItemSource());
+        final HCHttpPlugin.Builder builder = spy(createDefaultHttpObjectFactoryBuilder())
+                .withClientAPIFactory(clientAPIFactory);
+
+        verify(clientAPIFactory, never()).batchBuilder();
+
+        // when
+        final HCHttpPlugin plugin = builder.build();
+        plugin.start();
+        plugin.batchOperations.createBatchBuilder();
+
+        // then
+        verify(clientAPIFactory).batchBuilder();
 
     }
 

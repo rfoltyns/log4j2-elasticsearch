@@ -119,10 +119,6 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
                 throw new IllegalArgumentException("index cannot be null");
             }
 
-            if (type == null) {
-                throw new IllegalArgumentException("type cannot be null");
-            }
-
         }
 
     }

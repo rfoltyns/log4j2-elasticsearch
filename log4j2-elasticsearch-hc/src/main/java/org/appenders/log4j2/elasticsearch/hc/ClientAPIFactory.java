@@ -4,7 +4,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2019 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,12 +22,10 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ItemSource;
 
-public interface Request {
+public interface ClientAPIFactory<ITEM_BUILDER_TYPE, BATCH_BUILDER_TYPE, RESPONSE_TYPE> {
 
-    String getURI();
+    ITEM_BUILDER_TYPE itemBuilder(String target, ItemSource payload);
 
-    String getHttpMethodName();
-
-    ItemSource serialize() throws Exception;
+    BATCH_BUILDER_TYPE batchBuilder();
 
 }

@@ -252,7 +252,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackCallsResultHandlerCompleted() throws IOException {
+    public void executeAsyncCallbackCallsResultHandlerCompleted() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -282,7 +282,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackCallsResultHandlerFailedOnIOException() throws IOException {
+    public void executeAsyncCallbackCallsResultHandlerFailedOnIOException() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -310,7 +310,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackCallsResultHandlerFailedOnThrowable() throws IOException {
+    public void executeAsyncCallbackCallsResultHandlerFailedOnThrowable() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = mock(ResponseHandler.class);
@@ -341,7 +341,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackCallsResultHandlerCompletedOnInputStreamCloseException() throws IOException {
+    public void executeAsyncCallbackCallsResultHandlerCompletedOnInputStreamCloseException() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -378,7 +378,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackCallsResultHandlerWhenCancelled() throws IOException {
+    public void executeAsyncCallbackCallsResultHandlerWhenCancelled() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -421,7 +421,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackHandlesHttpResponse() throws IOException {
+    public void executeAsyncCallbackHandlesHttpResponse() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -449,7 +449,7 @@ public class HttpClientTest {
     }
 
     @Test
-    public void executeAsyncCallbackHandlesNonSuccessfulResponse() throws IOException {
+    public void executeAsyncCallbackHandlesNonSuccessfulResponse() throws Exception {
 
         // given
         ResponseHandler<Response> responseHandler = createMockTestResultHandler();
@@ -658,7 +658,7 @@ public class HttpClientTest {
         return httpResponse;
     }
 
-    private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler) throws IOException {
+    private HCResultCallback mockHttpResponseCallback(ResponseHandler<Response> responseHandler) throws Exception {
 
         HttpClient client = Mockito.spy(createDefaultTestObject());
         CloseableHttpAsyncClient asyncClient = mockAsyncClient(client);

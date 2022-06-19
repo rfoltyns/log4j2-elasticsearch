@@ -42,19 +42,20 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 ```
 
 ### HCHttp Properties
-| Name                             | Type      | Required                                                        | Default                     | Description                                                                                                                                    |
-|----------------------------------|-----------|-----------------------------------------------------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| serverUris                       | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.                                          |
-| connTimeout                      | Attribute | no                                                              | 1000                        | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                          |
-| readTimeout                      | Attribute | no                                                              | 0                           | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                               |
-| maxTotalConnections              | Attribute | no                                                              | 8                           | Number of connections available.                                                                                                               |
-| ioThreadCount                    | Attribute | no                                                              | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                            |
-| itemSourceFactory                | Element   | yes                                                             | None                        | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                     |
-| mappingType                      | Attribute | no                                                              | `_doc`                      | Name of index mapping type to use in ES cluster. `_doc` is used by default for compatibility with Elasticsearch 7.x.                           |
-| pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response. |
-| pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                   |
-| auth                             | Element   | no                                                              | None                        | Security config. [Security](#pem-cert-config)                                                                                                  |
-| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](#service-discovery)                                                                               |
+| Name                             | Type      | Required                                                        | Default                     | Description                                                                                                                                                                                                                                                                                        |
+|----------------------------------|-----------|-----------------------------------------------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverUris                       | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.                                                                                                                                                                                              |
+| connTimeout                      | Attribute | no                                                              | 1000                        | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                                                                                                                              |
+| readTimeout                      | Attribute | no                                                              | 0                           | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                                                                                                                                   |
+| maxTotalConnections              | Attribute | no                                                              | 8                           | Number of connections available.                                                                                                                                                                                                                                                                   |
+| ioThreadCount                    | Attribute | no                                                              | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                                                                                                                                |
+| itemSourceFactory                | Element   | yes                                                             | None                        | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                                                                                                                                                                         |
+| mappingType                      | Attribute | no                                                              | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). <br/> DEPRECATED: As of 1.7, this attribute will be removed. Use [ElasticsearchBulk](#elasticsearchbulk) instead. |
+| pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response.                                                                                                                                                     |
+| pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                                                                                                                                                                       |
+| auth                             | Element   | no                                                              | None                        | Security config. [Security](#pem-cert-config)                                                                                                                                                                                                                                                      |
+| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](#service-discovery)                                                                                                                                                                                                                                   |
+| clientAPIFactory                 | Element   | no                                                              | `ElasticsearchBulk`         | Batch API factory. [ElasticsearchBulk](#elasticsearchbulk)                                                                                                                                                                                                                                         |
 
 ### Service Discovery
 
@@ -123,6 +124,29 @@ Example:
 
 NOTE: Config policies were added for convenience. Recommended configuration should contain `configPolices=none`, `serverUris` configured ONLY for `ServiceDiscovery` and separate `Security` configs if needed.
 
+### Client API Factory
+
+Since 1.6, [ClientAPIFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/ClientAPIFactory.java) can be configured to further customize the output and runtime capabilities of batches and batch items. [ElasticsearchBulk](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/ElasticsearchBulkPlugin.java) is used by default.
+
+#### ElasticsearchBulk
+
+Default.
+
+Configures builders and serializers for:
+* [BatchRequest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/BatchRequest.java) - `/_bulk` request (batch)
+* [IndexRequest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/IndexRequest.java) - document (batch item)
+
+```xml
+<HCHttp>
+    <ElasticsearchBulk/>
+</HCHttp>
+```
+
+#### ElasticsearchBulk Properties
+| Name        | Type      | Required | Default          | Description                                                                                                                                                                      |
+|-------------|-----------|----------|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| mappingType | Attribute | no       | `null` since 1.6 | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). |
+
 ### Programmatic config
 See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java).
 
@@ -167,6 +191,9 @@ Example:
 See [index name](../log4j2-elasticsearch-core#index-name) or [index rollover](../log4j2-elasticsearch-core#index-rollover)
 
 ### Index template
+
+Since 1.6, this module is compatible with Elasticsearch 8.x by default. Use `apiVersion` for older clusters.
+
 See [index template docs](../log4j2-elasticsearch-core#index-template)
 
 ### SSL/TLS
@@ -200,12 +227,12 @@ Can be configured using `Security` tag:
 
 ### Compatibility matrix
 
-| Feature/Version  | 2.x        | 5.x        | 6.x        | 7.x        |
-|------------------|------------|------------|------------|------------|
-| IndexTemplate    | Yes        | Yes        | Yes        | Yes        |
-| BasicCredentials | Yes        | Yes        | Yes        | Yes        |
-| JKS              | Yes        | Not tested | Not tested | Not tested |
-| PEM              | Not tested | Yes        | Yes        | Yes        |
+| Feature/Version  | 2.x        | 5.x        | 6.x        | 7.x        | 8.x        |
+|------------------|------------|------------|------------|------------|------------|
+| IndexTemplate    | Yes        | Yes        | Yes        | Yes        | Yes        |
+| BasicCredentials | Yes        | Yes        | Yes        | Yes        | Yes        |
+| JKS              | Yes        | Not tested | Not tested | Not tested | Not tested |
+| PEM              | Not tested | Yes        | Yes        | Yes        | Yes        |
 
 ## Pluggable JCTools
 

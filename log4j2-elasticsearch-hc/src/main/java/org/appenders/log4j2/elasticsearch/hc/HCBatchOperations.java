@@ -20,12 +20,9 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
-import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
@@ -34,48 +31,68 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
 
     private volatile State state = State.STOPPED;
 
-    private final PooledItemSourceFactory pooledItemSourceFactory;
+    protected final PooledItemSourceFactory batchBufferFactory;
+    private final ClientAPIFactory<IndexRequest.Builder, BatchRequest.Builder, BatchResult> builderFactory;
     private final String mappingType;
-    private final ObjectWriter objectWriter;
 
-    public HCBatchOperations(PooledItemSourceFactory pooledItemSourceFactory, String mappingType) {
-        this.pooledItemSourceFactory = pooledItemSourceFactory;
+    /**
+     * @param batchBufferFactory batch buffer factory
+     * @param mappingType Elasticsearch mapping type
+     * @deprecated This constructor will be removed in future releases. Use {@link #HCBatchOperations(PooledItemSourceFactory, ClientAPIFactory)} instead
+     */
+    @Deprecated
+    public HCBatchOperations(final PooledItemSourceFactory batchBufferFactory, final String mappingType) {
+        this.batchBufferFactory = batchBufferFactory;
+        this.builderFactory = new ElasticsearchBulkAPI(mappingType);
+
+        // bad decisions pit..
         this.mappingType = mappingType;
-        this.objectWriter = configuredWriter();
     }
 
-    public HCBatchOperations(PooledItemSourceFactory pooledItemSourceFactory) {
-        this(pooledItemSourceFactory, "_doc");
+    /**
+     * @param batchBufferFactory batch buffer factory
+     * @deprecated This constructor will be removed in future releases. Use {@link #HCBatchOperations(PooledItemSourceFactory, ClientAPIFactory)} instead
+     */
+    @Deprecated
+    public HCBatchOperations(final PooledItemSourceFactory batchBufferFactory) {
+        this(batchBufferFactory, (String) null);
     }
 
+    public HCBatchOperations(final PooledItemSourceFactory batchBufferFactory, final ClientAPIFactory<IndexRequest.Builder, BatchRequest.Builder, BatchResult> builderFactory) {
+        this.batchBufferFactory = batchBufferFactory;
+        this.builderFactory = builderFactory;
+        this.mappingType = null; // irrelevant in this context
+    }
+
+    /**
+     * @return Elasticsearch mapping type
+     * @deprecated This method will be removed in future releases. Use {@link ClientAPIFactory} instead.
+     */
+    @Deprecated
     public String getMappingType() {
         return mappingType;
     }
 
     @Override
-    public Object createBatchItem(String indexName, Object source) {
+    public Object createBatchItem(final String target, final Object source) {
         throw new UnsupportedOperationException("Use ItemSource based API instead");
     }
 
     @Override
-    public Object createBatchItem(String indexName, ItemSource source) {
-        return new IndexRequest.Builder(source)
-                .index(indexName)
-                .type(mappingType)
-                .build();
+    public Object createBatchItem(final String target, final ItemSource payload) {
+        return builderFactory.itemBuilder(target, payload).build();
     }
 
     @Override
     public BatchBuilder<BatchRequest> createBatchBuilder() {
         return new BatchBuilder<BatchRequest>() {
 
-            private final BatchRequest.Builder builder = new BatchRequest.Builder()
-                    .withBuffer(pooledItemSourceFactory.createEmptySource())
-                    .withObjectWriter(objectWriter);
+            private final BatchRequest.Builder builder = builderFactory.batchBuilder()
+                    .withBuffer(batchBufferFactory.createEmptySource());
 
             @Override
             public void add(Object item) {
-                builder.add((IndexRequest)item);
+                builder.add(item);
             }
 
             @Override
@@ -88,13 +105,11 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
 
     /**
      * @return {@code com.fasterxml.jackson.databind.ObjectWriter} to serialize {@link IndexRequest} instances
+     * @deprecated This method will be removed along with {@link #HCBatchOperations(PooledItemSourceFactory, String)} constructor. Use {@link #HCBatchOperations(PooledItemSourceFactory, ClientAPIFactory)} instead.
      */
-    // FIXME: design - wrap with Serializer(?) to allow other implementations
+    @Deprecated
     protected ObjectWriter configuredWriter() {
-        return new ExtendedObjectMapper(new MappingJsonFactory())
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
-                .writerFor(IndexRequest.class);
+        throw new UnsupportedOperationException("Moved to ElasticsearchBulk or peer");
     }
 
     @Override
@@ -104,7 +119,7 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
             return;
         }
 
-        pooledItemSourceFactory.start();
+        batchBufferFactory.start();
 
         state = State.STARTED;
 
@@ -117,7 +132,7 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
             return;
         }
 
-        pooledItemSourceFactory.stop();
+        batchBufferFactory.stop();
 
         state = State.STOPPED;
 

@@ -29,8 +29,6 @@ import org.appenders.log4j2.elasticsearch.SetupContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -144,7 +142,7 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void createsActualRequestIfComposable() throws IOException {
+    public void createsActualRequestIfComposable() throws Exception {
 
         // given
         PutIndexTemplate setupStep = new PutIndexTemplate(IndexTemplate.DEFAULT_API_VERSION + 1, TEST_TEMPLATE_NAME, TEST_SOURCE);
@@ -160,10 +158,10 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void createsActualRequestIfNotComposable() throws IOException {
+    public void createsActualRequestIfNotComposable() throws Exception {
 
         // given
-        PutIndexTemplate setupStep = new PutIndexTemplate(IndexTemplate.DEFAULT_API_VERSION, TEST_TEMPLATE_NAME, TEST_SOURCE);
+        PutIndexTemplate setupStep = new PutIndexTemplate(6, TEST_TEMPLATE_NAME, TEST_SOURCE);
 
         // when
         Request request = setupStep.createRequest();
@@ -176,7 +174,7 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void defaultRequestNotComposable() throws IOException {
+    public void defaultRequestIsComposable() throws Exception {
 
         // given
         PutIndexTemplate setupStep = new PutIndexTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
@@ -186,7 +184,7 @@ public class PutIndexTemplateTest {
 
         // then
         assertEquals("PUT", request.getHttpMethodName());
-        assertEquals("_template/" + TEST_TEMPLATE_NAME, request.getURI());
+        assertEquals("_index_template/" + TEST_TEMPLATE_NAME, request.getURI());
         assertTrue(request.serialize() == TEST_SOURCE);
 
     }

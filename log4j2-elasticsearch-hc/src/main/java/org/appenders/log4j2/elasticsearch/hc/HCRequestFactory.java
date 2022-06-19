@@ -29,6 +29,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
+import org.appenders.log4j2.elasticsearch.ItemSource;
 
 import java.io.IOException;
 
@@ -64,13 +65,20 @@ public class HCRequestFactory implements RequestFactory<HttpUriRequest> {
 
     protected HttpEntity createHttpEntity(Request request) throws IOException {
 
-        ByteBuf byteBuf = (ByteBuf) request.serialize().getSource();
+        try {
+            final ItemSource serialize = request.serialize();
+            final ByteBuf byteBuf = (ByteBuf) serialize.getSource();
 
-        return new ByteBufEntityBuilder()
-                .setByteBuf(byteBuf)
-                .setContentLength(byteBuf.writerIndex())
-                .setContentType(requestContentType)
-                .build();
+            return new ByteBufEntityBuilder()
+                    .setByteBuf(byteBuf)
+                    .setContentLength(byteBuf.writerIndex())
+                    .setContentType(requestContentType)
+                    .build();
+
+        } catch (Exception e) {
+            // repackage for HTTP stack for now
+            throw new IOException("Unable to create HTTP entity", e);
+        }
 
     }
 

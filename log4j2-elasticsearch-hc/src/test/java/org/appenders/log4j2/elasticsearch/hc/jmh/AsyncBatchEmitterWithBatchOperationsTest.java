@@ -58,7 +58,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Queue;
@@ -92,12 +91,12 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
             "10",
             "1000",
             "10000",
-            "100000",
     })
     public int itemPoolSize;
 
     @Param({
             "512",
+            "1024",
             "2048",
             "4096",
             "8192",
@@ -168,7 +167,7 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
                 bytesSerialized.addAndGet(serialize.getSource().writerIndex());
                 batchRequest.completed();
                 return true;
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return false;
             }

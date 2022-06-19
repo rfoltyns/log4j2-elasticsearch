@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
-import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 

@@ -98,8 +98,12 @@ public class HCHttpPlugin extends HCHttp {
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
         protected PooledItemSourceFactory pooledItemSourceFactory;
 
+        /**
+         * @deprecated This field will be removed in future releases. Use {@link ClientAPIFactory}
+         */
         @PluginBuilderAttribute
-        protected String mappingType = "_doc";
+        @Deprecated
+        protected String mappingType;
 
         @PluginElement(BackoffPolicy.NAME)
         protected BackoffPolicy<BatchRequest> backoffPolicy;
@@ -108,6 +112,9 @@ public class HCHttpPlugin extends HCHttp {
         protected ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory;
 
         protected ValueResolver valueResolver;
+
+        @PluginElement("clientAPIFactory")
+        private ClientAPIFactory clientAPIFactory;
 
         @Override
         public HCHttpPlugin build() {
@@ -186,7 +193,13 @@ public class HCHttpPlugin extends HCHttp {
             if (pooledItemSourceFactory == null) {
                 throw new IllegalArgumentException(String.format("No %s provided for %s", PooledItemSourceFactory.class.getSimpleName(), HCHttp.class.getSimpleName()));
             }
-            return new HCBatchOperations(pooledItemSourceFactory, mappingType);
+
+            if (clientAPIFactory == null) {
+                return new HCBatchOperations(pooledItemSourceFactory, mappingType);
+            } else {
+                return new HCBatchOperations(pooledItemSourceFactory, clientAPIFactory);
+            }
+
         }
 
         public Builder withServerUris(String serverUris) {
@@ -229,8 +242,19 @@ public class HCHttpPlugin extends HCHttp {
             return this;
         }
 
+        /**
+         * @param mappingType Elasticsearch mapping type
+         * @return this
+         * @deprecated This method will be removed in future released. Use {@link #withClientAPIFactory(ClientAPIFactory)} instead.
+         */
+        @Deprecated
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
+            return this;
+        }
+
+        public Builder withClientAPIFactory(ClientAPIFactory clientAPIFactory) {
+            this.clientAPIFactory = clientAPIFactory;
             return this;
         }
 

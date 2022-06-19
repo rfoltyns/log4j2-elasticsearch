@@ -68,7 +68,7 @@ public class IndexTemplateTest {
         final IndexTemplate.Builder builder = createTestIndexTemplateBuilder();
         builder.withName(TEST_INDEX_TEMPLATE)
                 .withPath(TEST_PATH)
-                .withApiVersion(8);
+                .withApiVersion(7);
 
         // when
         final IndexTemplate indexTemplate = builder.build();
@@ -76,7 +76,7 @@ public class IndexTemplateTest {
         // then
         assertNotNull(indexTemplate);
         assertNotEquals(IndexTemplate.DEFAULT_API_VERSION, indexTemplate.getApiVersion());
-        assertEquals(8, indexTemplate.getApiVersion());
+        assertEquals(7, indexTemplate.getApiVersion());
         assertEquals(TEST_INDEX_TEMPLATE, indexTemplate.getName());
         assertNotNull(indexTemplate.getSource());
         assertEquals(IndexTemplate.TYPE_NAME, indexTemplate.getType());

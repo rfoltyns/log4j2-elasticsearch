@@ -20,13 +20,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
@@ -48,13 +41,10 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
     protected final BatchOperations<BatchRequest> batchOperations;
     protected final OperationFactory operationFactory;
 
-    private final ObjectReader objectReader;
-
     public HCHttp(Builder builder) {
         super(builder);
         this.batchOperations = builder.batchOperations;
         this.operationFactory = builder.operationFactory;
-        this.objectReader = configuredReader();
     }
 
     @Override
@@ -65,24 +55,6 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
     @Override
     public OperationFactory setupOperationFactory() {
         return operationFactory;
-    }
-
-    /**
-     * @return {@code com.fasterxml.jackson.databind.ObjectReader} to deserialize {@link BatchResult}
-     * @deprecated This method will be removed in future releases (not earlier than 1.6)
-     */
-    @Deprecated
-    protected ObjectReader configuredReader() {
-        // TODO: Inject..?
-        return new ObjectMapper()
-                .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                .addMixIn(BatchResult.class, BatchResultMixIn.class)
-                .addMixIn(Error.class, ErrorMixIn.class)
-                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
-                .readerFor(BatchResult.class);
     }
 
     protected ResponseHandler<BatchResult> createResultHandler(BatchRequest request, Function<BatchRequest, Boolean> failureHandler) {
@@ -166,7 +138,7 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         private final BatchRequest request;
         private final Function<BatchRequest, Boolean> failureHandler;
 
-        public HCResponseHandler(BatchRequest request, Function<BatchRequest, Boolean> failureHandler) {
+        public HCResponseHandler(final BatchRequest request, final Function<BatchRequest, Boolean> failureHandler) {
 
             this.request = request;
             this.failureHandler = failureHandler;
@@ -201,8 +173,8 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         }
 
         @Override
-        public BatchResult deserializeResponse(InputStream responseBody) throws IOException {
-            return objectReader.readValue(responseBody);
+        public BatchResult deserializeResponse(final InputStream responseBody) throws IOException {
+            return request.deserialize(responseBody);
         }
 
     }

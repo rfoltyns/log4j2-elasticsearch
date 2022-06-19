@@ -24,12 +24,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
+import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.JacksonSerializer;
+import org.appenders.log4j2.elasticsearch.Serializer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -52,6 +53,21 @@ import static org.mockito.Mockito.verify;
 
 public abstract class BatchRequestTest {
 
+    @SuppressWarnings("unchecked")
+    public static BatchRequest createTestBatch(final BatchRequest.Builder builder, final ItemSource<ByteBuf>... payloads) {
+
+        //noinspection unchecked
+        builder.withBuffer(createTestItemSource())
+                .withItemSerializer(mock(Serializer.class))
+                .withResultDeserializer(mock(Deserializer.class));
+
+        for (ItemSource<ByteBuf> payload : payloads) {
+            builder.add(createIndexRequestBuilder(payload)
+                    .build());
+        }
+        return spy(builder.build());
+    }
+
     @Test
     public void builderBuildsSuccessfully() {
 
@@ -63,6 +79,8 @@ public abstract class BatchRequestTest {
 
         // then
         assertNotNull(batchRequest);
+        assertEquals("/_bulk", batchRequest.getURI());
+        assertEquals("POST", batchRequest.getHttpMethodName());
 
     }
 
@@ -83,18 +101,64 @@ public abstract class BatchRequestTest {
     }
 
     @Test
-    public void builderFailsWhenObjectWriterIsNull() {
+    public void builderFailsWhenSerializerIsNull() {
 
         // given
-        BatchRequest.Builder builder = createDefaultTestObjectBuilder();
-
-        builder.withObjectWriter(null);
+        final BatchRequest.Builder builder = createDefaultTestObjectBuilder();
+        builder.withItemSerializer(null);
 
         // when
         final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
 
         // then
+        assertThat(exception.getMessage(), containsString("itemSerializer cannot be null"));
+
+    }
+
+    @Test
+    public void builderFailsWhenResultDeserializerIsNull() {
+
+        // given
+        final BatchRequest.Builder builder = createDefaultTestObjectBuilder();
+        builder.withResultDeserializer(null);
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, builder::build);
+
+        // then
+        assertThat(exception.getMessage(), containsString("resultDeserializer cannot be null"));
+
+    }
+
+    @Test
+    public void builderFailsWhenObjectWriterIsNull() {
+
+        // given
+        final BatchRequest.Builder builder = createDefaultTestObjectBuilder();
+
+        // when
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> builder.withObjectWriter(null));
+
+        // then
         assertThat(exception.getMessage(), containsString("objectWriter cannot be null"));
+
+    }
+
+    @Test
+    public void builderSupportsLegacyObjectWriterSetter() {
+
+        // given
+        final BatchRequest.Builder builder = createDefaultTestObjectBuilder()
+                .withItemSerializer(null);
+
+        final ObjectWriter objectWriter = mock(ObjectWriter.class);
+
+        // when
+        builder.withObjectWriter(objectWriter);
+        final BatchRequest batchRequest = builder.build();
+
+        // then
+        assertNotNull(batchRequest);
 
     }
 
@@ -104,7 +168,7 @@ public abstract class BatchRequestTest {
         // given
         BatchRequest.Builder builder = createDefaultTestObjectBuilder();
 
-        builder.withObjectWriter(null);
+        builder.withItemSerializer(null);
 
         // when
         builder.add(mock(IndexRequest.class));
@@ -135,29 +199,31 @@ public abstract class BatchRequestTest {
     }
 
     @Test
-    public void canSerializeUniqueItemsSeparately() throws IOException {
+    public void canSerializeUniqueItemsSeparately() throws Exception {
 
         // given
-        ObjectWriter writer = spy(new ObjectMapper().writerFor(IndexRequest.class));
+        final Serializer<Object> serializer = spy(new JacksonSerializer<>(new ObjectMapper().writerFor(IndexRequest.class)));
 
-        ItemSource<ByteBuf> source1 = createTestItemSource();
-        String index1 = UUID.randomUUID().toString();
-        String mappingType = UUID.randomUUID().toString();
-        IndexRequest action1 = createIndexRequestBuilder(source1)
+        final ItemSource<ByteBuf> source1 = createTestItemSource();
+        final String index1 = UUID.randomUUID().toString();
+        final String mappingType = UUID.randomUUID().toString();
+        final IndexRequest action1 = createIndexRequestBuilder(source1)
                 .index(index1)
                 .type(mappingType)
                 .build();
 
-        ItemSource<ByteBuf> source2 = createTestItemSource();
-        String index2 = UUID.randomUUID().toString();
+        final ItemSource<ByteBuf> source2 = createTestItemSource();
+        final String index2 = UUID.randomUUID().toString();
 
-        IndexRequest action2 = createIndexRequestBuilder(source2)
+        final IndexRequest action2 = createIndexRequestBuilder(source2)
                 .index(index2)
                 .type(mappingType)
                 .build();
 
-        BatchRequest request = new BatchRequest.Builder()
-                .withObjectWriter(writer)
+        @SuppressWarnings("unchecked")
+        final BatchRequest request = new BatchRequest.Builder()
+                .withItemSerializer(serializer)
+                .withResultDeserializer(mock(Deserializer.class))
                 .withBuffer(createTestItemSource())
                 .add(action1)
                 .add(action2)
@@ -167,9 +233,9 @@ public abstract class BatchRequestTest {
         request.serialize();
 
         // then
-        ArgumentCaptor<IndexRequest> captor = ArgumentCaptor.forClass(IndexRequest.class);
-        verify(writer, times(2)).writeValue((OutputStream)any(), captor.capture());
-        List<IndexRequest> allValues = captor.getAllValues();
+        final ArgumentCaptor<IndexRequest> captor = ArgumentCaptor.forClass(IndexRequest.class);
+        verify(serializer, times(2)).write(any(), captor.capture());
+        final List<IndexRequest> allValues = captor.getAllValues();
         assertEquals(2, allValues.size());
         assertEquals(index1, allValues.get(0).getIndex());
         assertEquals(index2, allValues.get(1).getIndex());
@@ -297,39 +363,30 @@ public abstract class BatchRequestTest {
 
     }
 
-    public static BatchRequest createTestBatch(BatchRequest.Builder builder, ItemSource<ByteBuf>... payloads) {
-        builder.withBuffer(createTestItemSource());
-        builder.withObjectWriter(mock(ObjectWriter.class));
-
-        for (ItemSource<ByteBuf> payload : payloads) {
-            builder.add(createIndexRequestBuilder(payload)
-                    .build());
-        }
-        return spy(builder.build());
-    }
-
     @Test
-    public void canSerializeOnceIfAllItemsAreTheSame() throws IOException {
+    public void canSerializeOnceIfAllItemsAreTheSame() throws Exception {
 
         // given
-        ObjectWriter writer = spy(new ObjectMapper().writerFor(IndexRequest.class));
+        final Serializer<Object> serializer = spy(new JacksonSerializer<>(new ObjectMapper().writerFor(IndexRequest.class)));
 
-        ItemSource<ByteBuf> source1 = createTestItemSource();
-        String index = UUID.randomUUID().toString();
-        String mappingType = UUID.randomUUID().toString();
-        IndexRequest action1 = createIndexRequestBuilder(source1)
+        final ItemSource<ByteBuf> source1 = createTestItemSource();
+        final String index = UUID.randomUUID().toString();
+        final String mappingType = UUID.randomUUID().toString();
+        final IndexRequest action1 = createIndexRequestBuilder(source1)
                 .index(index)
                 .type(mappingType)
                 .build();
 
-        ItemSource<ByteBuf> source2 = createTestItemSource();
-        IndexRequest action2 = createIndexRequestBuilder(source2)
+        final ItemSource<ByteBuf> source2 = createTestItemSource();
+        final IndexRequest action2 = createIndexRequestBuilder(source2)
                 .index(index)
                 .type(mappingType)
                 .build();
 
-        BatchRequest batchRequest = new BatchRequest.Builder()
-                .withObjectWriter(writer)
+        @SuppressWarnings("unchecked")
+        final BatchRequest batchRequest = new BatchRequest.Builder()
+                .withItemSerializer(serializer)
+                .withResultDeserializer(mock(Deserializer.class))
                 .withBuffer(createTestItemSource())
                 .add(action1)
                 .add(action2)
@@ -339,10 +396,10 @@ public abstract class BatchRequestTest {
         batchRequest.serialize();
 
         // then
-        ArgumentCaptor<IndexRequest> captor = ArgumentCaptor.forClass(IndexRequest.class);
-        verify(writer, times(1)).writeValueAsBytes(captor.capture());
+        final ArgumentCaptor<IndexRequest> captor = ArgumentCaptor.forClass(IndexRequest.class);
+        verify(serializer, times(1)).writeAsBytes(captor.capture());
 
-        List<IndexRequest> allValues = captor.getAllValues();
+        final List<IndexRequest> allValues = captor.getAllValues();
         assertEquals(1, allValues.size());
         assertEquals(index, allValues.get(0).getIndex());
 
@@ -393,8 +450,10 @@ public abstract class BatchRequestTest {
     }
 
     public static BatchRequest.Builder createDefaultTestObjectBuilder() {
+        //noinspection unchecked
         return new BatchRequest.Builder()
-                .withObjectWriter(mock(ObjectWriter.class))
+                .withItemSerializer(mock(Serializer.class))
+                .withResultDeserializer(mock(Deserializer.class))
                 .withBuffer(mock(ByteBufItemSource.class));
     }
 

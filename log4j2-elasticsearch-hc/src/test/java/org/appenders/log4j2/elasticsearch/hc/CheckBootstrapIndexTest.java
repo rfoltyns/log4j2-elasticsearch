@@ -27,8 +27,6 @@ import org.appenders.log4j2.elasticsearch.SetupStepTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-
 import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -163,7 +161,7 @@ public class CheckBootstrapIndexTest {
     }
 
     @Test
-    public void createsGenericRequest() throws IOException {
+    public void createsGenericRequest() throws Exception {
 
         // given
         CheckBootstrapIndex setupStep = new CheckBootstrapIndex(TEST_ROLLOVER_ALIAS);

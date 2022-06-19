@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.GenericItemSourcePoolTest.byteBufAllocator;
@@ -49,7 +48,7 @@ import static org.mockito.Mockito.when;
 public class HCRequestFactoryTest {
 
     @Test
-    public void throwsOnUnknownHttpMethodName() throws IOException {
+    public void throwsOnUnknownHttpMethodName() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -66,7 +65,26 @@ public class HCRequestFactoryTest {
     }
 
     @Test
-    public void createsPostRequest() throws IOException, URISyntaxException {
+    public void throwsOnSerializationExceptions() throws Exception {
+
+        // given
+        final HCRequestFactory factory = createDefaultTestObject();
+        final String expectedUrl = UUID.randomUUID().toString();
+        final String httpMethodName = UUID.randomUUID().toString();
+        final Request request = createDefaultMockRequest(expectedUrl, httpMethodName);
+        when(request.serialize()).thenThrow(new Exception("Cannot serialize"));
+
+        // when
+        final IOException exception = assertThrows(IOException.class, () -> factory.createHttpEntity(request));
+
+        // then
+        assertThat(exception.getMessage(), containsString("Unable to create HTTP entity"));
+        assertThat(exception.getCause().getMessage(), containsString("Cannot serialize"));
+
+    }
+
+    @Test
+    public void createsPostRequest() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -83,7 +101,7 @@ public class HCRequestFactoryTest {
     }
 
     @Test
-    public void createsPutRequest() throws IOException, URISyntaxException {
+    public void createsPutRequest() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -100,7 +118,7 @@ public class HCRequestFactoryTest {
     }
 
     @Test
-    public void createsHeadRequest() throws IOException, URISyntaxException {
+    public void createsHeadRequest() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -117,7 +135,7 @@ public class HCRequestFactoryTest {
     }
 
     @Test
-    public void createsGetRequest() throws IOException, URISyntaxException {
+    public void createsGetRequest() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -134,7 +152,7 @@ public class HCRequestFactoryTest {
     }
 
     @Test
-    public void createsEntityUsingGivenSource() throws IOException {
+    public void createsEntityUsingGivenSource() throws Exception {
 
         // given
         HCRequestFactory factory = createDefaultTestObject();
@@ -163,7 +181,7 @@ public class HCRequestFactoryTest {
 
     }
 
-    public static Request createDefaultMockRequest(String expectedUrl, String httpMethodName) throws IOException {
+    public static Request createDefaultMockRequest(String expectedUrl, String httpMethodName) throws Exception {
         Request request = mock(Request.class);
         when(request.getURI()).thenReturn(expectedUrl);
         when(request.getHttpMethodName()).thenReturn(httpMethodName);

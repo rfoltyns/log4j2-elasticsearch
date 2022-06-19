@@ -3,7 +3,7 @@
 
     <Appenders>
         <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
-            <RollingIndexName indexName="log4j2-elasticsearch-hc" pattern="dd-HH-mm"/>
+            <IndexName indexName="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
                 <NonEmptyFilter/>
@@ -22,8 +22,11 @@
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="${sys:smokeTest.batchSize:-10000}"
                                 deliveryInterval="10000" >
-                <IndexTemplate name="log4j2-elasticsearch-hc" path="classpath:indexTemplate-7.json" />
-                <ILMPolicy name="log4j2-elasticsearch-hc-ilm-policy" rolloverAlias="log4j2-elasticsearch-hc" path="classpath:ilmPolicy-7.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}-mappings" path="classpath:componentTemplate-7-mappings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}-settings" path="classpath:componentTemplate-7-settings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}-settings-ilm" path="classpath:componentTemplate-7-settings-ilm.json" />
+                <IndexTemplate apiVersion="8" name="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}" path="classpath:composableIndexTemplate-7.json" />
+                <ILMPolicy name="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}-ilm-policy" rolloverAlias="${sys:smokeTest.indexName:-log4j2-elasticsearch-hc}" path="classpath:ilmPolicy-7.json" />
                 <HCHttp connTimeout="500"
                         readTimeout="30000"
                         maxTotalConnections="8">
@@ -36,22 +39,23 @@
                         <UnlimitedResizePolicy resizeFactor="0.70" />
                     </PooledItemSourceFactory>
                     <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
-                    <ServiceDiscovery serverUris="http://localhost:9200"
+                    <ServiceDiscovery serverUris="https://localhost:9200"
+                                      targetScheme="https"
                                       refreshInterval="5000"
-                                      configPolicies="none" />
-<!--                    <Security>-->
-<!--                        <BasicCredentials username="admin" password="changeme" />-->
-<!--                        &lt;!&ndash;<JKS keystorePath="${sys:jksCertInfo.keystorePath}"&ndash;&gt;-->
-<!--                             &lt;!&ndash;keystorePassword="${sys:jksCertInfo.keystorePassword}"&ndash;&gt;-->
-<!--                             &lt;!&ndash;truststorePath="${sys:jksCertInfo.truststorePath}"&ndash;&gt;-->
-<!--                             &lt;!&ndash;truststorePassword="${sys:jksCertInfo.truststorePassword}" />&ndash;&gt;-->
-<!--                        <PEM keyPath="${sys:pemCertInfo.keyPath}"-->
-<!--                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"-->
-<!--                             clientCertPath="${sys:pemCertInfo.clientCertPath}"-->
-<!--                             caPath="${sys:pemCertInfo.caPath}" />-->
-<!--                    </Security>-->
+                                      configPolicies="security" />
+                    <Security>
+                        <BasicCredentials username="admin" password="changeme" />
+<!--                        <JKS keystorePath="${sys:jksCertInfo.keystorePath}"-->
+<!--                             keystorePassword="${sys:jksCertInfo.keystorePassword}"-->
+<!--                             truststorePath="${sys:jksCertInfo.truststorePath}"-->
+<!--                             truststorePassword="${sys:jksCertInfo.truststorePassword}" />-->
+                        <PEM keyPath="${sys:pemCertInfo.keyPath}"
+                             keyPassphrase="${sys:pemCertInfo.keyPassphrase}"
+                             clientCertPath="${sys:pemCertInfo.clientCertPath}"
+                             caPath="${sys:pemCertInfo.caPath}" />
+                    </Security>
                 </HCHttp>
-                <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-}/failedItems-log4j2-elasticsearch-hc.chronicleMap"
+                <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-.}/failedItems-log4j2-elasticsearch-hc.chronicleMap"
                                               numberOfEntries="${sys:appenders.failover.chroniclemap.numberOfEntries:-1000000}"
                                               averageValueSize="${sys:smokeTest.initialItemBufferSizeInBytes:-2048}"
                                               batchSize="5000"
@@ -68,6 +72,7 @@
         <AsyncLogger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" level="INFO" additivity="false">
             <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
         </AsyncLogger>
+        <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 
 </Configuration>

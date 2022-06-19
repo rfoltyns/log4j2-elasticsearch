@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
-import com.fasterxml.jackson.databind.ObjectReader;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import org.appenders.log4j2.elasticsearch.Auth;
@@ -28,6 +27,7 @@ import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
+import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
@@ -96,9 +96,10 @@ public class HCHttpTest {
                 .createDefaultTestSourceFactoryConfig()
                 .build();
 
+
         return new HCHttp.Builder()
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
-                .withBatchOperations(new HCBatchOperations(itemSourceFactory))
+                .withBatchOperations(new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(null)))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
 
     }
@@ -293,29 +294,35 @@ public class HCHttpTest {
     }
 
     @Test
-    public void resultHandlerUsesGivenObjectReader() throws IOException {
+    public void resultHandlerUsesConfiguredResponseDeserializer() throws IOException {
 
         // given
-        ObjectReader mockedObjectReader = mock(ObjectReader.class);
-        HCHttp factory = new HCHttp(createDefaultHttpObjectFactoryBuilder()) {
-            @Override
-            protected ObjectReader configuredReader() {
-                return mockedObjectReader;
-            }
-        };
+        final PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest
+                .createDefaultTestSourceFactoryConfig()
+                .build();
 
-        ResponseHandler<BatchResult> resultHandler = factory.createResultHandler(
-                BatchRequestTest.createDefaultTestObjectBuilder().build(),
+        final Deserializer<BatchResult> deserializer = mock(Deserializer.class);
+        final HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(null) {
+            @Override
+            protected Deserializer<BatchResult> createResultDeserializer() {
+                return deserializer;
+            }
+        });
+        final HCHttp factory = new HCHttp(createDefaultHttpObjectFactoryBuilder()
+                .withBatchOperations(batchOperations));
+
+        final ResponseHandler<BatchResult> resultHandler = factory.createResultHandler(
+                batchOperations.createBatchBuilder().build(),
                 batchRequest -> true
         );
 
-        InputStream inputStream = mock(InputStream.class);
+        final InputStream inputStream = mock(InputStream.class);
 
         // when
         resultHandler.deserializeResponse(inputStream);
 
         // then
-        verify(mockedObjectReader).readValue(eq(inputStream));
+        verify(deserializer).read(eq(inputStream));
     }
 
     @Test
