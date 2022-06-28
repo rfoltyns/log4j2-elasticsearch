@@ -11,7 +11,7 @@
     <description>Log4j2 Appender plugin pushing logs in batches to Elasticsearch 5.x clusters</description>
 
     <properties>
-        <elasticsearch.version>5.6.9</elasticsearch.version>
+        <elasticsearch.version>5.6.16</elasticsearch.version>
     </properties>
 
     <dependencies>
