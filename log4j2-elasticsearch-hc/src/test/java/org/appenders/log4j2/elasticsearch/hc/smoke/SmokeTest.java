@@ -181,7 +181,7 @@ public class SmokeTest extends SmokeTestBase {
 
             ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory = new ServiceDiscoveryFactory<>(
                     clientProviderPolicy,
-                    serviceDiscoveryQuery(getConfig().getProperty("serviceDiscovery.nodesFilter", String.class)),
+                    serviceDiscoveryQuery(getConfig().getProperty("servicediscovery.nodesFilter", String.class)),
                     5000L
             );
 
