@@ -30,6 +30,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
 import java.util.Collections;
 import java.util.List;
 
@@ -192,7 +193,7 @@ public class RolloverUtilTest {
         final ZonedDateTime truncated = RolloverUtil.truncate(dateTime, ChronoUnit.WEEKS);
 
         // then
-        assertEquals(dateTime.get(ChronoField.ALIGNED_WEEK_OF_YEAR), truncated.get(ChronoField.ALIGNED_WEEK_OF_YEAR), ChronoUnit.WEEKS.name());
+        assertEquals(dateTime.get(IsoFields.WEEK_BASED_YEAR), truncated.get(IsoFields.WEEK_BASED_YEAR), ChronoUnit.WEEKS.name());
 
     }
 
