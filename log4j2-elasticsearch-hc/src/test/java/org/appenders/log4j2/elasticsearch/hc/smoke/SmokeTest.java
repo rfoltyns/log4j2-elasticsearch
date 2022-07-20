@@ -155,7 +155,7 @@ public class SmokeTest extends SmokeTestBase {
                 .withMaxTotalConnections(8)
                 .withAuth(secured ? getAuth() : null)
                 .withPooledResponseBuffers(true)
-                .withPooledResponseBuffersSizeInBytes(1048576);
+                .withPooledResponseBuffersSizeInBytes(3145728);
 
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
