@@ -94,7 +94,7 @@ public class QueueFactory {
 
         if (features.isEnabled(Features.Feature.JCTOOLS_QUEUES)) {
             if (hasClass(name, queueClassName)) {
-                getLogger().debug("{}: Using {}", name, queueClassName);
+                getLogger().debug("{}: {} available", name, queueClassName);
                 return new JCToolsFactory().create(queueClassName);
             }
         }
