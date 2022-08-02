@@ -22,6 +22,9 @@ package org.appenders.log4j2.elasticsearch;
 
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessorTest;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.appenders.log4j2.elasticsearch.spi.TestBatchEmitterFactory;
 import org.junit.jupiter.api.Test;
@@ -32,10 +35,12 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.function.Function;
 
+import static org.appenders.log4j2.elasticsearch.util.TestClock.createTestClock;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -60,6 +65,7 @@ public class AsyncBatchDeliveryPluginTest {
 
     public static AsyncBatchDeliveryPlugin.Builder createTestBatchDeliveryBuilder() {
         return spy(AsyncBatchDeliveryPlugin.newBuilder()
+                .withShutdownDelayMillis(0)
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
                 .withClientObjectFactory(createTestObjectFactoryBuilder().build()))
@@ -67,14 +73,15 @@ public class AsyncBatchDeliveryPluginTest {
     }
 
     /* To make testing easier and break when changed */
-    private BatchDelivery<String> invokePluginFactory(AsyncBatchDelivery.Builder builder) {
+    private AsyncBatchDelivery invokePluginFactory(AsyncBatchDelivery.Builder builder) {
         return AsyncBatchDeliveryPlugin.createAsyncBatchDelivery(
                 builder.clientObjectFactory,
                 builder.deliveryInterval,
                 builder.batchSize,
                 builder.failoverPolicy,
                 builder.shutdownDelayMillis,
-                builder.setupOpSources);
+                builder.setupOpSources,
+                builder.metricsProcessor);
     }
 
     @Test
@@ -88,6 +95,7 @@ public class AsyncBatchDeliveryPluginTest {
 
         // then
         assertNotNull(delivery);
+
     }
 
     @Test
@@ -121,10 +129,11 @@ public class AsyncBatchDeliveryPluginTest {
                 .withDeliveryInterval(0)
                 .withShutdownDelayMillis(-1)
                 .withFailoverPolicy(null)
-                .withSetupOpSources();
+                .withSetupOpSources()
+                .withMetricProcessor(null);
 
         // when
-        AsyncBatchDelivery batchDelivery = (AsyncBatchDelivery) invokePluginFactory(batchDeliveryBuilder);
+        AsyncBatchDelivery batchDelivery = invokePluginFactory(batchDeliveryBuilder);
 
         int expectedBatches = 10;
         for (int i = 0; i < AsyncBatchDelivery.Builder.DEFAULT_BATCH_SIZE * expectedBatches; i++) {
@@ -135,6 +144,7 @@ public class AsyncBatchDeliveryPluginTest {
         assertEquals(AsyncBatchDelivery.Builder.DEFAULT_FAILOVER_POLICY, batchDelivery.failoverPolicy);
         assertEquals(Arrays.asList(AsyncBatchDelivery.Builder.DEFAULT_OP_SOURCES), batchDelivery.setupOpSources);
         assertEquals(AsyncBatchDelivery.Builder.DEFAULT_SHUTDOWN_DELAY, batchDelivery.shutdownDelayMillis);
+        assertNotNull(batchDelivery.metricsProcessor);
 
         verify(listener, times(expectedBatches)).apply(any());
 
@@ -161,6 +171,30 @@ public class AsyncBatchDeliveryPluginTest {
         ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
         verify(LifeCycle.of(failoverPolicy)).stop(captor.capture(), anyBoolean());
         assertEquals((Long) expectedShutdownDelayMillis, captor.getValue());
+
+    }
+
+    @Test
+    public void builderConfiguresMetricsProcessor() {
+
+        // given
+        final MetricsProcessor metricsProcessor = MetricsProcessorTest.createTestProcessor(
+                createTestClock(System.currentTimeMillis()),
+                new BasicMetricsRegistry());
+
+        final long expectedShutdownDelayMillis = 10 + new Random().nextInt(100);
+        final FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());
+
+        final AsyncBatchDeliveryPlugin.Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withMetricProcessor(metricsProcessor)
+                .withFailoverPolicy(failoverPolicy)
+                .withShutdownDelayMillis(expectedShutdownDelayMillis);
+
+        // when
+        final AsyncBatchDelivery asyncBatchDelivery = invokePluginFactory(batchDeliveryBuilder);
+
+        // then
+        assertSame(metricsProcessor, asyncBatchDelivery.metricsProcessor);
 
     }
 
@@ -275,7 +309,6 @@ public class AsyncBatchDeliveryPluginTest {
         verify(emitter, times(1)).add(captor.capture());
         assertEquals(testMessage, captor.getValue().getData(null));
 
-
     }
 
     public static class TestAsyncBatchDelivery extends AsyncBatchDeliveryPlugin {
@@ -290,6 +323,7 @@ public class AsyncBatchDeliveryPluginTest {
         }
 
     }
+
     private static class TestFailoverPolicy implements FailoverPolicy, LifeCycle {
 
 
@@ -325,7 +359,6 @@ public class AsyncBatchDeliveryPluginTest {
         public boolean isStopped() {
             return state == State.STOPPED;
         }
-
 
     }
 

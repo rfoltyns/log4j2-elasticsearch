@@ -20,6 +20,19 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricType;
+import org.appenders.log4j2.elasticsearch.metrics.Metrics;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
@@ -44,7 +57,7 @@ import static org.appenders.log4j2.elasticsearch.QueueFactory.getQueueFactoryIns
  * <p>{@link #shutdown()} MUST be called to cleanup underlying resources.
  * <p>NOTE: Consider this class <i>private</i>. Design may change before the code is stabilized.
  */
-public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
+public class GenericItemSourcePool<T> implements ItemSourcePool<T>, Measured {
 
     private static final int INITIAL_RESIZE_INTERNAL_STACK_DEPTH = 0;
     public static final String THREAD_NAME_FORMAT = "%s-%s";
@@ -85,15 +98,26 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
     private final AtomicInteger thIndex = new AtomicInteger();
 
     ScheduledExecutorService executor;
-    private final String resizeAttemptLog;
 
-    public GenericItemSourcePool(String poolName,
-                                 PooledObjectOps<T> pooledObjectOps,
-                                 ResizePolicy resizePolicy,
-                                 long resizeTimeout,
-                                 boolean monitored,
-                                 long monitorTaskInterval,
-                                 int initialPoolSize) {
+    /**
+     * @param poolName metrics componentName part
+     * @param pooledObjectOps pooled objects manager
+     * @param resizePolicy resizing strategy when no more pooled elements available
+     * @param resizeTimeout single resize attempt timeout on {@link #getPooled()} call. 5 retries by default. Use {@code appenders.GenericItemSourcePool.resize.retries} to adjust
+     * @param monitored if <i>true</i>, legacy metric printer will be enabled
+     * @param monitorTaskInterval time to wait after last legacy metric printer completion
+     * @param initialPoolSize target size after {@link #start()}
+     *
+     * @deprecated This constructor is deprecated and will be removed in future releases. Use {@link #GenericItemSourcePool(String, PooledObjectOps, ResizePolicy, long, int, MetricsFactory)} instead.
+     */
+    @Deprecated
+    public GenericItemSourcePool(final String poolName,
+                                 final PooledObjectOps<T> pooledObjectOps,
+                                 final ResizePolicy resizePolicy,
+                                 final long resizeTimeout,
+                                 final boolean monitored,
+                                 final long monitorTaskInterval,
+                                 final int initialPoolSize) {
         this(poolName,
                 pooledObjectOps,
                 resizePolicy,
@@ -101,19 +125,45 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
                 monitored,
                 monitorTaskInterval,
                 initialPoolSize,
-                getQueueFactoryInstance(GenericItemSourcePool.class.getSimpleName()).tryCreateMpmcQueue(initialPoolSize));
+                getQueueFactoryInstance(GenericItemSourcePool.class.getSimpleName()).tryCreateMpmcQueue(initialPoolSize),
+                new DefaultMetricsFactory(metricConfigs(monitored)));
     }
 
-    GenericItemSourcePool(String poolName,
-                          PooledObjectOps<T> pooledObjectOps,
-                          ResizePolicy resizePolicy,
-                          long resizeTimeout,
-                          boolean monitored,
-                          long monitorTaskInterval,
-                          int initialPoolSize,
-                          Queue<ItemSource<T>> objectPool) {
+    /**
+     * @param poolName metrics componentName part
+     * @param pooledObjectOps pooled objects manager
+     * @param resizePolicy resizing strategy when no more pooled elements available
+     * @param resizeTimeout single resize attempt timeout on {@link #getPooled()} call. 5 retries by default. Use {@code appenders.GenericItemSourcePool.resize.retries} to adjust
+     * @param initialPoolSize target size after {@link #start()}
+     * @param metricsFactory metric factory for this pool instance. Any changes to given metric factory made after this call will not affect constructed pool instance.
+     */
+    public GenericItemSourcePool(final String poolName,
+                                 final PooledObjectOps<T> pooledObjectOps,
+                                 final ResizePolicy resizePolicy,
+                                 final long resizeTimeout,
+                                 final int initialPoolSize,
+                                 final MetricsFactory metricsFactory) {
+        this(poolName,
+                pooledObjectOps,
+                resizePolicy,
+                resizeTimeout,
+                false,
+                Long.MAX_VALUE,
+                initialPoolSize,
+                getQueueFactoryInstance(GenericItemSourcePool.class.getSimpleName()).tryCreateMpmcQueue(initialPoolSize),
+                metricsFactory);
+    }
+
+    GenericItemSourcePool(final String poolName,
+                          final PooledObjectOps<T> pooledObjectOps,
+                          final ResizePolicy resizePolicy,
+                          final long resizeTimeout,
+                          final boolean monitored,
+                          final long monitorTaskInterval,
+                          final int initialPoolSize,
+                          final Queue<ItemSource<T>> objectPool,
+                          final MetricsFactory metricsFactory) {
         this.poolName = poolName;
-        this.resizeAttemptLog = String.format("Pool [%s] attempting to resize using policy [%s]", poolName, resizePolicy.getClass().getName());
         this.pooledObjectOps = pooledObjectOps;
         this.resizePolicy = resizePolicy;
         this.resizeTimeout = resizeTimeout;
@@ -121,8 +171,19 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         this.monitored = monitored;
         this.monitorTaskInterval = monitorTaskInterval;
         this.objectPool = objectPool;
-        this.metrics = this.new PoolMetrics();
+        this.metrics = new PoolMetrics(poolName, metricsFactory);
     }
+
+    public static List<MetricConfig> metricConfigs(final boolean enabled) {
+        return Arrays.asList(
+                MetricConfigFactory.createSuppliedConfig(MetricType.COUNT, enabled, "initial"),
+                MetricConfigFactory.createSuppliedConfig(MetricType.COUNT, enabled, "total"),
+                MetricConfigFactory.createSuppliedConfig(MetricType.COUNT, enabled, "available"),
+                MetricConfigFactory.createCountConfig(enabled, "noSuchElementCaught"),
+                MetricConfigFactory.createCountConfig(enabled, "resizeAttempts")
+        );
+    }
+
 
     private void startRecyclerTask() {
         executor.scheduleAtFixedRate(new Recycler(this, resizePolicy), 1000, 10000, TimeUnit.MILLISECONDS);
@@ -133,9 +194,12 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      *
      * @param monitorTaskInterval interval between two snapshots
      * @param additionalMetricsSupplier metrics added on top of defaults
+     * @deprecated As of 1.7, this method will be removed. Use {@link MetricsFactory instead}
      */
-    void startMonitorTask(long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
-        executor.scheduleAtFixedRate(new MetricPrinter(getName() + "-MetricPrinter", metrics, additionalMetricsSupplier),
+    @Deprecated
+    void startMonitorTask(final long monitorTaskInterval, Supplier<String> additionalMetricsSupplier) {
+        final MetricPrinter command = new MetricPrinter(getName() + "-MetricPrinter", metrics, additionalMetricsSupplier);
+        executor.scheduleAtFixedRate(command,
                 Long.parseLong(System.getProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".metrics.start.delay", "1000")),
                 monitorTaskInterval,
                 TimeUnit.MILLISECONDS
@@ -201,14 +265,14 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      * <p>This call ignore <code>"appenders.GenericItemSourcePool.resize.retries"</code> setting.</p>
      * <p>If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements ONCE. Will return null on failure.</p>
      *
-     * @return pooled {@link ItemSource} if not empty or resized, <tt>null</tt> otherwise
+     * @return pooled {@link ItemSource} if not empty or resized, {@code null} otherwise
      */
     @Override
     public final ItemSource<T> getPooledOrNull() {
 
         try {
 
-            if (objectPool.isEmpty() && !resizeNow()){
+            if (objectPool.isEmpty() && !resizeNow()) {
                 return null;
             }
 
@@ -245,7 +309,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         try {
             ItemSource<T> pooled = removeInternal(maxRetries);
             pooledObjectOps.purge(pooled);
-            totalPoolSize.getAndDecrement();
+            totalPoolSize.decrementAndGet();
         } catch (PoolResourceException e) {
             return false;
         }
@@ -304,8 +368,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         boolean resized = false;
 
         try {
-            // TODO: add to metrics
-            getLogger().info(resizeAttemptLog);
+            metrics.resizeAttempt();
             resized = resizePolicy.increase(this);
 
         } finally {
@@ -350,17 +413,32 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
 
         while (!objectPool.isEmpty()) {
             pooledObjectOps.purge(objectPool.remove());
+            totalPoolSize.decrementAndGet();
         }
 
         getLogger().debug("{} stopping internal threads..", poolName);
         executor.shutdown();
 
+        metrics.deregister();
+
         getLogger().debug("{} shutdown complete", poolName);
 
     }
 
-    PoolMetrics metrics() {
-        return metrics;
+    @Override
+    public void register(final MetricsRegistry registry) {
+
+        metrics.register(registry);
+        Measured.of(pooledObjectOps).register(registry);
+
+    }
+
+    @Override
+    public void deregister() {
+
+        metrics.deregister();
+        Measured.of(pooledObjectOps).deregister();
+
     }
 
     class PooledItemSourceReleaseCallback implements ReleaseCallback<T> {
@@ -370,6 +448,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
             pooledObjectOps.reset(itemSource);
             if (!isStarted()) {
                 pooledObjectOps.purge(itemSource);
+                totalPoolSize.decrementAndGet();
                 return;
             }
             objectPool.offer(itemSource);
@@ -394,53 +473,82 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
         }
     }
 
-    static class MetricPrinter extends Thread {
+    class MetricPrinter extends Thread {
 
         private final Supplier<String> additionalMetricsSupplier;
         private final Consumer<String> printer;
 
-        MetricPrinter(String threadName, GenericItemSourcePool.PoolMetrics poolMetrics, Supplier<String> additionalMetricsSupplier) {
+        MetricPrinter(final String threadName, final PoolMetrics metrics, final Supplier<String> additionalMetricsSupplier) {
             super(threadName);
             this.additionalMetricsSupplier = additionalMetricsSupplier;
-            this.printer = additionalMetrics -> getLogger().info(poolMetrics.formattedMetrics(additionalMetrics));
+            this.printer = additionalMetrics -> {
+
+                final int capacity = additionalMetrics != null ? additionalMetrics.length() + 384 : 128; // because we love less garbage
+
+                final StringBuilder sb = new StringBuilder(capacity)
+                        .append('{')
+                        .append(" poolName: ").append(getName())
+                        .append(", initialPoolSize: ").append(metrics.initialSize.getValue())
+                        .append(", totalPoolSize: ").append(metrics.totalSize.getValue())
+                        .append(", availablePoolSize: ").append(metrics.availableSize.getValue());
+
+                if (additionalMetrics != null) {
+                    sb.append(", additionalMetrics: ").append(additionalMetrics);
+                }
+
+                sb.append('}');
+
+                getLogger().info(sb.toString());
+            };
         }
 
         @Override
         public void run() {
             printer.accept(additionalMetricsSupplier.get());
         }
+
     }
 
-    class PoolMetrics {
+    class PoolMetrics implements Metrics {
 
-        final AtomicInteger noSuchElementTotal = new AtomicInteger();
+        private final List<MetricsRegistry.Registration> registrations = new ArrayList<>();
+        private final Metric noSuchElementCaught;
+        private final Metric initialSize;
+        private final Metric totalSize;
+        private final Metric availableSize;
+        private final Metric resizeAttempts;
+
+        public PoolMetrics(final String name, final MetricsFactory factory) {
+            this.initialSize = factory.createMetric(name, "initial", GenericItemSourcePool.this::getInitialSize);
+            this.totalSize = factory.createMetric(name, "total", GenericItemSourcePool.this::getTotalSize);
+            this.availableSize = factory.createMetric(name, "available", GenericItemSourcePool.this::getAvailableSize);
+            this.noSuchElementCaught = factory.createMetric(name, "noSuchElementCaught");
+            this.resizeAttempts = factory.createMetric(name, "resizeAttempts");
+        }
 
         @Override
-        public String toString() {
-            return formattedMetrics(null);
+        public void register(final MetricsRegistry registry) {
+
+            registrations.add(registry.register(initialSize));
+            registrations.add(registry.register(totalSize));
+            registrations.add(registry.register(availableSize));
+            registrations.add(registry.register(noSuchElementCaught));
+            registrations.add(registry.register(resizeAttempts));
+
         }
 
-        public String formattedMetrics(final String additionalMetrics) {
-
-            final int capacity = additionalMetrics != null ? additionalMetrics.length() + 384 : 128; // because we love less garbage
-
-            final StringBuilder sb = new StringBuilder(capacity)
-                    .append('{')
-                    .append(" poolName: ").append(getName())
-                    .append(", initialPoolSize: ").append(getInitialSize())
-                    .append(", totalPoolSize: ").append(getTotalSize())
-                    .append(", availablePoolSize: ").append(getAvailableSize())
-                    .append(", totalNoSuchElementCaught: ").append(noSuchElementTotal.get());
-
-            if (additionalMetrics != null) {
-                sb.append(", additionalMetrics: ").append(additionalMetrics);
-            }
-
-            return sb.append('}').toString();
+        @Override
+        public void deregister() {
+            registrations.forEach(MetricsRegistry.Registration::deregister);
+            registrations.clear();
         }
 
-        public void noSuchElement() {
-            noSuchElementTotal.incrementAndGet();
+        public final void noSuchElement() {
+            noSuchElementCaught.store(1L);
+        }
+
+        public final void resizeAttempt() {
+            resizeAttempts.store(1L);
         }
 
     }

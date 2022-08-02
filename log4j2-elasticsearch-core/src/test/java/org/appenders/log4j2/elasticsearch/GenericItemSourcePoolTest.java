@@ -23,6 +23,15 @@ package org.appenders.log4j2.elasticsearch;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.TestPooledByteBufAllocatorMetric;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
@@ -31,11 +40,14 @@ import org.mockito.stubbing.Answer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicyTest.createDefaultTestBoundedSizeLimitPolicy;
 import static org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOpsTest.createTestPooledObjectOps;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -49,7 +61,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +78,7 @@ public abstract class GenericItemSourcePoolTest {
 
     static {
         System.setProperty("io.netty.allocator.maxOrder", "2");
-   }
+    }
 
     public static UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
 
@@ -138,17 +153,50 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void metricsPrinterToStringDelegatesToFormattedMetrics() {
+    public void metricsPrinterContainsPoolStats() throws PoolResourceException {
 
         // given
-        GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(true);
-        GenericItemSourcePool.PoolMetrics metrics = spy(pool.new PoolMetrics());
+        System.setProperty("appenders.GenericItemSourcePool.metrics.start.delay", "0");
+
+        final Logger logger = mockTestLogger();
+        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder().build();
+        final TestPooledByteBufAllocatorMetric allocatorMetrics = new TestPooledByteBufAllocatorMetric();
+        final ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
+                byteBufAllocator,
+                new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)) {
+            @Override
+            public Supplier<String> createMetricsSupplier() {
+                return () -> allocatorMetrics.getDelegate().toString();
+            }
+        };
+        final GenericItemSourcePool pool = new GenericItemSourcePool<>(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                pooledObjectOps,
+                resizePolicy,
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                true,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                DEFAULT_TEST_INITIAL_POOL_SIZE
+        );
 
         // when
-        metrics.toString();
+        pool.start();
 
         // then
-        verify(metrics).formattedMetrics(eq(null));
+        final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(logger, timeout(1000)).info(captor.capture());
+
+        final String formattedMetrics = captor.getValue();
+        assertTrue(formattedMetrics.contains("poolName: " + DEFAULT_TEST_ITEM_POOL_NAME));
+        assertTrue(formattedMetrics.contains("initialPoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
+        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE)));
+        assertTrue(formattedMetrics.contains("availablePoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
+        assertTrue(formattedMetrics.contains("additionalMetrics"));
+
+        reset(logger);
+        InternalLogging.setLogger(null);
+
+        System.clearProperty("appenders.GenericItemSourcePool.metrics.start.delay");
 
     }
 
@@ -156,47 +204,47 @@ public abstract class GenericItemSourcePoolTest {
     public void metricsPrinterGivenNoAllocatorMetricsContainsPoolStatsOnly() throws PoolResourceException {
 
         // given
-        GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(true);
-        pool.start();
+        System.setProperty("appenders.GenericItemSourcePool.metrics.start.delay", "0");
 
-        GenericItemSourcePool.PoolMetrics metrics = pool.new PoolMetrics();
+        final Logger logger = mockTestLogger();
+        final ResizePolicy resizePolicy = new UnlimitedResizePolicy.Builder().build();
+        final ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
+                byteBufAllocator,
+                new ByteBufBoundedSizeLimitPolicy(DEFAULT_TEST_ITEM_SIZE_IN_BYTES, DEFAULT_TEST_ITEM_SIZE_IN_BYTES)) {
+            @Override
+            public Supplier<String> createMetricsSupplier() {
+                return () -> null;
+            }
+        };
+        final GenericItemSourcePool pool = new GenericItemSourcePool<>(
+                DEFAULT_TEST_ITEM_POOL_NAME,
+                pooledObjectOps,
+                resizePolicy,
+                DEFAULT_TEST_RESIZE_TIMEOUT,
+                true,
+                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
+                DEFAULT_TEST_INITIAL_POOL_SIZE
+        );
 
         // when
-        pool.incrementPoolSize();
-        pool.getPooled();
-        String formattedMetrics = metrics.formattedMetrics(null);
+        pool.start();
 
         // then
+        final ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(logger, timeout(500)).info(captor.capture());
+
+        final String formattedMetrics = captor.getValue();
         assertTrue(formattedMetrics.contains("poolName: " + DEFAULT_TEST_ITEM_POOL_NAME));
         assertTrue(formattedMetrics.contains("initialPoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE + 1)));
+        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE)));
         assertTrue(formattedMetrics.contains("availablePoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
         assertFalse(formattedMetrics.contains("allocatorMetric"));
 
-    }
+        reset(logger);
+        InternalLogging.setLogger(null);
 
-    @Test
-    public void metricsPrinterContainsPoolStats() throws PoolResourceException {
+        System.clearProperty("appenders.GenericItemSourcePool.metrics.start.delay");
 
-        // given
-        GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(true);
-        pool.start();
-
-        GenericItemSourcePool.PoolMetrics metrics = pool.new PoolMetrics();
-
-        TestPooledByteBufAllocatorMetric allocatorMetrics = new TestPooledByteBufAllocatorMetric();
-
-        // when
-        pool.incrementPoolSize();
-        pool.getPooled();
-        String formattedMetrics = metrics.formattedMetrics(allocatorMetrics.getDelegate().toString());
-
-        // then
-        assertTrue(formattedMetrics.contains("poolName: " + DEFAULT_TEST_ITEM_POOL_NAME));
-        assertTrue(formattedMetrics.contains("initialPoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE + 1)));
-        assertTrue(formattedMetrics.contains("availablePoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("additionalMetrics"));
     }
 
     @Test
@@ -267,7 +315,20 @@ public abstract class GenericItemSourcePoolTest {
     public void defaultReleaseCallbackDoesntReturnToPoolIfPoolIsStopped() throws PoolResourceException {
 
         // given
-        ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "initial", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "available", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "total", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        final ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
                 byteBufAllocator,
                 createDefaultTestBoundedSizeLimitPolicy()) {
             @Override
@@ -275,24 +336,39 @@ public abstract class GenericItemSourcePoolTest {
                 return spy(super.createItemSource(releaseCallback));
             }
         };
-        GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
-                DEFAULT_TEST_ITEM_POOL_NAME,
+        final GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
+                expectedComponentName,
                 pooledObjectOps,
                 new UnlimitedResizePolicy.Builder().withResizeFactor(1).build(),
-                DEFAULT_TEST_RESIZE_TIMEOUT,
-                false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                1
-                ));
+                2,
+                new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(true))));
 
         pool.start();
+        pool.register(registry);
 
         assertTrue(pool.isStarted());
         assertTrue(pool.getAvailableSize() > 0);
 
-        ItemSource<ByteBuf> pooled = pool.getPooled();
-        ByteBuf byteBuf = spy(pooled.getSource());
+        metricProcessor.process();
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey5), eq(0L));
+        reset(metricOutput);
+
+        final ItemSource<ByteBuf> pooled = pool.getPooled();
+        final ByteBuf byteBuf = spy(pooled.getSource());
         when(pooled.getSource()).thenReturn(byteBuf);
+
+        metricProcessor.process();
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(1L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey5), eq(0L));
+        reset(metricOutput);
 
         pool.stop();
 
@@ -302,6 +378,7 @@ public abstract class GenericItemSourcePoolTest {
         // then
         assertEquals(0, pool.getAvailableSize());
         verify(byteBuf).release();
+
     }
 
     @Test
@@ -332,15 +409,16 @@ public abstract class GenericItemSourcePoolTest {
     }
 
     @Test
-    public void removeReturnFalseInsteadOfThrowingAfterUnderlyingPoolResourceException ()  {
+    public void removeDoesNotRethrowPoolResourceExceptions()  {
 
-        ResizePolicy resizePolicy = mock(ResizePolicy.class);
+        // given
+        final ResizePolicy resizePolicy = mock(ResizePolicy.class);
         when(resizePolicy.increase(any())).then((Answer<Boolean>) invocationOnMock -> {
             throw new PoolResourceException("test");
         });
 
-        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
-        GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
+        final ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+        final GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
                 DEFAULT_TEST_ITEM_POOL_NAME,
                 pooledObjectOps,
                 resizePolicy,
@@ -351,34 +429,46 @@ public abstract class GenericItemSourcePoolTest {
         ));
 
         // when
-        boolean resized = pool.remove();
+        final boolean resized = pool.remove();
 
         // then
         assertFalse(resized);
+        verify(resizePolicy).increase(any());
 
     }
 
     @Test
-    public void getPooledTriesToResizeUpToConfiguredRecursionDepth () throws PoolResourceException {
+    public void getPooledTriesToResizeUpToConfiguredRecursionDepth() throws PoolResourceException {
 
+        // given
         final int expectedRetries = new Random().nextInt(10) + 10;
         final AtomicInteger retriesLeft = new AtomicInteger(expectedRetries);
-        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".resize.retries", "" + expectedRetries);
-
         final AtomicInteger totalRetries = new AtomicInteger();
 
-        final ResizePolicy resizePolicy = mock(ResizePolicy.class);
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
 
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".resize.retries", "" + expectedRetries);
+
+        final ResizePolicy resizePolicy = mock(ResizePolicy.class);
         final ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+        final MetricsFactory metricsFactory = new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(true));
         final GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
-                DEFAULT_TEST_ITEM_POOL_NAME,
+                expectedComponentName,
                 pooledObjectOps,
                 resizePolicy,
                 100,
-                false,
-                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0
+                0,
+                metricsFactory
         ));
+
         when(resizePolicy.increase(any())).then((Answer<Boolean>) invocationOnMock -> {
 
             totalRetries.incrementAndGet();
@@ -390,34 +480,44 @@ public abstract class GenericItemSourcePoolTest {
         });
 
         // when
+        pool.register(registry);
         pool.getPooled();
+        metricProcessor.process();
 
         // then
         assertEquals(expectedRetries, totalRetries.get());
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq((long) expectedRetries - 1));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq((long) expectedRetries));
 
     }
 
     @Test
-    public <T> void multipleThreadsGetPooledWhenResizePolicyEventuallyCopeWithTheLoad() throws InterruptedException {
+    public void multipleThreadsGetPooledWhenResizePolicyEventuallyCopeWithTheLoad() throws InterruptedException {
 
         // given
-        ResizePolicy resizePolicy = mock(ResizePolicy.class);
+        final ResizePolicy resizePolicy = mock(ResizePolicy.class);
         when(resizePolicy.canResize(any())).thenReturn(true);
 
-        int expectedResizeCount = 5;
+        final int expectedResizeCount = 5;
 
-        ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
-        GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
-                DEFAULT_TEST_ITEM_POOL_NAME,
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key resizeAttemptsKey = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        final ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
+        final GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
+                expectedComponentName,
                 pooledObjectOps,
                 resizePolicy,
-                100,
-                false,
                 DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                1
+                1,
+                new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(true))
         ));
-
-        final GenericItemSourcePool<ByteBuf>.PoolMetrics metrics = pool.new PoolMetrics();
 
         final AtomicInteger noResizeCount = new AtomicInteger(expectedResizeCount);
         final AtomicInteger passThroughResizeCount = new AtomicInteger();
@@ -443,10 +543,9 @@ public abstract class GenericItemSourcePoolTest {
 
         final AtomicInteger caughtIneffectiveResizes = new AtomicInteger();
 
-        // when
-        CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch end = new CountDownLatch(10);
-        AtomicInteger pooledCounter = new AtomicInteger();
+        final CountDownLatch start = new CountDownLatch(1);
+        final CountDownLatch end = new CountDownLatch(10);
+        final AtomicInteger pooledCounter = new AtomicInteger();
         for (int ii = 0; ii < 10; ii++) {
             new Thread(() -> {
                 try {
@@ -463,20 +562,24 @@ public abstract class GenericItemSourcePoolTest {
             }).start();
         }
 
+        pool.register(registry);
+
+        // when
         start.countDown();
         end.await();
+        metricProcessor.process();
 
         // then
         assertEquals(10, pooledCounter.get());
         assertEquals(0, caughtIneffectiveResizes.get());
         assertEquals(expectedResizeCount - 1, passThroughResizeCount.get());
 
-        assertThat(metrics.formattedMetrics(null), containsString("totalNoSuchElementCaught: " + metrics.noSuchElementTotal.get()));
+        verify(metricOutput).write(anyLong(), eq(resizeAttemptsKey), eq((long) expectedResizeCount));
 
     }
 
     @Test
-    public void throwsWhenMultithreadedWaitForResizeInterrupted() throws InterruptedException {
+    public void throwsWhenConcurrentWaitForResizeInterrupted() throws InterruptedException {
 
         // given
         ResizePolicy resizePolicy = mock(ResizePolicy.class);
@@ -488,16 +591,20 @@ public abstract class GenericItemSourcePoolTest {
                 pooledObjectOps,
                 resizePolicy,
                 resizeTimeout,
-                false,
-                DEFAULT_TEST_MONITOR_TASK_INTERVAL,
-                0
+                0,
+                new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(true))
         ));
-
 
         when(resizePolicy.increase(eq(pool))).thenAnswer((Answer<Boolean>) invocation -> {
             Thread.sleep(1000);
             return true;
         });
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+        pool.register(registry);
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
 
         final Exception[] caught = new Exception[1];
 
@@ -531,9 +638,13 @@ public abstract class GenericItemSourcePoolTest {
         threads.forEach(thread -> thread.interrupt());
         end.await();
 
+        metricsProcessor.process();
+
         // then
         assertEquals(IllegalStateException.class, caught[0].getClass());
         assertEquals("Thread interrupted while waiting for resizing to complete", caught[0].getMessage());
+
+        verify(metricOutput).write(anyLong(), eq(new Metric.Key(DEFAULT_TEST_ITEM_POOL_NAME, "resizeAttempts", "count")), eq(1L));
 
     }
 
@@ -601,6 +712,28 @@ public abstract class GenericItemSourcePoolTest {
 
         // then
         verify(pool).shutdown();
+
+    }
+
+    @Test
+    public void lifecycleStopDeregistersOnlyOnce() {
+
+        // given
+        final MetricsRegistry registry = spy(new BasicMetricsRegistry());
+
+        final GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(1, false);
+
+        pool.start();
+        pool.register(registry);
+
+        assertEquals(5, registry.getMetrics(m -> true).size());
+
+        // when
+        pool.stop();
+        pool.stop();
+
+        // then
+        verify(registry, times(5)).deregister(any());
 
     }
 

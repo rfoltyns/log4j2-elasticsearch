@@ -21,9 +21,11 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.TestPooledByteBufAllocatorMetric;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -31,12 +33,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 
+import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicyTest.createDefaultTestBoundedSizeLimitPolicy;
 import static org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOpsTest.createTestPooledObjectOps;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -44,8 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,53 +69,6 @@ public abstract class GenericItemSourcePoolFastPathTest {
    }
 
     public static UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
-
-    @Test
-    public void metricsPrinterGivenNoAllocatorMetricsContainsPoolStatsOnly() throws PoolResourceException {
-
-        // given
-        GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(true);
-        pool.start();
-
-        GenericItemSourcePool.PoolMetrics metrics = pool.new PoolMetrics();
-
-        // when
-        pool.incrementPoolSize();
-        pool.getPooledOrNull();
-        String formattedMetrics = metrics.formattedMetrics(null);
-
-        // then
-        assertTrue(formattedMetrics.contains("poolName: " + DEFAULT_TEST_ITEM_POOL_NAME));
-        assertTrue(formattedMetrics.contains("initialPoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE + 1)));
-        assertTrue(formattedMetrics.contains("availablePoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertFalse(formattedMetrics.contains("allocatorMetric"));
-
-    }
-
-    @Test
-    public void metricsPrinterContainsPoolStats() throws PoolResourceException {
-
-        // given
-        GenericItemSourcePool pool = createDefaultTestGenericItemSourcePool(true);
-        pool.start();
-
-        GenericItemSourcePool.PoolMetrics metrics = pool.metrics();
-
-        TestPooledByteBufAllocatorMetric allocatorMetrics = new TestPooledByteBufAllocatorMetric();
-
-        // when
-        pool.incrementPoolSize();
-        pool.getPooledOrNull();
-        String formattedMetrics = metrics.formattedMetrics(allocatorMetrics.getDelegate().toString());
-
-        // then
-        assertTrue(formattedMetrics.contains("poolName: " + DEFAULT_TEST_ITEM_POOL_NAME));
-        assertTrue(formattedMetrics.contains("initialPoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("totalPoolSize: " + (DEFAULT_TEST_INITIAL_POOL_SIZE + 1)));
-        assertTrue(formattedMetrics.contains("availablePoolSize: " + DEFAULT_TEST_INITIAL_POOL_SIZE));
-        assertTrue(formattedMetrics.contains("additionalMetrics"));
-    }
 
     @Test
     public void incrementSizeAddsOnePooledElement() throws PoolResourceException {
@@ -288,8 +248,6 @@ public abstract class GenericItemSourcePoolFastPathTest {
                 0
         ));
 
-        final GenericItemSourcePool<ByteBuf>.PoolMetrics metrics = pool.new PoolMetrics();
-
         final AtomicInteger failedCounter = new AtomicInteger();
 
         when(resizePolicy.increase(eq(pool))).thenAnswer(new Answer<Boolean>() {
@@ -336,8 +294,6 @@ public abstract class GenericItemSourcePoolFastPathTest {
         assertEquals(10, pooledCounter.get());
         assertEquals(0, caughtIneffectiveResizes.get());
         assertEquals(expectedIneffectiveResizes, failedCounter.get());
-
-        assertThat(metrics.formattedMetrics(null), containsString("totalNoSuchElementCaught: " + metrics.noSuchElementTotal.get()));
 
     }
 

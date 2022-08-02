@@ -25,20 +25,33 @@ import io.netty.buffer.ByteBuf;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.core.logging.Logger;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.logging.InternalLoggingTest.mockTestLogger;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -275,6 +288,120 @@ public class ByteBufItemSourceFactoryPluginTest {
         setLogger(null);
 
     }
+
+    // =======
+    // METRICS
+    // =======
+
+    @Test
+    public void registersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "available", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "initial", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "total", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final ByteBufItemSourceFactoryPlugin itemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(false))
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        // when
+        itemSourceFactory.register(registry);
+
+        // then
+        assertEquals(5, registry.getMetrics(metric -> TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey2)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey3)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey4)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
+
+    }
+
+    @Test
+    public void enablesAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "available", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "initial", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "total", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final ByteBufItemSourceFactoryPlugin itemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(true))
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        // when
+        itemSourceFactory.start();
+        itemSourceFactory.register(registry);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey5), eq(0L));
+
+    }
+
+    @Test
+    public void enablesSubSetIfMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "available", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "initial", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "total", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final ByteBufItemSourceFactoryPlugin itemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(true))
+                .withMetricConfigs(Collections.singletonList(MetricConfigFactory.createMaxConfig(false, "resizeAttempts", false)))
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        // when
+        itemSourceFactory.start();
+        itemSourceFactory.register(registry);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(10L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput, never()).write(anyLong(), eq(expectedKey5), eq(0L));
+
+    }
+
+    // =========
+    // LIFECYCLE
+    // =========
 
     @Test
     public void lifecycleStart() {

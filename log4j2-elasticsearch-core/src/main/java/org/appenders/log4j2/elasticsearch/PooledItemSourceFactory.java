@@ -22,15 +22,21 @@ package org.appenders.log4j2.elasticsearch;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.io.IOException;
+import java.util.List;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 /**
  * Uses underlying {@link ItemSourcePool} to get {@link ItemSource} instances.
  */
-public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
+public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R>, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -121,6 +127,16 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         return poolInvocationHandler.tryGetPooled(bufferedItemSourcePool);
     }
 
+    @Override
+    public void register(MetricsRegistry registry) {
+        Measured.of(bufferedItemSourcePool).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(bufferedItemSourcePool).deregister();
+    }
+
     public static class Builder<T, R> {
 
         public static final long DEFAULT_RESIZE_TIMEOUT = 1000L;
@@ -153,6 +169,8 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         @Deprecated
         protected int maxItemSizeInBytes = DEFAULT_MAX_ITEM_SIZE_IN_BYTES;
 
+        private MetricsFactory metricsFactory;
+
         public PooledItemSourceFactory<T, R> build() {
 
             if (initialPoolSize <= 0) {
@@ -172,7 +190,7 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
                     throw new IllegalArgumentException("maxItemSizeInBytes must be higher than or equal to itemSizeInBytes for " + PooledItemSourceFactory.class.getSimpleName());
                 }
 
-                pooledObjectOps = configuredPooledObjectOps(UnpooledByteBufAllocator.DEFAULT);
+                pooledObjectOps = configuredPooledObjectOps(new UnpooledByteBufAllocator(false, false, false));
 
             }
 
@@ -210,15 +228,26 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
 
         /* extension point */
         ItemSourcePool<R> configuredItemSourcePool() {
-            return new GenericItemSourcePool<>(
-                    poolName,
-                    pooledObjectOps,
-                    resizePolicy,
-                    resizeTimeout,
-                    monitored,
-                    monitorTaskInterval,
-                    initialPoolSize
-            );
+            if (metricsFactory != null) {
+                return new GenericItemSourcePool<>(
+                        poolName,
+                        pooledObjectOps,
+                        resizePolicy,
+                        resizeTimeout,
+                        initialPoolSize,
+                        metricsFactory
+                );
+            } else {
+                return new GenericItemSourcePool<>(
+                        poolName,
+                        pooledObjectOps,
+                        resizePolicy,
+                        resizeTimeout,
+                        monitored,
+                        monitorTaskInterval,
+                        initialPoolSize
+                );
+            }
         }
 
         /**
@@ -354,6 +383,23 @@ public class PooledItemSourceFactory<T, R> implements ItemSourceFactory<T, R> {
         public Builder<T, R> withNullOnEmptyPool(boolean nullOnEmptyPool) {
             this.nullOnEmptyPool = nullOnEmptyPool;
             return this;
+        }
+
+        /**
+         * @param metricConfigs Metric configurations. Configures given metrics for current component. See {@link MetricsFactory#configure(List)}
+         * @return this
+         */
+        public Builder<T, R> withMetricConfigs(final List<MetricConfig> metricConfigs) {
+
+            // TODO: remove once legacy monitoring (monitored flag) is removed
+            if (metricsFactory == null) {
+                metricsFactory = new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(false));
+            }
+
+            this.metricsFactory.configure(metricConfigs);
+
+            return this;
+
         }
     }
 

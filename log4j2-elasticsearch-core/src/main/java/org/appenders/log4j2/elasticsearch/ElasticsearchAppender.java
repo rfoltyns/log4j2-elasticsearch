@@ -34,6 +34,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
 
 import java.util.concurrent.TimeUnit;
 
@@ -58,11 +59,13 @@ public class ElasticsearchAppender extends AbstractAppender {
 
     private final IndexNameFormatter indexNameFormatter;
     private final ItemAppender itemAppender;
+    private final Layout layout;
 
     protected ElasticsearchAppender(String name, Filter filter, Layout layout,
             boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
         super(name, filter, layout, ignoreExceptions, Property.EMPTY_ARRAY);
         this.indexNameFormatter = indexNameFormatter;
+        this.layout = layout;
         this.itemAppender = createItemAppenderFactory().createInstance(messageOnly, layout, batchDelivery);
     }
 
@@ -240,6 +243,7 @@ public class ElasticsearchAppender extends AbstractAppender {
 
         if (getLayout() instanceof LifeCycle
                 && !((LifeCycle)getLayout()).isStopped()) {
+            Measured.of(layout).deregister();
             ((LifeCycle)getLayout()).stop();
         }
 

@@ -25,6 +25,8 @@ import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.Required;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
 
-public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, BulkEmitterTest.TestBatch> {
+public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, BulkEmitterTest.TestBatch>, Measured {
 
     private final Collection<String> serverUris;
     private final int connTimeout;
@@ -127,6 +129,11 @@ public class TestHttpObjectFactory implements ClientObjectFactory<TestClient, Bu
     protected TestResultHandler<Object> createResultHandler(BulkEmitterTest.TestBatch bulk, Function<BulkEmitterTest.TestBatch, Boolean> failureHandler) {
         return new TestResultHandler<Object>() {
         };
+    }
+
+    @Override
+    public void register(MetricsRegistry registry) {
+
     }
 
     @PluginBuilderFactory

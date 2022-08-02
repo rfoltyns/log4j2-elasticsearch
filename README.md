@@ -41,10 +41,10 @@ Project consists of:
 * [Service Discovery](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#service-discovery) for HC module
 * (1.6) Elasticsearch 8.x support (`null` mapping type)
 * [Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) support
+* [Metrics](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core#metrics)
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
-* Metrics
 * More Elasticsearch API integrations
 
 Feature Requests welcome!

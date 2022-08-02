@@ -20,10 +20,13 @@ package org.appenders.log4j2.elasticsearch;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+
 /**
  * Wraps {@link ItemSource} creation
  */
-public class GenericItemSourceLayout<T, R> implements ItemSourceLayout<T, R>, LifeCycle {
+public class GenericItemSourceLayout<T, R> implements ItemSourceLayout<T, R>, LifeCycle, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -38,6 +41,16 @@ public class GenericItemSourceLayout<T, R> implements ItemSourceLayout<T, R>, Li
     @Override
     public final ItemSource<R> serialize(final T source) {
         return itemSourceFactory.create(source, serializer);
+    }
+
+    @Override
+    public void register(final MetricsRegistry registry) {
+        Measured.of(itemSourceFactory).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(itemSourceFactory).deregister();
     }
 
     public static class Builder<T, R> {

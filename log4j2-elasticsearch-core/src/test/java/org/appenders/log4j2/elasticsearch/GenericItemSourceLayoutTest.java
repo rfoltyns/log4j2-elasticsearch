@@ -21,16 +21,28 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.buffer.ByteBuf;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +52,14 @@ public class GenericItemSourceLayoutTest {
         final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writer());
         final ItemSourceFactory<Object, String> itemSourceFactory = new StringItemSourceFactory<>();
         return new GenericItemSourceLayout.Builder<Object, String>()
+                .withItemSourceFactory(itemSourceFactory)
+                .withSerializer(serializer);
+    }
+
+    public static GenericItemSourceLayout.Builder<Object, ByteBuf> createDefaultTestByteByfBasedLayoutBuilder() {
+        final JacksonSerializer<Object> serializer = new JacksonSerializer<>(new ObjectMapper().writer());
+        final ItemSourceFactory<Object, ByteBuf> itemSourceFactory = ByteBufItemSourceFactoryPluginTest.createDefaultTestSourceFactoryConfig().build();
+        return new GenericItemSourceLayout.Builder<Object, ByteBuf>()
                 .withItemSourceFactory(itemSourceFactory)
                 .withSerializer(serializer);
     }
@@ -84,7 +104,6 @@ public class GenericItemSourceLayoutTest {
         assertThat(exception.getMessage(), equalTo("No ItemSourceFactory provided for " + GenericItemSourceLayout.class.getSimpleName()));
 
     }
-
 
     @Test
     public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
@@ -139,6 +158,94 @@ public class GenericItemSourceLayoutTest {
         // then
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
+
+    }
+
+    // =======
+    // METRICS
+    // =======
+
+    @Test
+    public void registersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "available", "count");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "initial", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "total", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "noSuchElementCaught", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
+
+        final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(false))
+                .build();
+
+        final GenericItemSourceLayout<Object, ByteBuf> itemSourceLayout = createDefaultTestByteByfBasedLayoutBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        // when
+        itemSourceLayout.register(registry);
+
+        // then
+        assertEquals(5, registry.getMetrics(metric -> TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey2)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey3)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey4)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
+
+    }
+
+    @Test
+    public void registersComponentsMetrics() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = spy(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(false))
+                .build());
+
+        final GenericItemSourceLayout<Object, ByteBuf> itemSourceLayout = createDefaultTestByteByfBasedLayoutBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .build();
+
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+
+        // when
+        itemSourceLayout.start();
+        itemSourceLayout.register(registry);
+
+        // then
+        verify(itemSourceFactory).register(eq(registry));
+
+    }
+
+    @Test
+    public void deregistersComponentsMetrics() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = spy(PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(false))
+                .build());
+
+        final GenericItemSourceLayout<Object, ByteBuf> itemSourceLayout = createDefaultTestByteByfBasedLayoutBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .build();
+
+        // when
+        itemSourceLayout.deregister();
+
+        // then
+        verify(itemSourceFactory).deregister();
 
     }
 

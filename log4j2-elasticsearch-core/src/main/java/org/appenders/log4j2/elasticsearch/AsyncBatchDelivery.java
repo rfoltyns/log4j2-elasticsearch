@@ -23,6 +23,11 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.failover.RetryListener;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 
 import java.util.ArrayList;
@@ -37,7 +42,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  * Uses {@link BatchEmitterFactory} SPI to get a {@link BatchEmitter} instance that will hold given items until interval
  * or size conditions are met.
  */
-public class AsyncBatchDelivery implements BatchDelivery<String> {
+public class AsyncBatchDelivery implements BatchDelivery<String>, Measured  {
 
     private volatile State state = State.STOPPED;
 
@@ -50,7 +55,26 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     protected final long shutdownDelayMillis;
 
+    final MetricsProcessor metricsProcessor;
+
     protected AsyncBatchDelivery(int batchSize, int deliveryInterval, ClientObjectFactory objectFactory, FailoverPolicy failoverPolicy, long shutdownDelayMillis, OpSource[] setupOpSources) {
+        this(batchSize,
+                deliveryInterval,
+                objectFactory,
+                failoverPolicy,
+                shutdownDelayMillis,
+                setupOpSources,
+                new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0])
+        );
+    }
+
+    protected AsyncBatchDelivery(final int batchSize,
+                                 final int deliveryInterval,
+                                 final ClientObjectFactory objectFactory,
+                                 final FailoverPolicy failoverPolicy,
+                                 final long shutdownDelayMillis,
+                                 final OpSource[] setupOpSources,
+                                 final MetricsProcessor metricsProcessor) {
         this.batchOperations = objectFactory.createBatchOperations();
         this.batchEmitter = createBatchEmitterServiceProvider()
                 .createInstance(
@@ -62,6 +86,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         this.failoverPolicy = failoverPolicy;
         this.shutdownDelayMillis = shutdownDelayMillis;
         this.setupOpSources.addAll(Arrays.asList(setupOpSources));
+        this.metricsProcessor = metricsProcessor;
     }
 
     /**
@@ -74,7 +99,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
                 builder.clientObjectFactory,
                 builder.failoverPolicy,
                 builder.shutdownDelayMillis,
-                builder.setupOpSources
+                builder.setupOpSources,
+                builder.metricsProcessor
         );
     }
 
@@ -107,6 +133,25 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
     public static Builder newBuilder() {
         return new Builder();
+    }
+
+    @Override
+    public final void register(final MetricsRegistry registry) {
+        Measured.of(objectFactory).register(registry);
+        Measured.of(batchEmitter).register(registry);
+        Measured.of(failoverPolicy).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(objectFactory).deregister();
+        Measured.of(batchEmitter).deregister();
+        Measured.of(failoverPolicy).deregister();
+    }
+
+    @Override
+    public void register(final Measured measured) {
+        Measured.of(metricsProcessor).register(measured);
     }
 
     public static class Builder {
@@ -143,6 +188,8 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
         protected Long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
         protected OpSource[] setupOpSources = DEFAULT_OP_SOURCES;
 
+        protected MetricsProcessor metricsProcessor = new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0]);
+
         public AsyncBatchDelivery build() {
             if (clientObjectFactory == null) {
                 throw new IllegalArgumentException("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for " +
@@ -154,6 +201,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             if (deliveryInterval <= 0) {
                 throw new IllegalArgumentException("No deliveryInterval provided for " + AsyncBatchDelivery.class.getSimpleName());
             }
+
             return new AsyncBatchDelivery(this);
         }
 
@@ -188,6 +236,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
 
         public Builder withShutdownDelayMillis(long shutdownDelayMillis) {
             this.shutdownDelayMillis = shutdownDelayMillis;
+            return this;
+        }
+
+        public Builder withMetricProcessor(final MetricsProcessor metricsProcessor) {
+            this.metricsProcessor = metricsProcessor;
             return this;
         }
 
@@ -226,6 +279,11 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             LifeCycle.of(failoverPolicy).start();
         }
 
+        if (!LifeCycle.of(metricsProcessor).isStarted()) {
+            Measured.of(metricsProcessor).register(this);
+            LifeCycle.of(metricsProcessor).start();
+        }
+
         state = State.STARTED;
 
     }
@@ -246,9 +304,17 @@ public class AsyncBatchDelivery implements BatchDelivery<String> {
             batchEmitter.stop(shutdownDelayMillis, false);
         }
 
+        if (!LifeCycle.of(metricsProcessor).isStopped()) {
+            LifeCycle.of(metricsProcessor).stop();
+        }
+
+
         if (!objectFactory.isStopped()) {
             objectFactory.stop();
         }
+
+        deregister();
+        metricsProcessor.reset();
 
         state = State.STOPPED;
 

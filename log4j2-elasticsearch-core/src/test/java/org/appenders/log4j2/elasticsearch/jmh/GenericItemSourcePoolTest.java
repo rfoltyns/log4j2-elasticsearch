@@ -28,6 +28,8 @@ import org.appenders.log4j2.elasticsearch.ExtendedPooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
+import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -39,6 +41,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)
@@ -56,19 +59,20 @@ public class GenericItemSourcePoolTest {
 
 
     @Param({
-            "1",
-            "10",
-            "1000",
-            "100000",
-            "1000000",
+//            "1024",
+//            "2048",
+            "4096",
+            "8192",
+//            "100000",
+//            "1000000",
     })
     public int poolSize;
 
     @Param({
             "512",
-            "2048",
-            "8192",
-            "16384",
+//            "2048",
+//            "8192",
+//            "16384",
     })
     public int itemSizeInBytes;
 
@@ -80,6 +84,9 @@ public class GenericItemSourcePoolTest {
         final ExtendedPooledItemSourceFactory.Builder itemPoolBuilder = (ExtendedPooledItemSourceFactory.Builder) new ExtendedPooledItemSourceFactory.Builder()
                 .withPoolName("itemPool")
                 .withInitialPoolSize(poolSize)
+                .withNullOnEmptyPool(true)
+                .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
+                .withMetricConfigs(Collections.singletonList(MetricConfigFactory.createMaxConfig(true, "available", false)))
                 .withPooledObjectOps(new ByteBufPooledObjectOps(UnpooledByteBufAllocator.DEFAULT, new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, itemSizeInBytes)));
 
         this.itemPool = itemPoolBuilder.configuredItemSourcePool();
@@ -90,7 +97,7 @@ public class GenericItemSourcePoolTest {
 
     @Benchmark
     public void smokeTest(Blackhole fox) throws PoolResourceException {
-        final ItemSource itemSource = itemPool.getPooled();
+        final ItemSource itemSource = itemPool.getPooledOrNull();
         itemSource.release();
         fox.consume(itemSource);
     }

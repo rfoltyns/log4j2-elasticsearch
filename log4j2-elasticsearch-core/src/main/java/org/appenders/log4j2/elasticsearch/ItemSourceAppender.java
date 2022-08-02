@@ -54,6 +54,7 @@ public class ItemSourceAppender implements ItemAppender<LogEvent> {
 
     @Override
     public void start() {
+
         batchDelivery.start();
         state = State.STARTED;
 

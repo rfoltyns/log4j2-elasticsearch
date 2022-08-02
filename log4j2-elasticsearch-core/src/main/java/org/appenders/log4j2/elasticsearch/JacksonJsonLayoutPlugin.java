@@ -139,7 +139,7 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
                 .withSerializer(serializer.build());
     }
 
-    static JacksonSerializer.Builder<Object> createSerializerBuilder() {
+    public static JacksonSerializer.Builder<Object> createSerializerBuilder() {
         return new JacksonSerializer.Builder<>();
     }
 

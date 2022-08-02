@@ -335,6 +335,34 @@ public class ElasticsearchAppenderTest {
     }
 
     @Test
+    public void lifecycleStopDeregistersItemSourceLayout() {
+
+        // given
+        StringAppender mockItemAppender = mock(StringAppender.class);
+        when(mockItemAppender.isStopped()).thenAnswer(LifecycleTestHelper.falseOnlyOnce());
+
+        ItemAppenderFactory itemAppenderFactory = new ItemAppenderFactory() {
+            @Override
+            public ItemAppender createInstance(boolean messageOnly, Layout layout, BatchDelivery batchDelivery) {
+                return mockItemAppender;
+            }
+        };
+
+        JacksonJsonLayoutPlugin layout = mock(JacksonJsonLayoutPlugin.class);
+        TestElasticsearchAppender appender = createTestElasticsearchAppender(itemAppenderFactory, layout);
+
+        // when
+        appender.stop(0, TimeUnit.MILLISECONDS);
+
+        // then
+        assertFalse(appender.isStarted());
+        assertTrue(appender.isStopped());
+
+        verify(layout).deregister();
+
+    }
+
+    @Test
     public void lifecycleStopDoesntInteractWithAbstractLayout() {
 
         // given
@@ -403,7 +431,7 @@ public class ElasticsearchAppenderTest {
         return createTestElasticsearchAppender(mockItemAppenderFactory, JsonLayout.newBuilder().build());
     }
 
-    private TestElasticsearchAppender createTestElasticsearchAppender(ItemAppenderFactory mockItemAppenderFactory, AbstractLayout layout) {
+    private TestElasticsearchAppender createTestElasticsearchAppender(ItemAppenderFactory mockItemAppenderFactory, Layout layout) {
         IndexNameFormatter indexNameFormatter = mock(IndexNameFormatter.class);
         when(indexNameFormatter.format(any())).thenReturn(UUID.randomUUID().toString());
 
@@ -447,7 +475,7 @@ public class ElasticsearchAppenderTest {
 
     static class TestElasticsearchAppender extends ElasticsearchAppender {
 
-        protected TestElasticsearchAppender(String name, Filter filter, AbstractLayout layout, boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
+        protected TestElasticsearchAppender(String name, Filter filter, Layout layout, boolean ignoreExceptions, BatchDelivery batchDelivery, boolean messageOnly, IndexNameFormatter indexNameFormatter) {
             super(name, filter, layout, ignoreExceptions, batchDelivery, messageOnly, indexNameFormatter);
         }
 

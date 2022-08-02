@@ -25,11 +25,22 @@ import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery.Builder;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
 import org.appenders.log4j2.elasticsearch.spi.TestBatchEmitterFactory;
+import org.appenders.log4j2.elasticsearch.util.TestClock;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.Collections;
 import java.util.Random;
 import java.util.UUID;
 
@@ -66,6 +77,7 @@ public class AsyncBatchDeliveryTest {
 
     public static Builder createTestBatchDeliveryBuilder() {
         return spy(AsyncBatchDelivery.newBuilder()
+                .withShutdownDelayMillis(0)
                 .withBatchSize(TEST_BATCH_SIZE)
                 .withDeliveryInterval(TEST_DELIVERY_INTERVAL)
                 .withClientObjectFactory(createTestObjectFactoryBuilder().build()))
@@ -211,6 +223,113 @@ public class AsyncBatchDeliveryTest {
         // then
         verify(operationFactory).create(eq(indexTemplate));
         verify(clientObjectFactory).addOperation(any());
+
+    }
+
+    @Test
+    public void builderConfiguresMetricsProcessor() {
+
+        // given
+        final MetricsProcessor metricsProcessor = mock(MetricsProcessor.class);
+
+        final Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withMetricProcessor(metricsProcessor);
+
+        // when
+        final AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+        asyncBatchDelivery.start();
+
+        // then
+        verify(metricsProcessor).register(eq((Measured)asyncBatchDelivery));
+
+    }
+
+    @Test
+    public void constructorWithNoMetricsProcessorCreatesDefault() {
+
+        // when
+        final AsyncBatchDelivery asyncBatchDelivery = new AsyncBatchDelivery(
+                TEST_BATCH_SIZE,
+                TEST_DELIVERY_INTERVAL,
+                createTestObjectFactoryBuilder().build(),
+                new NoopFailoverPolicy(),
+                0L,
+                new OpSource[0]
+        );
+
+        // then
+        assertEquals(MetricsProcessor.class.getName(), asyncBatchDelivery.metricsProcessor.getClass().getName());
+
+    }
+
+    @Test
+    public void registersMeasuredInstanceWithMetricProcessor() {
+
+        // given
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[0]);
+
+        final Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withMetricProcessor(metricsProcessor);
+
+        final AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+
+        final Metric metric = new DefaultMetricsFactory(Collections.singletonList(MetricConfigFactory.createCountConfig("test-count")))
+                .createMetric("test-component", "test-count");
+
+        // when
+        asyncBatchDelivery.register(Measured.of(new Dummy(metric)));
+
+        // then
+        verify(registry).register(eq(metric));
+
+    }
+
+    @Test
+    public void registersMeasuredComponentsWithMetricRegistry() {
+
+        // given
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[0]);
+
+        final TestHttpObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
+
+        final Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(clientObjectFactory)
+                .withMetricProcessor(metricsProcessor);
+
+        final AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+
+        // when
+        asyncBatchDelivery.register(registry);
+
+        // then
+        verify(clientObjectFactory).register(eq(registry));
+
+    }
+
+    @Test
+    public void deregistersMeasuredComponentsWithMetricRegistryExcludingMetricsProcessor() {
+
+        // given
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        final MetricsProcessor metricsProcessor = spy(new MetricsProcessor(registry, new MetricOutput[0]));
+
+        final TestHttpObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
+
+        final Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
+                .withClientObjectFactory(clientObjectFactory)
+                .withMetricProcessor(metricsProcessor);
+
+        final AsyncBatchDelivery asyncBatchDelivery = batchDeliveryBuilder.build();
+        asyncBatchDelivery.register(registry);
+
+        // when
+        asyncBatchDelivery.deregister();
+
+        // then
+        verify(clientObjectFactory).deregister();
+        verify(metricsProcessor, never()).deregister();
 
     }
 
@@ -503,7 +622,6 @@ public class AsyncBatchDeliveryTest {
 
     }
 
-
     @Test
     public void lifecycleStartStartsFailoverPolicyOnlyOnce() {
 
@@ -540,6 +658,56 @@ public class AsyncBatchDeliveryTest {
 
         // then
         verify(LifeCycle.of(failoverPolicy)).stop(anyLong(), anyBoolean());
+
+    }
+
+    @Test
+    public void lifecycleStartStartsMetricsProcessorOnlyOnce() {
+
+        // given
+        final MetricsProcessor metricsProcessor = spy(new ScheduledMetricsProcessor(
+                1000,
+                1000,
+                TestClock.createTestClock(System.currentTimeMillis()),
+                new BasicMetricsRegistry(),
+                new MetricOutput[0]));
+
+        final BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withMetricProcessor(metricsProcessor)
+                .build();
+
+        // when
+        batchDelivery.start();
+        batchDelivery.start();
+
+        // then
+        verify(LifeCycle.of(metricsProcessor)).start();
+
+    }
+
+    @Test
+    public void lifecycleStopStopsMetricsProcessorOnlyOnce() {
+
+        // given
+        final MetricsProcessor metricsProcessor = spy(new ScheduledMetricsProcessor(
+                1000,
+                1000,
+                TestClock.createTestClock(System.currentTimeMillis()),
+                new BasicMetricsRegistry(),
+                new MetricOutput[0]));
+
+        final BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
+                .withMetricProcessor(metricsProcessor)
+                .build();
+
+        batchDelivery.start();
+
+        // when
+        batchDelivery.stop();
+        batchDelivery.stop();
+
+        // then
+        verify(LifeCycle.of(metricsProcessor)).stop();
 
     }
 
@@ -637,6 +805,21 @@ public class AsyncBatchDeliveryTest {
         @Override
         public boolean isStopped() {
             return state == State.STOPPED;
+        }
+
+    }
+
+    private class Dummy implements Measured {
+
+        private final Metric metric;
+
+        public Dummy(final Metric metric) {
+            this.metric = metric;
+        }
+
+        @Override
+        public void register(final MetricsRegistry registry) {
+            registry.register(metric);
         }
 
     }

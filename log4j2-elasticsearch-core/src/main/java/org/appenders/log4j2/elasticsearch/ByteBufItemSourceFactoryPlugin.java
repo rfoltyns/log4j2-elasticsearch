@@ -29,6 +29,11 @@ import org.apache.logging.log4j.core.config.plugins.PluginAliases;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+
+import java.util.List;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
@@ -81,6 +86,9 @@ public class ByteBufItemSourceFactoryPlugin extends PooledItemSourceFactory<Obje
         @PluginBuilderAttribute
         protected int maxItemSizeInBytes = Integer.MAX_VALUE;
 
+        @PluginElement("metricsFactory")
+        private MetricsFactory metricsFactory;
+
         @Override
         public ByteBufItemSourceFactoryPlugin build() {
 
@@ -128,20 +136,36 @@ public class ByteBufItemSourceFactoryPlugin extends PooledItemSourceFactory<Obje
         /* extension point */
         ItemSourcePool<ByteBuf> configuredItemSourcePool() {
 
-            UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
-            ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
+            final UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
+            final ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
                     byteBufAllocator,
                     new ByteBufBoundedSizeLimitPolicy(itemSizeInBytes, maxItemSizeInBytes));
 
-            return new GenericItemSourcePool<>(
-                    poolName,
-                    pooledObjectOps,
-                    resizePolicy,
-                    resizeTimeout,
-                    monitored,
-                    monitorTaskInterval,
-                    initialPoolSize
-            );
+            // TODO: remove once legacy monitoring (monitored flag) is removed
+            if (metricsFactory != null) {
+
+                final MetricsFactory defaultMetricsFactory = new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(false));
+                defaultMetricsFactory.configure(metricsFactory.getMetricConfigs());
+
+                return new GenericItemSourcePool<>(
+                        poolName,
+                        pooledObjectOps,
+                        resizePolicy,
+                        resizeTimeout,
+                        initialPoolSize,
+                        defaultMetricsFactory
+                );
+            } else {
+                return new GenericItemSourcePool<>(
+                        poolName,
+                        pooledObjectOps,
+                        resizePolicy,
+                        resizeTimeout,
+                        monitored,
+                        monitorTaskInterval,
+                        initialPoolSize
+                );
+            }
         }
 
         /**
@@ -221,5 +245,24 @@ public class ByteBufItemSourceFactoryPlugin extends PooledItemSourceFactory<Obje
             return this;
         }
 
+        /**
+         * @param metricConfigs Metric configurations. Configures given metrics for current component. See {@link MetricsFactory#configure(List)}
+         * @return this
+         */
+        public Builder withMetricConfigs(final List<MetricConfig> metricConfigs) {
+
+            // TODO: remove once legacy monitoring (monitored flag) is removed
+            if (metricsFactory == null) {
+                metricsFactory = new DefaultMetricsFactory(GenericItemSourcePool.metricConfigs(false));
+            }
+
+            this.metricsFactory.configure(metricConfigs);
+
+            return this;
+
+        }
+
+
     }
+
 }

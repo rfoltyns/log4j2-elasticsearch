@@ -34,7 +34,9 @@ public interface ItemSourcePool<T> extends LifeCycle {
 
     /**
      * Creates ONE pooled {@link ItemSource}
+     * @deprecated As of 2.0, this method will be removed. Use {@link #incrementPoolSize(int)} instead
      */
+    @Deprecated
     void incrementPoolSize();
 
     /**

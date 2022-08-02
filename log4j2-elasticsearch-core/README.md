@@ -593,28 +593,34 @@ Pool is resizable. It adjusts it's size automatically depending on current load 
 
 Item and batch pools have to be configured separately. Currently, if item buffers are pooled, batch buffers MUST be pooled as well (see example below).
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-initialPoolSize | Attribute | Yes | None | Number of pooled elements created at startup
-itemSizeInBytes | Attribute | Yes | None | Initial size of single buffer instance
-maxItemSizeInBytes | Attribute | No | Integer.MAX_VALUE | Since 1.4.5. Maximum size of single buffer instance when added to the pool. Pooled item size can still exceed this value in runtime if needed, but eventually it will be reduced on `ByteBufItemSource.release()`
-resizePolicy | Element | No | `UnlimitedReizePolicy` | `ResizePolicy` used whem pool resizing is triggered
-resizeTimeout | Attribute | No | 1000 | When multiple threads try to get a pooled element and pool is empty, only the first thread will trigger resizing. This attribute configures maximum interval in milliseconds between two consecutive attempts to get a pooled element by other threads.
-monitored | Attribute | No | false | If `true`, pool metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly
-monitorTaskInterval | Attribute | No | 30000 | Interval between metrics logs. 30 seconds by default.
-poolName | Attribute | No | UUID | Pool ID (useful when `monitored` is set to true)
+| Config property     | Type      | Required | Default                    | Description                                                                                                                                                                                                                                             |
+|---------------------|-----------|----------|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| initialPoolSize     | Attribute | Yes      | None                       | Number of pooled elements created at startup                                                                                                                                                                                                            |
+| itemSizeInBytes     | Attribute | Yes      | None                       | Initial size of single buffer instance                                                                                                                                                                                                                  |
+| maxItemSizeInBytes  | Attribute | No       | Integer.MAX_VALUE          | Since 1.4.5. Maximum size of single buffer instance when added to the pool. Pooled item size can still exceed this value in runtime if needed, but eventually it will be reduced on `ByteBufItemSource.release()`                                       |
+| resizePolicy        | Element   | No       | `UnlimitedReizePolicy`     | `ResizePolicy` used whem pool resizing is triggered                                                                                                                                                                                                     |
+| resizeTimeout       | Attribute | No       | 1000                       | When multiple threads try to get a pooled element and pool is empty, only the first thread will trigger resizing. This attribute configures maximum interval in milliseconds between two consecutive attempts to get a pooled element by other threads. |
+| monitored           | Attribute | No       | false                      | If `true`, pool metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly                                                                                                |
+| monitorTaskInterval | Attribute | No       | 30000                      | Interval between metrics logs. 30 seconds by default.                                                                                                                                                                                                   |
+| poolName            | Attribute | No       | UUID                       | Pool ID (useful when `monitored` is set to true)                                                                                                                                                                                                        |
+| metricConfig        | Element[] | No       | Disabled `MetricConfig`(s) | `Metrics` supported by this component:<br/> - `initial`<br/>- `total`<br/>- `available`<br/>- `noSuchElementCaught`<br/>- `resizeAttempts`<br/>See `Metrics` docs below for more info                                                                   |
 
 Example:
 ``` xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     <JacksonJsonLayout>
-        <PooledItemSourceFactory itemSizeInBytes="1024" maxItemSizeInBytes="16384" initialPoolSize="20000" />
+        <ByteBufItemSourceFactory itemSizeInBytes="1024" maxItemSizeInBytes="16384" initialPoolSize="20000" />
     </JacksonJsonLayout>
     <AsyncBatchDelivery batchSize="5000" deliveryInterval="20000" >
         ...
         <JestBufferedHttp serverUris="https://localhost:9200">
             ...
-            <PooledItemSourceFactory itemSizeInBytes="5120000" initialPoolSize="4" />
+            <PooledItemSourceFactory itemSizeInBytes="5120000" initialPoolSize="4" >
+                <Metrics>
+                    <Count name="total" />
+                    <Count name="available" />
+                </Metrics>
+            </ByteBufItemSourceFactory>
             ...
         </JestBufferedHttp>
     </AsyncBatchDelivery>
@@ -729,6 +735,161 @@ Param | Type | Default
 -Dappenders.BulkEmitter.initialSize | int | 65536
 
 See submodules documentation for module-specific properties.
+
+## Metrics
+
+Since 1.6, several components can be configured to store and provide their metrics. By default, all metrics are disabled - see [NoopNetric](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/NoopMetric.java).
+
+In first release, `Metrics` framework was introduced mainly at toughest spots in the code to prove that the design will "hold". Several critical spots (e.g. emitters) were omitted. It should still be considered experimental and subject to change if needed.
+
+More metrics will become available in future releases. [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
+
+
+### Examples
+
+Metrics are configured at two levels:
+
+1. Component level - what should be measured/stored? should it be measured/stored at all?
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <JacksonJsonLayout>
+        ...
+        <ByteBufItemSourceFactory poolName="itemPool" itemSizeInBytes="1024" initialPoolSize="10000">
+            <Metrics>
+                <Count name="available" />
+                <Count name="initial" />
+                <Count name="total" />
+                <Count name="resizeAttempts" />
+            </Metrics>
+        </ByteBufItemSourceFactory>
+        ...
+    </JacksonJsonLayout>
+    ...
+</Elasticsearch>
+```
+
+2. Processor level - what should be collected? what to do with collected values?
+
+```xml
+<Elasticsearch name="elasticsearchAsyncBatch">
+    ...
+    <AsyncBatchDelivery>
+        ...
+        <MetricsProcessor initialDelay="5000" interval="30000">
+            <MetricLog name="batching-for-business" includes="sent,delivered,failed" />
+            <MetricLog name="pooling-for-devs" includes="available,total" />
+            <MetricLog name="actually-any-mix" includes="*" excludes="items,element" />
+        </MetricsProcessor>
+        ...
+    </AsyncBatchDelivery>
+    ...
+</Elasticsearch>
+```
+
+Visit submodules documentation for list of supported metrics.
+
+### Dev's view:
+
+1. Metrics are stored if enabled
+2. Metrics are processed if told to do so
+
+### What's actually happening?
+
+#### (Pseudo-)diagram
+
+```text
+MetricConfig -> MetricsFactory -> Metric -> Measured -> MetricsRegistry -> MetricsProcessor -> MetricOutput
+```
+
+#### Simple words
+
+1. `MetricConfig` defining enabled metric is configured with `MetricFactory`
+2. `MetricFactory` provides `Metric`(s) for `Measured` component instance at creation time
+3. `Measured` instance registers metrics with `MetricsRegistry`
+4. `MetricsProcessor`, once scheduled/instructed to process the latest list of metrics provided by `MetricRegistry`, will collect all known metrics and write collected values to `MetricOutput`(s).
+
+#### Details
+
+In order for component to start **storing metrics**, [MetricsFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsFactory.java) containing supported [MetricConfig](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricConfig.java) must be **configured at component level**. If [MetricConfig](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricConfig.java) is disabled, neither stores, reads, nor writes will be performed. By design, hot-path with disabled metrics must be as fast as possible.
+
+Featured components implement [Measured](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/Measured.java) interface and register metrics of `Measured` delegates and metrics owned by itself (if any) with [MetricsRegistry](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsRegistry.java) (that includes all disabled metrics).
+
+Given the above, [MetricsRegistry](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsRegistry.java) is a source of truth for [MetricsProcessor](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsProcessor.java). Any changes made to metric registry at runtime will eventually be picked up by metrics processor.
+
+If initially enabled at component level, metrics will be stored and always ready to be processed with [MetricsProcessor](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsProcessor.java) once registered. These metrics can be dynamically toggled on/off in runtime (in practice, this applies to programmatic config only).
+
+
+By design, component-specific metrics disabled at component level are NOT collected by processor and cannot be enabled dynamically unless new instance of component is created with respective [MetricConfig](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricConfig.java) enabled.
+
+Collection of each individual metric is always atomic and happens once per [MetricsProcessor](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricsProcessor.java) run. Think of it a taking a snapshot of component's metrics state - should reliably represent what's happening inside the component at a particular point in time. Value - once collected - is eventually delivered to each configured [MetricOutput](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricOutput.java) sequentially, in a single thread. This approach guarantees that all outputs will eventually get exactly the same snapshot - no more, no less. Given that, `MetricOutput` cannot "choose" it's delivery interval.
+
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
+You're more than welcome to implement your own `MetricOutput` that may simply store and publish at intervals of your choice.
+
+[MetricLog](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricLog.java) is the only available output the moment.
+
+### Component level metrics
+
+Following [MetricType](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MetricType.java)s can be configured at component level:
+* [Count](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/CountMetric.java) - resettable `long` store. If configured to `reset`, represents delta, accumulates otherwise. Can be replaced by `Max`.
+* [Max](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/MaxLongMetric.java) - resettable max `long` store. If configured to `reset`, represents delta, accumulates otherwise. Can be replaced by `Count`
+* (programmatic only) [Supplied](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/SuppliedMetric.java) - non-writable `long` supplier. All `Supplied` metrics in this module are not resettable. Replacement options are limited to `enabled` toggle.
+
+#### Max
+
+| Config property | Type      | Required | Default              | Description                                                                                                                                                                                                                                               |
+|-----------------|-----------|----------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name            | Attribute | Yes      | None                 | Respective component's metric name                                                                                                                                                                                                                        |
+| reset           | Attribute | No       | True with XML config | If `true`, metric will be set to it's initial value when collected. Use `true` for e.g. message rate, `false` to accumulate since startup                                                                                                                 |
+| enabled         | Attribute | No       | True with XML config | If `false`, [NoopNetric](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/NoopMetric.java) will be used. Otherwise, will store and be ready for collection |
+
+Abstract example:
+```xml
+<Metrics>
+    <Max name="maxSinceLastCollected" reset="true" /><!-- reset="true" is optional as it's the default -->
+    <Max name="maxSinceStartup" reset="false" />
+</Metrics>
+```
+
+#### Count
+
+| Config property | Type      | Required | Default              | Description                                                                                                                                                                                                                                               |
+|-----------------|-----------|----------|----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name            | Attribute | Yes      | None                 | Respective component's metric name                                                                                                                                                                                                                        |
+| reset           | Attribute | No       | True with XML config | If `true`, metric will be set to it's initial value when collected. Use `true` for e.g. message rate, `false` to accumulate since startup                                                                                                                 |
+| enabled         | Attribute | No       | True with XML config | If `false`, [NoopNetric](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/metrics/NoopMetric.java) will be used. Otherwise, will store and be ready for collection |
+
+Example:
+```xml
+<Metrics>
+    <Count name="totalSinceCreated" reset="false" />
+</Metrics>
+```
+
+### Measured Core components
+
+[GenericItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/GenericItemSourcePool.java) (in most cases effectively `ByteBufItemSourceFactory` and it's callers):
+  * initial - `Count` (Supplied): constant; for dashboards; `initialPoolSize`
+  * total - `Count` (Supplied): number of all managed pooled elements
+  * available - `Count` (Supplied): number of elements available for pooling; expensive on very large pools
+  * noSuchElementCaught - `Count`: indicates pool resizing issues
+  * resizeAttempts - `Count`: indicates pool sizing issues
+
+Example:
+```xml
+<ByteBufItemSourceFactory>
+    <Metrics>
+        <Count name="initial" />
+        <Count name="total" />
+        <Count name="available" />
+        <Count name="noSuchElementCaught" />
+        <Count name="resizeAttempts" reset="false"/>
+    </Metrics>
+</ByteBufItemSourceFactory>
+```
+
+See submodules documentation for module-specific metrics.
 
 ## Dependencies
 Be aware that Jackson FasterXML jars have to be provided by user for this library to work in default mode.

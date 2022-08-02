@@ -27,6 +27,9 @@ import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 
 /**
  * {@inheritDoc}
@@ -49,7 +52,8 @@ public class AsyncBatchDeliveryPlugin extends AsyncBatchDelivery {
             @PluginAttribute("deliveryInterval") int deliveryInterval,
             @PluginElement("failoverPolicy") FailoverPolicy failoverPolicy,
             @PluginAttribute("shutdownDelayMillis") long shutdownDelayMillis,
-            @PluginElement("setupOperation") OpSource[] setupOpSources) {
+            @PluginElement("setupOperation") OpSource[] setupOpSources,
+            @PluginElement("MetricsProcessor") MetricsProcessor metricsProcessor) {
 
         if (clientObjectFactory == null) {
             throw new ConfigurationException("No Elasticsearch client factory [HCHttp|JestHttp|ElasticsearchBulkProcessor] provided for AsyncBatchDelivery");
@@ -61,7 +65,8 @@ public class AsyncBatchDeliveryPlugin extends AsyncBatchDelivery {
                 .withBatchSize(batchSize <= 0 ? Builder.DEFAULT_BATCH_SIZE : batchSize)
                 .withFailoverPolicy(failoverPolicy == null ? Builder.DEFAULT_FAILOVER_POLICY : failoverPolicy)
                 .withSetupOpSources(setupOpSources.length == 0 ? Builder.DEFAULT_OP_SOURCES : setupOpSources)
-                .withShutdownDelayMillis(shutdownDelayMillis < 0 ? Builder.DEFAULT_SHUTDOWN_DELAY : shutdownDelayMillis);
+                .withShutdownDelayMillis(shutdownDelayMillis < 0 ? Builder.DEFAULT_SHUTDOWN_DELAY : shutdownDelayMillis)
+                .withMetricProcessor(metricsProcessor == null ? new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0]) : metricsProcessor);
 
         return new AsyncBatchDeliveryPlugin(builder);
 

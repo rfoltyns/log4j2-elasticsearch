@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.Layout;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
 
 public class ItemAppenderFactory {
 
@@ -59,6 +60,10 @@ public class ItemAppenderFactory {
      * @return configured {@link ItemSourceAppender}
      */
     public ItemSourceAppender createInstance(boolean messageOnly, ItemSourceLayout itemSourceLayout, BatchDelivery batchDelivery) {
+
+        final Measured registryHolder = Measured.of(batchDelivery);
+        registryHolder.register(Measured.of(itemSourceLayout));
+
         if (messageOnly) {
             return new ItemSourceAppender(batchDelivery, logEvent -> itemSourceLayout.serialize(logEvent.getMessage()));
         }

@@ -248,8 +248,8 @@ public class AsyncBatchEmitter<BATCH_TYPE> implements BatchEmitter {
         void stop() {
 
             if (running.compareAndSet(true, false)) {
-                latch.get().countDown();
                 getLogger().info("{}: Loop stopped", EmitterLoop.class.getSimpleName());
+                latch.get().countDown();
             }
 
         }
