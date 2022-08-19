@@ -62,9 +62,9 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
 
         HttpClient httpClient = createClient();
         if (httpClient.isStarted()) {
-            getLogger().debug("{}: HTTP client already started", HCServiceDiscovery.class.getSimpleName());
+            getLogger().debug("{}: HTTP client already started", HttpClient.class.getSimpleName());
         } else {
-            getLogger().debug("{}: Starting HTTP client", HCServiceDiscovery.class.getSimpleName());
+            getLogger().debug("{}: Starting HTTP client", HttpClient.class.getSimpleName());
             httpClient.start();
         }
 
