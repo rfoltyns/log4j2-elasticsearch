@@ -22,9 +22,13 @@ Main parts of the skeleton are:
 * `AsyncBatchDelivery` - glues `ClientObjectFactory` and `BatchEmitter` together
 
 ### ItemSource API
-Since 1.3, `org.appenders.log4j2.elasticsearch.ItemSource` and a set of related interfaces are available.
 
-The main goal was to introduce an envelope with API to process and manage underlying payloads. A good example is `org.appenders.log4j2.elasticsearch.ByteBufItemSource` - poolable payload container backed by Netty buffer.
+Since 1.3, several `ItemSource` implementations are accepted as `AsyncBatchDelivery` inputs:
+* [StringItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/StringItemSource.java) - `java.lang.String` wrapper
+* [ByteByfItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ByteBufItemSource.java) - Netty buffer wrapper for any payloads
+* [FailedItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/FailedItemSource.java) - serializable wrapper for failed items (wrappers listed above)
+
+Support for each `ItemSource` depends on module implementation. See submodules for more details
 
 Main parts of default implementation are:
 * `ItemSource` - envelope for payloads; [StringItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/StringItemSource.java) is used by default
@@ -33,7 +37,7 @@ Main parts of default implementation are:
 
 ### AsyncBatchDelivery
 
-`AsyncBatchDelivery` uses `ClientObjectFactory` objects to produce client specific requests and deliver them to cluster via `BatchEmitter` implementations.
+`AsyncBatchDelivery` uses `ClientObjectFactory` objects to produce client specific requests and deliver them to target via `BatchEmitter` implementations.
 
 Config property | Type | Required | Default | Description
 ------------ | ------------- | ------------- | ------------- | -------------
