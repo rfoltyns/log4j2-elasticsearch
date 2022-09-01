@@ -48,7 +48,7 @@ import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2.
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @Plugin(name = HCHttpPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
 public class HCHttpPlugin extends HCHttp {

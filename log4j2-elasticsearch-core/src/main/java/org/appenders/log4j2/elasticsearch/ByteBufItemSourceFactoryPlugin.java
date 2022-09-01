@@ -35,7 +35,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2.
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @PluginAliases("PooledItemSourceFactory")
 @Plugin(name = ByteBufItemSourceFactoryPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = ItemSourceFactory.ELEMENT_TYPE, printObject = true)

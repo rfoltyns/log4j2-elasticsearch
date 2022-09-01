@@ -27,7 +27,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @Plugin(name = JacksonAfterburnerModulePlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = JacksonModule.TYPE, printObject = true)
 public final class JacksonAfterburnerModulePlugin extends JacksonAfterburnerModuleConfigurer {

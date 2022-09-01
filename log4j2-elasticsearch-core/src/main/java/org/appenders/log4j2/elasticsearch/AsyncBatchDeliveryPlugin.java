@@ -31,7 +31,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2 file-based configuration only. If you want to use it directly or extend, use {@link AsyncBatchDelivery} instead.
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @Plugin(name = AsyncBatchDeliveryPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = BatchDelivery.ELEMENT_TYPE, printObject = true)
 public class AsyncBatchDeliveryPlugin extends AsyncBatchDelivery {

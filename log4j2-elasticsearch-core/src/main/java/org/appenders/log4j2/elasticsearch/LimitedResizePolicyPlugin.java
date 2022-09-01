@@ -30,7 +30,7 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @Plugin(name = LimitedResizePolicyPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = ResizePolicy.ELEMENT_TYPE, printObject = true)
 public class LimitedResizePolicyPlugin extends LimitedResizePolicy {

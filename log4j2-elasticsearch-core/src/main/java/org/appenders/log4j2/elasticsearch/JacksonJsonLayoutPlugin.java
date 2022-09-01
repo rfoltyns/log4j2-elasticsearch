@@ -42,7 +42,7 @@ import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAU
 /**
  * {@inheritDoc}
  *
- * Extension for Log4j2 file-based configuration only. If you'd like to extend it, use {@link GenericItemSourceLayout} instead.
+ * <p>Log4j2 Core Plugin. See <a href="https://logging.apache.org/log4j/2.x/manual/plugins.html">Log4j2 Plugins docs</a>
  */
 @Plugin(name = JacksonJsonLayoutPlugin.PLUGIN_NAME, category = Node.CATEGORY, elementType = Layout.ELEMENT_TYPE, printObject = true)
 public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, R> implements Layout<Serializable> {
