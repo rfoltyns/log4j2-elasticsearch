@@ -42,17 +42,17 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 ```
 
 ### HCHttp Properties
-Name | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-serverUris | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.
-connTimeout | Attribute | no | 1000 | Number of milliseconds before ConnectException is thrown while attempting to connect.
-readTimeout | Attribute | no | 0 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
-maxTotalConnections | Attribute | no | 8 | Number of connections available.
-ioThreadCount | Attribute | no | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`
-itemSourceFactory | Element | yes | None | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.
-mappingType | Attribute | no | `_doc` | Name of index mapping type to use in ES cluster. `_doc` is used by default for compatibility with Elasticsearch 7.x.
-pooledResponseBuffers | Attribute | no | yes | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response.
-pooledResponseBuffersSizeInBytes | Attribute | no | 1MB (1048756 bytes) | Single response buffer size.
+| Name                             | Type      | Required                                                        | Default                     | Description                                                                                                                                    |
+|----------------------------------|-----------|-----------------------------------------------------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverUris                       | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.                                          |
+| connTimeout                      | Attribute | no                                                              | 1000                        | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                          |
+| readTimeout                      | Attribute | no                                                              | 0                           | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                               |
+| maxTotalConnections              | Attribute | no                                                              | 8                           | Number of connections available.                                                                                                               |
+| ioThreadCount                    | Attribute | no                                                              | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                            |
+| itemSourceFactory                | Element   | yes                                                             | None                        | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                     |
+| mappingType                      | Attribute | no                                                              | `_doc`                      | Name of index mapping type to use in ES cluster. `_doc` is used by default for compatibility with Elasticsearch 7.x.                           |
+| pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response. |
+| pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                   |
 
 ### Service Discovery
 
@@ -62,16 +62,16 @@ Supported across all versions of Elasticsearch.
 
 Custom [`ServiceDiscoveryFactory`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/discovery/ServiceDiscoveryFactory.java) can be defined to integrate with other address sources.
 
-Name | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-nodesFilter | Attribute | no | `_all` | Nodes filter as defined in [Elasticsearch 7.x documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/cluster.html#cluster-nodes) (`_nodes/<nodesFilter>/http`).
-serverUris | Attribute | no | inherited from HCHttp | List of semicolon-separated address sources.
-connTimeout | Attribute | no | 500 | Number of milliseconds before ConnectException is thrown while attempting to connect.
-readTimeout | Attribute | no | 1000 | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.
-pooledResponseBuffersSizeInBytes | Attribute | no | 32KB (32768 bytes) | Single response buffer size.
-targetScheme | Attribute | no | http | Scheme of resolved addresses passed to HCHttp client.
-refreshInterval | Attribute | no | 30000 | Number of milliseconds between the end of previous request and start of new one.
-configPolicies | Attribute | no | serverList,security | List of comma-separated config policies to apply. Available policies: `shared`, `none`, `serverList`, `security`. See [Config Policies](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#config-policies) for more details.
+| Name                             | Type      | Required | Default               | Description                                                                                                                                                                                                                                                     |
+|----------------------------------|-----------|----------|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| nodesFilter                      | Attribute | no       | `_all`                | Nodes filter as defined in [Elasticsearch 7.x documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/cluster.html#cluster-nodes) (`_nodes/<nodesFilter>/http`).                                                                             |
+| serverUris                       | Attribute | no       | inherited from HCHttp | List of semicolon-separated address sources.                                                                                                                                                                                                                    |
+| connTimeout                      | Attribute | no       | 500                   | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                                                                                           |
+| readTimeout                      | Attribute | no       | 1000                  | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                                                                                                |
+| pooledResponseBuffersSizeInBytes | Attribute | no       | 32KB (32768 bytes)    | Single response buffer size.                                                                                                                                                                                                                                    |
+| targetScheme                     | Attribute | no       | http                  | Scheme of resolved addresses passed to HCHttp client.                                                                                                                                                                                                           |
+| refreshInterval                  | Attribute | no       | 30000                 | Number of milliseconds between the end of previous request and start of new one.                                                                                                                                                                                |
+| configPolicies                   | Attribute | no       | serverList,security   | List of comma-separated config policies to apply. Available policies: `shared`, `none`, `serverList`, `security`. See [Config Policies](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#config-policies) for more details. |
 
 Example:
 ```xml
@@ -143,9 +143,9 @@ In the event of cluster failure or slowdown, when policy gets triggered, batch w
 
 :warning: **See [failover options](../log4j2-elasticsearch-core#failover) for available `FailoverPolicy` implementations. If no `FailoverPolicy` is configured, batch will be lost!**
 
-Name | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-maxBatchesInFlight | Attribute | no | 8 | Maximum number of batches delivered simultaneously (including the ones waiting for a response).
+| Name               | Type      | Required | Default | Description                                                                                     |
+|--------------------|-----------|----------|---------|-------------------------------------------------------------------------------------------------|
+| maxBatchesInFlight | Attribute | no       | 8       | Maximum number of batches delivered simultaneously (including the ones waiting for a response). |
 
 Example:
 ``` xml
@@ -198,12 +198,12 @@ Can be configured using `Security` tag:
 
 ### Compatibility matrix
 
-Feature/Version | 2.x | 5.x | 6.x| 7.x
------------- | ------------- | ------------- | -------------| -------------
-IndexTemplate | Yes | Yes | Yes| Yes
-BasicCredentials | Yes | Yes | Yes| Yes
-JKS | Yes | Not tested | Not tested| Not tested
-PEM | Not tested | Yes | Yes| Yes
+| Feature/Version  | 2.x        | 5.x        | 6.x        | 7.x        |
+|------------------|------------|------------|------------|------------|
+| IndexTemplate    | Yes        | Yes        | Yes        | Yes        |
+| BasicCredentials | Yes        | Yes        | Yes        | Yes        |
+| JKS              | Yes        | Not tested | Not tested | Not tested |
+| PEM              | Not tested | Yes        | Yes        | Yes        |
 
 ## Pluggable JCTools
 
@@ -211,10 +211,10 @@ See [Pluggable JCTools](../log4j2-elasticsearch-core#pluggable-jctools)
 
 JVM params:
 
-Param | Type | Default
------------- | ------------- | -------------
--Dappenders.BatchRequest.jctools.enabled | boolean | true
--Dappenders.BatchRequest.initialSize | int | 10000
+| Param                                    | Type    | Default |
+|------------------------------------------|---------|---------|
+| -Dappenders.BatchRequest.jctools.enabled | boolean | true    |
+| -Dappenders.BatchRequest.initialSize     | int     | 10000   |
 
 ## Dependencies
 
