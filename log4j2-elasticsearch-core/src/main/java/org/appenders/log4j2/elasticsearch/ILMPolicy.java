@@ -29,16 +29,30 @@ public class ILMPolicy implements OpSource {
 
     private final String name;
     private final String rolloverAlias;
+    private final boolean createBootstrapIndex;
     private final String source;
 
     /**
      * @param name ILM policy name
      * @param rolloverAlias index rollover alias
      * @param source ILM policy document
+     * @deprecated As of 1.7, this method will be removed. Use {@link #ILMPolicy(String, String, boolean, String)} instead.
      */
-    public ILMPolicy(String name, String rolloverAlias, String source) {
+    @Deprecated
+    public ILMPolicy(final String name, final String rolloverAlias, final String source) {
+        this(name, rolloverAlias, true, source);
+    }
+
+    /**
+     * @param name ILM policy name
+     * @param rolloverAlias index rollover alias
+     * @param createBootstrapIndex should bootstrap index be created or not
+     * @param source ILM policy document
+     */
+    public ILMPolicy(final String name, final String rolloverAlias, final boolean createBootstrapIndex, final String source) {
         this.name = name;
         this.rolloverAlias = rolloverAlias;
+        this.createBootstrapIndex = createBootstrapIndex;
         this.source = source;
     }
 
@@ -62,6 +76,10 @@ public class ILMPolicy implements OpSource {
      */
     public String getRolloverAlias() {
         return this.rolloverAlias;
+    }
+
+    public boolean isCreateBootstrapIndex() {
+        return createBootstrapIndex;
     }
 
     /**

@@ -216,6 +216,15 @@ NOTE: Be aware that template parsing errors on cluster side MAY NOT prevent plug
 ### Index lifecycle management
 Since 1.5, [ILM Policy](https://www.elastic.co/guide/en/elasticsearch/reference/7.x/index-lifecycle-management.html) can be created during appender startup. Policy can be loaded from specified file or defined directly in the XML config:
 
+| Config property      | Type      | Required                                                              | Default | Description                                                                                                           |
+|----------------------|-----------|-----------------------------------------------------------------------|---------|-----------------------------------------------------------------------------------------------------------------------|
+| name                 | Attribute | yes                                                                   | None    | ILM Policy resource name                                                                                              |
+| createBootstrapIndex | Attribute | no                                                                    | `true`  | If `true`, bootstrap index will be created and set as write index unless an index with the same `name` already exists |
+| rolloverAlias        | Attribute | yes, if `createBootstrapIndex` is `true`                              | None    | Rollover alias                                                                                                        |
+| path                 | Attribute | yes, if document not defined with `sourceString` (see examples below) | None    | Path to policy document. E.g. `classpath:ilm-policy.json` or `<DIR>/ilm-policy.json`                                  |
+
+If used with [DataStream](#data-stream), `createBootstrapIndex` MUST be false.
+
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
@@ -228,7 +237,7 @@ Since 1.5, [ILM Policy](https://www.elastic.co/guide/en/elasticsearch/reference/
     </Elasticsearch>
 </Appenders>
 ```
-or
+or with `sourceString`
 ```xml
 <Appenders>
     <Elasticsearch name="elasticsearchAsyncBatch">
@@ -251,6 +260,12 @@ Policy document can include variables resolvable with [Log4j2 Lookups](https://l
 NOTE: This feature is supported by [log4j2-elasticsearch-jest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest) and [log4j2-elasticsearch-hc](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc) modules. ILM was introduced to Elasticsearch in version 7, so `log4j2-elasticsearch(x)-bulkprocessor` modules can't use this API.
 
 NOTE: Be aware that policy parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
+
+### Data streams support
+
+Since 1.6, [Data streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) are supported with `DataStream` setup operation in several modules.
+
+See submodules documentation to check support.
 
 ### Message output
 

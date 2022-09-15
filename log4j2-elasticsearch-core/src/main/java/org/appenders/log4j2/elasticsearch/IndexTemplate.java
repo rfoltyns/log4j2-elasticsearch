@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 /**
  * Index template definition. Supports both composable index templates and templates deprecated in 7.8.
  * Set {@link #apiVersion} to 8 to indicate that this template is composable
+ * Set {@link #apiVersion} to 7 to use legacy Index Template API
  *
  * See <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">Composable index templates</a>
  * and <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-templates-v1.html">Deprecated index templates</a>
@@ -30,7 +31,7 @@ package org.appenders.log4j2.elasticsearch;
 public class IndexTemplate implements OpSource {
 
     public static final String TYPE_NAME = "IndexTemplate";
-    public static final int DEFAULT_API_VERSION = 7;
+    public static final int DEFAULT_API_VERSION = 8;
 
     private final int apiVersion;
     private final String name;

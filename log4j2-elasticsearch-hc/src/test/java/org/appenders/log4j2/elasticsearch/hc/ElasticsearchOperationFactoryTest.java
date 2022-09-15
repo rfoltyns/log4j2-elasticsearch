@@ -24,6 +24,8 @@ import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.ComponentTemplateTest;
+import org.appenders.log4j2.elasticsearch.DataStream;
+import org.appenders.log4j2.elasticsearch.DataStreamPlugin;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
@@ -46,6 +48,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -152,6 +155,8 @@ public class ElasticsearchOperationFactoryTest {
         result.execute();
 
         // then
+        assertEquals(3, stepProcessor.requests.size());
+
         SetupStep<Request, Response> checkBootstrapIndex = stepProcessor.requests.get(0);
         assertTrue(checkBootstrapIndex instanceof CheckBootstrapIndex);
         assertEquals(expectedRolloverAlias, checkBootstrapIndex.createRequest().getURI());
@@ -177,6 +182,81 @@ public class ElasticsearchOperationFactoryTest {
 
     }
 
+    @Test
+    public void supportsNonBootstrappingILMPolicy() throws Exception {
+
+        // given
+        final String expectedName = UUID.randomUUID().toString();
+        final String unresolvedSource = String.format("%s${unresolved}%s", "test", "ilmPolicy");
+        final ILMPolicy ilmPolicy = ILMPolicyPluginTest.createTestILMPolicyPluginBuilder()
+                .withName(expectedName)
+                .withCreateBootstrapIndex(false)
+                .withSource(unresolvedSource)
+                .withPath(null)
+                .build();
+
+        final CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        final String expectedResolvedValue = UUID.randomUUID().toString();
+        final ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(unresolvedSource)).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
+
+        final ElasticsearchOperationFactory ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, ByteBufItemSourceTest::createTestItemSource);
+
+        // when
+        final Operation result = ops.create(ilmPolicy);
+        result.execute();
+
+        // then
+        assertEquals(1, stepProcessor.requests.size());
+        final SetupStep<Request, Response> putIlmPolicy = stepProcessor.requests.get(0);
+        assertTrue(putIlmPolicy instanceof PutILMPolicy);
+
+        assertEquals(expectedName, ((PutILMPolicy) putIlmPolicy).name);
+        final ByteBufItemSource source = (ByteBufItemSource) ((PutILMPolicy) putIlmPolicy).source;
+        assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"), source.getSource().toString(StandardCharsets.UTF_8));
+        assertEquals("_ilm/policy/" + expectedName, putIlmPolicy.createRequest().getURI());
+
+    }
+
+    @Test
+    public void supportsDataStream() throws Exception {
+
+        // given
+        final String expectedName = UUID.randomUUID().toString();
+        final DataStream dataStream = DataStreamPlugin.newBuilder()
+                .withName(expectedName)
+                .build();
+
+
+        final CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        final ValueResolver valueResolver = mock(ValueResolver.class);
+
+        final EmptyItemSourceFactory testItemSource = ByteBufItemSourceTest::createTestItemSource;
+        final ElasticsearchOperationFactory ops = createDefaultTestOperationsFactoryDispatcher(stepProcessor, valueResolver, testItemSource);
+
+
+        // when
+        Operation result = ops.create(dataStream);
+        result.execute();
+
+        // then
+        assertEquals(2, stepProcessor.requests.size());
+        final SetupStep<Request, Response> checkDataStream = stepProcessor.requests.get(0);
+        assertTrue(checkDataStream instanceof CheckDataStream);
+        assertNull(checkDataStream.createRequest().serialize());
+
+        assertEquals("_data_stream/" + expectedName, checkDataStream.createRequest().getURI());
+        final SetupStep<Request, Response> createDataStream = stepProcessor.requests.get(1);
+        assertTrue(createDataStream instanceof CreateDataStream);
+
+        final ByteBufItemSource source = (ByteBufItemSource) ((CreateDataStream) createDataStream).itemSource;
+        assertEquals("", source.getSource().toString(StandardCharsets.UTF_8));
+        assertEquals(expectedName, ((CreateDataStream) createDataStream).name);
+        assertEquals("_data_stream/" + expectedName, createDataStream.createRequest().getURI());
+
+    }
 
     @Test
     public void lifecycleStartStartItemSourceFactoryOnlyOnce() {

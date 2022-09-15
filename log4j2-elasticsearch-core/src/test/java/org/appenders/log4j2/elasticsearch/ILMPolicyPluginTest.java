@@ -29,8 +29,10 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ILMPolicyPluginTest {
 
@@ -48,12 +50,13 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void startsWhenSetupCorrectlyWithNameAndPathAndRolloverAlias() {
+    public void buildsWhenSetupCorrectlyWithNameAndPathAndRolloverAlias() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withName(TEST_ILM_POLICY_NAME)
                 .withPath(TEST_PATH)
+                .withCreateBootstrapIndex(true)
                 .withRolloverAlias(TEST_ROLLOVER_ALIAS);
 
         // when
@@ -65,15 +68,18 @@ public class ILMPolicyPluginTest {
         assertNotNull(ilmPolicyPlugin.getSource());
         assertEquals(ILMPolicy.TYPE_NAME, ilmPolicyPlugin.getType());
         assertEquals(TEST_ROLLOVER_ALIAS, ilmPolicyPlugin.getRolloverAlias());
+        assertTrue(ilmPolicyPlugin.isCreateBootstrapIndex());
+
     }
 
     @Test
-    public void startsWhenSetupCorrectlyWithNameAndSourceAndRolloverAlias() {
+    public void buildsWhenSetupCorrectlyWithNameAndSourceAndRolloverAlias() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
         builder.withName(TEST_ILM_POLICY_NAME)
                 .withRolloverAlias(TEST_ROLLOVER_ALIAS)
+                .withCreateBootstrapIndex(false)
                 .withPath(null)
                 .withSource(TEST_SOURCE);
 
@@ -84,6 +90,25 @@ public class ILMPolicyPluginTest {
         assertNotNull(ilmPolicyPlugin);
         assertNotNull(ilmPolicyPlugin.getName());
         assertNotNull(ilmPolicyPlugin.getSource());
+        assertFalse(ilmPolicyPlugin.isCreateBootstrapIndex());
+
+    }
+
+    @Test
+    public void createsBootstrapIndexByDefault() {
+
+        // given
+        final ILMPolicyPlugin.Builder builder = ILMPolicyPlugin.newBuilder()
+                .withName(TEST_ILM_POLICY_NAME)
+                .withSource(TEST_SOURCE)
+                .withRolloverAlias(TEST_ROLLOVER_ALIAS);
+
+        // when
+        final ILMPolicy policy = builder.build();
+
+        // then
+        assertTrue(policy.isCreateBootstrapIndex());
+
     }
 
     @Test

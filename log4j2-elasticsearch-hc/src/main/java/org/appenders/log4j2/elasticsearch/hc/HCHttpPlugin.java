@@ -145,7 +145,9 @@ public class HCHttpPlugin extends HCHttp {
 
             // fallback to no-op
             return ValueResolver.NO_OP;
+
         }
+
         protected ElasticsearchOperationFactory createOperationFactory(HttpClientProvider clientProvider) {
 
             final ObjectReader objectReader = new ObjectMapper()
@@ -163,6 +165,7 @@ public class HCHttpPlugin extends HCHttp {
             return new ElasticsearchOperationFactory(
                     new SyncStepProcessor(clientProvider, objectReader),
                     valueResolver);
+
         }
 
         protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {

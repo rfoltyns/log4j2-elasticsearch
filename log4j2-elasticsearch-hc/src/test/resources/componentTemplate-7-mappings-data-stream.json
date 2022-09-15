@@ -1,0 +1,28 @@
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "loggerName": {
+          "type": "keyword",
+          "index": false
+        },
+        "message": {
+          "type": "keyword",
+          "index": false
+        },
+        "@timestamp": {
+          "type": "date",
+          "format": "epoch_millis"
+        },
+        "thread": {
+          "type": "keyword",
+          "index": false
+        },
+        "level": {
+          "type": "keyword",
+          "index": false
+        }
+      }
+    }
+  }
+}

@@ -36,11 +36,13 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
+import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ByteBufBoundedSizeLimitPolicy;
 import org.appenders.log4j2.elasticsearch.ByteBufPooledObjectOps;
 import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.Credentials;
+import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ExampleJacksonModule;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
@@ -52,7 +54,7 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ResourceUtil;
-import org.appenders.log4j2.elasticsearch.RollingIndexNamePlugin;
+import org.appenders.log4j2.elasticsearch.SimpleIndexName;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
@@ -64,6 +66,8 @@ import org.appenders.log4j2.elasticsearch.hc.BatchResult;
 import org.appenders.log4j2.elasticsearch.hc.BatchResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
+import org.appenders.log4j2.elasticsearch.hc.ElasticsearchBulkAPI;
+import org.appenders.log4j2.elasticsearch.hc.ElasticsearchDataStreamAPI;
 import org.appenders.log4j2.elasticsearch.hc.ElasticsearchOperationFactory;
 import org.appenders.log4j2.elasticsearch.hc.Error;
 import org.appenders.log4j2.elasticsearch.hc.ErrorMixIn;
@@ -78,6 +82,7 @@ import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryRequest;
+import org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
@@ -96,21 +101,28 @@ import static org.appenders.core.util.PropertiesUtil.getInt;
 
 public class SmokeTest extends SmokeTestBase {
 
+    static final String MODULE_NAME = "log4j2-elasticsearch-hc";
+
     @BeforeEach
     public void beforeEach() {
         super.beforeEach();
         configure();
     }
 
-    protected void configure() {
-        addSecurityConfig(getConfig())
+    protected TestConfig configure() {
+
+        final boolean dataStreamsEnabled = Boolean.parseBoolean(System.getProperty("smokeTest.datastreams.enabled", "false"));
+        final String indexName = resolveIndexName(dataStreamsEnabled);
+
+        return addSecurityConfig(getConfig())
                 .add("serverList", System.getProperty("smokeTest.serverList", "localhost:9200"))
                 .add("batchSize", getInt("smokeTest.batchSize", 10000))
                 .add("initialItemPoolSize", getInt("smokeTest.initialItemPoolSize", 40000))
                 .add("initialItemBufferSizeInBytes", getInt("smokeTest.initialItemBufferSizeInBytes", 1024))
                 .add("initialBatchPoolSize", getInt("smokeTest.initialBatchPoolSize", 4))
-                .add("indexName", System.getProperty("smokeTest.indexName", "log4j2-elasticsearch-hc"))
                 .add("ecs.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false")))
+                .add("datastreams.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.datastreams.enabled", "false")))
+                .add("indexName", indexName)
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
@@ -119,9 +131,9 @@ public class SmokeTest extends SmokeTestBase {
 
     private TestConfig addSecurityConfig(TestConfig target) {
         return target.add("pemCertInfo.keyPath", System.getProperty("pemCertInfo.keyPath"))
-            .add("pemCertInfo.keyPassphrase", System.getProperty("pemCertInfo.keyPassphrase"))
-            .add("pemCertInfo.clientCertPath", System.getProperty("pemCertInfo.clientCertPath"))
-            .add("pemCertInfo.caPath", System.getProperty("pemCertInfo.caPath"));
+                .add("pemCertInfo.keyPassphrase", System.getProperty("pemCertInfo.keyPassphrase"))
+                .add("pemCertInfo.clientCertPath", System.getProperty("pemCertInfo.clientCertPath"))
+                .add("pemCertInfo.caPath", System.getProperty("pemCertInfo.caPath"));
     }
 
     @Override
@@ -131,8 +143,9 @@ public class SmokeTest extends SmokeTestBase {
         final int initialItemPoolSize = getConfig().getProperty("initialItemPoolSize", Integer.class);
         final int initialItemBufferSizeInBytes = getConfig().getProperty("initialItemBufferSizeInBytes", Integer.class);
         final int initialBatchPoolSize = getConfig().getProperty("initialBatchPoolSize", Integer.class);
-        final String indexName = getConfig().getProperty("indexName", String.class);
         final boolean ecsEnabled = getConfig().getProperty("ecs.enabled", Boolean.class);
+        final boolean dataStreamsEnabled = getConfig().getProperty("datastreams.enabled", Boolean.class);
+        final String indexName = getConfig().getProperty("indexName", String.class);
         final boolean serviceDiscoveryEnabled = getConfig().getProperty("servicediscovery.enabled", Boolean.class);
         final String version = getConfig().getProperty("api.version", String.class);
 
@@ -160,7 +173,7 @@ public class SmokeTest extends SmokeTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
-                .withBatchOperations(new HCBatchOperations(pooledItemSourceFactory, mappingType(VersionUtil.parse(version))))
+                .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), dataStreamsEnabled))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8));
 
@@ -199,14 +212,13 @@ public class SmokeTest extends SmokeTestBase {
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize)
                 .withDeliveryInterval(1000)
-                .withSetupOpSources(setupOpSources(VersionUtil.parse(version), indexName, ecsEnabled))
+                .withSetupOpSources(setupOpSources(VersionUtil.parse(version), indexName, ecsEnabled, dataStreamsEnabled))
                 .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
                 .build();
 
-        final IndexNameFormatter<LogEvent> indexNameFormatter = new RollingIndexNamePlugin.Builder()
+        IndexNameFormatter<Object> indexNameFormatter = new SimpleIndexName.Builder<>()
                 .withIndexName(indexName)
-                .withPattern("yyyy-MM-dd-HH")
                 .build();
 
         JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
@@ -221,6 +233,13 @@ public class SmokeTest extends SmokeTestBase {
         if (ecsEnabled) {
             layoutBuilder.withMixins(new JacksonMixIn.Builder()
                     .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
+                    .withTargetClass(LogEvent.class.getName())
+                    .build());
+        }
+
+        if (dataStreamsEnabled) {
+            layoutBuilder.withMixins(new JacksonMixIn.Builder()
+                    .withMixInClass(LogEventDataStreamMixIn.class.getName())
                     .withTargetClass(LogEvent.class.getName())
                     .build());
         }
@@ -246,6 +265,16 @@ public class SmokeTest extends SmokeTestBase {
                 .withIndexNameFormatter(indexNameFormatter)
                 .withLayout(layoutBuilder.build())
                 .withIgnoreExceptions(false);
+    }
+
+    private BatchOperations batchOperations(final PooledItemSourceFactory pooledItemSourceFactory,
+                                            final Version version,
+                                            final boolean dataStreamsEnabled) {
+        if (dataStreamsEnabled) {
+            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI());
+        } else {
+            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version)));
+        }
     }
 
     private ServiceDiscoveryRequest<HttpClient> serviceDiscoveryQuery(String nodesFilter) {
@@ -313,7 +342,7 @@ public class SmokeTest extends SmokeTestBase {
                 .build();
     }
 
-    private OpSource[] setupOpSources(final Version version, final String indexName, boolean ecsEnabled) {
+    private OpSource[] setupOpSources(final Version version, final String indexName, boolean ecsEnabled, final boolean dataStreamsEnabled) {
 
         final ArrayList<OpSource> result = new ArrayList<>();
 
@@ -330,18 +359,19 @@ public class SmokeTest extends SmokeTestBase {
 
             result.add(new ComponentTemplate.Builder()
                     .withName(indexName + "-mappings")
-                    .withPath(ecsEnabled ? "classpath:componentTemplate-7-mappings-ecs.json": "classpath:componentTemplate-7-mappings.json")
+                    .withPath(resolveIndexTemplatePath(ecsEnabled, dataStreamsEnabled))
                     .build());
 
             result.add(new IndexTemplate.Builder()
                     .withApiVersion(8)
-                    .withName(indexName + "-composed-index-template")
-                    .withPath("classpath:composableIndexTemplate-7.json")
+                    .withName(indexName)
+                    .withPath(indexTemplatePath())
                     .build());
+
         } else {
             result.add(new IndexTemplate.Builder()
                     .withApiVersion(7)
-                    .withName(indexName + "-index-template")
+                    .withName(indexName)
                     .withPath("classpath:indexTemplate-" + version.major() + ".json")
                     .build());
         }
@@ -350,10 +380,32 @@ public class SmokeTest extends SmokeTestBase {
             result.add(new ILMPolicy(
                     indexName + "-ilm-policy",
                     indexName,
+                    !dataStreamsEnabled,
                     ResourceUtil.loadResource("classpath:ilmPolicy-7.json")));
         }
 
+        if (dataStreamsEnabled) {
+            // Optional, ES will create one if it's missing
+            result.add(new DataStream.Builder()
+                    .withName(indexName)
+                    .build());
+        }
+
         return result.toArray(new OpSource[0]);
+    }
+
+    private String resolveIndexTemplatePath(final boolean ecsEnabled, final boolean dataStreamsEnabled) {
+
+        if (ecsEnabled) {
+            return "classpath:componentTemplate-7-mappings-ecs.json";
+        }
+
+        if (dataStreamsEnabled) {
+            return "classpath:componentTemplate-7-mappings-data-stream.json";
+        }
+
+        return "classpath:componentTemplate-7-mappings.json";
+
     }
 
     private String mappingType(final Version version) {
@@ -368,6 +420,26 @@ public class SmokeTest extends SmokeTestBase {
 
         return null;
 
+    }
+
+    private String resolveIndexName(boolean dataStreamsEnabled) {
+
+        String indexName = System.getProperty("smokeTest.indexName");
+
+        if (MODULE_NAME.equals(indexName) || indexName == null) {
+            final String suffix = (dataStreamsEnabled ? "-data-stream" : "-index");
+            indexName = MODULE_NAME + suffix;
+        }
+
+        System.setProperty("smokeTest.indexName", indexName);
+
+        return indexName;
+
+    }
+
+    private String indexTemplatePath() {
+        final boolean dsEnabled = getConfig().getProperty("datastreams.enabled", Boolean.class);
+        return String.format("classpath:composableIndexTemplate-7%s.json", dsEnabled ? "-data-stream"  : "");
     }
 
 }

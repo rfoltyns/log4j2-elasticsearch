@@ -30,7 +30,9 @@ import org.appenders.log4j2.elasticsearch.SkippingSetupStepChain;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.appenders.log4j2.elasticsearch.hc.CreateBootstrapIndex.BOOTSTRAP_TEMPLATE;
 
@@ -52,22 +54,32 @@ public class ILMPolicySetupOp implements OperationFactory {
     @Override
     public <T extends OpSource> Operation create(T opSource) {
 
-        ILMPolicy ilmPolicy = (ILMPolicy) opSource;
+        final ILMPolicy ilmPolicy = (ILMPolicy) opSource;
+        final List<SetupStep<Request, Response>> setupSteps = new ArrayList<>();
 
-        SetupStep<Request, Response> checkBootstrapIndex =
-                new CheckBootstrapIndex(ilmPolicy.getRolloverAlias());
+        if (ilmPolicy.isCreateBootstrapIndex()) {
 
-        String bootstrapIndexRequestBody = String.format(BOOTSTRAP_TEMPLATE, ilmPolicy.getRolloverAlias());
-        SetupStep<Request, Response> createBootstrapIndex = new CreateBootstrapIndex(
-                ilmPolicy.getRolloverAlias(),
-                writer.write(itemSourceFactory.createEmptySource(), bootstrapIndexRequestBody.getBytes()));
+            final SetupStep<Request, Response> checkBootstrapIndex =
+                    new CheckBootstrapIndex(ilmPolicy.getRolloverAlias());
 
-        String ilmPolicyRequestBody = valueResolver.resolve(ilmPolicy.getSource());
-        SetupStep<Request, Response> updateIlmPolicy = new PutILMPolicy(
+            final String bootstrapIndexRequestBody = String.format(BOOTSTRAP_TEMPLATE, ilmPolicy.getRolloverAlias());
+            final SetupStep<Request, Response> createBootstrapIndex = new CreateBootstrapIndex(
+                    ilmPolicy.getRolloverAlias(),
+                    writer.write(itemSourceFactory.createEmptySource(), bootstrapIndexRequestBody.getBytes()));
+
+            setupSteps.add(checkBootstrapIndex);
+            setupSteps.add(createBootstrapIndex);
+
+        }
+
+        final String ilmPolicyRequestBody = valueResolver.resolve(ilmPolicy.getSource());
+        final SetupStep<Request, Response> updateIlmPolicy = new PutILMPolicy(
                 ilmPolicy.getName(),
                 writer.write(itemSourceFactory.createEmptySource(), ilmPolicyRequestBody.getBytes()));
 
-        return new SkippingSetupStepChain<>(Arrays.asList(checkBootstrapIndex, createBootstrapIndex, updateIlmPolicy), stepProcessor);
+        setupSteps.add(updateIlmPolicy);
+
+        return new SkippingSetupStepChain<>(setupSteps, stepProcessor);
 
     }
 

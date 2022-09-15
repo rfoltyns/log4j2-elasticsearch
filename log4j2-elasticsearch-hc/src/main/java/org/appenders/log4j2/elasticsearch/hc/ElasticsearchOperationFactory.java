@@ -22,6 +22,7 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ByteBufItemSourceFactoryPlugin;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
+import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.EmptyItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -43,19 +44,20 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
     private final EmptyItemSourceFactory itemSourceFactory;
 
     public ElasticsearchOperationFactory(
-            StepProcessor<SetupStep<Request, Response>> stepProcessor,
-            ValueResolver valueResolver,
-            EmptyItemSourceFactory itemSourceFactory) {
+            final StepProcessor<SetupStep<Request, Response>> stepProcessor,
+            final ValueResolver valueResolver,
+            final EmptyItemSourceFactory itemSourceFactory) {
         super();
         this.itemSourceFactory = itemSourceFactory;
         register(ComponentTemplate.TYPE_NAME, new ComponentTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
         register(IndexTemplate.TYPE_NAME, new IndexTemplateSetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
         register(ILMPolicy.TYPE_NAME, new ILMPolicySetupOp(stepProcessor, valueResolver, this.itemSourceFactory));
+        register(DataStream.TYPE_NAME, new DataStreamSetupOp(stepProcessor, this.itemSourceFactory));
     }
 
     public ElasticsearchOperationFactory(
-            StepProcessor<SetupStep<Request, Response>> stepProcessor,
-            ValueResolver valueResolver) {
+            final StepProcessor<SetupStep<Request, Response>> stepProcessor,
+            final ValueResolver valueResolver) {
         this(stepProcessor, valueResolver, createSetupOpsItemSourceFactory());
     }
 
@@ -67,7 +69,6 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
                 .withResizePolicy(new UnlimitedResizePolicy.Builder().withResizeFactor(1).build())
                 .build();
     }
-
 
     @Override
     public void start() {
@@ -104,4 +105,5 @@ public class ElasticsearchOperationFactory extends OperationFactoryDispatcher im
     public boolean isStopped() {
         return state == State.STOPPED;
     }
+
 }

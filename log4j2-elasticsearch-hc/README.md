@@ -147,6 +147,33 @@ Configures builders and serializers for:
 |-------------|-----------|----------|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | mappingType | Attribute | no       | `null` since 1.6 | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). |
 
+### ElasticsearchDataStream
+
+Since 1.6, [Data streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) are supported with `DataStream` setup operation.
+
+Configures `BatchOperations`-level builders and serializers for:
+* [DataStreamBatchRequest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/DataStreamBatchRequest.java) - `/<indexName>/_bulk` request (batch)
+* [DataStreamItem](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/DataStreamItem.java) - document (batch item)
+
+If `ILMPolicy` is used, `ILMPolicy.createBootstrapIndex` MUST be set to `false`. This behaviour will be changed in future releases - bootstrap index will be created separately, similar to other setup operations.
+
+With `JacksonJsonLayout`, use [LogEventDataStreamMixIn](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/json/jackson/LogEventDataStreamMixIn.java) or equivalent to serialize `LogEvent.timeMillis` as `@timestamp`.
+
+```xml
+<Elasticsearch>
+    <JacksonJsonLayout>
+        <JacksonMixIn targetClass="org.apache.logging.log4j.core.LogEvent"
+                      mixInClass="org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn" />
+    </JacksonJsonLayout>
+    <AsyncBatchDelivery>
+        <ILMPolicy createBootstrapIndex="false" />
+        <HCHttp>
+            <ElasticsearchDataStream />
+        </HCHttp>
+    </AsyncBatchDelivery>
+</Elasticsearch>
+```
+
 ### Programmatic config
 See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java).
 

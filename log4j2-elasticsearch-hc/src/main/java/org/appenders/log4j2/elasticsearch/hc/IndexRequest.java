@@ -85,7 +85,7 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
         private String index;
         private String type;
 
-        public Builder(ItemSource<ByteBuf> source) {
+        public Builder(final ItemSource<ByteBuf> source) {
             this.source = source;
         }
 
