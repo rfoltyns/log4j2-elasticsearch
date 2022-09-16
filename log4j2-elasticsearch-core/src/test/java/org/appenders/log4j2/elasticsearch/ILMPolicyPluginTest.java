@@ -87,7 +87,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenNameIsNotSet() {
+    public void builderThrowsWhenNameIsNotSet() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -103,7 +103,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenRolloverAliasIsNotSet() {
+    public void builderThrowsWhenRolloverAliasIsNotSet() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -119,7 +119,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenNeitherPathOrSourceIsSet() {
+    public void builderThrowsWhenNeitherPathOrSourceIsSet() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -136,7 +136,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenBothPathAndSourceAreSet() {
+    public void builderThrowsWhenBothPathAndSourceAreSet() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -153,7 +153,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenClasspathResourceDoesntExist() {
+    public void builderThrowsWhenClasspathResourceDoesntExist() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -169,7 +169,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsWhenFileDoesNotExist() {
+    public void builderThrowsWhenFileDoesNotExist() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();
@@ -185,7 +185,7 @@ public class ILMPolicyPluginTest {
     }
 
     @Test
-    public void builderthrowsOnInvalidProtocol() {
+    public void builderThrowsOnInvalidProtocol() {
 
         // given
         final ILMPolicyPlugin.Builder builder = createTestILMPolicyPluginBuilder();

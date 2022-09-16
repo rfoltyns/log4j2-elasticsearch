@@ -82,7 +82,7 @@ public class ComponentTemplateTest {
     }
 
     @Test
-    public void builderthrowsWhenNameIsNotSet() {
+    public void builderThrowsWhenNameIsNotSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -97,7 +97,7 @@ public class ComponentTemplateTest {
     }
 
     @Test
-    public void builderthrowsWhenNeitherPathOrSourceIsSet() {
+    public void builderThrowsWhenNeitherPathOrSourceIsSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -113,7 +113,7 @@ public class ComponentTemplateTest {
     }
 
     @Test
-    public void builderthrowsWhenBothPathAndSourceAreSet() {
+    public void builderThrowsWhenBothPathAndSourceAreSet() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -129,7 +129,7 @@ public class ComponentTemplateTest {
     }
 
     @Test
-    public void builderthrowsWhenClasspathResourceDoesntExist() {
+    public void builderThrowsWhenClasspathResourceDoesntExist() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
@@ -144,7 +144,7 @@ public class ComponentTemplateTest {
     }
 
     @Test
-    public void builderthrowsWhenFileDoesNotExist() {
+    public void builderThrowsWhenFileDoesNotExist() {
 
         // given
         ComponentTemplate.Builder builder = createTestComponentTemplateBuilder();
