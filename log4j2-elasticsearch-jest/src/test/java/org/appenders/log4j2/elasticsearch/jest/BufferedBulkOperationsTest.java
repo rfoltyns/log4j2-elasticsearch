@@ -27,6 +27,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.searchbox.core.Bulk;
+import io.searchbox.params.Parameters;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.ObjectMessage;
@@ -42,10 +43,10 @@ import java.io.IOException;
 import java.util.Scanner;
 import java.util.UUID;
 
-import static org.appenders.log4j2.elasticsearch.jest.BufferedBulkOperations.DEFAULT_MAPPING_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -154,7 +155,7 @@ public class BufferedBulkOperationsTest {
     }
 
     @Test
-    public void defaultWriterCanSerializeBufferedBulk() throws IOException {
+    public void configuredWriterCanSerializeBufferedBulk() throws IOException {
 
         // given
         PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
@@ -191,6 +192,49 @@ public class BufferedBulkOperationsTest {
         assertEquals(expectedMappingType, deserializedAction.type);
 
         TestLogEvent deserializedDocument = new ObjectMapper().readValue(scanner.nextLine(), TestLogEvent.class);
+        assertEquals(timeMillis, deserializedDocument.timeMillis);
+        assertNotNull(deserializedDocument.level);
+        assertNotNull(deserializedDocument.thread);
+        assertEquals(expectedMessage, deserializedDocument.message);
+
+    }
+
+    @Test
+    public void configuredWriterCanSerializeBufferedBulkWithDataStreamsEnabled() throws IOException {
+
+        // given
+        final PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        final BufferedBulkOperations bufferedBulkOperations = new BufferedBulkOperations(bufferedSourceFactory, new JacksonMixIn[]{}, true);
+
+        final JacksonJsonLayout layout = createDefaultTestJacksonJsonLayout(bufferedSourceFactory);
+
+        final String expectedMessage = UUID.randomUUID().toString();
+        final long timeMillis = System.currentTimeMillis();
+        final Log4jLogEvent logEvent = Log4jLogEvent.newBuilder()
+                .setTimeMillis(timeMillis)
+                .setMessage(new ObjectMessage(expectedMessage)).build();
+
+        final ItemSource itemSource = layout.toSerializable(logEvent);
+
+        final String indexName = UUID.randomUUID().toString();
+        final BufferedIndex bufferedIndex = (BufferedIndex) bufferedBulkOperations.createBatchItem(indexName, itemSource);
+
+        final BatchBuilder<Bulk> batchBuilder = bufferedBulkOperations.createBatchBuilder();
+        batchBuilder.add(bufferedIndex);
+
+        // when
+        final ByteBuf byteBuf = ((BufferedBulk)batchBuilder.build()).serializeRequest();
+
+        // then
+        assertFalse(bufferedIndex.getParameter(Parameters.OP_TYPE).contains("index")); // IMPORTANT! parameters are ignored with BufferedBulk!
+        final Scanner scanner = new Scanner(new ByteBufInputStream(byteBuf));
+        final TestIndex deserializedAction = new ObjectMapper()
+                .addMixIn(TestIndex.class, DataStreamBulkableActionMixIn.class)
+                .readValue(scanner.nextLine(), TestIndex.class);
+        assertNull(deserializedAction.index);
+        assertNull(deserializedAction.type);
+
+        final TestLogEvent deserializedDocument = new ObjectMapper().readValue(scanner.nextLine(), TestLogEvent.class);
         assertEquals(timeMillis, deserializedDocument.timeMillis);
         assertNotNull(deserializedDocument.level);
         assertNotNull(deserializedDocument.thread);

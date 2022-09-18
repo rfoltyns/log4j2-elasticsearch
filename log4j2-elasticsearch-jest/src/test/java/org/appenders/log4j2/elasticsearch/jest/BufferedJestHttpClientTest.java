@@ -38,6 +38,7 @@ import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.message.BasicStatusLine;
 import org.appenders.log4j2.elasticsearch.ByteBufItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSource;
+import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.UUID;
@@ -76,6 +78,7 @@ public class BufferedJestHttpClientTest {
 
     public static final String TEST_INDEX_NAME = "test_index";
 
+    @SuppressWarnings("rawtypes")
     @Captor
     private ArgumentCaptor<BufferedJestHttpClient.BufferedResultCallback> bufferedResultCallbackCaptor;
 
@@ -92,6 +95,7 @@ public class BufferedJestHttpClientTest {
         BufferedBulk bulk = createDefaultTestBufferedBulk();
 
         // when
+        //noinspection resource
         BufferedJestHttpClient client = createDefaultTestHttpClient();
         HttpUriRequest request = client.prepareRequest(bulk);
 
@@ -110,6 +114,7 @@ public class BufferedJestHttpClientTest {
         when(bulk.getURI()).thenReturn(expectedUriPart);
 
         // when
+        //noinspection resource
         BufferedJestHttpClient client = createDefaultTestHttpClient();
         HttpUriRequest request = client.prepareRequest(bulk);
 
@@ -125,6 +130,7 @@ public class BufferedJestHttpClientTest {
         BufferedBulk bulk = createDefaultTestBufferedBulk();
 
         // when
+        //noinspection resource
         BufferedJestHttpClient client = createDefaultTestHttpClient();
         HttpUriRequest request = client.prepareRequest(bulk);
 
@@ -145,13 +151,79 @@ public class BufferedJestHttpClientTest {
         ByteBufItemSource buffer = createTestItemSource();
         builder.withBuffer(buffer);
 
-        Bulk bulk = createTestBatch(builder, payload1, payload2);
+        builder.withObjectWriter(createDefaultTestObjectWriter(false));
+        builder.withObjectReader(createDefaultTestObjectReader());
+
+        builder.addAction(new BufferedIndex.Builder(payload1)
+                .index(UUID.randomUUID().toString())
+                .build());
+        builder.addAction(new BufferedIndex.Builder(payload2)
+                .index(UUID.randomUUID().toString())
+                .build());
+
+        Bulk bulk = builder.build();
 
         // when
         BufferedJestHttpClient client = createDefaultTestHttpClient();
         HttpUriRequest request = client.prepareRequest((BufferedBulk) bulk);
 
         // then
+        ByteBufInputStream byteBufInputStream = new ByteBufInputStream(buffer.getSource());
+
+        byte[] expectedBody = new byte[byteBufInputStream.available()];
+        byteBufInputStream.read(expectedBody);
+        byteBufInputStream.reset();
+
+        HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+        ByteBufInputStream content = (ByteBufInputStream) entity.getContent();
+        byte[] actualBody = new byte[content.available()];
+        content.read(actualBody);
+        assertEquals(new String(expectedBody), new String(actualBody));
+
+    }
+
+    @Test
+    public void prepareRequestCreatesRequestWithSerializedDataStreamBulk() throws IOException {
+
+        // given
+        final String expectedItemPayload1 = "test1";
+        final String expectedItemPayload2 = "test2";
+        ItemSource<ByteBuf> payload1 = createDefaultTestItemSource(expectedItemPayload1);
+        ItemSource<ByteBuf> payload2 = createDefaultTestItemSource(expectedItemPayload2);
+
+        BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
+        ByteBufItemSource buffer = createTestItemSource();
+        builder.withBuffer(buffer);
+
+        builder.withObjectWriter(createDefaultTestObjectWriter(true));
+        builder.withObjectReader(createDefaultTestObjectReader());
+
+        final String sameIndex = UUID.randomUUID().toString();
+        builder.addAction(new BufferedIndex.Builder(payload1)
+                .index(sameIndex)
+                .build());
+        builder.addAction(new BufferedIndex.Builder(payload2)
+                .index(sameIndex)
+                .build());
+
+        builder.withDataStreamsEnabled(true);
+
+        Bulk bulk = builder.build();
+
+        // when
+        BufferedJestHttpClient client = createDefaultTestHttpClient();
+        HttpUriRequest request = client.prepareRequest((BufferedBulk) bulk);
+
+        // then
+        assertTrue(request.getURI().toString().endsWith("/" + sameIndex + "/_bulk"));
+
+        final String bulkRequestString = buffer.getSource().toString(StandardCharsets.UTF_8);
+        assertTrue(bulkRequestString.contains("{\"create\":{}"));
+        assertNotEquals(bulkRequestString.indexOf("{\"create\":{}"), bulkRequestString.lastIndexOf("{\"create\":{}"));
+
+        assertTrue(bulkRequestString.contains(expectedItemPayload1));
+        assertTrue(bulkRequestString.contains(expectedItemPayload2));
+
         ByteBufInputStream byteBufInputStream = new ByteBufInputStream(buffer.getSource());
 
         byte[] expectedBody = new byte[byteBufInputStream.available()];
@@ -428,11 +500,12 @@ public class BufferedJestHttpClientTest {
         return createTestItemSource(buffer, source -> {});
     }
 
+    @SuppressWarnings("unchecked")
     private BufferedBulk createTestBatch(ItemSource<ByteBuf>... payloads) {
         BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
         builder.withBuffer(createTestItemSource());
 
-        builder.withObjectWriter(createDefaultTestObjectWriter());
+        builder.withObjectWriter(createDefaultTestObjectWriter(false));
         builder.withObjectReader(createDefaultTestObjectReader());
 
         for (ItemSource<ByteBuf> payload : payloads) {
@@ -444,20 +517,24 @@ public class BufferedJestHttpClientTest {
         return spy(builder.build());
     }
 
+    @SuppressWarnings("unchecked")
     private Bulk createTestBatch(BufferedBulk.Builder builder, ItemSource<ByteBuf>... payloads) {
 
-        builder.withObjectWriter(createDefaultTestObjectWriter());
+        builder.withObjectWriter(createDefaultTestObjectWriter(false));
         builder.withObjectReader(createDefaultTestObjectReader());
 
         for (ItemSource<ByteBuf> payload : payloads) {
-            builder.addAction(spy(new BufferedIndex.Builder(payload))
+            builder.addAction(new BufferedIndex.Builder(payload)
                     .index(UUID.randomUUID().toString())
                     .build());
         }
         return spy(builder.build());
     }
 
-    private ObjectWriter createDefaultTestObjectWriter() {
+    private ObjectWriter createDefaultTestObjectWriter(final boolean dataStreamsEnabled) {
+        if (dataStreamsEnabled) {
+            return new BufferedBulkOperations(mock(PooledItemSourceFactory.class), new JacksonMixIn[0], true).configuredWriter();
+        }
         return new BufferedBulkOperations(mock(PooledItemSourceFactory.class)).configuredWriter();
     }
 

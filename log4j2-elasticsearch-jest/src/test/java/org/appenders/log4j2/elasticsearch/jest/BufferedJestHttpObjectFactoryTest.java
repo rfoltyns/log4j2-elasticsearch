@@ -32,6 +32,7 @@ import io.searchbox.core.Bulk;
 import io.searchbox.core.BulkResult;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
@@ -194,7 +195,8 @@ public class BufferedJestHttpObjectFactoryTest {
                 .withDefaultMaxTotalConnectionPerRoute(TEST_DEFAULT_MAX_TOTAL_CONNECTIONS_PER_ROUTE)
                 .withDiscoveryEnabled(TEST_DISCOVERY_ENABLED)
                 .withIoThreadCount(TEST_IO_THREAD_COUNT)
-                .withMappingType(TEST_MAPPING_TYPE);
+                .withMappingType(TEST_MAPPING_TYPE)
+                .withDataStreamsEnabled(true);
 
         // when
         ClientObjectFactory<JestClient, Bulk> config = builder.build();
@@ -214,6 +216,8 @@ public class BufferedJestHttpObjectFactoryTest {
                 PowerMockito.field(config.getClass(), "ioThreadCount").get(config));
         assertEquals(TEST_MAPPING_TYPE,
                 PowerMockito.field(config.getClass(), "mappingType").get(config));
+        assertEquals(true,
+                PowerMockito.field(config.getClass(), "dataStreamsEnabled").get(config));
         assertEquals(TEST_MIXINS,
                 PowerMockito.field(config.getClass(), "mixIns").get(config));
 
@@ -237,6 +241,53 @@ public class BufferedJestHttpObjectFactoryTest {
     }
 
     @Test
+    public void dataStreamsCapableBatchOperationsIsCreatedIfDataStreamsConfigured() {
+
+        // given
+        final BufferedJestHttpObjectFactory factory = (BufferedJestHttpObjectFactory) createTestObjectFactoryBuilder()
+                .withDataStreamsEnabled(true)
+                .build();
+
+        final String expectedIndexName = UUID.randomUUID().toString();
+        final String payload1 = "test1";
+        final ItemSource<ByteBuf> source1 = createDefaultTestBufferedItemSource(payload1);
+
+        // then
+        final BatchOperations<Bulk> batchOperations = factory.createBatchOperations();
+        final BufferedIndex index = (BufferedIndex) batchOperations.createBatchItem(expectedIndexName, source1);
+        final BatchBuilder<Bulk> batchBuilder = batchOperations.createBatchBuilder();
+        batchBuilder.add(index);
+        final BufferedBulk bulk = (BufferedBulk) batchBuilder.build();
+
+        // then
+        assertEquals(expectedIndexName + "/_bulk", bulk.getURI());
+
+    }
+
+    @Test
+    public void defaultBatchOperationsIsCreatedIfDataStreamsNotConfigured() {
+
+        // given
+        final BufferedJestHttpObjectFactory factory = createTestObjectFactoryBuilder()
+                .build();
+
+        final String expectedIndexName = UUID.randomUUID().toString();
+        final String payload1 = "test1";
+        final ItemSource<ByteBuf> source1 = createDefaultTestBufferedItemSource(payload1);
+
+        // then
+        final BatchOperations<Bulk> batchOperations = factory.createBatchOperations();
+        final BufferedIndex index = (BufferedIndex) batchOperations.createBatchItem(expectedIndexName, source1);
+        final BatchBuilder<Bulk> batchBuilder = batchOperations.createBatchBuilder();
+        batchBuilder.add(index);
+        final BufferedBulk bulk = (BufferedBulk) batchBuilder.build();
+
+        // then
+        assertEquals("/_bulk", bulk.getURI());
+
+    }
+
+    @Test
     public void failureHandlerExecutesFailoverForEachBatchItemSeparately() {
 
         // given
@@ -247,8 +298,8 @@ public class BufferedJestHttpObjectFactoryTest {
 
         String payload1 = "test1";
         String payload2 = "test2";
-        ItemSource<ByteBuf> source1 = createDefaultTestBuffereItemSource(payload1);
-        ItemSource<ByteBuf> source2 = createDefaultTestBuffereItemSource(payload2);
+        ItemSource<ByteBuf> source1 = createDefaultTestBufferedItemSource(payload1);
+        ItemSource<ByteBuf> source2 = createDefaultTestBufferedItemSource(payload2);
         Bulk bulk = createTestBatch(source1, source2);
 
         // when
@@ -278,8 +329,8 @@ public class BufferedJestHttpObjectFactoryTest {
         FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
         Function<Bulk, Boolean> listener = config.createBatchListener(failoverPolicy);
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
         Bulk bulk = createTestBatch(payload1, payload2);
 
         // when
@@ -299,8 +350,8 @@ public class BufferedJestHttpObjectFactoryTest {
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         BufferedJestHttpObjectFactory config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
         Bulk bulk = createTestBatch(payload1, payload2);
 
         Function<Bulk, Boolean> failoverHandler = mock(Function.class);
@@ -327,8 +378,8 @@ public class BufferedJestHttpObjectFactoryTest {
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         BufferedJestHttpObjectFactory config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
         Bulk bulk = createTestBatch(payload1, payload2);
 
         Function<Bulk, Boolean> failoverHandler = mock(Function.class);
@@ -351,8 +402,8 @@ public class BufferedJestHttpObjectFactoryTest {
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         BufferedJestHttpObjectFactory config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-        ItemSource<ByteBuf> payload2 = createDefaultTestBuffereItemSource("test2");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
+        ItemSource<ByteBuf> payload2 = createDefaultTestBufferedItemSource("test2");
 
         Bulk bulk = createTestBatch(payload1, payload2);
 
@@ -378,8 +429,7 @@ public class BufferedJestHttpObjectFactoryTest {
         BufferedJestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder();
         BufferedJestHttpObjectFactory objectFactory = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
-
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
 
         Function<Bulk, Boolean> failoverHandler = objectFactory.createFailureHandler(failedPayload -> {
             throw new ClassCastException("test exception");
@@ -406,7 +456,7 @@ public class BufferedJestHttpObjectFactoryTest {
 
         JestHttpObjectFactory config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
         Bulk bulk = createTestBatch(payload1);
 
         FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
@@ -434,7 +484,7 @@ public class BufferedJestHttpObjectFactoryTest {
 
         BufferedJestHttpObjectFactory config = spy(builder.build());
 
-        ItemSource<ByteBuf> payload1 = createDefaultTestBuffereItemSource("test1");
+        ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
         Bulk bulk = createTestBatch(payload1);
 
         FailoverPolicy failoverPolicy = mock(FailoverPolicy.class);
@@ -452,7 +502,7 @@ public class BufferedJestHttpObjectFactoryTest {
 
     }
 
-    private ItemSource<ByteBuf> createDefaultTestBuffereItemSource(String payload) {
+    private ItemSource<ByteBuf> createDefaultTestBufferedItemSource(String payload) {
         CompositeByteBuf buffer = createDefaultTestByteBuf();
         buffer.writeBytes(payload.getBytes());
         return createTestItemSource(buffer, source -> {});
@@ -594,13 +644,13 @@ public class BufferedJestHttpObjectFactoryTest {
     }
 
     private Bulk createTestBatch(ItemSource<ByteBuf>... payloads) {
-        BufferedBulk.Builder builder = spy(new BufferedBulk.Builder());
+        BufferedBulk.Builder builder = new BufferedBulk.Builder();
         builder.withBuffer(createTestItemSource(createDefaultTestByteBuf(), source -> {}));
         builder.withObjectWriter(mock(ObjectWriter.class));
         builder.withObjectReader(mock(ObjectReader.class));
 
         for (ItemSource<ByteBuf> payload : payloads) {
-            builder.addAction(spy(new BufferedIndex.Builder(payload)).build());
+            builder.addAction(new BufferedIndex.Builder(payload).build());
         }
         return spy(builder.build());
     }

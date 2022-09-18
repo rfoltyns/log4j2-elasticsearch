@@ -81,6 +81,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final boolean discoveryEnabled;
     private final Auth<io.searchbox.client.config.HttpClientConfig.Builder> auth;
     protected final String mappingType;
+    protected final boolean dataStreamsEnabled;
     protected final FailedItemOps<AbstractDocumentTargetedAction<DocumentResult>> failedItemOps;
     protected final BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy;
 
@@ -99,6 +100,7 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.discoveryEnabled = builder.discoveryEnabled;
         this.auth = builder.auth;
         this.mappingType = builder.mappingType;
+        this.dataStreamsEnabled = builder.dataStreamsEnabled;
         this.failedItemOps = builder.failedItemOps;
         this.backoffPolicy = builder.backoffPolicy;
         this.valueResolver = builder.valueResolver;
@@ -205,6 +207,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
+        if (dataStreamsEnabled) {
+            return new JestBulkOperations(true);
+        }
         return new JestBulkOperations(mappingType);
     }
 
@@ -311,6 +316,9 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         @PluginBuilderAttribute
         protected String mappingType = DEFAULT_MAPPING_TYPE;
 
+        @PluginBuilderAttribute
+        protected Boolean dataStreamsEnabled = Boolean.FALSE;
+
         @PluginElement("backoffPolicy")
         protected BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = DEFAULT_BACKOFF_POLICY;
 
@@ -403,6 +411,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
+            return this;
+        }
+
+        public Builder withDataStreamsEnabled(final boolean dataStreamsEnabled) {
+            this.dataStreamsEnabled = dataStreamsEnabled;
             return this;
         }
 

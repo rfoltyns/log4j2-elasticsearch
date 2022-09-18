@@ -4,7 +4,7 @@
 
     <Appenders>
         <Elasticsearch name="${sys:smokeTest.appenderName:-elasticsearch-appender}">
-            <IndexName indexName="log4j2-elasticsearch-jest" />
+            <IndexName indexName="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}" />
             <ThresholdFilter level="INFO" onMatch="ACCEPT"/>
             <JacksonJsonLayout>
                 <VirtualProperty name="field1" value="$${ctx:ctxVariable:-}" dynamic="true" />
@@ -20,15 +20,17 @@
                 </PooledItemSourceFactory>
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="${sys:smokeTest.batchSize:-10000}"
-                                deliveryInterval="10000" >
-                <IndexTemplate name="log4j2-elasticsearch-jest" path="classpath:indexTemplate-7.json" />
-                <ILMPolicy name="log4j2-elasticsearch-jest-ilm-policy" rolloverAlias="log4j2-elasticsearch-jest" path="classpath:ilmPolicy-7.json" />
+                                deliveryInterval="5000" >
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}-mappings" path="classpath:componentTemplate-7-mappings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}-settings" path="classpath:componentTemplate-7-settings.json" />
+                <ComponentTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}-settings-ilm" path="classpath:componentTemplate-7-settings-ilm.json" />
+                <IndexTemplate name="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}" path="classpath:composableIndexTemplate-7.json" />
+                <ILMPolicy name="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}-ilm-policy" rolloverAlias="${sys:smokeTest.indexName:-log4j2-elasticsearch-jest}" path="classpath:ilmPolicy-7.json" />
                 <JestBufferedHttp serverUris="https://localhost:9200"
                     connTimeout="500"
                     readTimeout="30000"
                     maxTotalConnection="40"
-                    defaultMaxTotalConnectionPerRoute="8"
-                    mappingType="_doc">
+                    defaultMaxTotalConnectionPerRoute="8">
                     <PooledItemSourceFactory poolName="batchPool"
                                              itemSizeInBytes="5120000"
                                              initialPoolSize="${sys:smokeTest.initialBatchPoolSize:-4}"
@@ -67,6 +69,7 @@
         <AsyncLogger name="${sys:smokeTest.loggerName:-elasticsearch-logger}" level="info" additivity="false">
             <AppenderRef ref="${sys:smokeTest.appenderName:-elasticsearch-appender}" />
         </AsyncLogger>
+        <Root level="${sys:log4j2.level:-info}" />
     </Loggers>
 
 </Configuration>

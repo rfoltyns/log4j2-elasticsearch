@@ -47,6 +47,7 @@ public class BufferedBulk extends Bulk {
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
     private final ItemSource<ByteBuf> bulkSource;
+    private final boolean dataStreamsEnabled;
 
     protected final Collection<BulkableAction> actions;
 
@@ -56,6 +57,7 @@ public class BufferedBulk extends Bulk {
         this.objectWriter = builder.objectWriter;
         this.objectReader = builder.objectReader;
         this.bulkSource = builder.bufferedSource;
+        this.dataStreamsEnabled = builder.dataStreamsEnabled;
     }
 
     public BufferedBulkResult deserializeResponse(InputStream responseBody) throws IOException {
@@ -95,6 +97,19 @@ public class BufferedBulk extends Bulk {
     }
 
     public String getURI() {
+
+        if (dataStreamsEnabled) {
+
+            //noinspection rawtypes
+            final BulkableAction sameItem = getSameItem(actions);
+            if (sameItem == null) {
+                throw new IllegalArgumentException("Unable to derive index name from empty batch");
+            }
+            //noinspection ConstantConditions
+            return sameItem.getIndex() + BULK_URI;
+
+        }
+
         return BULK_URI;
     }
 
@@ -147,6 +162,7 @@ public class BufferedBulk extends Bulk {
         private ItemSource<ByteBuf> bufferedSource;
         private ObjectWriter objectWriter;
         private ObjectReader objectReader;
+        private boolean dataStreamsEnabled;
 
         @Override
         public Bulk.Builder addAction(BulkableAction action) {
@@ -192,5 +208,11 @@ public class BufferedBulk extends Bulk {
             return this;
         }
 
+        public Builder withDataStreamsEnabled(final boolean dataStreamsEnabled) {
+            this.dataStreamsEnabled = dataStreamsEnabled;
+            return this;
+        }
+
     }
+
 }

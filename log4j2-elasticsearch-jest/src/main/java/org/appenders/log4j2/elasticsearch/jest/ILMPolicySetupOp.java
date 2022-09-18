@@ -30,7 +30,9 @@ import org.appenders.log4j2.elasticsearch.SkippingSetupStepChain;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ILMPolicySetupOp implements OperationFactory {
 
@@ -38,29 +40,32 @@ public class ILMPolicySetupOp implements OperationFactory {
     private final ValueResolver valueResolver;
 
     public ILMPolicySetupOp(
-            StepProcessor<SetupStep<GenericJestRequest, JestResult>> stepProcessor,
-            ValueResolver valueResolver) {
+            final StepProcessor<SetupStep<GenericJestRequest, JestResult>> stepProcessor,
+            final ValueResolver valueResolver) {
         this.stepProcessor = stepProcessor;
         this.valueResolver = valueResolver;
     }
 
 
     @Override
-    public <T extends OpSource> Operation create(T opSource) {
+    public <T extends OpSource> Operation create(final T opSource) {
 
-        ILMPolicy ilmPolicy = (ILMPolicy)opSource;
+        final ILMPolicy ilmPolicy = (ILMPolicy)opSource;
+        final List<SetupStep<GenericJestRequest, JestResult>> setupSteps = new ArrayList<>();
 
-        SetupStep<GenericJestRequest, JestResult>
-                hasBootstrapIndex = new CheckBootstrapIndex(ilmPolicy.getRolloverAlias());
+        if (ilmPolicy.isCreateBootstrapIndex()) {
 
-        SetupStep<GenericJestRequest, JestResult>
-                createBootstrapIndex = new CreateBootstrapIndex(ilmPolicy.getRolloverAlias());
+            setupSteps.add(new CheckBootstrapIndex(ilmPolicy.getRolloverAlias()));
+            setupSteps.add(new CreateBootstrapIndex(ilmPolicy.getRolloverAlias()));
 
-        SetupStep<GenericJestRequest, JestResult> updateIlmPolicy = new PutILMPolicy(
+        }
+
+        final SetupStep<GenericJestRequest, JestResult> updateIlmPolicy = new PutILMPolicy(
                 ilmPolicy.getName(),
                 valueResolver.resolve(ilmPolicy.getSource()));
+        setupSteps.add(updateIlmPolicy);
 
-        return new SkippingSetupStepChain<>(Arrays.asList(hasBootstrapIndex, createBootstrapIndex, updateIlmPolicy), stepProcessor);
+        return new SkippingSetupStepChain<>(setupSteps, stepProcessor);
 
     }
 }

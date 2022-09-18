@@ -189,6 +189,49 @@ public class BufferedBulkTest {
         verify(writer, times(2)).writeValue((OutputStream)any(), captor.capture());
         List<BufferedIndex> allValues = captor.getAllValues();
         assertEquals(2, allValues.size());
+        assertEquals(2, bulk.getActions().size());
+        assertEquals(index1, allValues.get(0).getIndex());
+        assertEquals(index2, allValues.get(1).getIndex());
+
+    }
+
+    @Test
+    public void canSerializeBulk() throws IOException {
+
+        // given
+        ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
+
+        ItemSource<ByteBuf> source1 = createTestItemSource();
+        String index1 = UUID.randomUUID().toString();
+        BulkableAction action1 = new BufferedIndex.Builder(source1)
+                .index(index1)
+                .build();
+
+        ItemSource<ByteBuf> source2 = createTestItemSource();
+        String index2 = UUID.randomUUID().toString();
+        BulkableAction action2 = new BufferedIndex.Builder(source2)
+                .index(index2)
+                .build();
+
+        BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
+                .withObjectWriter(writer)
+                .withObjectReader(mock(ObjectReader.class))
+                .withBuffer(createTestItemSource())
+                .addAction(action1)
+                .addAction(action2)
+                .build();
+
+        // when
+        bulk.serializeRequest();
+
+        // then
+        assertEquals("/_bulk", bulk.getURI());
+        assertFalse(bulk.getURI().contains(index1));
+        assertFalse(bulk.getURI().contains(index2));
+        ArgumentCaptor<BufferedIndex> captor = ArgumentCaptor.forClass(BufferedIndex.class);
+        verify(writer, times(2)).writeValue((OutputStream)any(), captor.capture());
+        List<BufferedIndex> allValues = captor.getAllValues();
+        assertEquals(2, allValues.size());
         assertEquals(index1, allValues.get(0).getIndex());
         assertEquals(index2, allValues.get(1).getIndex());
 
@@ -223,12 +266,75 @@ public class BufferedBulkTest {
         bulk.serializeRequest();
 
         // then
+        assertEquals("/_bulk", bulk.getURI());
         ArgumentCaptor<BufferedIndex> captor = ArgumentCaptor.forClass(BufferedIndex.class);
         verify(writer, times(1)).writeValueAsBytes(captor.capture());
 
         List<BufferedIndex> allValues = captor.getAllValues();
         assertEquals(1, allValues.size());
         assertEquals(index, allValues.get(0).getIndex());
+
+    }
+
+    @Test
+    public void canSerializeDataStreamBulk() throws IOException {
+
+        // given
+        ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
+
+        ItemSource<ByteBuf> source1 = createTestItemSource();
+        String index = UUID.randomUUID().toString();
+        BulkableAction action1 = new BufferedIndex.Builder(source1)
+                .index(index)
+                .build();
+
+        ItemSource<ByteBuf> source2 = createTestItemSource();
+        BulkableAction action2 = new BufferedIndex.Builder(source2)
+                .index(index)
+                .build();
+
+        BufferedBulk bulk = (BufferedBulk) new BufferedBulk.Builder()
+                .withDataStreamsEnabled(true)
+                .withObjectWriter(writer)
+                .withObjectReader(mock(ObjectReader.class))
+                .withBuffer(createTestItemSource())
+                .addAction(action1)
+                .addAction(action2)
+                .build();
+
+        // when
+        bulk.serializeRequest();
+
+        // then
+        assertTrue(bulk.getURI().endsWith(index + "/_bulk"));
+        ArgumentCaptor<BufferedIndex> captor = ArgumentCaptor.forClass(BufferedIndex.class);
+        verify(writer, times(1)).writeValueAsBytes(captor.capture());
+
+        List<BufferedIndex> allValues = captor.getAllValues();
+        assertEquals(1, allValues.size());
+        assertEquals(index, allValues.get(0).getIndex());
+
+    }
+
+    @Test
+    public void throwsIfCannotDeriveIndexOnGetURI() throws IOException {
+
+        // given
+        ObjectWriter writer = spy(new ObjectMapper().writerFor(BufferedIndex.class));
+
+        BufferedBulk bulk = new BufferedBulk.Builder()
+                .withDataStreamsEnabled(true)
+                .withObjectWriter(writer)
+                .withObjectReader(mock(ObjectReader.class))
+                .withBuffer(createTestItemSource())
+                .build();
+
+        // when
+        bulk.serializeRequest();
+        final IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, bulk::getURI);
+
+        // then
+        assertThat(exception.getMessage(), containsString("Unable to derive index name from empty batch"));
 
     }
 

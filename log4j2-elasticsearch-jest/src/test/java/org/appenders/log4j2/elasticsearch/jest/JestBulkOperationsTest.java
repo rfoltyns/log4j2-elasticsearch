@@ -25,6 +25,7 @@ import io.searchbox.action.AbstractAction;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
 import io.searchbox.core.JestBatchIntrospector;
+import io.searchbox.params.Parameters;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
@@ -32,6 +33,7 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
 import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTestStringItemSource;
@@ -40,6 +42,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -140,6 +143,42 @@ public class JestBulkOperationsTest {
 
         // then
         assertEquals(expectedMappingType, type);
+
+    }
+
+    @Test
+    public void setsDefaultOpType() {
+
+        // given
+        final BatchOperations<Bulk> bulkOperations = new JestBulkOperations();
+
+        final String testPayload = "{ \"testfield\": \"testvalue\" }";
+        final StringItemSource itemSource = spy(createTestStringItemSource(testPayload));
+        final Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        final Collection<Object> params = item.getParameter(Parameters.OP_TYPE);
+
+        // then
+        assertTrue(params.contains("index"));
+
+    }
+
+    @Test
+    public void enablingDataStreamsSetsOpType() {
+
+        // given
+        final BatchOperations<Bulk> bulkOperations = new JestBulkOperations(true);
+
+        final String testPayload = "{ \"testfield\": \"testvalue\" }";
+        final StringItemSource itemSource = spy(createTestStringItemSource(testPayload));
+        final Index item = (Index) bulkOperations.createBatchItem("testIndex", itemSource);
+
+        // when
+        final Collection<Object> params = item.getParameter(Parameters.OP_TYPE);
+
+        // then
+        assertTrue(params.contains("create"));
 
     }
 

@@ -1,0 +1,12 @@
+{
+  "index_patterns": [
+    "${sys:smokeTest.indexName}*"
+  ],
+  "data_stream": {},
+  "priority": 500,
+  "composed_of": [
+    "${sys:smokeTest.indexName}-settings",
+    "${sys:smokeTest.indexName}-settings-ilm",
+    "${sys:smokeTest.indexName}-mappings"
+  ]
+}

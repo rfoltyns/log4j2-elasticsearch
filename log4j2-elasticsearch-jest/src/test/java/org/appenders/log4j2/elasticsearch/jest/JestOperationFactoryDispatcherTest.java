@@ -24,6 +24,8 @@ import io.searchbox.action.GenericJestRequestIntrospector;
 import io.searchbox.client.JestResult;
 import org.appenders.log4j2.elasticsearch.ComponentTemplate;
 import org.appenders.log4j2.elasticsearch.ComponentTemplateTest;
+import org.appenders.log4j2.elasticsearch.DataStream;
+import org.appenders.log4j2.elasticsearch.DataStreamPlugin;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.ILMPolicyPluginTest;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
@@ -42,14 +44,16 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class JestOperationFactoryDispatcherTest {
 
     @Test
-    public void canProduceComponentTemplateSetupOp() throws Exception {
+    public void supportsComponentTemplate() throws Exception {
 
         // given
         String expectedName = UUID.randomUUID().toString();
@@ -85,7 +89,7 @@ public class JestOperationFactoryDispatcherTest {
     }
 
     @Test
-    public void canProduceIndexTemplateSetupOp() throws Exception {
+    public void supportsIndexTemplate() throws Exception {
 
         // given
         String expectedName = UUID.randomUUID().toString();
@@ -121,7 +125,7 @@ public class JestOperationFactoryDispatcherTest {
     }
 
     @Test
-    public void canProduceILMPolicySetupOp() throws Exception {
+    public void supportsILMPolicy() throws Exception {
 
         // given
         String expectedName = UUID.randomUUID().toString();
@@ -169,6 +173,76 @@ public class JestOperationFactoryDispatcherTest {
         String source = GenericJestRequestIntrospector.getPayload(putIlmPolicy.createRequest());
         assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"), source);
         assertEquals("_ilm/policy/" + expectedName, putIlmPolicy.createRequest().buildURI());
+
+    }
+
+    @Test
+    public void supportsNonBootstrappingILMPolicy() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        ILMPolicy ilmPolicy = ILMPolicyPluginTest.createTestILMPolicyPluginBuilder()
+                .withName(expectedName)
+                .withCreateBootstrapIndex(false)
+                .build();
+
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        String expectedResolvedValue = UUID.randomUUID().toString();
+        ValueResolver valueResolver = mock(ValueResolver.class);
+        when(valueResolver.resolve(anyString())).thenReturn(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"));
+
+        JestOperationFactoryDispatcher ops = new JestOperationFactoryDispatcher(stepProcessor, valueResolver);
+
+        // when
+        Operation result = ops.create(ilmPolicy);
+        result.execute();
+
+        // then
+        assertEquals(1, stepProcessor.requests.size());
+
+        SetupStep<GenericJestRequest, JestResult> putIlmPolicy = stepProcessor.requests.get(0);
+        assertTrue(putIlmPolicy instanceof PutILMPolicy);
+
+        assertEquals(expectedName, ((PutILMPolicy) putIlmPolicy).name);
+        String source = GenericJestRequestIntrospector.getPayload(putIlmPolicy.createRequest());
+        assertEquals(String.format("%s%s%s", "test", expectedResolvedValue, "ilmPolicy"), source);
+        assertEquals("_ilm/policy/" + expectedName, putIlmPolicy.createRequest().buildURI());
+
+    }
+
+    @Test
+    public void supportsDataStream() throws Exception {
+
+        // given
+        String expectedName = UUID.randomUUID().toString();
+        DataStream dataStream = DataStreamPlugin.newBuilder()
+                .withName(expectedName)
+                .build();
+
+        CapturingStepProcessor stepProcessor = new CapturingStepProcessor();
+
+        ValueResolver valueResolver = mock(ValueResolver.class);
+
+        JestOperationFactoryDispatcher ops = new JestOperationFactoryDispatcher(stepProcessor, valueResolver);
+
+        // when
+        Operation result = ops.create(dataStream);
+        result.execute();
+
+        // then
+        SetupStep<GenericJestRequest, JestResult> checkDataStream = stepProcessor.requests.get(0);
+        assertTrue(checkDataStream instanceof CheckDataStream);
+        assertEquals("_data_stream/" + expectedName, checkDataStream.createRequest().buildURI());
+
+        SetupStep<GenericJestRequest, JestResult> createDataStream = stepProcessor.requests.get(1);
+        assertTrue(createDataStream instanceof CreateDataStream);
+
+        String createDataStreamSource = GenericJestRequestIntrospector.getPayload(createDataStream.createRequest());
+
+        assertNull(createDataStreamSource);
+        assertEquals(expectedName, ((CreateDataStream) createDataStream).name);
+        assertEquals("_data_stream/" + expectedName, createDataStream.createRequest().buildURI());
 
     }
 

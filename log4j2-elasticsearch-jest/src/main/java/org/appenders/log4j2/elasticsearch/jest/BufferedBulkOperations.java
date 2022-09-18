@@ -53,6 +53,7 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
      * {@code null} since 1.6
      */
     private final String mappingType;
+    private final boolean dataStreamsEnabled;
     private final JacksonMixIn[] mixIns;
     private final ObjectWriter objectWriter;
     private final ObjectReader objectReader;
@@ -65,6 +66,16 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
     public BufferedBulkOperations(PooledItemSourceFactory pooledItemSourceFactory, JacksonMixIn[] mixIns, String mappingType) {
         this.pooledItemSourceFactory = pooledItemSourceFactory;
         this.mappingType = mappingType;
+        this.dataStreamsEnabled = false;
+        this.mixIns = mixIns;
+        this.objectWriter = configuredWriter();
+        this.objectReader = configuredReader();
+    }
+
+    public BufferedBulkOperations(PooledItemSourceFactory pooledItemSourceFactory, JacksonMixIn[] mixIns, boolean dataStreamsEnabled) {
+        this.pooledItemSourceFactory = pooledItemSourceFactory;
+        this.mappingType = null;
+        this.dataStreamsEnabled = dataStreamsEnabled;
         this.mixIns = mixIns;
         this.objectWriter = configuredWriter();
         this.objectReader = configuredReader();
@@ -88,6 +99,7 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
         return new BatchBuilder<Bulk>() {
 
             private final BufferedBulk.Builder builder = new BufferedBulk.Builder()
+                    .withDataStreamsEnabled(dataStreamsEnabled)
                     .withBuffer(pooledItemSourceFactory.createEmptySource())
                     .withObjectWriter(objectWriter)
                     .withObjectReader(objectReader);
@@ -113,7 +125,7 @@ public class BufferedBulkOperations implements BatchOperations<Bulk> {
         ObjectMapper objectMapper = new ExtendedObjectMapper(new JsonFactory())
                 .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
                 .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                .addMixIn(BufferedIndex.class, BulkableActionMixIn.class);
+                .addMixIn(BufferedIndex.class, dataStreamsEnabled ? DataStreamBulkableActionMixIn.class : BulkableActionMixIn.class);
 
         for (JacksonMixIn mixIn: mixIns) {
             objectMapper.addMixIn(mixIn.getTargetClass(), mixIn.getMixInClass());

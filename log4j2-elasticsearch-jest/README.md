@@ -51,7 +51,25 @@ Add this snippet to `log4j2.xml` configuration:
 | discoveryEnabled                  | Attribute | no       | false                       | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes. |
 | ioThreadCount                     | Attribute | no       | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                          |
 | mappingType                       | Attribute | no       | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch 7.x and older. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html).    |
+| dataStreamsEnabled                | Attribute | no       | false                       | If `true`, serialized index requests will be compatible with [Elasticsearch Data Streams API](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)             |
 | auth                              | Element   | no       | None                        | Security config. [XPackAuth](#pem-cert-config)                                                                                                                                               |
+
+If `dataStreamsEnabled` and `JacksonJsonLayout` is used, use [LogEventDataStreamMixIn](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/json/jackson/LogEventDataStreamMixIn.java) or equivalent to serialize `LogEvent.timeMillis` as `@timestamp`.
+
+```xml
+<Appenders>
+    <Elasticsearch name="elasticsearchAsyncBatch">
+        <JacksonJsonLayout>
+            <JacksonMixIn targetClass="org.apache.logging.log4j.core.LogEvent"
+                          mixInClass="org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn" />
+        </JacksonJsonLayout>
+        <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
+            <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
+            <JestHttp serverUris="http://localhost:9200" dataStreamsEnabled="true" />
+        </AsyncBatchDelivery>
+    </Elasticsearch>
+</Appenders>
+```
 
 ### Buffered HTTP
 

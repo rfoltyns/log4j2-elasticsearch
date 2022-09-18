@@ -29,10 +29,12 @@ import io.searchbox.client.JestResultHandler;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.BulkResult;
 import io.searchbox.core.Index;
+import io.searchbox.params.Parameters;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
 import org.appenders.log4j2.elasticsearch.Auth;
+import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
@@ -42,6 +44,7 @@ import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
 import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.OperationFactory;
+import org.appenders.log4j2.elasticsearch.StringItemSource;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
@@ -646,6 +649,42 @@ public class JestHttpObjectFactoryTest {
 
         // then
         assertSame(operationFactory1, operationFactory2);
+
+    }
+
+    @Test
+    public void batchOperationsProduceDataStreamItemsIfDataStreamsConfigured() {
+
+        // given
+        final JestHttpObjectFactory factory = createTestObjectFactoryBuilder()
+                .withDataStreamsEnabled(true)
+                .build();
+        final BatchOperations<Bulk> batchOperations = factory.createBatchOperations();
+
+        // when
+        final Index item = (Index) batchOperations.createBatchItem("test-target", new StringItemSource("test"));
+
+        // then
+        final Collection<Object> params = item.getParameter(Parameters.OP_TYPE);
+        assertTrue(params.contains("create"));
+
+    }
+
+    @Test
+    public void batchOperationsProducesDefaultBatchItemsIfDataStreamsNotConfigured() {
+
+        // given
+        final JestHttpObjectFactory factory = createTestObjectFactoryBuilder()
+                .withDataStreamsEnabled(false)
+                .build();
+        final BatchOperations<Bulk> batchOperations = factory.createBatchOperations();
+
+        // when
+        final Index item = (Index) batchOperations.createBatchItem("test-target", new StringItemSource("test"));
+
+        // then
+        final Collection<Object> params = item.getParameter(Parameters.OP_TYPE);
+        assertTrue(params.contains("index"));
 
     }
 

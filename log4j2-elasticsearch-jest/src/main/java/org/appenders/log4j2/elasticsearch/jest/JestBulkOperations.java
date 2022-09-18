@@ -24,6 +24,7 @@ package org.appenders.log4j2.elasticsearch.jest;
 import io.searchbox.action.BulkableAction;
 import io.searchbox.core.Bulk;
 import io.searchbox.core.Index;
+import io.searchbox.params.Parameters;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
 import org.appenders.log4j2.elasticsearch.BatchOperations;
@@ -37,29 +38,38 @@ public class JestBulkOperations implements BatchOperations<Bulk> {
      * {@code null} since 1.6
      */
     private final String mappingType;
+    private final String opType;
 
     public JestBulkOperations() {
-        this.mappingType = DEFAULT_MAPPING_TYPE;
+        this(false);
     }
 
-    public JestBulkOperations(String mappingType) {
+    public JestBulkOperations(final String mappingType) {
         this.mappingType = mappingType;
+        this.opType = "index";
+    }
+
+    public JestBulkOperations(final boolean dataStreamsEnabled) {
+        this.mappingType = null;
+        this.opType = dataStreamsEnabled ? "create" : "index";
     }
 
     @Override
-    public Object createBatchItem(String indexName, Object source) {
+    public Object createBatchItem(final String indexName, final Object source) {
         return new Index.Builder(source)
                 .index(indexName)
                 .type(mappingType)
+                .setParameter(Parameters.OP_TYPE, opType)
                 .build();
     }
 
     @Override
-    public Object createBatchItem(String indexName, ItemSource source) {
+    public Object createBatchItem(final String indexName, final ItemSource source) {
         if (source.getSource() instanceof String) {
             return new Index.Builder(source.getSource())
                     .index(indexName)
                     .type(mappingType)
+                    .setParameter(Parameters.OP_TYPE, opType)
                     .build();
         }
         throw new ConfigurationException("Non String payloads are not supported by this factory. Make sure that proper ClientObjectFactory implementation is configured");

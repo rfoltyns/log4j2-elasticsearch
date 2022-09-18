@@ -83,6 +83,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
     @Override
     public BatchOperations<Bulk> createBatchOperations() {
+        if (dataStreamsEnabled) {
+            return new BufferedBulkOperations(itemSourceFactory, mixIns, true);
+        }
         return new BufferedBulkOperations(itemSourceFactory, mixIns, mappingType);
     }
 
