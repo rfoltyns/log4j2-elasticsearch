@@ -31,7 +31,6 @@ import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class ILMPolicySetupOp implements OperationFactory {
