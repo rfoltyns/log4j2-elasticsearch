@@ -36,12 +36,15 @@ import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
+import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.JacksonMixInPlugin;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.BufferedHttpFailedItemOps;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.util.function.Function;
 
@@ -67,8 +70,16 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
     @Override
     public Function<Bulk, Boolean> createFailureHandler(FailoverPolicy failover) {
         return bulk -> {
-            BufferedBulk bufferedBulk = (BufferedBulk)bulk;
-            getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s", bufferedBulk.getActions().size(), failover.getClass().getName()));
+
+            final long start = System.currentTimeMillis();
+            final BufferedBulk bufferedBulk = (BufferedBulk)bulk;
+
+            metrics.batchFailed();
+            final int batchSize = bufferedBulk.getActions().size();
+            metrics.itemsFailed(batchSize);
+
+            getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s", batchSize, failover.getClass().getName()));
+
             try {
                 bufferedBulk.getActions().stream()
                         .map(item -> failedItemOps.createItem((BufferedIndex) item))
@@ -77,7 +88,10 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
             } catch (Exception e) {
                 getLogger().error("Unable to execute failover", e);
                 return false;
+            } finally {
+                metrics.failoverTookMs(System.currentTimeMillis() - start);
             }
+
         };
     }
 
@@ -97,7 +111,9 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
                 backoffPolicy.deregister(bulk);
 
-                if (!result.isSucceeded()) {
+                if (result.isSucceeded()) {
+                    metrics.itemsDelivered(getBatchSize(bulk));
+                } else {
                     getLogger().warn(result.getErrorMessage());
                     // TODO: filter only failed items when retry is ready.
                     // failing whole bulk for now
@@ -117,6 +133,11 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
         };
     }
 
+    @Override
+    int getBatchSize(final Bulk bulk) {
+        return ((BufferedBulk)bulk).getActions().size();
+    }
+
     @PluginBuilderFactory
     public static Builder newBuilder() {
         return new Builder();
@@ -134,6 +155,18 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
         };
     }
 
+    @Override
+    public void register(MetricsRegistry registry) {
+        super.register(registry);
+        Measured.of(itemSourceFactory).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        super.deregister();
+        Measured.of(itemSourceFactory).deregister();
+    }
+
     public static class Builder extends JestHttpObjectFactory.Builder {
 
         @PluginElement(ItemSourceFactory.ELEMENT_TYPE)
@@ -141,6 +174,10 @@ public class BufferedJestHttpObjectFactory extends JestHttpObjectFactory {
 
         @PluginElement(JacksonMixInPlugin.ELEMENT_TYPE)
         private JacksonMixIn[] mixIns = new JacksonMixIn[0];
+
+        public Builder() {
+            metricsFactory.configure(GenericItemSourcePool.metricConfigs(false));
+        }
 
         @Override
         public BufferedJestHttpObjectFactory build() {

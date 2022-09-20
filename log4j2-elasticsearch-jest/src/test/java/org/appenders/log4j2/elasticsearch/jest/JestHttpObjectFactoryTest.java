@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.jest;
  */
 
 
+import edu.emory.mathcs.backport.java.util.Arrays;
 import io.searchbox.action.AbstractAction;
 import io.searchbox.action.Action;
 import io.searchbox.client.JestClient;
@@ -49,6 +50,13 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.jest.JestHttpObjectFactory.Builder;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -74,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -301,8 +310,8 @@ public class JestHttpObjectFactoryTest {
     public void failureHandlerExecutesFailoverForEachBatchItemSeparately() {
 
         // given
-        Builder builder = createTestObjectFactoryBuilder();
-        ClientObjectFactory<JestClient, Bulk> config = builder.build();
+        final Builder builder = createTestObjectFactoryBuilder();
+        final ClientObjectFactory<JestClient, Bulk> config = builder.build();
 
         FailoverPolicy failoverPolicy = Mockito.spy(new NoopFailoverPolicy());
 
@@ -770,6 +779,399 @@ public class JestHttpObjectFactoryTest {
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
 
+    }
+
+    // =======
+    // METRICS
+    // =======
+
+    @Test
+    public void registersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "itemsSent", "noop");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "itemsDelivered", "noop");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "itemsFailed", "noop");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "backoffApplied", "noop");
+        final Metric.Key expectedKey6 = new Metric.Key(expectedComponentName, "batchesFailed", "noop");
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "failoverTookMs", "noop");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withName(expectedComponentName);
+
+        final JestHttpObjectFactory config = spy(builder.build());
+
+        // when
+        config.register(registry);
+
+        // then
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey2)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey3)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey4)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey6)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1)).size());
+
+    }
+
+    @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "failoverTookMs", "noop");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "itemsSent", "noop");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "itemsDelivered", "noop");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "itemsFailed", "noop");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "backoffApplied", "noop");
+        final Metric.Key expectedKey6 = new Metric.Key(expectedComponentName, "batchesFailed", "noop");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withName(expectedComponentName);
+
+        final JestHttpObjectFactory config = spy(builder.build());
+        config.register(registry);
+
+        // when
+        config.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey2)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey3)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey4)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey6)).size());
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1)).size());
+
+    }
+
+    @Test
+    public void enablesAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "failoverTookMs", "max");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "itemsSent", "count");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "itemsDelivered", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "itemsFailed", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "backoffApplied", "count");
+        final Metric.Key expectedKey6 = new Metric.Key(expectedComponentName, "batchesFailed", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(JestHttpObjectFactory.metricConfigs(true))
+                .build();
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        // when
+        config.register(registry);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey5), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey6), eq(0L));
+
+    }
+
+    @Test
+    public void configuresSubSetOfMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "failoverTookMs", "noop");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "itemsSent", "max");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "itemsDelivered", "count");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "itemsFailed", "count");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "backoffApplied", "count");
+        final Metric.Key expectedKey6 = new Metric.Key(expectedComponentName, "batchesFailed", "noop");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+
+        final JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withName(expectedComponentName);
+
+        //noinspection unchecked
+        builder.withMetricConfigs(Arrays.asList(new MetricConfig[] {
+                MetricConfigFactory.createCountConfig("itemsDelivered"),
+                MetricConfigFactory.createCountConfig("itemsFailed"),
+                MetricConfigFactory.createMaxConfig("itemsSent", false),
+                MetricConfigFactory.createCountConfig("backoffApplied")
+        }));
+
+        final JestHttpObjectFactory config = spy(builder.build());
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        // when
+        config.register(registry);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput, never()).write(anyLong(), eq(expectedKey1), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey2), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey3), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey4), eq(0L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey5), eq(0L));
+        verify(metricOutput, never()).write(anyLong(), eq(expectedKey6), eq(0L));
+
+    }
+
+    @Test
+    public void storesItemsSent() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "itemsSent", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsSent"));
+        when(config.createClient()).thenReturn(mock(JestClient.class));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        // when
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        metricProcessor.process();
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 2));
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 1));
+
+    }
+
+    @Test
+    public void storesItemsDelivered() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "itemsDelivered", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsDelivered"));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(true);
+
+        // when
+        resultHandler.completed(result);
+        metricProcessor.process();
+        resultHandler.completed(result);
+        resultHandler.completed(result);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq(2L));
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq(1L));
+
+    }
+
+    @Test
+    public void storesItemsFailed() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "itemsFailed", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsFailed"));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        resultHandler.completed(result);
+        resultHandler.failed(new Exception("test-exception"));
+        metricProcessor.process();
+        resultHandler.failed(new Exception("test-exception"));
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 1));
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 1));
+
+    }
+
+    @Test
+    public void storesBackoffApplied() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "backoffApplied", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        @SuppressWarnings("unchecked")
+        final BackoffPolicy<AbstractAction<BulkResult>> backoffPolicy = mock(BackoffPolicy.class);
+        final JestHttpObjectFactory config = spy(createTestObjectFactoryBuilderWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("backoffApplied"))
+                .withBackoffPolicy(backoffPolicy)
+                .build());
+        when(config.createClient()).thenReturn(mock(JestClient.class));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        when(backoffPolicy.shouldApply(eq(batchRequest))).thenReturn(true);
+
+        // when
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        metricProcessor.process();
+        config.createBatchListener(new NoopFailoverPolicy()).apply(batchRequest);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 2));
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 1));
+
+    }
+
+    @Test
+    public void storesBatchesFailed() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "batchesFailed", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("batchesFailed"));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        resultHandler.completed(result);
+        resultHandler.failed(new Exception("test-exception"));
+        metricProcessor.process();
+        resultHandler.failed(new Exception("test-exception"));
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 2));
+        verify(metricOutput).write(anyLong(), eq(expectedKey), eq((long) 1));
+
+    }
+
+    @Test
+    public void storesFailoverTookMs() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey = new Metric.Key(expectedComponentName, "failoverTookMs", "max");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("failoverTookMs"));
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final Index indexRequest = mock(Index.class);
+        final Bulk batchRequest = new Bulk.Builder().addAction(indexRequest).build();
+
+        final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(failedPayload -> {
+            try {
+                Thread.sleep(50L);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }));
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        config.register(registry);
+
+        final JestResult result = mock(JestResult.class);
+        when(result.isSucceeded()).thenReturn(false);
+
+        // when
+        resultHandler.completed(result);
+        metricProcessor.process();
+
+        // then
+        final ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(long.class);
+        verify(metricOutput).write(anyLong(), eq(expectedKey), captor.capture());
+
+        assertTrue(captor.getValue() >= 50L);
+
+    }
+
+    private JestHttpObjectFactory createTestObjectFactoryWithMetric(final String expectedComponentName, final MetricConfig metricConfig) {
+        final JestHttpObjectFactory.Builder builder = createTestObjectFactoryBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfig(metricConfig);
+
+        return spy(builder.build());
+    }
+
+    private JestHttpObjectFactory.Builder createTestObjectFactoryBuilderWithMetric(final String expectedComponentName, final MetricConfig metricConfig) {
+        return createTestObjectFactoryBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfig(metricConfig);
     }
 
     private LifeCycle createLifeCycleTestObject() {

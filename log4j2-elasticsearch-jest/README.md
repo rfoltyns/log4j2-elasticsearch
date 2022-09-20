@@ -41,18 +41,20 @@ Add this snippet to `log4j2.xml` configuration:
 </Appenders>
 ```
 
-| Config property                   | Type      | Required | Default                     | Description                                                                                                                                                                                  |
-|-----------------------------------|-----------|----------|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| serverUris                        | Attribute | yes      | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes.        |
-| connTimeout                       | Attribute | no       | -1                          | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                        |
-| readTimeout                       | Attribute | no       | -1                          | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                             |
-| maxTotalConnection                | Attribute | no       | 40                          | Number of connections available.                                                                                                                                                             |
-| defaultMaxTotalConnectionPerRoute | Attribute | no       | 4                           | Number of connections available per Apache CPool.                                                                                                                                            |
-| discoveryEnabled                  | Attribute | no       | false                       | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes. |
-| ioThreadCount                     | Attribute | no       | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                          |
-| mappingType                       | Attribute | no       | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch 7.x and older. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html).    |
-| dataStreamsEnabled                | Attribute | no       | false                       | If `true`, serialized index requests will be compatible with [Elasticsearch Data Streams API](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)             |
-| auth                              | Element   | no       | None                        | Security config. [XPackAuth](#pem-cert-config)                                                                                                                                               |
+| Config property                   | Type      | Required | Default                     | Description                                                                                                                                                                                                        |
+|-----------------------------------|-----------|----------|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverUris                        | Attribute | yes      | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. Unless `discoveryEnabled=true`, this will be the final list of available nodes.                              |
+| connTimeout                       | Attribute | no       | -1                          | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                                              |
+| readTimeout                       | Attribute | no       | -1                          | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                                                   |
+| maxTotalConnection                | Attribute | no       | 40                          | Number of connections available.                                                                                                                                                                                   |
+| defaultMaxTotalConnectionPerRoute | Attribute | no       | 4                           | Number of connections available per Apache CPool.                                                                                                                                                                  |
+| discoveryEnabled                  | Attribute | no       | false                       | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes.                       |
+| ioThreadCount                     | Attribute | no       | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                                                |
+| mappingType                       | Attribute | no       | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch 7.x and older. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html).                          |
+| dataStreamsEnabled                | Attribute | no       | false                       | If `true`, serialized index requests will be compatible with [Elasticsearch Data Streams API](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)                                   |
+| auth                              | Element   | no       | None                        | Security config. [XPackAuth](#pem-cert-config)                                                                                                                                                                     |
+| name                              | Attribute | No       | `JestHttp`                  | Metric component name                                                                                                                                                                                              |
+| metricConfig                      | Element[] | No       | Disabled `MetricConfig`(s)  | `Metrics` supported by this component:<br/>- `itemsSent`<br/>- `itemsDelivered`<br/>- `itemsFailed`<br/>- `backoffApplied`<br/>- `batchesFailed`<br/>- `failoverTookMs`<br/>See `Metrics` docs below for more info |
 
 If `dataStreamsEnabled` and `JacksonJsonLayout` is used, use [LogEventDataStreamMixIn](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/json/jackson/LogEventDataStreamMixIn.java) or equivalent to serialize `LogEvent.timeMillis` as `@timestamp`.
 
@@ -76,10 +78,11 @@ If `dataStreamsEnabled` and `JacksonJsonLayout` is used, use [LogEventDataStream
 `JestBufferedHttp` - extension of `JestHttp`. Uses [org.appenders.log4j2.elasticsearch.BufferedBulk](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/BufferedBulk.java) and [org.appenders.log4j2.elasticsearch.BufferedIndex](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/BufferedIndex.java) to replace Jest default (de)serialization and utilize [pooled buffers](../log4j2-elasticsearch-core#object-pooling) to reduce memory allocation.
 [PooledItemSourceFactory](../log4j2-elasticsearch-core#object-pooling) MUST be configured in order for this client to work.
 
-| Config property           | Type    | Required | Default | Description                                                                                                                |
-|---------------------------|---------|----------|---------|----------------------------------------------------------------------------------------------------------------------------|
-| All `JestHttp` properties | -       | -        | -       | -                                                                                                                          |
-| itemSourceFactory         | Element | yes      | None    | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used. |
+| Config property           | Type      | Required | Default                    | Description                                                                                                                                                                                                       |
+|---------------------------|-----------|----------|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| All `JestHttp` properties | -         | -        | -                          | -                                                                                                                                                                                                                 |
+| itemSourceFactory         | Element   | yes      | None                       | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                                                                                        |
+| metricConfig              | Element[] | No       | Disabled `MetricConfig`(s) | `Metrics` supported by this component:<br/>- All `JestHttp` metrics<br/>- `initial`<br/>- `total`<br/>- `available`<br/>- `noSuchElementCaught`<br/>- `resizeAttempts`<br/>See `Metrics` docs below for more info |
 
 Example:
 ```xml
@@ -170,6 +173,42 @@ JVM params:
 | -Dappenders.BufferedBulk.initialSize     | int     | 10000   |
 
 NOTE: `JestBufferedHttp` support only
+
+## Metrics
+
+See [Core Metrics](../log4j2-elasticsearch-core#metrics) for detailed documentation.
+
+### Measured HC components
+
+All [Measured Core components](../log4j2-elasticsearch-core#measured-core-components) and:
+
+[JestHttp](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/JestHttpObjectFactory.java):
+* itemsSent `Count`: number of items sent to cluster
+* itemsDelivered `Count`: number of items successfully delivered to cluster
+* itemsFailed `Count`: number of items received by failure handler as a result of cluster response or cluster unavailability
+* backoffApplied `Count`: number of items dropped due to back-off policy kicking in (still delivered to `FailoverPolicy` and counted as `itemsFailed`)
+* batchesFailed `Count`: number of batches received by failure handler as a result of cluster response or cluster unavailability
+* failoverTookMs `Max`: maximum time spent handling failover as a result of cluster response, cluster unavailability or back-off policy
+
+[JestBufferedHttp](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/BufferedJestHttpObjectFactory.java):
+* [JestHttp](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/main/java/org/appenders/log4j2/elasticsearch/jest/JestHttpObjectFactory.java) metrics
+* all [GenericItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/GenericItemSourcePool.java) metrics
+
+Example:
+```xml
+<JestBufferedHttp name="some-sensible-name" serverUris="https://localhost:9200" >
+    <Metrics>
+        <Count name="itemsSent" />
+        <Count name="itemsDelivered" />
+        <Count name="itemsFailed" />
+        <Count name="backoffApplied" />
+        <Count name="batchesFailed" />
+        <Max name="failoverTookMs" />
+    </Metrics>
+</JestBufferedHttp>
+```
+
+More metrics will become available in future releases. [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
 ## Dependencies
 

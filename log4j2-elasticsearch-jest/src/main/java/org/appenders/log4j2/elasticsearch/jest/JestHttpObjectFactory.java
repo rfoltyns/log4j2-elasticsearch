@@ -56,11 +56,22 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.jest.failover.JestHttpFailedItemOps;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metrics;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 
@@ -68,7 +79,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 import static org.appenders.log4j2.elasticsearch.jest.JestBulkOperations.DEFAULT_MAPPING_TYPE;
 
 @Plugin(name = "JestHttp", category = Node.CATEGORY, elementType = ClientObjectFactory.ELEMENT_TYPE, printObject = true)
-public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bulk> {
+public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bulk>, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -89,6 +100,8 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     private final ValueResolver valueResolver;
     private OperationFactory setupOps;
     private JestClient client;
+    protected final JestBatchIntrospector introspector = new JestBatchIntrospector();
+    protected final BatchingClientMetrics metrics;
 
     protected JestHttpObjectFactory(Builder builder) {
         this.serverUris = SplitUtil.split(builder.serverUris, ";");
@@ -104,6 +117,11 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
         this.failedItemOps = builder.failedItemOps;
         this.backoffPolicy = builder.backoffPolicy;
         this.valueResolver = builder.valueResolver;
+        this.metrics = new BatchingClientMetrics(builder.name, builder.metricsFactory);
+    }
+
+    public static List<MetricConfig> metricConfigs(final boolean enabled) {
+        return BatchingClientMetrics.createConfigs(enabled);
     }
 
     @Override
@@ -139,7 +157,6 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     @Override
     public Function<Bulk, Boolean> createBatchListener(FailoverPolicy failoverPolicy) {
         return new Function<Bulk, Boolean>() {
-
             private final Function<Bulk, Boolean> failureHandler = createFailureHandler(failoverPolicy);
 
             @Override
@@ -148,12 +165,19 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 executePreBatchOperations();
 
                 if (backoffPolicy.shouldApply(bulk)) {
+
+                    metrics.backoffApplied(1);
+
                     getLogger().warn("Backoff applied. Batch rejected");
+
                     failureHandler.apply(bulk);
                     return false;
+
                 } else {
                     backoffPolicy.register(bulk);
                 }
+
+                metrics.itemsSent(getBatchSize(bulk));
 
                 JestResultHandler<JestResult> jestResultHandler = createResultHandler(bulk, failureHandler);
                 createClient().executeAsync(bulk, jestResultHandler);
@@ -161,6 +185,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             }
 
         };
+    }
+
+    int getBatchSize(final Bulk bulk) {
+        return introspector.items(bulk).size();
     }
 
     /* visible for testing */
@@ -180,28 +208,28 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     }
 
     @Override
-    public Function<Bulk, Boolean> createFailureHandler(FailoverPolicy failover) {
-        return new Function<Bulk, Boolean>() {
+    public Function<Bulk, Boolean> createFailureHandler(final FailoverPolicy failover) {
+        return bulk -> {
 
-            private final JestBatchIntrospector introspector = new JestBatchIntrospector();
+            final long start = System.currentTimeMillis();
 
-            @Override
-            public Boolean apply(Bulk bulk) {
+            final Collection items = introspector.items(bulk);
 
-                Collection items = introspector.items(bulk);
+            metrics.batchFailed();
+            metrics.itemsFailed(items.size());
 
-                getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s",
-                        items.size(),
-                        failover.getClass().getName()));
+            getLogger().warn(String.format("Batch of %s items failed. Redirecting to %s",
+                    items.size(),
+                    failover.getClass().getName()));
 
-                items.forEach(item -> {
-                    Index failedAction = (Index) item;
-                    failover.deliver(failedItemOps.createItem(failedAction));
-                });
+            items.forEach(item -> {
+                Index failedAction = (Index) item;
+                failover.deliver(failedItemOps.createItem(failedAction));
+            });
 
-                return true;
-            }
+            metrics.failoverTookMs(System.currentTimeMillis() - start);
 
+            return true;
         };
     }
 
@@ -246,7 +274,10 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
                 if (!result.isSucceeded()) {
                     getLogger().warn(result.getErrorMessage());
                     failureHandler.apply(bulk);
+                } else {
+                    metrics.itemsDelivered(getBatchSize(bulk));
                 }
+
             }
             @Override
             public void failed(Exception ex) {
@@ -270,6 +301,16 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     // visible for testing
     ClientProvider<JestClient> getClientProvider(WrappedHttpClientConfig.Builder clientConfigBuilder) {
         return new JestClientProvider(clientConfigBuilder);
+    }
+
+    @Override
+    public void register(MetricsRegistry registry) {
+        metrics.register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        metrics.deregister();
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<JestHttpObjectFactory> {
@@ -305,6 +346,12 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
 
         @PluginElement("auth")
         protected Auth auth;
+
+        @PluginBuilderAttribute
+        protected String name = "JestHttp";
+
+        @PluginElement("metricsFactory")
+        protected MetricsFactory metricsFactory = new DefaultMetricsFactory(BatchingClientMetrics.createConfigs(false));
 
         /**
          * Index mapping type can be specified to ensure compatibility with ES 7 clusters
@@ -409,6 +456,21 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
             return this;
         }
 
+        public Builder withName(final String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withMetricConfig(final MetricConfig metricConfig) {
+            metricsFactory.configure(metricConfig);
+            return this;
+        }
+
+        public Builder withMetricConfigs(final List<MetricConfig> metricConfigs) {
+            this.metricsFactory.configure(metricConfigs);
+            return this;
+        }
+
         public Builder withMappingType(String mappingType) {
             this.mappingType = mappingType;
             return this;
@@ -488,4 +550,77 @@ public class JestHttpObjectFactory implements ClientObjectFactory<JestClient, Bu
     public boolean isStopped() {
         return state == State.STOPPED;
     }
+
+    public static class BatchingClientMetrics implements Metrics {
+
+        private final List<MetricsRegistry.Registration> registrations = new ArrayList<>();;
+        private final Metric itemsSent;
+        private final Metric itemsDelivered;
+        private final Metric itemsFailed;
+        private final Metric backoffApplied;
+        private final Metric batchesFailed;
+        private final Metric failoverTookMs;
+
+        public BatchingClientMetrics(final String name, final MetricsFactory factory) {
+            this.itemsSent = factory.createMetric(name, "itemsSent");
+            this.itemsDelivered = factory.createMetric(name, "itemsDelivered");
+            this.itemsFailed = factory.createMetric(name, "itemsFailed");
+            this.backoffApplied = factory.createMetric(name, "backoffApplied");
+            this.batchesFailed = factory.createMetric(name, "batchesFailed");
+            this.failoverTookMs = factory.createMetric(name, "failoverTookMs");
+        }
+
+        public static List<MetricConfig> createConfigs(final boolean enabled) {
+            return Collections.unmodifiableList(Arrays.asList(
+                    MetricConfigFactory.createCountConfig(enabled, "itemsSent"),
+                    MetricConfigFactory.createCountConfig(enabled, "itemsDelivered"),
+                    MetricConfigFactory.createCountConfig(enabled, "itemsFailed"),
+                    MetricConfigFactory.createCountConfig(enabled, "backoffApplied"),
+                    MetricConfigFactory.createCountConfig(enabled, "batchesFailed"),
+                    MetricConfigFactory.createMaxConfig(enabled, "failoverTookMs", true))
+            );
+        }
+
+        @Override
+        public void register(MetricsRegistry registry) {
+            registrations.add(registry.register(itemsSent));
+            registrations.add(registry.register(itemsDelivered));
+            registrations.add(registry.register(itemsFailed));
+            registrations.add(registry.register(backoffApplied));
+            registrations.add(registry.register(batchesFailed));
+            registrations.add(registry.register(failoverTookMs));
+        }
+
+        @Override
+        public void deregister() {
+            registrations.forEach(MetricsRegistry.Registration::deregister);
+            registrations.clear();
+        }
+
+        public void itemsSent(int itemsSent) {
+            this.itemsSent.store(itemsSent);
+        }
+
+        public void itemsDelivered(int count) {
+            this.itemsDelivered.store(count);
+        }
+
+        public void itemsFailed(int count) {
+            this.itemsFailed.store(count);
+        }
+
+        public void backoffApplied(int count) {
+            this.backoffApplied.store(count);
+        }
+
+        public void batchFailed() {
+            this.batchesFailed.store(1);
+        }
+
+        public void failoverTookMs(long tookMs) {
+            this.failoverTookMs.store(tookMs);
+        }
+
+    }
+
 }
