@@ -69,7 +69,7 @@ public class UUIDSequence implements KeySequence {
      * e.g. when {@link #seqId} equals 5 and {@link #readerIndex} equals 255, returned value is {@code "00000000-0000-0005-0000-000000000100"}
      *
      * @return next reader key in sequence.
-     *          <tt>null</tt>, if {@link #readerIndex} is equal to {@link #writerIndex}
+     *          {@code null}, if {@link #readerIndex} is equal to {@link #writerIndex}
      */
     @Override
     public CharSequence nextReaderKey() {
@@ -87,7 +87,7 @@ public class UUIDSequence implements KeySequence {
      * e.g. when {@link #seqId} equals 5 and initial {@link #writerIndex} equals 255, returned value is {@code "00000000-0000-0005-0000-000000000100"}
      *
      * @return next reader key in sequence.
-     *          <tt>null</tt>, if {@link #readerIndex} is equal to {@link #writerIndex}
+     *          {@code null}, if {@link #readerIndex} is equal to {@link #writerIndex}
      */
     @Override
     public CharSequence nextWriterKey() {

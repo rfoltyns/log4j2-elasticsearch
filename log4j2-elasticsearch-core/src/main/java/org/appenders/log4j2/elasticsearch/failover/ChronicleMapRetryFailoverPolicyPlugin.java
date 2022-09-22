@@ -147,7 +147,7 @@ public class ChronicleMapRetryFailoverPolicyPlugin extends ChronicleMapRetryFail
         }
 
         /**
-         * @param monitored if <tt>true</tt>, execution metrics will be printed
+         * @param monitored if {@code true}, execution metrics will be printed
          * @return this
          */
         public Builder withMonitored(boolean monitored) {
