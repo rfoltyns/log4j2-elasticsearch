@@ -54,7 +54,7 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 | pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response. |
 | pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                   |
 | auth                             | Element   | no                                                              | None                        | Security config. [Security](#pem-cert-config)                                                                                                  |
-| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](../log4j2-elasticsearch-hc#service-discovery)                                                     |
+| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](#service-discovery)                                                                               |
 
 ### Service Discovery
 
