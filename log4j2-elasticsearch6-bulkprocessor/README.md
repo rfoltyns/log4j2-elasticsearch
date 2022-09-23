@@ -32,6 +32,14 @@ or [configure programmatcally](https://github.com/rfoltyns/log4j2-elasticsearch/
 
 It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch6-bulkprocessor/src/test/resources/log4j2.xml) example.
 
+### ElasticsearchBulkProcessor Properties
+
+| Name           | Type      | Required | Default | Description                                                                                           |
+|----------------|-----------|----------|---------|-------------------------------------------------------------------------------------------------------|
+| serverUris     | Attribute | yes      | None    | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with. |
+| auth           | Element   | no       | None    | Security config. [PEM cert with XPackAuth](#pem-cert-config)                                          |
+| clientSettings | Element   | no       | None    | Elasticsearch client settings.                                                                        |
+
 ### Delivery frequency
 Delivery frequency can be adjusted via `AsyncBatchDelivery` attributes:
 * `deliveryInterval` - millis between deliveries
@@ -115,11 +123,11 @@ Since 1.2, secure TCP transport can be configured using `XPackAuth` tag:
 
 ### Compatibility matrix
 
-Feature/Version | 2.x | 5.x | 6.x
------------- | ------------- | ------------- | -------------
-IndexTemplate | Not tested| Yes | Yes
-BasicCredentials | Not tested | Yes | Yes
-PEM | Not tested | Yes | Yes
+| Feature/Version  | 2.x        | 5.x | 6.x |
+|------------------|------------|-----|-----|
+| IndexTemplate    | Not tested | Yes | Yes |
+| BasicCredentials | Not tested | Yes | Yes |
+| PEM              | Not tested | Yes | Yes |
 
 ## Dependencies
 
