@@ -51,6 +51,7 @@ Add this snippet to `log4j2.xml` configuration:
 | discoveryEnabled                  | Attribute | no       | false                       | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes. |
 | ioThreadCount                     | Attribute | no       | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                          |
 | mappingType                       | Attribute | no       | `index`                     | Name of index mapping type to use in ES cluster. Use `_doc` for Elasticsearch 7.x.                                                                                                           |
+| auth                              | Element   | no       | None                        | Security config. [XPackAuth](#pem-cert-config)                                                                                                                                               |
 
 ### Buffered HTTP
 
