@@ -23,10 +23,14 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.Collections;
 import java.util.Random;
+import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
@@ -37,7 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class HttpClientProviderTest {
@@ -226,6 +232,65 @@ public class HttpClientProviderTest {
 
     private LifeCycle createLifeCycleTestObject() {
         return createDefaultTestClientProvider();
+    }
+
+    // =======
+    // METRICS
+    // =======
+
+    @Test
+    public void registersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "responseBytes", "count");
+
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(PoolingAsyncResponseConsumer.metricConfigs(true));
+
+        final HttpClientProvider provider = new HttpClientProvider(builder);
+
+        // when
+        provider.createClient();
+        provider.register(registry);
+
+        // then
+        final ArgumentCaptor<Metric> captor = ArgumentCaptor.forClass(Metric.class);
+        verify(registry, times(6)).register(captor.capture());
+
+        assertEquals(expectedKey1, captor.getValue().getKey());
+
+    }
+
+    @Test
+    public void doesNotRegisterMetricsUntilCreateInstance() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "responseBytes", "count");
+
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(PoolingAsyncResponseConsumer.metricConfigs(true));
+
+        final HttpClientProvider provider = new HttpClientProvider(builder);
+
+        // when
+        provider.register(registry);
+        verifyNoInteractions(registry);
+
+        provider.createClient();
+        provider.register(registry);
+
+        // then
+        final ArgumentCaptor<Metric> captor = ArgumentCaptor.forClass(Metric.class);
+        verify(registry, times(6)).register(captor.capture());
+
+        assertEquals(expectedKey1, captor.getValue().getKey());
+
     }
 
 }

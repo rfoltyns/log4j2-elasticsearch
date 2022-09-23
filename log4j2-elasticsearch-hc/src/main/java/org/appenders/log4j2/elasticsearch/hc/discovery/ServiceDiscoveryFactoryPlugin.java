@@ -33,9 +33,14 @@ import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Plugin(name = "ServiceDiscovery", category = Node.CATEGORY, elementType = "serviceDiscovery", printObject = true)
@@ -91,6 +96,12 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
         @PluginElement("auth")
         protected Auth<HttpClientFactory.Builder> auth;
 
+        @PluginBuilderAttribute
+        private String name = ServiceDiscovery.class.getSimpleName();
+
+        @SuppressWarnings("FieldMayBeFinal")
+        @PluginElement("metricsFactory")
+        private MetricsFactory metricsFactory = new DefaultMetricsFactory(Collections.emptyList());
 
         @Override
         public ServiceDiscoveryFactoryPlugin build() {
@@ -120,7 +131,9 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
                     .withIoThreadCount(1)
                     .withPooledResponseBuffers(true)
                     .withPooledResponseBuffersSizeInBytes(pooledResponseBuffersSizeInBytes)
-                    .withAuth(auth);
+                    .withAuth(auth)
+                    .withName(name)
+                    .withMetricConfigs(metricsFactory.getMetricConfigs());
         }
 
         protected ClientProviderPoliciesRegistry createPoliciesRegistry() {
@@ -183,6 +196,16 @@ public class ServiceDiscoveryFactoryPlugin extends ServiceDiscoveryFactory<HttpC
 
         public Builder withAuth(Auth<HttpClientFactory.Builder> auth) {
             this.auth = auth;
+            return this;
+        }
+
+        public Builder withName(final String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withMetricConfigs(final List<MetricConfig> metricConfigs) {
+            this.metricsFactory.configure(metricConfigs);
             return this;
         }
 

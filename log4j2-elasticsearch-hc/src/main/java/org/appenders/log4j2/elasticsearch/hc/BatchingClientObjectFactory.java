@@ -28,16 +28,28 @@ import org.appenders.log4j2.elasticsearch.Operation;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metrics;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
 public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_TYPE>, ITEM_TYPE extends Item<?>>
-        implements ClientObjectFactory<HttpClient, BATCH_TYPE> {
+        implements ClientObjectFactory<HttpClient, BATCH_TYPE>, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -45,12 +57,17 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
     protected final FailedItemOps<ITEM_TYPE> failedItemOps;
     protected final BackoffPolicy<BATCH_TYPE> backoffPolicy;
 
+    protected final BatchingClientMetrics metrics;
+
     private final ConcurrentLinkedQueue<Operation> operations = new ConcurrentLinkedQueue<>();
+
 
     public BatchingClientObjectFactory(BatchingClientObjectFactory.Builder<BATCH_TYPE, ITEM_TYPE> builder) {
         this.clientProvider = builder.clientProvider;
         this.failedItemOps = builder.failedItemOps;
         this.backoffPolicy = builder.backoffPolicy;
+        // TODO: consider builder.metrics for better extensions support in future releases
+        this.metrics = new BatchingClientMetrics(builder.name, builder.metricsFactory);
     }
 
     @Override
@@ -58,11 +75,15 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
         return batchRequest -> {
 
             long start = System.currentTimeMillis();
-            int batchSize = batchRequest.getItems().size();
+            metrics.batchFailed();
 
+            final Collection<ITEM_TYPE> items = batchRequest.getItems();
+
+            int batchSize = batchRequest.size();
+            metrics.itemsFailed(batchSize);
             getLogger().warn("Batch of {} items failed. Redirecting to {}", batchSize, failover.getClass().getName());
 
-            batchRequest.getItems().forEach(batchItem -> {
+            items.forEach(batchItem -> {
                 // TODO: FailoverPolicyChain
                 try {
                     failover.deliver(failedItemOps.createItem(batchItem));
@@ -72,7 +93,7 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
                 }
             });
 
-            getLogger().trace("Batch of {} items redirected in {} ms", batchSize, System.currentTimeMillis() - start);
+            metrics.failoverTookMs(System.currentTimeMillis() - start);
 
             return true;
         };
@@ -112,19 +133,24 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
                 }
 
                 if (backoffPolicy.shouldApply(request)) {
-                    getLogger().warn("Backoff applied. Batch of {} items rejected", request.getItems().size());
+
+                    getLogger().warn("Backoff applied. Batch of {} items rejected", request.size());
+                    metrics.backoffApplied(1);
+
                     failureHandler.apply(request);
                     request.completed();
+
                     return false;
+
                 } else {
                     backoffPolicy.register(request);
                 }
 
-                getLogger().info("Sending batch of {} items", request.getItems().size());
-
                 ResponseHandler<BatchResult> responseHandler = createResultHandler(request, failureHandler);
                 // FIXME: Batch interface shouldn't extend Request!
                 createClient().executeAsync(request, responseHandler);
+
+                metrics.itemsSent(request.size());
 
                 return true;
             }
@@ -139,9 +165,14 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
 
     public static abstract class Builder<BATCH_TYPE extends Batch<ITEM_TYPE>, ITEM_TYPE extends Item<?>> {
 
+        private static final AtomicInteger counter = new AtomicInteger();
+
+        private String name = BatchingClientMetrics.class.getSimpleName() + "-" + counter.getAndIncrement();
+
         protected HttpClientProvider clientProvider = new HttpClientProvider(new HttpClientFactory.Builder());
         protected BackoffPolicy<BATCH_TYPE> backoffPolicy = new NoopBackoffPolicy<>();
         protected FailedItemOps<ITEM_TYPE> failedItemOps;
+        protected final MetricsFactory metricsFactory = new DefaultMetricsFactory(BatchingClientMetrics.createConfigs(false));
 
         public abstract BatchingClientObjectFactory<BATCH_TYPE, ITEM_TYPE> build();
 
@@ -169,6 +200,11 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
             return String.format("No %s provided for %s", className, HCHttp.class.getSimpleName());
         }
 
+        public Builder<BATCH_TYPE, ITEM_TYPE> withName(String name) {
+            this.name = name;
+            return this;
+        }
+
         public Builder<BATCH_TYPE, ITEM_TYPE> withClientProvider(HttpClientProvider clientProvider) {
             this.clientProvider = clientProvider;
             return this;
@@ -181,6 +217,16 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
 
         public Builder<BATCH_TYPE, ITEM_TYPE> withFailedItemOps(FailedItemOps<ITEM_TYPE> failedItemOps) {
             this.failedItemOps = failedItemOps;
+            return this;
+        }
+
+        public Builder<BATCH_TYPE, ITEM_TYPE> withMetricConfig(final MetricConfig metricConfig) {
+            this.metricsFactory.configure(metricConfig);
+            return this;
+        }
+
+        public Builder<BATCH_TYPE, ITEM_TYPE> withMetricConfigs(final List<MetricConfig> metricConfigs) {
+            this.metricsFactory.configure(metricConfigs);
             return this;
         }
 
@@ -228,6 +274,101 @@ public abstract class BatchingClientObjectFactory<BATCH_TYPE extends Batch<ITEM_
     @Override
     public final boolean isStopped() {
         return state == State.STOPPED;
+    }
+
+    @Override
+    public void register(final MetricsRegistry registry) {
+        metrics.register(registry);
+        addOperation(() -> Measured.of(clientProvider).register(registry));
+        addOperation(() -> Measured.of(clientProvider.getHttpClientFactoryBuilder().serviceDiscovery).register(registry));
+    }
+
+    @Override
+    public void deregister() {
+        metrics.deregister();
+        Measured.of(clientProvider).deregister();
+        Measured.of(clientProvider.getHttpClientFactoryBuilder().serviceDiscovery).deregister();
+    }
+
+    public static class BatchingClientMetrics implements Metrics {
+
+        private final List<MetricsRegistry.Registration> registrations = new ArrayList<>();;
+        private final Metric serverTookMs;
+        private final Metric itemsSent;
+        private final Metric itemsDelivered;
+        private final Metric itemsFailed;
+        private final Metric backoffApplied;
+        private final Metric batchesFailed;
+        private final Metric failoverTookMs;
+
+        public BatchingClientMetrics(final String name, final MetricsFactory factory) {
+            this.serverTookMs = factory.createMetric(name, "serverTookMs");
+            this.itemsSent = factory.createMetric(name, "itemsSent");
+            this.itemsDelivered = factory.createMetric(name, "itemsDelivered");
+            this.itemsFailed = factory.createMetric(name, "itemsFailed");
+            this.backoffApplied = factory.createMetric(name, "backoffApplied");
+            this.batchesFailed = factory.createMetric(name, "batchesFailed");
+            this.failoverTookMs = factory.createMetric(name, "failoverTookMs");
+        }
+
+        public static List<MetricConfig> createConfigs(final boolean enabled) {
+            return Collections.unmodifiableList(Arrays.asList(
+                    MetricConfigFactory.createMaxConfig(enabled, "serverTookMs", true),
+                    MetricConfigFactory.createCountConfig(enabled, "itemsSent"),
+                    MetricConfigFactory.createCountConfig(enabled, "itemsDelivered"),
+                    MetricConfigFactory.createCountConfig(enabled, "itemsFailed"),
+                    MetricConfigFactory.createCountConfig(enabled, "backoffApplied"),
+                    MetricConfigFactory.createCountConfig(enabled, "batchesFailed"),
+                    MetricConfigFactory.createMaxConfig(enabled, "failoverTookMs", true))
+            );
+        }
+
+        @Override
+        public void register(MetricsRegistry registry) {
+            registrations.add(registry.register(serverTookMs));
+            registrations.add(registry.register(itemsSent));
+            registrations.add(registry.register(itemsDelivered));
+            registrations.add(registry.register(itemsFailed));
+            registrations.add(registry.register(backoffApplied));
+            registrations.add(registry.register(batchesFailed));
+            registrations.add(registry.register(failoverTookMs));
+        }
+
+        @Override
+        public void deregister() {
+            registrations.forEach(MetricsRegistry.Registration::deregister);
+            registrations.clear();
+        }
+
+
+        public void serverTookMs(int tookMs) {
+            this.serverTookMs.store(tookMs);
+        }
+
+        public void itemsSent(int itemsSent) {
+            this.itemsSent.store(itemsSent);
+        }
+
+        public void itemsDelivered(int count) {
+            this.itemsDelivered.store(count);
+        }
+
+        public void itemsFailed(int count) {
+            this.itemsFailed.store(count);
+        }
+
+        public void backoffApplied(int count) {
+            this.backoffApplied.store(count);
+        }
+
+        public void batchFailed() {
+            this.batchesFailed.store(1);
+        }
+
+        public void failoverTookMs(long tookMs) {
+            this.failoverTookMs.store(tookMs);
+        }
+
     }
 
 }

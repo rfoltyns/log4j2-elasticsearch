@@ -43,6 +43,7 @@ public class PoolingAsyncResponseConsumerFactoryTest {
 
         // then
         assertTrue(result instanceof PoolingAsyncResponseConsumer);
+
     }
 
     @Test

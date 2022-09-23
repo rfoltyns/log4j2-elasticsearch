@@ -29,10 +29,18 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.SecurityTest;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.appenders.log4j2.elasticsearch.hc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactoryPlugin.PLUGIN_NAME;
@@ -42,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class ServiceDiscoveryFactoryPluginTest {
 
@@ -227,6 +237,64 @@ public class ServiceDiscoveryFactoryPluginTest {
 
         // then
         assertThat(exception.getMessage(), containsString("refreshInterval must be higher than 0 for " + PLUGIN_NAME));
+
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Test
+    public void registersComponentsMetrics() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final MetricConfig expectedConfig = MetricConfigFactory.createCountConfig(true, "available");
+        final ServiceDiscoveryFactoryPlugin.Builder builder = createDefaultTestServiceDiscoveryConfigPluginBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(Collections.singletonList(expectedConfig));
+
+        final HttpClientFactory.Builder clientProviderBuilder = builder.createClientProviderBuilder();
+        final HttpClientFactory httpClientFactory = clientProviderBuilder.build();
+        final HttpClient httpClient = httpClientFactory.createInstance();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+
+        // when
+        httpClient.register(registry);
+
+        // then
+        assertEquals(1, registry.getMetrics(metric -> !metric.getKey().toString().contains("noop") && metric.getKey().toString().contains("available")).size());
+
+    }
+
+    @Test
+    public void deregistersComponentsMetrics() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final MetricConfig expectedConfig = MetricConfigFactory.createCountConfig(true, "available");
+        final ServiceDiscoveryFactoryPlugin.Builder builder = spy(new ServiceDiscoveryFactoryPlugin.Builder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(Collections.singletonList(expectedConfig)));
+
+        final AtomicReference<HttpClientFactory.Builder> captor = new AtomicReference<>();
+        when(builder.createClientProviderBuilder()).thenAnswer((Answer<HttpClientFactory.Builder>) invocationOnMock -> {
+            final HttpClientFactory.Builder httpClientFactoryBuilder = (HttpClientFactory.Builder) invocationOnMock.callRealMethod();
+            captor.set(httpClientFactoryBuilder);
+            return httpClientFactoryBuilder;
+        });
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+
+        // when
+        final ServiceDiscoveryFactoryPlugin plugin = builder.build();
+        final HttpClient httpClient = captor.get().build().createInstance();
+        Measured.of(httpClient).register(registry);
+        Measured.of(httpClient).deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().toString().contains("noop") && metric.getKey().toString().contains("available")).size());
 
     }
 

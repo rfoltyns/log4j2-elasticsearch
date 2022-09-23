@@ -27,6 +27,8 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.nio.client.methods.HttpAsyncMethods;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.io.IOException;
 
@@ -35,7 +37,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 /**
  * Apache HC based client with optional response buffer pooling
  */
-public class HttpClient implements LifeCycle {
+public class HttpClient implements LifeCycle, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -156,6 +158,8 @@ public class HttpClient implements LifeCycle {
             ((LifeCycle)asyncResponseConsumerFactory).stop();
         }
 
+        Measured.of(asyncResponseConsumerFactory).deregister();
+
         state = State.STOPPED;
 
         getLogger().debug("{}: Stopping client", HttpClient.class.getSimpleName());
@@ -170,6 +174,16 @@ public class HttpClient implements LifeCycle {
     @Override
     public boolean isStopped() {
         return state == State.STOPPED;
+    }
+
+    @Override
+    public void register(final MetricsRegistry registry) {
+        Measured.of(asyncResponseConsumerFactory).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(asyncResponseConsumerFactory).deregister();
     }
 
 }

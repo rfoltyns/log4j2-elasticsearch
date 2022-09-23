@@ -32,8 +32,17 @@ import org.apache.http.protocol.HttpContext;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metrics;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Uses provided {@link ItemSourcePool} to provide {@code org.apache.http.nio.util.SimpleInputBuffer}
@@ -46,8 +55,16 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
     private volatile HttpResponse response;
     private volatile ItemSource<SimpleInputBuffer> buffer;
 
-    public PoolingAsyncResponseConsumer(ItemSourcePool<SimpleInputBuffer> bufferPool) {
+    private final AsyncResponseConsumerMetrics metrics;
+
+    public PoolingAsyncResponseConsumer(final AsyncResponseConsumerMetrics metrics, final ItemSourcePool<SimpleInputBuffer> pool) {
+        this.itemSourcePool = pool;
+        this.metrics = metrics;
+    }
+
+    public PoolingAsyncResponseConsumer(final ItemSourcePool<SimpleInputBuffer> bufferPool) {
         this.itemSourcePool = bufferPool;
+        this.metrics = new AsyncResponseConsumerMetrics(PoolingAsyncResponseConsumer.class.getSimpleName(), new DefaultMetricsFactory(metricConfigs(false)));
     }
 
     @Override
@@ -66,8 +83,6 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
     protected void onEntityEnclosed(
             final HttpEntity entity, final ContentType contentType) throws IOException {
 
-        // TODO: add entity.getContentLength() to metrics
-
         if (buffer == null) {
 
             buffer = getPooled();
@@ -79,6 +94,8 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
             bufferedEntity.setContent(new ItemSourceContentInputStream(buffer));
 
             this.response.setEntity(bufferedEntity);
+
+            metrics.recordContentLength((int) entity.getContentLength());
 
         }
 
@@ -110,6 +127,40 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
         } catch (PoolResourceException e) {
             throw new IOException("Unable get pooled response buffer: " + e.getMessage());
         }
+    }
+
+    public static List<MetricConfig> metricConfigs(final boolean enabled) {
+
+        final List<MetricConfig> result = new ArrayList<>();
+        result.add(MetricConfigFactory.createCountConfig(enabled, "responseBytes"));
+        return result;
+
+    }
+
+    static final class AsyncResponseConsumerMetrics implements Metrics {
+
+        private final List<MetricsRegistry.Registration> registrations = new ArrayList<>();;
+        private final Metric responseContentLength;
+
+        AsyncResponseConsumerMetrics(final String name, final MetricsFactory metricsFactory) {
+            this.responseContentLength = metricsFactory.createMetric(name, "responseBytes");
+        }
+
+        final void recordContentLength(int contentLength) {
+            responseContentLength.store(contentLength);
+        }
+
+        @Override
+        public void register(final MetricsRegistry registry) {
+            registrations.add(registry.register(responseContentLength));
+        }
+
+        @Override
+        public void deregister() {
+            registrations.forEach(MetricsRegistry.Registration::deregister);
+            registrations.clear();
+        }
+
     }
 
 }

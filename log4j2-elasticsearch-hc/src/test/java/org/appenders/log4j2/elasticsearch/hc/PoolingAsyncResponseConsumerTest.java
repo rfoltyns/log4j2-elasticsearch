@@ -32,9 +32,19 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
 import org.appenders.log4j2.elasticsearch.ResizePolicy;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.util.TestClock;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.util.Collections;
+import java.util.Random;
+import java.util.UUID;
 
 import static org.appenders.log4j2.elasticsearch.hc.SimpleInputBufferObjectOpsTest.createDefaultTestGenericItemSourcePool;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -112,6 +122,68 @@ public class PoolingAsyncResponseConsumerTest {
 
         // then
         verify(consumer, times(1)).getPooled();
+
+    }
+
+    @Test
+    public void onEntityEnclosedStoresResponseBytesMetric() throws IOException {
+
+        // given
+        final GenericItemSourcePool<SimpleInputBuffer> itemSourcePool = createDefaultTestGenericItemSourcePool(
+                GenericItemSourcePoolTest.DEFAULT_TEST_INITIAL_POOL_SIZE,
+                false
+        );
+
+        final DefaultMetricsFactory metricsFactory = new DefaultMetricsFactory(PoolingAsyncResponseConsumer.metricConfigs(true));
+        final String expectedName = UUID.randomUUID().toString();
+        final PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics metrics = new PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics(expectedName, metricsFactory);
+
+        final PoolingAsyncResponseConsumer consumer = new PoolingAsyncResponseConsumer(metrics, itemSourcePool);
+        consumer.onResponseReceived(mock(HttpResponse.class));
+
+        final HttpEntity httpEntity = mock(HttpEntity.class);
+        final Random random = new Random();
+        final long expectedContentLength = random.nextInt();
+        when(httpEntity.getContentLength()).thenReturn(expectedContentLength);
+
+        final MetricOutput metricOutput1 = mock(MetricOutput.class);
+        when(metricOutput1.accepts(any())).thenReturn(true);
+
+        final BasicMetricsRegistry metricsRegistry = new BasicMetricsRegistry();
+
+        long expectedTimestamp = random.nextLong();
+        final Clock clock = TestClock.createTestClock(expectedTimestamp);
+        final MetricsProcessor processor = new MetricsProcessor(clock, metricsRegistry, new MetricOutput[] { metricOutput1 });
+
+        // when
+        metrics.register(metricsRegistry);
+        consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json"));
+        consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json"));
+        processor.process();
+
+        // then
+        final Metric.Key expectedKey = new Metric.Key(expectedName, "responseBytes", "count");
+        verify(metricOutput1).write(eq(expectedTimestamp), eq(expectedKey), eq(expectedContentLength));
+
+    }
+
+    @Test
+    public void onEntityEnclosedSucceedsWhenCreatedWithItemPoolConstructor() throws IOException, PoolResourceException {
+
+        // given
+        final ItemSourcePool<SimpleInputBuffer> itemSourcePool = mock(ItemSourcePool.class);
+        when(itemSourcePool.getPooled()).thenReturn(SimpleInputBufferObjectOpsTest.createDefaultTestObject().createItemSource(item -> {}));
+
+        final PoolingAsyncResponseConsumer consumer = new PoolingAsyncResponseConsumer(itemSourcePool);
+        consumer.onResponseReceived(mock(HttpResponse.class));
+
+        final HttpEntity httpEntity = mock(HttpEntity.class);
+        final Random random = new Random();
+        final long expectedContentLength = random.nextLong();
+        when(httpEntity.getContentLength()).thenReturn(expectedContentLength);
+
+        // when
+        consumer.onEntityEnclosed(httpEntity, ContentType.create("application/json"));
 
     }
 
@@ -204,7 +276,8 @@ public class PoolingAsyncResponseConsumerTest {
     }
 
     private PoolingAsyncResponseConsumer createDefaultTestObject(ItemSourcePool<SimpleInputBuffer> itemSourcePool) {
-        return new PoolingAsyncResponseConsumer(itemSourcePool);
+        final PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics metricsFactory = new PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics("test-component", new DefaultMetricsFactory(Collections.emptyList()));
+        return new PoolingAsyncResponseConsumer(metricsFactory, itemSourcePool);
     }
 
     private PoolingAsyncResponseConsumer createDefaultTestObject() {

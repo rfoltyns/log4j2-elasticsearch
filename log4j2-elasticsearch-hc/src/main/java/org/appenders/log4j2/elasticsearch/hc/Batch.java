@@ -24,5 +24,6 @@ import java.util.Collection;
 
 public interface Batch<I> extends Request {
     Collection<I> getItems();
+    int size();
     void completed();
 }

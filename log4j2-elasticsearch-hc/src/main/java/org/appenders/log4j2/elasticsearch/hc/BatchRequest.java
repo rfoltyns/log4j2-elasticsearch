@@ -49,9 +49,11 @@ public class BatchRequest implements Batch<IndexRequest> {
     private ItemSource<ByteBuf> buffer;
 
     protected final Collection<IndexRequest> indexRequests;
+    private final int size;
 
     protected BatchRequest(final Builder builder) {
         this.indexRequests = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).toIterable(builder.items);
+        this.size = this.indexRequests.size();
         this.itemSerializer = builder.itemSerializer;
         this.resultDeserializer = builder.resultDeserializer;
         this.buffer = builder.itemSource;
@@ -147,6 +149,11 @@ public class BatchRequest implements Batch<IndexRequest> {
     @Override
     public Collection<IndexRequest> getItems() {
         return indexRequests;
+    }
+
+    @Override
+    public int size() {
+        return size;
     }
 
     @Override

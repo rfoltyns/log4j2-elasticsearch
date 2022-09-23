@@ -18,6 +18,10 @@
                                          monitorTaskInterval="10000"
                                          resizeTimeout="500">
                     <UnlimitedResizePolicy resizeFactor="0.6" />
+                    <Metrics>
+                        <Count name="total" />
+                        <Count name="available" />
+                    </Metrics>
                 </PooledItemSourceFactory>
             </JacksonJsonLayout>
             <AsyncBatchDelivery batchSize="${sys:smokeTest.batchSize:-10000}"
@@ -37,6 +41,7 @@
                                              monitorTaskInterval="10000"
                                              resizeTimeout="500">
                         <UnlimitedResizePolicy resizeFactor="0.70" />
+                        <Metrics />
                     </PooledItemSourceFactory>
                     <BatchLimitBackoffPolicy maxBatchesInFlight="4" />
                     <ServiceDiscovery serverUris="https://localhost:9200"
@@ -54,6 +59,16 @@
                              clientCertPath="${sys:pemCertInfo.clientCertPath}"
                              caPath="${sys:pemCertInfo.caPath}" />
                     </Security>
+                    <Metrics>
+                        <Count name="serverTookMs" />
+                        <Count name="itemsSent" />
+                        <Count name="itemsDelivered" />
+                        <Count name="itemsFailed" />
+                        <Count name="batchesFailed" />
+                        <Count name="failoverTookMs" />
+                        <Count name="backoffApplied" />
+                        <Count name="responseBytes" />
+                    </Metrics>
                 </HCHttp>
                 <ChronicleMapRetryFailoverPolicy fileName="${sys:appenders.failover.chroniclemap.dir:-.}/failedItems-log4j2-elasticsearch-hc.chronicleMap"
                                               numberOfEntries="${sys:appenders.failover.chroniclemap.numberOfEntries:-1000000}"
@@ -64,6 +79,9 @@
                                               monitorTaskInterval="30000">
                     <SingleKeySequenceSelector sequenceId="1"/>
                 </ChronicleMapRetryFailoverPolicy>
+                <MetricsProcessor interval="1000">
+                    <MetricLog name="metric-log" />
+                </MetricsProcessor>
             </AsyncBatchDelivery>
         </Elasticsearch>
     </Appenders>

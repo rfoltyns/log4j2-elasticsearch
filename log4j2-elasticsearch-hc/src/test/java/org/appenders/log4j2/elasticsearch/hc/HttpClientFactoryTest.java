@@ -20,17 +20,35 @@ package org.appenders.log4j2.elasticsearch.hc;
  * #L%
  */
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
 import org.apache.http.nio.conn.NHttpClientConnectionManager;
 import org.apache.http.nio.conn.SchemeIOSessionStrategy;
 import org.apache.http.nio.protocol.BasicAsyncResponseConsumer;
+import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
+import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.jupiter.api.Test;
@@ -38,6 +56,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
@@ -56,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -322,6 +342,122 @@ public class HttpClientFactoryTest {
 
     }
 
+    @Test
+    public void enablesAllPooledConsumerMetricsWithMetricRegistry() throws IOException {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "responseBytes", "count");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HttpClientFactory config = spy(new HttpClientFactory.Builder()
+                .withServerList(TEST_SERVER_LIST)
+                .withMaxTotalConnections(1)
+                .withName(expectedComponentName)
+                .withMetricConfigs(Collections.singletonList(MetricConfigFactory.createCountConfig("responseBytes")))
+                .withPooledResponseBuffers(true)
+                .withMaxTotalConnections(2)
+                .build());
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        final CloseableHttpAsyncClient closeableHttpAsyncClient = mock(CloseableHttpAsyncClient.class);
+        final HttpClient httpClient = spy(config.createInstance());
+        when(httpClient.getAsyncClient()).thenReturn(closeableHttpAsyncClient);
+
+
+        final HttpEntity httpEntity = new ByteArrayEntity(new byte[405]);
+
+        final HttpResponse httpResponse = new BasicHttpResponse(new BasicStatusLine(HttpVersion.HTTP_1_1, 200, null));
+        httpResponse.setEntity(httpEntity);
+
+        // when
+        httpClient.register(registry); // metrics are registered before first batch; that's the lazy registration
+
+        httpClient.executeAsync(new GenericRequest("GET", "http://localhost:9200", null), new TestResponseHandler());
+        ArgumentCaptor<HttpAsyncResponseConsumer> captor = ArgumentCaptor.forClass(HttpAsyncResponseConsumer.class);
+        verify(closeableHttpAsyncClient).execute(any(HttpAsyncRequestProducer.class), captor.capture(), any(HttpClientContext.class), any(FutureCallback.class));
+
+        final HttpAsyncResponseConsumer asyncResponseConsumer = captor.getValue();
+        ((PoolingAsyncResponseConsumer)asyncResponseConsumer).onResponseReceived(httpResponse);
+        ((PoolingAsyncResponseConsumer)asyncResponseConsumer).onEntityEnclosed(httpEntity, ContentType.APPLICATION_JSON);
+
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(405L));
+
+    }
+
+    @Test
+    public void configuresSubSetOfMetricsWithMetricRegistry() throws IOException {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "responseBytes", "max");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HttpClientFactory config = createDefaultTestHttpClientFactoryBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(Collections.singletonList(MetricConfigFactory.createMaxConfig("responseBytes", false)))
+                .withPooledResponseBuffers(true)
+                .withMaxTotalConnections(2)
+                .build();
+
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+
+        final HttpAsyncResponseConsumerFactory consumerFactory = config.createHttpAsyncResponseConsumerFactory();
+
+        Measured.of(consumerFactory).register(registry);
+
+        final PoolingAsyncResponseConsumer httpResponseHttpAsyncResponseConsumer = (PoolingAsyncResponseConsumer) consumerFactory.create();
+        final HttpEntity httpEntity = new ByteArrayEntity(new byte[405]);
+
+        final HttpResponse httpResponse = new BasicHttpResponse(new BasicStatusLine(HttpVersion.HTTP_1_1, 200, null));
+        httpResponse.setEntity(httpEntity);
+
+        // when
+        httpResponseHttpAsyncResponseConsumer.onResponseReceived(httpResponse);
+        httpResponseHttpAsyncResponseConsumer.onEntityEnclosed(httpEntity, ContentType.APPLICATION_JSON);
+        metricProcessor.process();
+
+        // then
+        verify(metricOutput).write(anyLong(), eq(expectedKey1), eq(405L));
+
+    }
+
+    @Test
+    public void deregistersAllMetricsWithMetricRegistry() throws IOException {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HttpClientFactory config = createDefaultTestHttpClientFactoryBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(Collections.singletonList(MetricConfigFactory.createMaxConfig("responseBytes", false)))
+                .withPooledResponseBuffers(true)
+                .withMaxTotalConnections(2)
+                .build();
+
+        final HttpAsyncResponseConsumerFactory consumerFactory = config.createHttpAsyncResponseConsumerFactory();
+
+        Measured.of(consumerFactory).register(registry);
+
+        // when
+        Measured.of(consumerFactory).deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(m -> true).size());
+
+    }
+
     private HttpClientFactory createDefaultTestHttpClientFactory() {
         return createDefaultTestHttpClientFactoryBuilder().build();
     }
@@ -397,6 +533,24 @@ public class HttpClientFactoryTest {
         @Override
         public void describeTo(Description description) {
             description.appendText(current.toString());
+        }
+
+    }
+
+    private static class TestResponseHandler implements ResponseHandler<Response> {
+        @Override
+        public void completed(Response result) {
+
+        }
+
+        @Override
+        public void failed(Exception ex) {
+
+        }
+
+        @Override
+        public Response deserializeResponse(InputStream inputStream) throws IOException {
+            return null;
         }
     }
 }

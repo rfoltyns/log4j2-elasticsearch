@@ -22,6 +22,8 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
 
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +41,7 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
  *
  * @param <T> client type
  */
-public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
+public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle, Measured {
 
     private static final String NAME = HCServiceDiscovery.class.getSimpleName();
     private volatile State state = State.STOPPED;
@@ -137,6 +139,16 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
         cachedValues.retainAll(lastResult);
     }
 
+    @Override
+    public void register(MetricsRegistry registry) {
+        Measured.of(clientProvider).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(clientProvider).deregister();
+    }
+
     class ServiceDiscoveryCallback implements org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryCallback<List<String>> {
 
         @Override
@@ -207,8 +219,9 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle {
 
         executor.shutdown();
 
-        LifeCycle.of(clientProvider).stop();
+        Measured.of(clientProvider).deregister();
 
+        LifeCycle.of(clientProvider).stop();
         listeners.clear();
 
         getLogger().debug("{}: Stopped", NAME);

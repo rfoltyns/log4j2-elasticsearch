@@ -71,13 +71,14 @@ public class ClientProviderPoliciesRegistry {
      * <ul>
      *     <li><i>serverList</i> - copies uris config from applied {@link ClientProvider} to initial {@link ClientProvider}</li>
      *     <li><i>security</i> - copies security config from applied {@link ClientProvider} to initial {@link ClientProvider}</li>
+     *     <li><i>metrics</i> - configures metrics from applied {@link ClientProvider} at initial {@link ClientProvider}</li>
      *     <li><i>shared</i> - reuses applied {@link ClientProvider} and ignores initial {@link ClientProvider}</li>
      *     <li><i>none</i> - ignores applied {@link ClientProvider} and uses initial {@link ClientProvider}</li>
      * </ul>
      *
      * <i>shared</i> and <i>none</i> can only be used exclusively, e.g. ["shared"] or ["none"]. If any other policy is present in the given list, exception will be thrown.
      *
-     * <i>serverList</i> and <i>security</i> are {@link CopyingConfigPolicy}-ies and can be mixed with other {@link CopyingConfigPolicy}-ies, e.g.: ["serverList", "security", "myCustomCopyingPolicy"].
+     * <i>serverList</i>, <i>security</i> and <i>metrics</i> are {@link CopyingConfigPolicy}-ies and can be mixed with other {@link CopyingConfigPolicy}-ies, e.g.: ["serverList", "security", "myCustomCopyingPolicy"].
      *
      * @param policies policy names
      * @param initialClientProvider {@link ClientProviderPolicy} to apply the changes to

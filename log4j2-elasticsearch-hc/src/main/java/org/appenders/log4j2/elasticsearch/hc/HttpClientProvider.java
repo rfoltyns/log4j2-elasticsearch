@@ -22,16 +22,21 @@ package org.appenders.log4j2.elasticsearch.hc;
 
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
-public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle {
+public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle, Measured {
 
     private volatile State state = State.STOPPED;
 
     private final HttpClientFactory.Builder httpClientFactoryBuilder;
 
-    private HttpClient httpClient;
+    private final AtomicReference<HttpClient> httpClient = new AtomicReference<>(null);
 
     public HttpClientProvider(HttpClientFactory.Builder httpClientFactoryBuilder) {
         this.httpClientFactoryBuilder = httpClientFactoryBuilder;
@@ -40,11 +45,11 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
     @Override
     public HttpClient createClient() {
 
-        if (httpClient == null) {
-            httpClient = httpClientFactoryBuilder.build().createInstance();
+        if (httpClient.get() == null) {
+            httpClient.set(httpClientFactoryBuilder.build().createInstance());
         }
 
-        return httpClient;
+        return httpClient.get();
 
     }
 
@@ -78,9 +83,14 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
             return;
         }
 
-        LifeCycle.of(getHttpClientFactoryBuilder().serviceDiscovery).stop();
-        LifeCycle.of(httpClient).stop();
-        httpClient = null;
+        final ServiceDiscovery serviceDiscovery = getHttpClientFactoryBuilder().serviceDiscovery;
+        Measured.of(serviceDiscovery).deregister(); // prevent leaks
+        LifeCycle.of(serviceDiscovery).stop();
+
+        Measured.of(httpClient.get()).deregister(); // prevent leaks
+        LifeCycle.of(httpClient.get()).stop();
+
+        httpClient.set(null);
 
         state = State.STOPPED;
 
@@ -97,9 +107,24 @@ public class HttpClientProvider implements ClientProvider<HttpClient>, LifeCycle
     }
 
     @Override
+    public void register(MetricsRegistry registry) {
+        if (httpClient.get() == null) {
+            getLogger().warn("{}: Metrics not ready. HttpClient not created yet", HttpClientProvider.class.getSimpleName());
+            return;
+        }
+        httpClient.get().register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        Measured.of(httpClient.get()).deregister();
+    }
+
+    @Override
     public String toString() {
         return "HttpClientProvider{" +
                 "config=" + httpClientFactoryBuilder +
                 '}';
     }
+
 }

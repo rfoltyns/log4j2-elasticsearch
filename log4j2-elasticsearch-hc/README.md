@@ -42,20 +42,22 @@ It's highly recommended to put this plugin behind `AsyncLogger`. See [log4j2.xml
 ```
 
 ### HCHttp Properties
-| Name                             | Type      | Required                                                        | Default                     | Description                                                                                                                                                                                                                                                                                        |
-|----------------------------------|-----------|-----------------------------------------------------------------|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| serverUris                       | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.                                                                                                                                                                                              |
-| connTimeout                      | Attribute | no                                                              | 1000                        | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                                                                                                                              |
-| readTimeout                      | Attribute | no                                                              | 0                           | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                                                                                                                                   |
-| maxTotalConnections              | Attribute | no                                                              | 8                           | Number of connections available.                                                                                                                                                                                                                                                                   |
-| ioThreadCount                    | Attribute | no                                                              | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                                                                                                                                |
-| itemSourceFactory                | Element   | yes                                                             | None                        | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                                                                                                                                                                         |
-| mappingType                      | Attribute | no                                                              | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). <br/> DEPRECATED: As of 1.7, this attribute will be removed. Use [ElasticsearchBulk](#elasticsearchbulk) instead. |
-| pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response.                                                                                                                                                     |
-| pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                                                                                                                                                                       |
-| auth                             | Element   | no                                                              | None                        | Security config. [Security](#pem-cert-config)                                                                                                                                                                                                                                                      |
-| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](#service-discovery)                                                                                                                                                                                                                                   |
-| clientAPIFactory                 | Element   | no                                                              | `ElasticsearchBulk`         | Batch API factory. [ElasticsearchBulk](#elasticsearchbulk)                                                                                                                                                                                                                                         |
+| Name                             | Type      | Required                                                        | Default                     | Description                                                                                                                                                                                                                                                                                                                                                      |
+|----------------------------------|-----------|-----------------------------------------------------------------|-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| serverUris                       | Attribute | no (MUST be specified by either `HCHttp` or `ServiceDiscovery`) | None                        | List of semicolon-separated `http[s]://host:[port]` addresses of Elasticsearch nodes to connect with.                                                                                                                                                                                                                                                            |
+| connTimeout                      | Attribute | no                                                              | 1000                        | Number of milliseconds before ConnectException is thrown while attempting to connect.                                                                                                                                                                                                                                                                            |
+| readTimeout                      | Attribute | no                                                              | 0                           | Number of milliseconds before SocketTimeoutException is thrown while waiting for response bytes.                                                                                                                                                                                                                                                                 |
+| maxTotalConnections              | Attribute | no                                                              | 8                           | Number of connections available.                                                                                                                                                                                                                                                                                                                                 |
+| ioThreadCount                    | Attribute | no                                                              | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                                                                                                                                                                                              |
+| itemSourceFactory                | Element   | yes                                                             | None                        | `ItemSourceFactory` used to create wrappers for batch requests. `PooledItemSourceFactory` and it's extensions can be used.                                                                                                                                                                                                                                       |
+| mappingType                      | Attribute | no                                                              | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). <br/> DEPRECATED: As of 1.7, this attribute will be removed. Use [ElasticsearchBulk](#elasticsearchbulk) instead.                                                               |
+| pooledResponseBuffers            | Attribute | no                                                              | yes                         | If `true`, pooled `SimpleInputBuffer`s will be used to handle responses. Otherwise, new `SimpleInputBuffer` wil be created for every response.                                                                                                                                                                                                                   |
+| pooledResponseBuffersSizeInBytes | Attribute | no                                                              | 1MB (1048756 bytes)         | Single response buffer size.                                                                                                                                                                                                                                                                                                                                     |
+| auth                             | Element   | no                                                              | None                        | Security config. [Security](#pem-cert-config)                                                                                                                                                                                                                                                                                                                    |
+| serviceDiscovery                 | Element   | no                                                              | None                        | Service discovery config. [ServiceDiscovery](#service-discovery)                                                                                                                                                                                                                                                                                                 |
+| clientAPIFactory                 | Element   | no                                                              | `ElasticsearchBulk`         | Batch API factory. [ElasticsearchBulk](#elasticsearchbulk)                                                                                                                                                                                                                                                                                                       |
+| name                             | Attribute | No                                                              | `HCHttp`                    | Metric component name                                                                                                                                                                                                                                                                                                                                            |
+| metricConfig                     | Element[] | No                                                              | Disabled `MetricConfig`(s)  | `Metrics` supported by this component:<br/>- `serverTookMs`<br/>- `itemsSent`<br/>- `itemsDelivered`<br/>- `itemsFailed`<br/>- `backoffApplied`<br/>- `batchesFailed`<br/>-`failoverTookMs`<br/>-`responseBytes` <br/> - `initial`<br/>- `total`<br/>- `available`<br/>- `noSuchElementCaught`<br/>- `resizeAttempts`<br/>See `Metrics` docs below for more info |
 
 ### Service Discovery
 
@@ -271,6 +273,73 @@ JVM params:
 |------------------------------------------|---------|---------|
 | -Dappenders.BatchRequest.jctools.enabled | boolean | true    |
 | -Dappenders.BatchRequest.initialSize     | int     | 10000   |
+
+## Metrics
+
+See [Core Metrics](../log4j2-elasticsearch-core#metrics) for detailed documentation.
+
+### Measured HC components
+
+All [Measured Core components](../log4j2-elasticsearch-core#measured-core-components) and:
+
+[HCHttp](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/HCHttp.java):
+* itemsSent `Count`: number of items sent to cluster
+* itemsDelivered `Count`: number of items successfully delivered to cluster
+* itemsFailed `Count`: number of items received by failure handler as a result of cluster response or cluster unavailability
+* backoffApplied `Count`: number of items dropped due to back-off policy kicking in (still delivered to `FailoverPolicy` and counted as `itemsFailed`)
+* batchesFailed `Count`: number of batches received by failure handler as a result of cluster response or cluster unavailability
+* serverTookMs `Max`: maximum time spent on cluster side
+* failoverTookMs `Max`: maximum time spent handling failover as a result of cluster response, cluster unavailability or back-off policy
+* all [GenericItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/GenericItemSourcePool.java) metrics
+* all [PoolingAsyncResponseConsumerFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/PoolingAsyncResponseConsumerFactory.java) metrics if `pooledResponseBuffers` set to `true`
+
+Example:
+```xml
+<HCHttp name="some-sensible-name" serverUris="https://localhost:9200" >
+    <Metrics>
+        <Count name="itemsSent" />
+        <Count name="itemsDelivered" />
+        <Count name="itemsFailed" />
+        <Count name="backoffApplied" />
+        <Count name="batchesFailed" />
+        <Max name="serverTookMs" />
+        <Max name="failoverTookMs" />
+    </Metrics>
+</HCHttp>
+```
+
+[ServiceDiscovery](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/discovery/HCServiceDiscovery.java):
+* If `policies == "shared"`, all [PoolingAsyncResponseConsumerFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/PoolingAsyncResponseConsumerFactory.java) metrics configured at HTTP client at `HCHttp` level. Otherwise, all [PoolingAsyncResponseConsumerFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/PoolingAsyncResponseConsumerFactory.java) metrics of service discovery client
+
+Example:
+```xml
+<HCHttp name="some-sensible-name" serverUris="https://localhost:9200" >
+    <ServiceDiscovery name="another-sensible-name"
+                      serverUris="https://localhost:9200"
+                      targetScheme="https"
+                      refreshInterval="10000"
+                      nodesFilter="ingest:true"
+                      policies="none">
+        <Count name="available" />
+        <Count name="responseBytes" />
+    </ServiceDiscovery>
+</HCHttp>
+```
+
+[PoolingAsyncResponseConsumerFactory](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/main/java/org/appenders/log4j2/elasticsearch/hc/PoolingAsyncResponseConsumerFactory.java) if `pooledResponseBuffers` set to `true`. Actually, `HttpClient` metrics at respective level (`HCHttp` or `ServiceDiscovery`):
+* responseBytes `Count`- response content length
+* all [GenericItemSourcePool](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/GenericItemSourcePool.java) metrics
+
+Example:
+```xml
+<HCHttp name="some-sensible-name" serverUris="https://localhost:9200" >
+    <Metrics>
+        <Count name="responseBytes" />
+    </Metrics>
+</HCHttp>
+```
+
+More metrics will become available in future releases. [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
 ## Dependencies
 

@@ -26,9 +26,13 @@ import org.appenders.log4j2.elasticsearch.OperationFactory;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.hc.failover.HCFailedItemOps;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.function.Function;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -45,6 +49,10 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         super(builder);
         this.batchOperations = builder.batchOperations;
         this.operationFactory = builder.operationFactory;
+    }
+
+    public static List<MetricConfig> metricConfigs(final boolean enabled) {
+        return BatchingClientMetrics.createConfigs(enabled);
     }
 
     @Override
@@ -133,6 +141,18 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         LifeCycle.of(operationFactory).stop();
     }
 
+    @Override
+    public void register(MetricsRegistry registry) {
+        super.register(registry);
+        Measured.of(batchOperations).register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        super.deregister();
+        Measured.of(batchOperations).deregister();
+    }
+
     private class HCResponseHandler implements ResponseHandler<BatchResult> {
 
         private final BatchRequest request;
@@ -147,7 +167,7 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         @Override
         public void completed(BatchResult result) {
 
-            getLogger().debug("Cluster service time: {}", result.getTook());
+            metrics.serverTookMs(result.getTook());
 
             backoffPolicy.deregister(request);
 
@@ -155,6 +175,8 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
                 // TODO: filter only failed indexRequests when retry is ready.
                 // failing whole request for now
                 failureHandler.apply(request);
+            } else {
+                metrics.itemsDelivered(request.size());
             }
             request.completed();
 
@@ -178,4 +200,5 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
         }
 
     }
+
 }

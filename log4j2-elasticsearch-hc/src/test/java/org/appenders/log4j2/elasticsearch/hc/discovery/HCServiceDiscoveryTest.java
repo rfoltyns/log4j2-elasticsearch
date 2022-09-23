@@ -24,6 +24,7 @@ import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -503,6 +504,47 @@ public class HCServiceDiscoveryTest {
 
         // then
         verify(clientProvider).stop();
+
+    }
+
+    // ==========
+    // LIFECYCLE
+    // ==========
+
+    @Test
+    public void registersComponentsMetrics() {
+
+        // given
+        final HttpClientProvider clientProvider = clientProviderMock();
+
+        final HCServiceDiscovery<HttpClient> serviceDiscovery = createDefaultTestServiceDiscovery(clientProvider);
+
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+
+        // when
+        serviceDiscovery.register(registry);
+
+        // then
+        verify(clientProvider).register(registry);
+
+    }
+
+    @Test
+    public void deregistersComponentsMetrics() {
+
+        // given
+        final HttpClientProvider clientProvider = clientProviderMock();
+
+        final HCServiceDiscovery<HttpClient> serviceDiscovery = createDefaultTestServiceDiscovery(clientProvider);
+
+        final MetricsRegistry registry = mock(MetricsRegistry.class);
+        serviceDiscovery.register(registry);
+
+        // when
+        serviceDiscovery.deregister();
+
+        // then
+        verify(clientProvider).deregister();
 
     }
 

@@ -33,6 +33,8 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.appenders.core.logging.InternalLogging;
+import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
@@ -45,15 +47,19 @@ import org.appenders.log4j2.elasticsearch.Credentials;
 import org.appenders.log4j2.elasticsearch.DataStream;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.ExampleJacksonModule;
+import org.appenders.log4j2.elasticsearch.GenericItemSourceLayout;
+import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
-import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.JacksonJsonLayoutPlugin;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
+import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.OpSource;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ResourceUtil;
+import org.appenders.log4j2.elasticsearch.Serializer;
 import org.appenders.log4j2.elasticsearch.SimpleIndexName;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.VirtualProperty;
@@ -77,12 +83,20 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
+import org.appenders.log4j2.elasticsearch.hc.PoolingAsyncResponseConsumer;
+import org.appenders.log4j2.elasticsearch.hc.PoolingAsyncResponseConsumerFactory;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryRequest;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.IncludeExclude;
+import org.appenders.log4j2.elasticsearch.metrics.MetricLog;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
 import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
 import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
@@ -90,10 +104,12 @@ import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
 import org.junit.jupiter.api.BeforeEach;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -126,6 +142,9 @@ public class SmokeTest extends SmokeTestBase {
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
+                .add("metrics.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.metrics.enabled", "true")))
+                .add("metrics.includes", System.getProperty("smokeTest.metrics.includes", ""))
+                .add("metrics.excludes", System.getProperty("smokeTest.metrics.excludes", ""))
                 .add("api.version", System.getProperty("smokeTest.api.version", "8.3.2"));
     }
 
@@ -148,6 +167,9 @@ public class SmokeTest extends SmokeTestBase {
         final String indexName = getConfig().getProperty("indexName", String.class);
         final boolean serviceDiscoveryEnabled = getConfig().getProperty("servicediscovery.enabled", Boolean.class);
         final String version = getConfig().getProperty("api.version", String.class);
+        final boolean metricsEnabled = getConfig().getProperty("metrics.enabled", Boolean.class);
+        final List<String> metricsIncludes = SplitUtil.split(getConfig().getProperty("metrics.includes", String.class));
+        final List<String> metricsExcludes = SplitUtil.split(getConfig().getProperty("metrics.excludes", String.class));
 
         getLogger().info("{}", getConfig().getAll());
 
@@ -157,7 +179,7 @@ public class SmokeTest extends SmokeTestBase {
         UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
 
         int estimatedBatchSizeInBytes = batchSize * initialItemBufferSizeInBytes;
-        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes);
+        PooledItemSourceFactory<Object, ByteBuf> pooledItemSourceFactory = batchItemPool(initialBatchPoolSize, estimatedBatchSizeInBytes, metricsEnabled);
 
         final List<String> serverList = getServerList(secured, getConfig().getProperty("serverList", String.class));
         HttpClientFactory.Builder httpConfig = new HttpClientFactory.Builder()
@@ -172,19 +194,23 @@ public class SmokeTest extends SmokeTestBase {
 
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
-        HCHttp.Builder httpObjectFactoryBuilder = new HCHttp.Builder()
+        HCHttp.Builder httpObjectFactoryBuilder = (HCHttp.Builder) new HCHttp.Builder()
                 .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), dataStreamsEnabled))
                 .withClientProvider(clientProvider)
-                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8));
+                .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8))
+                .withName("http-main")
+                .withMetricConfigs(HCHttp.metricConfigs(metricsEnabled));
 
         if (serviceDiscoveryEnabled) {
 
             HttpClientProvider serviceDiscoveryClientProvider = new HttpClientProvider(new HttpClientFactory.Builder()
+                    .withName("http-discovery")
                     .withServerList(serverList)
                     .withReadTimeout(1000)
                     .withConnTimeout(500)
                     .withMaxTotalConnections(1)
                     .withIoThreadCount(1)
+                    .withMetricConfigs(PoolingAsyncResponseConsumer.metricConfigs(metricsEnabled))
                     .withPooledResponseBuffers(true)
                     .withPooledResponseBuffersSizeInBytes(4096));
 
@@ -208,6 +234,7 @@ public class SmokeTest extends SmokeTestBase {
                         new SyncStepProcessor(clientProvider, configuredReader()),
                         new Log4j2Lookup(configuration.getStrSubstitutor())));
 
+        final BasicMetricsRegistry metricRegistry = new BasicMetricsRegistry();
         BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize)
@@ -215,56 +242,72 @@ public class SmokeTest extends SmokeTestBase {
                 .withSetupOpSources(setupOpSources(VersionUtil.parse(version), indexName, ecsEnabled, dataStreamsEnabled))
                 .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
+                .withMetricProcessor(new ScheduledMetricsProcessor(0L, 5000L, Clock.systemDefaultZone(), metricRegistry, new MetricOutput[] {
+                        new MetricLog(indexName, new LazyLogger(InternalLogging::getLogger), new IncludeExclude(metricsIncludes, metricsExcludes)),
+                }))
                 .build();
 
         IndexNameFormatter<Object> indexNameFormatter = new SimpleIndexName.Builder<>()
                 .withIndexName(indexName)
                 .build();
 
-        JacksonJsonLayout.Builder layoutBuilder = JacksonJsonLayout.newBuilder()
-                .setConfiguration(configuration)
-                .withVirtualProperties(
-                        new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
-                        new VirtualProperty("progField", "constantValue", false)
-                )
-                .withSingleThread(getConfig().getProperty("singleThread", Boolean.class))
-                .withJacksonModules(ExampleJacksonModule.newBuilder().build());
+        final PooledItemSourceFactory<LogEvent, ByteBuf> sourceFactoryConfig = new PooledItemSourceFactory.Builder<LogEvent, ByteBuf>()
+                .withPoolName("itemPool")
+                .withPooledObjectOps(new ByteBufPooledObjectOps(
+                        byteBufAllocator,
+                        new ByteBufBoundedSizeLimitPolicy(initialItemBufferSizeInBytes, initialItemBufferSizeInBytes * 2)))
+                .withInitialPoolSize(initialItemPoolSize)
+                .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(metricsEnabled))
+                .withMonitored(true)
+                .withMonitorTaskInterval(10000)
+                .build();
 
-        if (ecsEnabled) {
-            layoutBuilder.withMixins(new JacksonMixIn.Builder()
-                    .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
-                    .withTargetClass(LogEvent.class.getName())
-                    .build());
-        }
+        final Serializer<LogEvent> serializer = createLogEventSerializer(ecsEnabled, dataStreamsEnabled, configuration);
+        final GenericItemSourceLayout.Builder<LogEvent, ByteBuf> layoutBuilder = new GenericItemSourceLayout.Builder<LogEvent, ByteBuf>()
+                .withSerializer(serializer)
+                .withItemSourceFactory(sourceFactoryConfig);
 
-        if (dataStreamsEnabled) {
-            layoutBuilder.withMixins(new JacksonMixIn.Builder()
-                    .withMixInClass(LogEventDataStreamMixIn.class.getName())
-                    .withTargetClass(LogEvent.class.getName())
-                    .build());
-        }
-
-        if (buffered) {
-            PooledItemSourceFactory<LogEvent, ByteBuf> sourceFactoryConfig = new PooledItemSourceFactory.Builder<LogEvent, ByteBuf>()
-                    .withPoolName("itemPool")
-                    .withPooledObjectOps(new ByteBufPooledObjectOps(
-                            byteBufAllocator,
-                            new ByteBufBoundedSizeLimitPolicy(initialItemBufferSizeInBytes, initialItemBufferSizeInBytes * 2)))
-                    .withInitialPoolSize(initialItemPoolSize)
-                    .withResizePolicy(new UnlimitedResizePolicy.Builder().build())
-                    .withMonitored(true)
-                    .withMonitorTaskInterval(10000)
-                    .build();
-            layoutBuilder.withItemSourceFactory(sourceFactoryConfig).build();
-        }
+        //noinspection rawtypes
+        @SuppressWarnings("unchecked")
+        final JacksonJsonLayoutPlugin layout = new JacksonJsonLayoutPlugin(layoutBuilder);
 
         return ElasticsearchAppender.newBuilder()
                 .withName(getConfig().getProperty("appenderName", String.class))
                 .withMessageOnly(messageOnly)
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)
-                .withLayout(layoutBuilder.build())
+                .withLayout(layout)
                 .withIgnoreExceptions(false);
+    }
+
+    private Serializer<LogEvent> createLogEventSerializer(boolean ecsEnabled, boolean dataStreamsEnabled, Configuration configuration) {
+
+        final JacksonSerializer.Builder<LogEvent> serializerBuilder = new JacksonSerializer.Builder<LogEvent>()
+                .withVirtualProperties(
+                        new VirtualProperty("hostname", "${env:hostname:-undefined}", false),
+                        new VirtualProperty("progField", "constantValue", false)
+                )
+                .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()))
+                .withSingleThread(getConfig().getProperty("singleThread", Boolean.class))
+                .withJacksonModules(new ExtendedLog4j2JsonModule(), ExampleJacksonModule.newBuilder().build());
+
+        if (ecsEnabled) {
+            serializerBuilder.withMixins(new JacksonMixIn.Builder()
+                    .withMixInClass(LogEventJacksonEcsJsonMixIn.class.getName())
+                    .withTargetClass(LogEvent.class.getName())
+                    .build());
+        }
+
+        if (dataStreamsEnabled) {
+            serializerBuilder.withMixins(new JacksonMixIn.Builder()
+                    .withMixInClass(LogEventDataStreamMixIn.class.getName())
+                    .withTargetClass(LogEvent.class.getName())
+                    .build());
+        }
+
+        return serializerBuilder.build();
+
     }
 
     private BatchOperations batchOperations(final PooledItemSourceFactory pooledItemSourceFactory,
@@ -285,15 +328,14 @@ public class SmokeTest extends SmokeTestBase {
 
     }
 
-    private PooledItemSourceFactory<Object, ByteBuf> batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes) {
+    private PooledItemSourceFactory<Object, ByteBuf> batchItemPool(int initialBatchPoolSize, int estimatedBatchSizeInBytes, boolean metricsEnabled) {
         return new PooledItemSourceFactory.Builder<Object, ByteBuf>()
                 .withPoolName("batchPool")
                 .withInitialPoolSize(initialBatchPoolSize)
                 .withPooledObjectOps(new ByteBufPooledObjectOps(
                         UnpooledByteBufAllocator.DEFAULT,
                         new ByteBufBoundedSizeLimitPolicy(estimatedBatchSizeInBytes, estimatedBatchSizeInBytes)))
-                .withMonitored(true)
-                .withMonitorTaskInterval(10000)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(metricsEnabled))
                 .build();
 
     }
@@ -422,7 +464,7 @@ public class SmokeTest extends SmokeTestBase {
 
     }
 
-    private String resolveIndexName(boolean dataStreamsEnabled) {
+    private String resolveIndexName(final boolean dataStreamsEnabled) {
 
         String indexName = System.getProperty("smokeTest.indexName");
 
@@ -440,6 +482,21 @@ public class SmokeTest extends SmokeTestBase {
     private String indexTemplatePath() {
         final boolean dsEnabled = getConfig().getProperty("datastreams.enabled", Boolean.class);
         return String.format("classpath:composableIndexTemplate-7%s.json", dsEnabled ? "-data-stream"  : "");
+    }
+
+    private static class LazyLogger implements Logger {
+
+        private final Supplier<Logger> loggerSupplier;
+
+        public LazyLogger(final Supplier<Logger> loggerSupplier) {
+            this.loggerSupplier = loggerSupplier;
+        }
+
+        @Override
+        public void info(final String messageFormat, Object... parameters) {
+            loggerSupplier.get().info(messageFormat, parameters);
+        }
+
     }
 
 }

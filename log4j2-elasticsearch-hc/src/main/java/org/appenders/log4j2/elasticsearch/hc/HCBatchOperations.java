@@ -26,8 +26,10 @@ import org.appenders.log4j2.elasticsearch.BatchOperations;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
-public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCycle {
+public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCycle, Measured {
 
     private volatile State state = State.STOPPED;
 
@@ -148,5 +150,9 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
         return state == State.STOPPED;
     }
 
+    @Override
+    public void register(MetricsRegistry registry) {
+        Measured.of(batchBufferFactory).register(registry);
+    }
 }
 

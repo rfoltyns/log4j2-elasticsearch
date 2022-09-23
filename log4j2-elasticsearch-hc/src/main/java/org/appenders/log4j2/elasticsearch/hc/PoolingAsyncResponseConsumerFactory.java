@@ -25,23 +25,36 @@ import org.apache.http.nio.protocol.HttpAsyncResponseConsumer;
 import org.apache.http.nio.util.SimpleInputBuffer;
 import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.Measured;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 
 /**
  * Allows to create pooled response consumer
  */
-public class PoolingAsyncResponseConsumerFactory implements HttpAsyncResponseConsumerFactory, LifeCycle {
+public class PoolingAsyncResponseConsumerFactory implements HttpAsyncResponseConsumerFactory, LifeCycle, Measured {
 
     private volatile State state = State.STOPPED;
 
     private final GenericItemSourcePool<SimpleInputBuffer> pool;
+    private final PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics metrics;
 
-    public PoolingAsyncResponseConsumerFactory(GenericItemSourcePool<SimpleInputBuffer> pool) {
+    public PoolingAsyncResponseConsumerFactory(final GenericItemSourcePool<SimpleInputBuffer> pool) {
+        this(pool, PoolingAsyncResponseConsumer.class.getSimpleName(), new DefaultMetricsFactory(PoolingAsyncResponseConsumer.metricConfigs(false)));
+    }
+
+    public PoolingAsyncResponseConsumerFactory(
+            final GenericItemSourcePool<SimpleInputBuffer> pool,
+            final String name,
+            final MetricsFactory metricsFactory) {
         this.pool = pool;
+        this.metrics = new PoolingAsyncResponseConsumer.AsyncResponseConsumerMetrics(name, metricsFactory);
     }
 
     @Override
     public HttpAsyncResponseConsumer<HttpResponse> create() {
-        return new PoolingAsyncResponseConsumer(pool);
+        return new PoolingAsyncResponseConsumer(metrics, pool);
     }
 
     // ==========
@@ -63,6 +76,7 @@ public class PoolingAsyncResponseConsumerFactory implements HttpAsyncResponseCon
 
         if (!isStopped()) {
             pool.stop();
+            deregister();
             state = State.STOPPED;
         }
 
@@ -76,6 +90,18 @@ public class PoolingAsyncResponseConsumerFactory implements HttpAsyncResponseCon
     @Override
     public boolean isStopped() {
         return state == State.STOPPED;
+    }
+
+    @Override
+    public void register(final MetricsRegistry registry) {
+        pool.register(registry);
+        metrics.register(registry);
+    }
+
+    @Override
+    public void deregister() {
+        pool.deregister();
+        metrics.deregister();
     }
 
 }

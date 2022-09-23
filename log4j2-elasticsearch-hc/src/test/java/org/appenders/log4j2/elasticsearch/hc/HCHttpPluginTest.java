@@ -33,6 +33,11 @@ import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.Metric;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -250,6 +255,42 @@ public class HCHttpPluginTest {
 
         // then
         verify(clientAPIFactory).batchBuilder();
+
+    }
+
+    @Test
+    public void registersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final Metric.Key notExpectedKey = new Metric.Key(expectedComponentName, "serverTookMs", "noop");
+        final Metric.Key expectedKey1 = new Metric.Key(expectedComponentName, "serverTookMs", "max");
+        final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "itemsSent", "noop");
+        final Metric.Key expectedKey3 = new Metric.Key(expectedComponentName, "itemsDelivered", "noop");
+        final Metric.Key expectedKey4 = new Metric.Key(expectedComponentName, "itemsFailed", "noop");
+        final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "backoffApplied", "noop");
+        final Metric.Key expectedKey6 = new Metric.Key(expectedComponentName, "batchesFailed", "noop");
+        final Metric.Key expectedKey7 = new Metric.Key(expectedComponentName, "failoverTookMs", "noop");
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HCHttpPlugin.Builder builder = spy(createDefaultHttpObjectFactoryBuilder())
+                .withName(expectedComponentName)
+                .withMetricConfig(MetricConfigFactory.createMaxConfig("serverTookMs", false));
+
+        final HCHttpPlugin plugin = builder.build();
+
+        // when
+        plugin.register(registry);
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().equals(notExpectedKey) && TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey1) && TestKeyAccessor.getMetricType(metric.getKey()).equals("max")).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey2)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey3)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey4)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey6)).size());
+        assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey7)).size());
 
     }
 

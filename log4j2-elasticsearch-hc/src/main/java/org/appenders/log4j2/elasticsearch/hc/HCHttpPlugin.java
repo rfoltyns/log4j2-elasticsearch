@@ -43,7 +43,12 @@ import org.appenders.log4j2.elasticsearch.ValueResolver;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.backoff.NoopBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
+
+import java.util.Collections;
 
 /**
  * {@inheritDoc}
@@ -110,6 +115,11 @@ public class HCHttpPlugin extends HCHttp {
 
         @PluginElement("serviceDiscovery")
         protected ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory;
+        @PluginBuilderAttribute
+        private String name = HCHttp.class.getSimpleName();
+
+        @PluginElement("metricsFactory")
+        private final MetricsFactory metricsFactory = new DefaultMetricsFactory(Collections.emptyList());
 
         protected ValueResolver valueResolver;
 
@@ -119,14 +129,20 @@ public class HCHttpPlugin extends HCHttp {
         @Override
         public HCHttpPlugin build() {
 
-            HttpClientProvider clientProvider = createClientProvider();
-
-            return new HCHttpPlugin(new HCHttp.Builder()
+            final HttpClientProvider clientProvider = createClientProvider();
+            final HCHttp.Builder builder = (HCHttp.Builder) new HCHttp.Builder()
                     .withBatchOperations(createBatchOperations())
                     .withOperationFactory(createOperationFactory(clientProvider))
                     .withClientProvider(clientProvider)
                     .withBackoffPolicy(backoffPolicy == null ? new NoopBackoffPolicy<>() : backoffPolicy)
-                    .validate());
+                    .withName(name);
+
+            // Don't allow factory replacement yet. Maybe in future releases?
+            for (final MetricConfig metricConfig : metricsFactory.getMetricConfigs()) {
+                builder.withMetricConfig(metricConfig);
+            }
+
+            return new HCHttpPlugin(builder.validate());
 
         }
 
@@ -170,6 +186,7 @@ public class HCHttpPlugin extends HCHttp {
 
         protected HttpClientFactory.Builder createHttpClientFactoryBuilder() {
             return new HttpClientFactory.Builder()
+                    .withName(name)
                     .withServerList(SplitUtil.split(serverUris, ";"))
                     .withConnTimeout(connTimeout)
                     .withReadTimeout(readTimeout)
@@ -283,6 +300,16 @@ public class HCHttpPlugin extends HCHttp {
 
         public Builder withServiceDiscoveryFactory(ServiceDiscoveryFactory<HttpClient> serviceDiscoveryFactory) {
             this.serviceDiscoveryFactory = serviceDiscoveryFactory;
+            return this;
+        }
+
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder withMetricConfig(final MetricConfig metricConfig) {
+            metricsFactory.configure(metricConfig);
             return this;
         }
 

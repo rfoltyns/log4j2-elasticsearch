@@ -46,9 +46,13 @@ import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.UnlimitedResizePolicy;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Factory for Apache HC Client specific objects
@@ -68,6 +72,8 @@ public class HttpClientFactory {
     protected final boolean pooledResponseBuffersEnabled;
     protected final int pooledResponseBuffersSizeInBytes;
     protected final ServiceDiscovery serviceDiscovery;
+    protected final MetricsFactory metricsFactory;
+    private final String name;
 
     HttpClientFactory(HttpClientFactory.Builder httpClientFactoryBuilder) {
         this.serverList = httpClientFactoryBuilder.serverList;
@@ -83,6 +89,8 @@ public class HttpClientFactory {
         this.pooledResponseBuffersEnabled = httpClientFactoryBuilder.pooledResponseBuffersEnabled;
         this.pooledResponseBuffersSizeInBytes = httpClientFactoryBuilder.pooledResponseBuffersSizeInBytes;
         this.serviceDiscovery = httpClientFactoryBuilder.serviceDiscovery;
+        this.metricsFactory = httpClientFactoryBuilder.metricsFactory;
+        this.name = httpClientFactoryBuilder.name;
     }
 
     public HttpClient createInstance() {
@@ -108,7 +116,8 @@ public class HttpClientFactory {
 
     protected HttpAsyncResponseConsumerFactory createHttpAsyncResponseConsumerFactory() {
         if (pooledResponseBuffersEnabled) {
-            return new PoolingAsyncResponseConsumerFactory(createPool());
+            final String componentName = name == null ? HttpClient.class.getSimpleName() : name;
+            return new PoolingAsyncResponseConsumerFactory(createPool(componentName), componentName, metricsFactory);
         }
         return HttpAsyncMethods::createConsumer;
     }
@@ -199,18 +208,17 @@ public class HttpClientFactory {
     }
 
 
-    private GenericItemSourcePool<SimpleInputBuffer> createPool() {
+    private GenericItemSourcePool<SimpleInputBuffer> createPool(final String poolName) {
         return new GenericItemSourcePool<>(
-                "hc-responseBufferPool",
+                poolName,
                 new SimpleInputBufferPooledObjectOps(
                         HeapByteBufferAllocator.INSTANCE,
                         pooledResponseBuffersSizeInBytes
                 ),
                 new UnlimitedResizePolicy.Builder().withResizeFactor(0.5).build(),
-                1000L,
-                false,
-                30000,
-                maxTotalConnections
+                1000,
+                maxTotalConnections,
+                metricsFactory
         );
     }
 
@@ -230,6 +238,10 @@ public class HttpClientFactory {
         protected int pooledResponseBuffersSizeInBytes;
         protected Auth<Builder> auth;
         protected ServiceDiscovery serviceDiscovery;
+        final MetricsFactory metricsFactory = new DefaultMetricsFactory()
+                .configure(PoolingAsyncResponseConsumer.metricConfigs(false))
+                .configure(GenericItemSourcePool.metricConfigs(false));
+        String name;
 
         public HttpClientFactory build() {
             return new HttpClientFactory(lazyInit());
@@ -333,6 +345,16 @@ public class HttpClientFactory {
             return this;
         }
 
+        public Builder withMetricConfigs(final List<MetricConfig> metricConfigs) {
+            metricsFactory.configure(metricConfigs);
+            return this;
+        }
+
+        public Builder withName(String name) {
+            this.name = name;
+            return this;
+        }
+
         @Override
         public String toString() {
             return "Builder{" +
@@ -345,9 +367,10 @@ public class HttpClientFactory {
                     ", pooledResponseBuffersSizeInBytes=" + pooledResponseBuffersSizeInBytes +
                     ", auth=" + (auth != null) +
                     ", serviceDiscovery=" + (serviceDiscovery != null) +
+                    ", metrics=" + metricsFactory.getMetricConfigs().size() +
+                    ", name='" + name + '\'' +
                     '}';
         }
-
     }
 
 }
