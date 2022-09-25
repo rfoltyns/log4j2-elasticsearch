@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
 
 import java.io.OutputStream;
@@ -44,6 +43,11 @@ public class JacksonSerializer<T> implements Serializer<T> {
 
     public JacksonSerializer(ObjectWriter objectWriter) {
         this.objectWriter = objectWriter;
+    }
+
+    @Override
+    public byte[] writeAsBytes(T source) throws Exception {
+        return objectWriter.writeValueAsBytes(source);
     }
 
     @Override

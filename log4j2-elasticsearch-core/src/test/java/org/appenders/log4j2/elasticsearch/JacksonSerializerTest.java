@@ -394,6 +394,55 @@ public class JacksonSerializerTest {
 
     }
 
+    @Test
+    public void writesAsBytes() throws Exception {
+
+        // given
+        final String expectedContent = UUID.randomUUID().toString();
+        final Serializer<Object> serializer = createDefaultTestBuilder().build();
+
+        // when
+        final byte[] result = serializer.writeAsBytes(new Dummy(expectedContent));
+
+        // then
+        assertThat(new String(result), containsString(expectedContent));
+
+    }
+
+    @Test
+    public void writesAsString() throws Exception {
+
+        // given
+        final String expectedContent = UUID.randomUUID().toString();
+        final Serializer<Object> serializer = createDefaultTestBuilder().build();
+
+        // when
+        final String result = serializer.writeAsString(new Dummy(expectedContent));
+
+        // then
+        assertThat(result, containsString(expectedContent));
+
+    }
+
+    @Test
+    public void writesToOutputStream() throws Exception {
+
+        // given
+        final String expectedContent = UUID.randomUUID().toString();
+        final Serializer<Object> serializer = createDefaultTestBuilder().build();
+
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream(64);
+
+        // when
+        serializer.write(outputStream, new Dummy(expectedContent));
+
+        System.out.println(outputStream.size());
+
+        // then
+        assertThat(outputStream.toString("UTF-8"), containsString(expectedContent));
+
+    }
+
     private JacksonSerializer.Builder<Object> createDefaultTestBuilder() {
         return new JacksonSerializer.Builder<>();
     }
@@ -403,6 +452,29 @@ public class JacksonSerializerTest {
         @Override
         public void applyTo(ObjectMapper objectMapper) {
             objectMapper.registerModule(this);
+        }
+
+    }
+
+    public static class Dummy {
+
+        private String expectedContent;
+
+        public Dummy() {
+
+        }
+
+        public Dummy(final String expectedContent) {
+            this.expectedContent = expectedContent;
+        }
+
+        @SuppressWarnings("unused")
+        public String getExpectedContent() {
+            return expectedContent;
+        }
+
+        public void setExpectedContent(String expectedContent) {
+            this.expectedContent = expectedContent;
         }
 
     }

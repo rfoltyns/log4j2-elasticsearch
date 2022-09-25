@@ -32,6 +32,8 @@ public interface Serializer<T> {
 
     void write(OutputStream outputStream, T source) throws Exception;
 
+    byte[] writeAsBytes(T event) throws Exception;
+
     String writeAsString(T event) throws Exception;
 
 }
