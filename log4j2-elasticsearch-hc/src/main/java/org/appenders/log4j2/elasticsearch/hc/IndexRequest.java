@@ -63,6 +63,20 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
         this.source.release();
     }
 
+    public final boolean sameIndex(final IndexRequest other) {
+        return this.index.equals(other.index);
+    }
+
+    public final boolean sameType(final IndexRequest other) {
+
+        if (this.type == null) {
+            return other.type == null;
+        }
+
+        return this.type.equals(other.type);
+
+    }
+
     public static class Builder {
 
         private final ItemSource<ByteBuf> source;
@@ -91,17 +105,26 @@ public class IndexRequest implements Item<ItemSource<ByteBuf>> {
         }
 
         public IndexRequest build() {
+            validate();
+            return new IndexRequest(this);
+        }
+
+        protected void validate() {
+
             if (source == null) {
                 throw new IllegalArgumentException("source cannot be null");
             }
+
             if (index == null) {
                 throw new IllegalArgumentException("index cannot be null");
             }
+
             if (type == null) {
                 throw new IllegalArgumentException("type cannot be null");
             }
-            return new IndexRequest(this);
+
         }
+
     }
 
 }

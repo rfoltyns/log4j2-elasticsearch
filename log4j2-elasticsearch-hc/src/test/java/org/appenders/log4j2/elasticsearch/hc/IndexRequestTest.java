@@ -29,7 +29,9 @@ import java.util.UUID;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class IndexRequestTest {
@@ -79,7 +81,7 @@ public class IndexRequestTest {
     }
 
     @Test
-    public void builderCreatesRequest() {
+    public void builderSetsAllFields() {
 
         // given
         String expectedId = UUID.randomUUID().toString();
@@ -98,6 +100,68 @@ public class IndexRequestTest {
         assertEquals(expectedIndex, request.getIndex());
         assertEquals(expectedType, request.getType());
         assertEquals(expectedItemSource, request.getSource());
+
+    }
+
+    @Test
+    public void requestTypesAreSameIfBothAreNull() {
+
+        // given
+        final IndexRequest request1 = createIndexRequestBuilder()
+                .type(null)
+                .build();
+
+        final IndexRequest request2 = createIndexRequestBuilder()
+                .type(null)
+                .build();
+
+        // when
+        final boolean result = request1.sameType(request2);
+
+        // then
+        assertTrue(result);
+
+    }
+
+    @Test
+    public void requestTypesAreSameIfBothAreEqual() {
+
+        // given
+        final String type = UUID.randomUUID().toString();
+        final IndexRequest request1 = createIndexRequestBuilder()
+                .type(type)
+                .build();
+
+        final IndexRequest request2 = createIndexRequestBuilder()
+                .type(type)
+                .build();
+
+        // when
+        final boolean result = request1.sameType(request2);
+
+        // then
+        assertTrue(result);
+
+    }
+
+    @Test
+    public void requestTypesAreNotSameIfOneIsNullAndOtherIsNot() {
+
+        // given
+        final String type = UUID.randomUUID().toString();
+        final IndexRequest request1 = createIndexRequestBuilder()
+                .type(null)
+                .build();
+
+        final IndexRequest request2 = createIndexRequestBuilder()
+                .type(type)
+                .build();
+
+        // when
+        final boolean result = request1.sameType(request2);
+
+        // then
+        assertFalse(result);
 
     }
 
