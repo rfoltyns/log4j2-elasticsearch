@@ -28,16 +28,15 @@ import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.cfg.HandlerInstantiator;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import org.apache.logging.log4j.core.LogEvent;
-import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
-import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLogEventJacksonJsonMixIn;
 import org.appenders.st.jackson.SingleThreadJsonFactory;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.io.ByteArrayOutputStream;
 import java.util.UUID;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -95,7 +94,8 @@ public class JacksonSerializerTest {
 
         // given
         final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
-        builder.withMixins(JacksonMixInTest.createDefaultTestBuilder().build());
+        final JacksonMixIn mixIn = JacksonMixInTest.createDefaultTestBuilder().build();
+        builder.withMixins(mixIn);
 
         ObjectMapper objectMapper = spy(ObjectMapper.class);
 
@@ -105,12 +105,11 @@ public class JacksonSerializerTest {
         builder.build();
 
         // then
-        ArgumentCaptor<ExtendedLog4j2JsonModule> captor = ArgumentCaptor.forClass(ExtendedLog4j2JsonModule.class);
-        verify(objectMapper, times(1)).registerModule(captor.capture());
+        ArgumentCaptor<Class> targetCaptor = ArgumentCaptor.forClass(Class.class);
+        ArgumentCaptor<Class> mixInCaptor = ArgumentCaptor.forClass(Class.class);
+        verify(objectMapper).addMixIn(targetCaptor.capture(), mixInCaptor.capture());
 
-        Module.SetupContext setupContext = mock(Module.SetupContext.class);
-        captor.getValue().setupModule(setupContext);
-        verify(setupContext).setMixInAnnotations(eq(LogEvent.class), eq(ExtendedLogEventJacksonJsonMixIn.class));
+        assertEquals(1, mixInCaptor.getAllValues().size());
 
     }
 
@@ -238,22 +237,43 @@ public class JacksonSerializerTest {
     }
 
     @Test
-    public void builderConfiguresDefaultJacksonModules() {
+    public void defaultJacksonModulesListIsEmpty() {
 
         // given
         final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
 
-        ObjectMapper objectMapper = spy(new ObjectMapper());
+        final ObjectMapper objectMapper = spy(new ObjectMapper());
         when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
-
-        JacksonModule jacksonModule1 = new TestJacksonModule();
-        builder.withJacksonModules(jacksonModule1);
 
         // when
         builder.build();
 
         // then
-        verify(objectMapper, times(2)).registerModule(any());
+        verify(objectMapper, times(0)).registerModule(any());
+
+    }
+
+    @Test
+    public void jacksonModulesConfigReplacesPrevious() {
+
+        // given
+        final JacksonSerializer.Builder<Object> builder = spy(createDefaultTestBuilder());
+
+        final ObjectMapper objectMapper = spy(new ObjectMapper());
+        when(builder.createDefaultObjectMapper()).thenReturn(objectMapper);
+
+        final JacksonModule jacksonModule1 = spy(new TestJacksonModule());
+        final JacksonModule jacksonModule2 = spy(new TestJacksonModule());
+        builder.withJacksonModules(jacksonModule1);
+        builder.withJacksonModules(jacksonModule2);
+
+        // when
+        builder.build();
+
+        // then
+        verify(jacksonModule1, never()).applyTo(objectMapper);
+        verify(jacksonModule2).applyTo(objectMapper);
+        verify(objectMapper, times(1)).registerModule(any());
 
     }
 
@@ -358,7 +378,6 @@ public class JacksonSerializerTest {
 
     }
 
-
     @Test
     public void createsJsonFactoryByDefault() {
 
@@ -387,4 +406,5 @@ public class JacksonSerializerTest {
         }
 
     }
+
 }

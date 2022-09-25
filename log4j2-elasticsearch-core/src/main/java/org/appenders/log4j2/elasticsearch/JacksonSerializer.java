@@ -59,11 +59,9 @@ public class JacksonSerializer<T> implements Serializer<T> {
     public static class Builder<T> {
 
         /**
-         * Default: {@code [ExtendedLog4j2JsonModule]}
+         * Default: {@code []}
          */
-        public static final JacksonModule[] DEFAULT_JACKSON_MODULES = new JacksonModule[]{
-                new ExtendedLog4j2JsonModule()
-        };
+        public static final JacksonModule[] DEFAULT_JACKSON_MODULES = new JacksonModule[0];
 
         /**
          * Default: {@code []}
@@ -106,8 +104,7 @@ public class JacksonSerializer<T> implements Serializer<T> {
 
         private Collection<JacksonModule> getJacksonModules() {
 
-            LinkedList<JacksonModule> linkedList = new LinkedList<>(Arrays.asList(DEFAULT_JACKSON_MODULES));
-            linkedList.addAll(Arrays.asList(this.jacksonModules));
+            final LinkedList<JacksonModule> linkedList = new LinkedList<>(Arrays.asList(this.jacksonModules));
 
             if (useAfterburner) {
                 // com.fasterxml.jackson.module:jackson-module-afterburner required here

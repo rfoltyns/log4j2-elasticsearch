@@ -28,6 +28,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.core.layout.ByteBufferDestination;
 import org.apache.logging.log4j.core.lookup.StrSubstitutor;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.hamcrest.core.IsEqual;
 import org.junit.jupiter.api.Test;
 
@@ -100,12 +101,17 @@ public class JacksonJsonLayoutPluginTest {
         final VirtualPropertyFilter virtualPropertyFilter = mock(VirtualPropertyFilter.class);
         when(virtualPropertyFilter.isIncluded(any(), any())).thenReturn(true);
 
+        final JacksonModule[] jacksonModules = new JacksonModule[]{
+                new ExtendedLog4j2JsonModule(),
+                jacksonModule
+        };
+
         // when
         final JacksonJsonLayoutPlugin<Object> layoutPlugin = JacksonJsonLayoutPlugin.createJacksonJsonLayout(
                 configuration,
                 itemSourceFactory,
                 new JacksonMixIn[] { mixin },
-                new JacksonModule[] { jacksonModule },
+                jacksonModules,
                 new VirtualProperty[] { virtualProperty },
                 new VirtualPropertyFilter[] { virtualPropertyFilter },
                 false,

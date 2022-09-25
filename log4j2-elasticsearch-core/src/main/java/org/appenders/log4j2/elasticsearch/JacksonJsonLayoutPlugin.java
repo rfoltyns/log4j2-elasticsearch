@@ -30,11 +30,14 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.apache.logging.log4j.core.layout.ByteBufferDestination;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
-import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAULT_JACKSON_MODULES;
 import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAULT_MIX_INS;
 import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAULT_VIRTUAL_PROPERTIES;
 import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAULT_VIRTUAL_PROPERTY_FILTERS;
@@ -48,6 +51,10 @@ import static org.appenders.log4j2.elasticsearch.JacksonSerializer.Builder.DEFAU
 public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, R> implements Layout<Serializable> {
 
     public static final String PLUGIN_NAME = "JacksonJsonLayout";
+
+    public static final JacksonModule[] JACKSON_MODULES = new JacksonModule[]{
+            new ExtendedLog4j2JsonModule()
+    };
 
     public JacksonJsonLayoutPlugin(GenericItemSourceLayout.Builder<Object, R> builder) {
         super(builder.serializer, builder.itemSourceFactory);
@@ -104,13 +111,25 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
                 createSerializerBuilder()
                         .withValueResolver(new Log4j2Lookup(configuration.getStrSubstitutor()))
                         .withMixins(mixins.length == 0 ? DEFAULT_MIX_INS : mixins)
-                        .withJacksonModules(jacksonModules.length == 0 ? DEFAULT_JACKSON_MODULES : jacksonModules)
+                        .withJacksonModules(getJacksonModules(jacksonModules))
                         .withVirtualProperties(virtualProperties.length == 0 ? DEFAULT_VIRTUAL_PROPERTIES : virtualProperties)
                         .withVirtualPropertyFilters(virtualPropertyFilters.length == 0 ? DEFAULT_VIRTUAL_PROPERTY_FILTERS : virtualPropertyFilters)
                         .withAfterburner(Boolean.TRUE.equals(useAfterburner))
                         .withSingleThread(Boolean.TRUE.equals(singleThread))
                 )
         );
+
+    }
+
+    private static JacksonModule[] getJacksonModules(final JacksonModule[] jacksonModules) {
+
+        final List<JacksonModule> list = new ArrayList<>(Arrays.asList(JacksonJsonLayoutPlugin.JACKSON_MODULES));
+
+        for (JacksonModule jacksonModule : jacksonModules) {
+            list.add(jacksonModule);
+        }
+
+        return list.toArray(new JacksonModule[0]);
 
     }
 
