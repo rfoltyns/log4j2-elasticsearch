@@ -23,17 +23,31 @@ package org.appenders.log4j2.elasticsearch.failover;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
 
-@Disabled
 public class ChronicleMapUtil {
 
-    @Test
-    public void readChronicleMap() throws IOException {
+    public static String resolveChronicleMapFilePath(String fileName) {
+
+        String path = System.getProperty(
+                "appenders.failover.chroniclemap.dir",
+                "./");
+
+        if (!path.endsWith("/")) {
+            path += "/";
+        }
+
+        return path + fileName;
+
+    }
+
+    public static void main(String[] args) throws IOException {
+        smokeTest();
+    }
+
+    public static void smokeTest() throws IOException {
 
         final TestConfig testConfig = new TestConfig();
         testConfig.add("indexName", System.getProperty("smokeTest.indexName"));
@@ -79,20 +93,6 @@ public class ChronicleMapUtil {
                 maxKey,
                 keySequenceConfig.nextReaderIndex(),
                 keySequenceConfig.nextWriterIndex());
-    }
-
-    public static String resolveChronicleMapFilePath(String fileName) {
-
-        String path = System.getProperty(
-                "appenders.failover.chroniclemap.dir",
-                "./");
-
-        if (!path.endsWith("/")) {
-            path += "/";
-        }
-
-        return path + fileName;
-
     }
 
 }
