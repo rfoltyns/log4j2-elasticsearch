@@ -172,7 +172,7 @@ public class PutIndexTemplateTest {
     }
 
     @Test
-    public void defaultGenericJestRequestNotComposable() {
+    public void defaultGenericJestRequestIsComposable() {
 
         // given
         PutIndexTemplate setupStep = new PutIndexTemplate(TEST_TEMPLATE_NAME, TEST_SOURCE);
@@ -182,7 +182,7 @@ public class PutIndexTemplateTest {
 
         // then
         assertEquals("PUT", request.getRestMethodName());
-        assertEquals("_template/" + TEST_TEMPLATE_NAME, request.buildURI());
+        assertEquals("_index_template/" + TEST_TEMPLATE_NAME, request.buildURI());
 
     }
 

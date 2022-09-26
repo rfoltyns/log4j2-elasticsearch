@@ -73,24 +73,6 @@ public class BufferedBulkOperationsTest {
     }
 
     @Test
-    public void defaultBufferedBulkOperationsSetsDefaultMappingType() {
-
-        // given
-        PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
-        BufferedBulkOperations bulkOperations = new BufferedBulkOperations(bufferedSourceFactory);
-
-        ItemSource itemSource = mock(ItemSource.class);
-        BufferedIndex item = (BufferedIndex) bulkOperations.createBatchItem("testIndex", itemSource);
-
-        // when
-        String type = item.getType();
-
-        // then
-        assertEquals(DEFAULT_MAPPING_TYPE, type);
-
-    }
-
-    @Test
     public void mappingTypeCanBeSet() {
 
         // given
@@ -110,7 +92,7 @@ public class BufferedBulkOperationsTest {
     }
 
     @Test
-    public void usesDefaultMappingTypeIfNotProvided() {
+    public void defaultMappingTypeIsNull() {
 
         // given
         PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
@@ -123,7 +105,7 @@ public class BufferedBulkOperationsTest {
         String type = item.getType();
 
         // then
-        assertEquals("_doc", type);
+        assertNull(type);
 
     }
 
@@ -176,8 +158,9 @@ public class BufferedBulkOperationsTest {
 
         // given
         PooledItemSourceFactory bufferedSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        final String expectedMappingType = UUID.randomUUID().toString();
 
-        BufferedBulkOperations bufferedBulkOperations = new BufferedBulkOperations(bufferedSourceFactory);
+        BufferedBulkOperations bufferedBulkOperations = new BufferedBulkOperations(bufferedSourceFactory, new JacksonMixIn[]{}, expectedMappingType);
 
         JacksonJsonLayout layout = createDefaultTestJacksonJsonLayout(bufferedSourceFactory);
 
@@ -205,7 +188,7 @@ public class BufferedBulkOperationsTest {
                 .addMixIn(TestIndex.class, BulkableActionMixIn.class)
                 .readValue(scanner.nextLine(), TestIndex.class);
         assertEquals(indexName, deserializedAction.index);
-        assertNotNull(deserializedAction.type);
+        assertEquals(expectedMappingType, deserializedAction.type);
 
         TestLogEvent deserializedDocument = new ObjectMapper().readValue(scanner.nextLine(), TestLogEvent.class);
         assertEquals(timeMillis, deserializedDocument.timeMillis);

@@ -269,8 +269,14 @@ public class SmokeTest extends SmokeTestBase {
         return result.toArray(new OpSource[0]);
     }
 
-    private String mappingType(Version version) {
-        return !version.lowerThan("7.0.0") ? "_doc" : "index";
+    private String mappingType(final Version version) {
+        if (version.lowerThan("7.0.0")) {
+            return "index";
+        }
+        if (version.lowerThan("8.0.0")) {
+            return "_doc";
+        }
+        return null;
     }
 
 }

@@ -1,5 +1,5 @@
 # log4j2-elasticsearch-jest
-This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch 2.x, 5.x and 6.x clusters. By default, FasterXML is used generate output via [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java).
+This log4j2 appender plugin uses Jest HTTP client to push logs in batches to Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters. By default, FasterXML is used generate output via [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/JacksonJsonLayout.java).
 
 ## Maven
 
@@ -35,7 +35,7 @@ Add this snippet to `log4j2.xml` configuration:
         <JacksonJsonLayout />
         <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <JestHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>"/>
+            <JestHttp serverUris="http://localhost:9200" />
         </AsyncBatchDelivery>
     </Elasticsearch>
 </Appenders>
@@ -50,7 +50,7 @@ Add this snippet to `log4j2.xml` configuration:
 | defaultMaxTotalConnectionPerRoute | Attribute | no       | 4                           | Number of connections available per Apache CPool.                                                                                                                                            |
 | discoveryEnabled                  | Attribute | no       | false                       | If `true`, `io.searchbox.client.config.discovery.NodeChecker` will use `serverUris` to auto-discover Elasticsearch nodes. Otherwise, `serverUris` will be the final list of available nodes. |
 | ioThreadCount                     | Attribute | no       | No. of available processors | Number of `I/O Dispatcher` threads started by Apache HC `IOReactor`                                                                                                                          |
-| mappingType                       | Attribute | no       | `index`                     | Name of index mapping type to use in ES cluster. Use `_doc` for Elasticsearch 7.x.                                                                                                           |
+| mappingType                       | Attribute | no       | `null` since 1.6            | Name of index mapping type to use. Applicable to Elasticsearch 7.x and older. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html).    |
 | auth                              | Element   | no       | None                        | Security config. [XPackAuth](#pem-cert-config)                                                                                                                                               |
 
 ### Buffered HTTP
@@ -73,7 +73,7 @@ Example:
         </JacksonJsonLayout>
         <AsyncBatchDelivery batchSize="1000" deliveryInterval="5000" >
             <IndexTemplate name="log4j2" path="classpath:indexTemplate.json" />
-            <JestBufferedHttp serverUris="http://localhost:9200" mappingType="<see mappingType description>">
+            <JestBufferedHttp serverUris="http://localhost:9200">
                 <PooledItemSourceFactory itemSizeInBytes="1024000" initialPoolSize="4" />
             </JestBufferedHttp>
         </AsyncBatchDelivery>
@@ -82,7 +82,7 @@ Example:
 ```
 
 ### Programmatic config
-See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java).
+See [programmatic config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/SmokeTest.java).
 
 ### Delivery frequency
 See [delivery frequency](../log4j2-elasticsearch-core#delivery-frequency)
@@ -97,6 +97,9 @@ See [failover options](../log4j2-elasticsearch-core#failover)
 See [index name](../log4j2-elasticsearch-core#index-name) or [index rollover](../log4j2-elasticsearch-core#index-rollover)
 
 ### Index template
+
+Since 1.6, this module is compatible with Elasticsearch 8.x by default. Use `apiVersion` for older clusters.
+
 See [index template docs](../log4j2-elasticsearch-core#index-template)
 
 ### SSL/TLS
@@ -130,12 +133,12 @@ Since 1.2, HTTPS can be configured using `XPackAuth` tag:
 
 ### Compatibility matrix
 
-| Feature/Version  | 2.x        | 5.x        | 6.x        | 7.x        |
-|------------------|------------|------------|------------|------------|
-| IndexTemplate    | Yes        | Yes        | Yes        | Yes        |
-| BasicCredentials | Yes        | Yes        | Yes        | Yes        |
-| JKS              | Yes        | Not tested | Not tested | Not tested |
-| PEM              | Not tested | Yes        | Yes        | Yes        |
+| Feature/Version  | 2.x        | 5.x        | 6.x        | 7.x        | 8.x        |
+|------------------|------------|------------|------------|------------|------------|
+| IndexTemplate    | Yes        | Yes        | Yes        | Yes        | Yes        |
+| BasicCredentials | Yes        | Yes        | Yes        | Yes        | Yes        |
+| JKS              | Yes        | Not tested | Not tested | Not tested | Not tested |
+| PEM              | Not tested | Yes        | Yes        | Yes        | Yes        |
 
 ## Pluggable JCTools
 

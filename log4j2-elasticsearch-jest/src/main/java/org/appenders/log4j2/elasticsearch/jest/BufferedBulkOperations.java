@@ -44,12 +44,13 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
  */
 public class BufferedBulkOperations implements BatchOperations<Bulk> {
 
-    public static final String DEFAULT_MAPPING_TYPE = "_doc";
+    public static final String DEFAULT_MAPPING_TYPE = null;
 
     private final PooledItemSourceFactory pooledItemSourceFactory;
 
     /**
      * "_doc" since 1.5
+     * {@code null} since 1.6
      */
     private final String mappingType;
     private final JacksonMixIn[] mixIns;

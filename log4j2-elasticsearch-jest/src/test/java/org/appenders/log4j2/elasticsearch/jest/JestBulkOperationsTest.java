@@ -38,6 +38,7 @@ import static org.appenders.log4j2.elasticsearch.StringItemSourceTest.createTest
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -106,7 +107,7 @@ public class JestBulkOperationsTest {
     }
 
     @Test
-    public void usesDefaultMappingTypeIfNotProvided() {
+    public void defaultMappingTypeIsNull() {
 
         // given
         BatchOperations<Bulk> bulkOperations = new JestBulkOperations();
@@ -119,7 +120,7 @@ public class JestBulkOperationsTest {
         String type = item.getType();
 
         // then
-        assertEquals("_doc", type);
+        assertNull(type);
 
     }
 
