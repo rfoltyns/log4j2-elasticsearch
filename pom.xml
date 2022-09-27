@@ -52,7 +52,7 @@
         <org.appenders.logging.version>1.0</org.appenders.logging.version>
         <log4j2.version>2.17.1</log4j2.version>
         <jacoco.version>0.8.7</jacoco.version>
-        <jackson.version>2.12.0</jackson.version>
+        <jackson.version>2.13.4</jackson.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpasyncclient.version>4.1.5</httpasyncclient.version>
         <httpcore.version>4.4.15</httpcore.version>
