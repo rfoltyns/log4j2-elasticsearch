@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.appenders.log4j</groupId>
         <artifactId>parent</artifactId>
-        <version>1.5.6-SNAPSHOT</version>
+        <version>1.5.6</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>log4j2-elasticsearch6-bulkprocessor</artifactId>
