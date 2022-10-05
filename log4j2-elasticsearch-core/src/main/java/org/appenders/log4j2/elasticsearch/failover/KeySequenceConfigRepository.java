@@ -91,7 +91,7 @@ public class KeySequenceConfigRepository {
      * Retrieves a {@link KeySequenceConfig} with given key. May return null.
      *
      * @param key config key
-     * @return {@link KeySequenceConfig} instance or <tt>null</tt> if value was not resolved
+     * @return {@link KeySequenceConfig} instance or <i>null</i> if value was not resolved
      */
     public KeySequenceConfig get(CharSequence key) {
         return (KeySequenceConfig) map.get(key);

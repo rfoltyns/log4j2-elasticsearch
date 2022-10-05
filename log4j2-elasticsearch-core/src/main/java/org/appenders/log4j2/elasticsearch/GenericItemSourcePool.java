@@ -201,7 +201,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T> {
      * <p>This call ignore <code>"appenders.GenericItemSourcePool.resize.retries"</code> setting.</p>
      * <p>If pool has no more elements, {@link ResizePolicy} will try to create more pooled elements ONCE. Will return null on failure.</p>
      *
-     * @return pooled {@link ItemSource} if not empty or resized, <tt>null</tt> otherwise
+     * @return pooled {@link ItemSource} if not empty or resized, <i>null</i> otherwise
      */
     @Override
     public final ItemSource<T> getPooledOrNull() {

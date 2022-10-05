@@ -85,7 +85,7 @@ public class SingleKeySequenceSelector implements KeySequenceSelector {
      * <p>WARNING! If first {@link #firstAvailable()} call failed, it SHOULD NOT be called again as it indicates that
      * {@link KeySequenceConfig} is used by other {@link KeySequenceConfigRepository} and this instance was not configured correctly.
      *
-     * @return valid {@link KeySequence} if found. Otherwise <tt>null</tt>.
+     * @return valid {@link KeySequence} if found. Otherwise <i>null</i>.
      * @throws IllegalStateException if {@link #repository} is null. See {@link #withRepository(KeySequenceConfigRepository)}
      */
     @Override

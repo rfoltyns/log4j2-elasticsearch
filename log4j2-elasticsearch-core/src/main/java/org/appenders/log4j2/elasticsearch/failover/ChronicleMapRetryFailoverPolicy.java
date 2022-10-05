@@ -386,7 +386,7 @@ public class ChronicleMapRetryFailoverPolicy implements FailoverPolicy<FailedIte
         }
 
         /**
-         * @param monitored if <tt>true</tt>, execution metrics will be printed
+         * @param monitored if <i>true</i>, execution metrics will be printed
          * @return this
          */
         public Builder withMonitored(boolean monitored) {
