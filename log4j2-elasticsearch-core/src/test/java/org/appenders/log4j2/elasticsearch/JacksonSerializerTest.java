@@ -55,6 +55,10 @@ import static org.mockito.Mockito.when;
 
 public class JacksonSerializerTest {
 
+    public static JacksonSerializer.Builder<Object> createDefaultTestBuilder() {
+        return new JacksonSerializer.Builder<>();
+    }
+
     @Test
     public void builderBuildsSuccessfully() {
 
@@ -441,10 +445,6 @@ public class JacksonSerializerTest {
         // then
         assertThat(outputStream.toString("UTF-8"), containsString(expectedContent));
 
-    }
-
-    private JacksonSerializer.Builder<Object> createDefaultTestBuilder() {
-        return new JacksonSerializer.Builder<>();
     }
 
     private static class TestJacksonModule extends SimpleModule implements JacksonModule {

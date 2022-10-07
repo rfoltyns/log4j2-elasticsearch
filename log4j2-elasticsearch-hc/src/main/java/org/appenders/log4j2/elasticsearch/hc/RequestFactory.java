@@ -24,7 +24,7 @@ import java.io.IOException;
 
 /**
  * Allows to adapt {@link Request} instances to client-specific requests
- * @param <R> client-specifi request type
+ * @param <R> client-specific request type
  */
 public interface RequestFactory<R> {
 
