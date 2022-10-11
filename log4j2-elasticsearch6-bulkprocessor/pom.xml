@@ -69,13 +69,22 @@
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>transport</artifactId>
+            <!--suppress MavenPackageUpdate -->
             <version>${elasticsearch.version}</version>
         </dependency>
         <dependency>
             <groupId>org.elasticsearch.client</groupId>
             <artifactId>x-pack-transport</artifactId>
+            <!--suppress MavenPackageUpdate -->
             <version>${elasticsearch.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- need a fixed netty-buffer version here -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+            <!--suppress MavenPackageUpdate -->
+            <version>4.1.32.Final</version>
         </dependency>
 
         <!-- TEST -->
