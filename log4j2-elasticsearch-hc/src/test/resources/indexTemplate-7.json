@@ -8,7 +8,7 @@
       "lifecycle.name": "log4j2-elasticsearch-hc-ilm-policy",
       "lifecycle.rollover_alias": "log4j2-elasticsearch-hc",
       "number_of_replicas" : 0,
-      "number_of_shards": 6
+      "number_of_shards": 10
     }
   },
   "mappings": {
