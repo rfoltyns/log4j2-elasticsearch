@@ -87,7 +87,7 @@ public class BasicMetricsRegistry implements MetricsRegistry {
 
         if (metrics.remove(metric)) {
             version.incrementAndGet();
-            getLogger().debug("{}: Removed {} ", SIMPLE_NAME, metric.getKey());
+            getLogger().debug("{}: Removed {}", SIMPLE_NAME, metric.getKey());
         }
 
     }

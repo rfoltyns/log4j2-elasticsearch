@@ -226,7 +226,6 @@ public class HCServiceDiscovery<T> implements ServiceDiscovery, LifeCycle, Measu
 
         getLogger().debug("{}: Stopped", NAME);
 
-
     }
 
     @Override

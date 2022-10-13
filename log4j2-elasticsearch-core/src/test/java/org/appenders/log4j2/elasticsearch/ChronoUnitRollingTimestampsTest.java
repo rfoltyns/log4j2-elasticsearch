@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.appenders.log4j2.elasticsearch.util.RolloverUtilTest;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.time.DayOfWeek;
@@ -519,7 +518,7 @@ public class ChronoUnitRollingTimestampsTest {
 
     }
 
-    @NotNull
+
     private String getZoneId() {
         return testZone.getId();
     }

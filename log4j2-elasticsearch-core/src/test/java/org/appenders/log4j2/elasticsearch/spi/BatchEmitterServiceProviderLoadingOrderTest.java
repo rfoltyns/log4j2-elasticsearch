@@ -25,7 +25,6 @@ import org.appenders.log4j2.elasticsearch.BatchEmitterFactory;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
 import org.appenders.log4j2.elasticsearch.FailoverPolicy;
 import org.appenders.log4j2.elasticsearch.NoopFailoverPolicy;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -301,7 +300,7 @@ public class BatchEmitterServiceProviderLoadingOrderTest {
             this.values = values;
         }
 
-        @NotNull
+
         @Override
         public Iterator<BatchEmitterFactory> iterator() {
             return new Iterator<BatchEmitterFactory>() {

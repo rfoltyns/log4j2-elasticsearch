@@ -20,8 +20,6 @@ package org.appenders.log4j2.elasticsearch.metrics;
  * #L%
  */
 
-import org.jetbrains.annotations.NotNull;
-
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -271,7 +269,6 @@ public class MetricsProcessor implements Measured {
 
         }
 
-        @NotNull
         private Task[] createTaskList() {
 
             final Set<Metric> metrics = registry.getMetrics(EXCLUDE_NOOP);

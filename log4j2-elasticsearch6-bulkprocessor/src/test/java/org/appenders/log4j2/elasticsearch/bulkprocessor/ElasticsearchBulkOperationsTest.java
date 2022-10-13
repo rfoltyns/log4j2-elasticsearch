@@ -57,7 +57,6 @@ public class ElasticsearchBulkOperationsTest {
         // given
         BatchOperations<BulkRequest> batchOperations = createDefaultTestBulkRequestBatchOperations();
 
-
         String expectedPayload = "expectedPayload";
 
         // when

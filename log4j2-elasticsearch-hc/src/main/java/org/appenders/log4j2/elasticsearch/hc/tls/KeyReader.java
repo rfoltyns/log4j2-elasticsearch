@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.hc.tls;
  */
 
 
-
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMDecryptorProvider;
 import org.bouncycastle.openssl.PEMEncryptedKeyPair;

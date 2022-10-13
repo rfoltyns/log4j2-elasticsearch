@@ -146,7 +146,7 @@ public class PoolingAsyncResponseConsumer extends AbstractAsyncResponseConsumer<
             this.responseContentLength = metricsFactory.createMetric(name, "responseBytes");
         }
 
-        final void recordContentLength(int contentLength) {
+        void recordContentLength(int contentLength) {
             responseContentLength.store(contentLength);
         }
 

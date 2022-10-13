@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor;
  */
 
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.appenders.log4j2.elasticsearch.ClientProvider;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;

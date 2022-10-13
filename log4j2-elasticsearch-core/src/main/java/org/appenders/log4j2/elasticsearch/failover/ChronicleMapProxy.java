@@ -22,7 +22,6 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
@@ -65,7 +64,7 @@ class ChronicleMapProxy implements MapProxy<CharSequence, ItemSource> {
     }
 
     @Override
-    public void putAll(@NotNull Map<? extends CharSequence, ? extends ItemSource> map) {
+    public void putAll(final Map<? extends CharSequence, ? extends ItemSource> map) {
         chronicleMap.putAll(map);
     }
 
@@ -84,19 +83,19 @@ class ChronicleMapProxy implements MapProxy<CharSequence, ItemSource> {
         chronicleMap.clear();
     }
 
-    @NotNull
+
     @Override
     public Set<CharSequence> keySet() {
         return chronicleMap.keySet();
     }
 
-    @NotNull
+
     @Override
     public Collection<ItemSource> values() {
         return chronicleMap.values();
     }
 
-    @NotNull
+
     @Override
     public Set<Entry<CharSequence, ItemSource>> entrySet() {
         return chronicleMap.entrySet();

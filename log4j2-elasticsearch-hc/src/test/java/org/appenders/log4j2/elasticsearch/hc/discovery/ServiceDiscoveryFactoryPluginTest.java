@@ -240,9 +240,9 @@ public class ServiceDiscoveryFactoryPluginTest {
 
     }
 
-    // ==========
-    // LIFECYCLE
-    // ==========
+    // =======
+    // METRICS
+    // =======
 
     @Test
     public void registersComponentsMetrics() {

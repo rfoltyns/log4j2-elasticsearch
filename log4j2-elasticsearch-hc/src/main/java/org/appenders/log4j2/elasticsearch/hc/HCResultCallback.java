@@ -62,10 +62,8 @@ public class HCResultCallback<T extends Response> implements FutureCallback<Http
 
         } catch (IOException e) {
             failed(e);
-            return;
         } catch (Throwable t) {
             failed(new Exception("Problem during response processing", t));
-            return;
         } finally {
             if (inputStream != null) {
                 try {

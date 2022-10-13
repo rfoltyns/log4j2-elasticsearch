@@ -38,7 +38,6 @@ import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -89,7 +88,7 @@ public class ElasticsearchOperationFactoryTest {
 
     }
 
-    @NotNull
+
     private ElasticsearchOperationFactory createDefaultTestOperationsFactoryDispatcher(CapturingStepProcessor stepProcessor, ValueResolver valueResolver, EmptyItemSourceFactory createTestItemSource) {
         return new ElasticsearchOperationFactory(stepProcessor, valueResolver, createTestItemSource);
     }

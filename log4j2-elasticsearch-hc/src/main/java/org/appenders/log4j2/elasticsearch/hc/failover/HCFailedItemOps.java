@@ -27,7 +27,6 @@ import org.appenders.log4j2.elasticsearch.hc.IndexRequest;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
 
-
 public class HCFailedItemOps implements FailedItemOps<IndexRequest> {
 
     /**

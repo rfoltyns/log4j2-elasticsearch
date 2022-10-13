@@ -84,7 +84,6 @@ import org.appenders.log4j2.elasticsearch.hc.HttpClientFactory;
 import org.appenders.log4j2.elasticsearch.hc.HttpClientProvider;
 import org.appenders.log4j2.elasticsearch.hc.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.hc.PoolingAsyncResponseConsumer;
-import org.appenders.log4j2.elasticsearch.hc.PoolingAsyncResponseConsumerFactory;
 import org.appenders.log4j2.elasticsearch.hc.Security;
 import org.appenders.log4j2.elasticsearch.hc.SyncStepProcessor;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ElasticsearchNodesQuery;
@@ -92,13 +91,13 @@ import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryFactory;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscoveryRequest;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn;
+import org.appenders.log4j2.elasticsearch.load.LoadTestBase;
+import org.appenders.log4j2.elasticsearch.load.TestConfig;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.IncludeExclude;
 import org.appenders.log4j2.elasticsearch.metrics.MetricLog;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
 import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
-import org.appenders.log4j2.elasticsearch.load.LoadTestBase;
-import org.appenders.log4j2.elasticsearch.load.TestConfig;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
 import org.appenders.log4j2.elasticsearch.util.VersionUtil;
@@ -174,7 +173,6 @@ public class LoadTest extends LoadTestBase {
         getLogger().info("{}", getConfig().getAll());
 
         Configuration configuration = LoggerContext.getContext(false).getConfiguration();
-
 
         UnpooledByteBufAllocator byteBufAllocator = new UnpooledByteBufAllocator(false, false, false);
 

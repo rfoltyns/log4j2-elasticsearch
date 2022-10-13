@@ -30,7 +30,6 @@ import org.apache.logging.log4j.core.config.plugins.validation.constraints.Requi
 import org.appenders.log4j2.elasticsearch.Credentials;
 import org.elasticsearch.common.settings.Settings;
 
-
 @Plugin(name = BasicCredentials.PLUGIN_NAME, category = Node.CATEGORY, elementType = "credentials")
 public final class BasicCredentials implements Credentials<Settings.Builder> {
 

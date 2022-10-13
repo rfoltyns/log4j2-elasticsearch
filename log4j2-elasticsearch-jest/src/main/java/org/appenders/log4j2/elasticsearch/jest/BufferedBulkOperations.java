@@ -38,7 +38,6 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 
-
 /**
  * Allows to create buffered versions of Jest action classes
  */

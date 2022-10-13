@@ -21,7 +21,6 @@ package action;
  */
 
 
-
 import org.appenders.log4j2.elasticsearch.BatchItemIntrospector;
 import org.elasticsearch.action.index.BulkActionIntrospector;
 import org.elasticsearch.action.index.IndexRequest;

@@ -40,7 +40,6 @@ import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.ReleaseCallback;
 import org.appenders.log4j2.elasticsearch.StringItemSource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.appenders.core.logging.InternalLogging.getLogger;
@@ -62,12 +61,12 @@ public class FailedItemMarshaller implements BytesWriter<ItemSource>, BytesReade
     }
 
     @Override
-    public void writeMarshallable(@NotNull WireOut wire) {
+    public void writeMarshallable( WireOut wire) {
         // noop - no fields to marshall
     }
 
     @Override
-    public void readMarshallable(@NotNull WireIn wire) throws IORuntimeException {
+    public void readMarshallable( WireIn wire) throws IORuntimeException {
         // noop - no fields to unmarshall
     }
 
@@ -117,7 +116,7 @@ public class FailedItemMarshaller implements BytesWriter<ItemSource>, BytesReade
     }
 
     @Override
-    public void write(Bytes out, @NotNull ItemSource toWrite) {
+    public void write(Bytes out,  ItemSource toWrite) {
         try {
             objectMapper.writeValue(out.outputStream(), toWrite);
         } catch (Exception e) {

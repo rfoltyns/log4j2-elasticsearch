@@ -507,9 +507,9 @@ public class HCServiceDiscoveryTest {
 
     }
 
-    // ==========
-    // LIFECYCLE
-    // ==========
+    // =======
+    // METRICS
+    // =======
 
     @Test
     public void registersComponentsMetrics() {

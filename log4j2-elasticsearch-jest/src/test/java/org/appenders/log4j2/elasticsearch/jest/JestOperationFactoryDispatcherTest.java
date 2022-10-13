@@ -35,7 +35,6 @@ import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -246,7 +245,7 @@ public class JestOperationFactoryDispatcherTest {
 
     }
 
-    @NotNull
+
     private SetupStep<GenericJestRequest, JestResult> assertSetupStep(String expectedName, CapturingStepProcessor stepProcessor, Class clazz, Function<SetupStep, String> nameSupplier) {
         SetupStep<GenericJestRequest, JestResult> request = stepProcessor.requests.get(0);
         assertEquals(clazz, request.getClass());

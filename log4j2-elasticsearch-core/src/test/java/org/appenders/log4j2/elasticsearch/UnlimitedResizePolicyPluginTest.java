@@ -21,7 +21,6 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -55,7 +54,7 @@ public class UnlimitedResizePolicyPluginTest {
 
     }
 
-    @NotNull
+
     private UnlimitedResizePolicyPlugin.Builder createTestResizePolicyBuilder() {
         return UnlimitedResizePolicyPlugin.newBuilder();
     }

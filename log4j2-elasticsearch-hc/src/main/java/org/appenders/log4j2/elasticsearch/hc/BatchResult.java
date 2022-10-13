@@ -86,18 +86,22 @@ public class BatchResult implements Response {
         return this;
     }
 
-    private StringBuilder appendFailedItemErrorMessageIfAvailable(StringBuilder sb) {
+    private void appendFailedItemErrorMessageIfAvailable(final StringBuilder sb) {
+
         if (getItems() == null) {
-            return sb.append(UNABLE_TO_GET_MORE_INFO);
+            sb.append(UNABLE_TO_GET_MORE_INFO);
+            return;
         }
 
-        Optional<BatchItemResult> firstFailedItem = getItems().stream().filter(item -> item.getError() != null).findFirst();
+        final Optional<BatchItemResult> firstFailedItem = getItems().stream().filter(item -> item.getError() != null).findFirst();
         if (!firstFailedItem.isPresent()) {
-            return sb.append(UNABLE_TO_GET_MORE_INFO);
+            sb.append(UNABLE_TO_GET_MORE_INFO);
+            return;
         }
 
         sb.append(FIRST_FAILED_ITEM_PREFIX);
-        return firstFailedItem.get().getError().appendErrorMessage(sb);
+        firstFailedItem.get().getError().appendErrorMessage(sb);
+
     }
 
     public BatchResult withErrorMessage(String errorMessage) {

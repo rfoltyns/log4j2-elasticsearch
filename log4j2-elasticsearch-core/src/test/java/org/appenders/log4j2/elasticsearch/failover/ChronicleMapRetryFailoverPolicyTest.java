@@ -28,7 +28,6 @@ import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -677,14 +676,14 @@ public class ChronicleMapRetryFailoverPolicyTest {
         };
     }
 
-    @NotNull
+
     public KeySequenceSelector createMockKeySequenceSelector() {
         KeySequenceSelector keySequenceSelector = mock(KeySequenceSelector.class);
         when(keySequenceSelector.firstAvailable()).thenReturn(mock(KeySequence.class));
         return keySequenceSelector;
     }
 
-    @NotNull
+
     public ChronicleMap<CharSequence, ItemSource> createDefaultTestChronicleMap() {
         ChronicleMap<CharSequence, ItemSource> failedItems = mock(ChronicleMap.class);
 

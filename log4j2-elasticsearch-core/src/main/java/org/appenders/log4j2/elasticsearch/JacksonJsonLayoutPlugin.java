@@ -35,6 +35,7 @@ import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +57,7 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
             new ExtendedLog4j2JsonModule()
     };
 
-    public JacksonJsonLayoutPlugin(GenericItemSourceLayout.Builder<Object, R> builder) {
+    public JacksonJsonLayoutPlugin(final GenericItemSourceLayout.Builder<Object, R> builder) {
         super(builder.serializer, builder.itemSourceFactory);
     }
 
@@ -76,12 +77,12 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
     }
 
     @Override
-    public byte[] toByteArray(LogEvent event) {
+    public byte[] toByteArray(final LogEvent event) {
         throw new UnsupportedOperationException("Cannot return unwrapped byte array. Use toSerializable(LogEvent) instead");
     }
 
     @Override
-    public ItemSource<R> toSerializable(LogEvent event) {
+    public ItemSource<R> toSerializable(final LogEvent event) {
         return serialize(event);
     }
 
@@ -91,7 +92,7 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
     }
 
     @Override
-    public void encode(LogEvent source, ByteBufferDestination destination) {
+    public void encode(final LogEvent source, final ByteBufferDestination destination) {
         throw new UnsupportedOperationException(ByteBufferDestination.class.getSimpleName() + " not supported");
     }
 
@@ -122,18 +123,14 @@ public class JacksonJsonLayoutPlugin<R> extends GenericItemSourceLayout<Object, 
     }
 
     private static JacksonModule[] getJacksonModules(final JacksonModule[] jacksonModules) {
-
         final List<JacksonModule> list = new ArrayList<>(Arrays.asList(JacksonJsonLayoutPlugin.JACKSON_MODULES));
-
-        for (JacksonModule jacksonModule : jacksonModules) {
-            list.add(jacksonModule);
-        }
-
+        Collections.addAll(list, jacksonModules);
         return list.toArray(new JacksonModule[0]);
-
     }
 
-    static <R> GenericItemSourceLayout.Builder<Object, R> createLayout(final ItemSourceFactory<Object, R> factory, JacksonSerializer.Builder<Object> serializer) {
+    static <R> GenericItemSourceLayout.Builder<Object, R> createLayout(final ItemSourceFactory<Object, R> factory,
+                                                                       final JacksonSerializer.Builder<Object> serializer) {
+        //noinspection unchecked
         return new GenericItemSourceLayout.Builder<Object, R>()
                 .withItemSourceFactory(factory == null ? StringItemSourceFactory.newBuilder().build() : factory)
                 .withSerializer(serializer.build());

@@ -21,6 +21,5 @@ package org.appenders.log4j2.elasticsearch;
  */
 
 
-
 public class TestResultHandler<T> {
 }
