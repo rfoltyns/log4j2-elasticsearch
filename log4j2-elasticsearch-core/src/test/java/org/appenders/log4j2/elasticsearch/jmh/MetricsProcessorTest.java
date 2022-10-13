@@ -30,7 +30,7 @@ import org.appenders.log4j2.elasticsearch.metrics.MaxLongMetric;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
-import org.appenders.log4j2.elasticsearch.smoke.Log4j2Delegate;
+import org.appenders.log4j2.elasticsearch.load.Log4j2Delegate;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;

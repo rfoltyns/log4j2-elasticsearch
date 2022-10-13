@@ -22,7 +22,7 @@ package org.appenders.log4j2.elasticsearch.failover;
 
 import net.openhft.chronicle.map.ChronicleMap;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.appenders.log4j2.elasticsearch.smoke.TestConfig;
+import org.appenders.log4j2.elasticsearch.load.TestConfig;
 
 import java.io.IOException;
 import java.util.UUID;

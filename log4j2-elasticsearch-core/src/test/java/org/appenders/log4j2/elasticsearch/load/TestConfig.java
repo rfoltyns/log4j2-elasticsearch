@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.smoke;
+package org.appenders.log4j2.elasticsearch.load;
 
 /*-
  * #%L

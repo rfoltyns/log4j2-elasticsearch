@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.bulkprocessor.smoke;
+package org.appenders.log4j2.elasticsearch.bulkprocessor.load;
 
 /*-
  * #%L
@@ -24,7 +24,6 @@ package org.appenders.log4j2.elasticsearch.bulkprocessor.smoke;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.appenders.log4j2.elasticsearch.AsyncBatchDelivery;
 import org.appenders.log4j2.elasticsearch.BatchDelivery;
-import org.appenders.log4j2.elasticsearch.CertInfo;
 import org.appenders.log4j2.elasticsearch.ElasticsearchAppender;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
@@ -33,13 +32,13 @@ import org.appenders.log4j2.elasticsearch.bulkprocessor.BasicCredentials;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.BulkProcessorObjectFactory;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSetting;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettings;
-import org.appenders.log4j2.elasticsearch.bulkprocessor.JKSCertInfo;
-import org.appenders.log4j2.elasticsearch.bulkprocessor.ShieldAuth;
-import org.appenders.log4j2.elasticsearch.smoke.SmokeTestBase;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.PEMCertInfo;
+import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
+import org.appenders.log4j2.elasticsearch.load.LoadTestBase;
 
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
-public class SmokeTest extends SmokeTestBase {
+public class LoadTest extends LoadTestBase {
 
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {
@@ -58,11 +57,11 @@ public class SmokeTest extends SmokeTestBase {
         builder.withClientSettings(clientSettings);
 
         if (secured) {
-            CertInfo certInfo = JKSCertInfo.newBuilder()
-                    .withKeystorePath(System.getProperty("jksCertInfo.keystorePath"))
-                    .withKeystorePassword(System.getProperty("jksCertInfo.keystorePassword"))
-                    .withTruststorePath(System.getProperty("jksCertInfo.truststorePath"))
-                    .withTruststorePassword(System.getProperty("jksCertInfo.truststorePassword"))
+            PEMCertInfo certInfo = PEMCertInfo.newBuilder()
+                    .withKeyPath(System.getProperty("pemCertInfo.keyPath"))
+                    .withKeyPassphrase(System.getProperty("pemCertInfo.keyPassphrase"))
+                    .withClientCertPath(System.getProperty("pemCertInfo.clientCertPath"))
+                    .withCaPath(System.getProperty("pemCertInfo.caPath"))
                     .build();
 
             BasicCredentials credentials = BasicCredentials.newBuilder()
@@ -70,16 +69,17 @@ public class SmokeTest extends SmokeTestBase {
                     .withPassword("changeme")
                     .build();
 
-            ShieldAuth auth = ShieldAuth.newBuilder()
+            XPackAuth auth = XPackAuth.newBuilder()
                     .withCertInfo(certInfo)
                     .withCredentials(credentials)
                     .build();
 
             builder.withAuth(auth);
+
         }
 
         IndexTemplate indexTemplate = IndexTemplate.newBuilder()
-                .withName("log4j2-elasticsearch2-bulkprocessor-index-template")
+                .withName("log4j2-elasticsearch5-bulkprocessor-index-template")
                 .withPath("classpath:indexTemplate.json")
                 .build();
 
@@ -93,7 +93,7 @@ public class SmokeTest extends SmokeTestBase {
                 .build();
 
         NoopIndexNameFormatter indexNameFormatter = NoopIndexNameFormatter.newBuilder()
-                .withIndexName("log4j2_test_es2")
+                .withIndexName("log4j2_test_es5")
                 .build();
 
         JacksonJsonLayout jacksonJsonLayout = JacksonJsonLayout.newBuilder()
@@ -105,7 +105,6 @@ public class SmokeTest extends SmokeTestBase {
                 .withBatchDelivery(asyncBatchDelivery)
                 .withIndexNameFormatter(indexNameFormatter)
                 .withIgnoreExceptions(false);
-
     }
 
 }

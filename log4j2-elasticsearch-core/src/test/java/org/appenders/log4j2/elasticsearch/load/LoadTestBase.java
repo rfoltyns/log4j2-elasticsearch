@@ -1,4 +1,4 @@
-package org.appenders.log4j2.elasticsearch.smoke;
+package org.appenders.log4j2.elasticsearch.load;
 
 /*-
  * #%L
@@ -42,7 +42,6 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
@@ -53,7 +52,7 @@ import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapUtil.resolveChronicleMapFilePath;
 
-public abstract class SmokeTestBase {
+public abstract class LoadTestBase {
 
     public static final long ONE_SECOND_MILLIS = 1000;
     public static final long ONE_SECOND_NANOS = TimeUnit.MILLISECONDS.toNanos(ONE_SECOND_MILLIS);
@@ -301,216 +300,6 @@ public abstract class SmokeTestBase {
             localCounter.incrementAndGet();
             totalCounter.incrementAndGet();
         }
-    }
-
-    private static class LoadGenerator {
-
-        private final Queue<ConditionalLoop> producers;
-        private final LoadProducerFactory producerFactory;
-        private final AtomicInteger numberOfProducers;
-        private final AtomicInteger producerSleepMillis;
-        private final AtomicInteger producerBatchSize;
-        private final ThrottlingPolicy throttlingPolicy;
-
-        public LoadGenerator(final Queue<ConditionalLoop> initialProducers,
-                             final LoadProducerFactory producerFactory,
-                             final ThrottlingPolicy throttlingPolicy,
-                             final int numberOfProducers,
-                             final int producerSleepMillis,
-                             final int producerBatchSize) {
-            this.producers = initialProducers;
-            this.producerFactory = producerFactory;
-            this.throttlingPolicy = throttlingPolicy;
-            this.numberOfProducers = new AtomicInteger(numberOfProducers);
-            this.producerSleepMillis = new AtomicInteger(producerSleepMillis);
-            this.producerBatchSize = new AtomicInteger(producerBatchSize);
-        }
-
-        private int reconfigure(final double currentLoad, final int limitPerSec) {
-
-            if (currentLoad <= 0) {
-                return 0;
-            }
-
-            final int sleepMillis = producerSleepMillis.get();
-
-            double targetLoad = throttlingPolicy.throttle(currentLoad, limitPerSec);
-
-            final int newSleepMillis = (int) (sleepMillis * currentLoad);
-            producerSleepMillis.set(Math.max(newSleepMillis, 5)); // 5ms for now. That's 200 runs per second.
-
-            while (projectedLoad(limitPerSec) > 1.05d) {
-                producerSleepMillis.incrementAndGet();
-            }
-
-            if (projectedLoad(limitPerSec) < 1.0) {
-
-                final int batchSize = producerBatchSize.get();
-                final int producers = numberOfProducers.get();
-
-                if (batchSize != 100) { // 100 logs per call at this point is 20000/sec per producer at targetLoad == 1
-                    final int newBatchSize = (int) (batchSize / targetLoad);
-                    producerBatchSize.set(Math.min(newBatchSize, 100));
-                } else if (producers < 32) {
-
-                    long projectedRate = projectedCountPerMillis(1000);
-
-                    final int moreProducers = (int) (limitPerSec / projectedRate);
-                    numberOfProducers.addAndGet(moreProducers);
-
-                    final int lessProducers = (int) (projectedRate / limitPerSec);
-                    numberOfProducers.addAndGet(-lessProducers);
-                }
-
-            }
-
-            while (producers.size() > numberOfProducers.get()) {
-                producers.remove().stopLoop();
-            }
-            while (producers.size() < numberOfProducers.get()) {
-                producers.add(createInternal());
-            }
-            if (currentLoad - projectedLoad(limitPerSec) > 0.05) {
-                System.out.println("Stopping over-producing loop");
-                producers.remove().stopLoop();
-            }
-
-            return numberOfProducers.get();
-
-        }
-
-        private double projectedLoad(int limitPerSec) {
-            return projectedCountPerMillis(1000) / (double) limitPerSec;
-        }
-
-        public long projectedCountPerMillis(long millis) {
-            return  (millis / producerSleepMillis.get()) * numberOfProducers.get() * producerBatchSize.get();
-        }
-
-        public int getNumberOfProducers() {
-            return producers.size();
-        }
-
-        public int getProducerBatchSize() {
-            return producerBatchSize.get();
-        }
-
-        public int getProducerSleepMillis() {
-            return producerSleepMillis.get();
-        }
-
-        public void start() {
-
-            while (producers.size() < getNumberOfProducers()) {
-                producers.add(createInternal());
-            }
-
-        }
-
-        private ConditionalLoop createInternal() {
-            return producerFactory.createProducer(true, this::getProducerBatchSize, this::getProducerSleepMillis);
-        }
-
-    }
-
-    private static class LoadProducerFactory {
-
-        private final LoadTask task;
-        private final Supplier<Boolean> condition;
-
-        private LoadProducerFactory(final LoadTask task, final Supplier<Boolean> condition) {
-            this.task = task;
-            this.condition = condition;
-        }
-
-        public ConditionalLoop createProducer(final boolean startOnCreate, final Supplier<Integer> sizeSupplier, final Supplier<Integer> sleepMillisSupplier) {
-
-            final Runnable generateLoad = () -> task.generateLoad(sizeSupplier.get(), sleepMillisSupplier.get());
-            final ConditionalLoop loop = new ConditionalLoop(generateLoad, condition);
-
-            if (startOnCreate) {
-                loop.start();
-            }
-
-            return loop;
-
-        }
-
-    }
-
-    private static class ConditionalLoop extends Thread {
-
-        private final Runnable runnable;
-        private final Supplier<Boolean> condition;
-        private final AtomicBoolean running = new AtomicBoolean(true);
-
-        public ConditionalLoop(final Runnable runnable, final Supplier<Boolean> condition) {
-            this.runnable = runnable;
-            this.condition = condition;
-        }
-
-        @Override
-        public void run() {
-
-            while (running.get() && condition.get()) {
-                runnable.run();
-            }
-            stopLoop();
-
-        }
-
-        public void stopLoop() {
-            running.compareAndSet(true, false);
-        }
-
-    }
-
-    private abstract static class LoadTask {
-
-        public LoadTask() {
-        }
-
-        public abstract void generateLoad(final int size, final long sleep);
-
-    }
-
-    private interface ThrottlingPolicy {
-        double throttle(final double currentLoad, final int limitPerSec);
-    }
-
-    private static class RampUpPolicy implements ThrottlingPolicy {
-
-        private final int max;
-        private final double percentOnResize;
-
-        public RampUpPolicy(final int max, final double resizeFactor) {
-
-            if (resizeFactor > 1) {
-                throw new IllegalArgumentException("Resize factor too aggressive for ramp up policy: " + resizeFactor);
-            }
-
-            this.max = max;
-            this.percentOnResize = max * resizeFactor / max;
-
-        }
-
-        @Override
-        public double throttle(final double currentLoad, final int limitPerSec) {
-
-            if (currentLoad == 0.0d) {
-                return currentLoad;
-            }
-
-            if (currentLoad * limitPerSec > max && currentLoad > 1.05d) {
-                return 1.0d + percentOnResize;
-            } else if (currentLoad < 0.95d){
-                return currentLoad + (currentLoad * percentOnResize);
-            } else {
-                return 1.0d;
-            }
-
-        }
-
     }
 
 }

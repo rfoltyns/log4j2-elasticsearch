@@ -164,7 +164,7 @@
                         <version>2.22.2</version>
                         <configuration>
                             <includes>
-                                <include>*/**/smoke/*Test.java</include>
+                                <include>*/**/load/*Test.java</include>
                             </includes>
                             <argLine>${e2e.jvm.args} ${e2e.gc.logging}</argLine>
                         </configuration>

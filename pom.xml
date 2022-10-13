@@ -376,7 +376,7 @@
                 <version>3.0.0-M5</version>
                 <configuration>
                     <excludes>
-                        <exclude>%regex[.*smoke.*Test.*]</exclude>
+                        <exclude>%regex[.*load.*Test.*]</exclude>
                     </excludes>
                     <forkNode implementation="org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory"/>
                     <systemPropertyVariables>

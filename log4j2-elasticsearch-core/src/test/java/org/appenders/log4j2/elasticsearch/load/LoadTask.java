@@ -1,10 +1,10 @@
-package org.appenders.log4j2.elasticsearch.hc.smoke;
+package org.appenders.log4j2.elasticsearch.load;
 
 /*-
  * #%L
  * log4j2-elasticsearch
  * %%
- * Copyright (C) 2018 Rafal Foltynski
+ * Copyright (C) 2022 Rafal Foltynski
  * %%
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,8 @@ package org.appenders.log4j2.elasticsearch.hc.smoke;
  * #L%
  */
 
+public abstract class LoadTask {
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.message.FormattedMessageFactory;
-import org.apache.logging.log4j.message.Message;
-
-public class SerializedMessageFactory extends FormattedMessageFactory {
-
-    final ObjectMapper objectMapper;
-
-    public SerializedMessageFactory(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
-    @Override
-    public Message newMessage(final Object message) {
-        return new SerializedMessage(message, objectMapper);
-    }
+    public abstract void generateLoad(final int size, final long sleep);
 
 }
