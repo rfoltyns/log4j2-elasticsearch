@@ -20,13 +20,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
@@ -36,7 +30,9 @@ import org.apache.logging.log4j.core.config.plugins.PluginConfiguration;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.appenders.log4j2.elasticsearch.Auth;
 import org.appenders.log4j2.elasticsearch.ClientObjectFactory;
+import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.Log4j2Lookup;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.ValueResolver;
@@ -164,22 +160,19 @@ public class HCHttpPlugin extends HCHttp {
 
         }
 
-        protected ElasticsearchOperationFactory createOperationFactory(HttpClientProvider clientProvider) {
+        /**
+         * @param clientProvider HTTP client config
+         * @return setup operation factory
+         * @deprecated As of 2.0, this will return {@link org.appenders.log4j2.elasticsearch.OperationFactory}
+         */
+        protected ElasticsearchOperationFactory createOperationFactory(final HttpClientProvider clientProvider) {
 
-            final ObjectReader objectReader = new ObjectMapper()
-                    .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
-                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                    .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                    .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                    .addMixIn(BatchResult.class, BatchResultMixIn.class)
-                    .addMixIn(Error.class, ErrorMixIn.class)
-                    .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
-                    .readerFor(BatchResult.class);
-
+            final ObjectReader objectReader = ElasticsearchBulkAPI.defaultObjectMapper().readerFor(BatchResult.class);
+            final Deserializer deserializer = new JacksonDeserializer<>(objectReader);
             final ValueResolver valueResolver = getValueResolver();
 
             return new ElasticsearchOperationFactory(
-                    new SyncStepProcessor(clientProvider, objectReader),
+                    new SyncStepProcessor(clientProvider, deserializer),
                     valueResolver);
 
         }

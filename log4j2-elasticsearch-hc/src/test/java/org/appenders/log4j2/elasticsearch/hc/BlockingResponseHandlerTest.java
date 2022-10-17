@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -109,6 +110,24 @@ public class BlockingResponseHandlerTest {
 
         // then
         verify(mockedObjectReader).readValue(any(InputStream.class));
+
+    }
+
+    @Test
+    public void deserializesResponseUsingGivenDeserializer() throws IOException {
+
+        // given
+        final Deserializer deserializer = mock(Deserializer.class);
+        final BlockingResponseHandler<Response> handler = new BlockingResponseHandler<>(
+                deserializer, ex -> null);
+
+        final InputStream inputStream = mock(InputStream.class);
+
+        // when
+        handler.deserializeResponse(inputStream);
+
+        // then
+        verify(deserializer).read(any(InputStream.class));
 
     }
 

@@ -79,9 +79,7 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
 
     protected Serializer<Object> createItemSerializer() {
 
-        final ObjectWriter objectWriter = new ExtendedObjectMapper(new MappingJsonFactory())
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
+        final ObjectWriter objectWriter = defaultObjectMapper()
                 .writerFor(IndexRequest.class);
 
         return new JacksonSerializer<>(objectWriter);
@@ -91,18 +89,23 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
     @SuppressWarnings("DuplicatedCode")
     protected Deserializer<BatchResult> createResultDeserializer() {
 
-        final ObjectReader objectReader = new ObjectMapper()
-                .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                .addMixIn(BatchResult.class, BatchResultMixIn.class)
-                .addMixIn(Error.class, ErrorMixIn.class)
-                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
+        final ObjectReader objectReader = defaultObjectMapper()
                 .readerFor(BatchResult.class);
 
         return new JacksonDeserializer<>(objectReader);
 
+    }
+
+    public static ObjectMapper defaultObjectMapper() {
+        return new ExtendedObjectMapper(new MappingJsonFactory())
+                .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
+                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+                .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
+                .addMixIn(IndexRequest.class, IndexRequestMixIn.class)
+                .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
+                .addMixIn(BatchResult.class, BatchResultMixIn.class)
+                .addMixIn(Error.class, ErrorMixIn.class)
+                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class);
     }
 
 }

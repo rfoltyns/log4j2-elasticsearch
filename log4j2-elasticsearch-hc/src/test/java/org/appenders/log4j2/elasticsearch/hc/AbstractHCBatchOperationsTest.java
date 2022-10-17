@@ -23,15 +23,17 @@ package org.appenders.log4j2.elasticsearch.hc;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
-import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.ObjectMessage;
 import org.appenders.log4j2.elasticsearch.BatchBuilder;
+import org.appenders.log4j2.elasticsearch.GenericItemSourceLayout;
 import org.appenders.log4j2.elasticsearch.ItemSource;
-import org.appenders.log4j2.elasticsearch.JacksonJsonLayout;
+import org.appenders.log4j2.elasticsearch.ItemSourceFactory;
+import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
+import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
 import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
@@ -46,7 +48,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 public abstract class AbstractHCBatchOperationsTest {
@@ -106,12 +107,16 @@ public abstract class AbstractHCBatchOperationsTest {
     public void defaultWriterCanSerializeBatchRequest() throws Exception {
 
         // given
-        PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
+        final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig().build();
 
-        String expectedType = UUID.randomUUID().toString();
-        HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, expectedType);
+        final String expectedType = UUID.randomUUID().toString();
+        final HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory, expectedType);
 
-        JacksonJsonLayout layout = createDefaultTestJacksonJsonLayout(itemSourceFactory);
+        final GenericItemSourceLayout<Object, ByteBuf> layout = createDefaultTestLayoutBuilder(itemSourceFactory)
+                .withSerializer(new JacksonSerializer.Builder<>()
+                        .withJacksonModules(new ExtendedLog4j2JsonModule())
+                        .build())
+                .build();
 
         String expectedMessage = UUID.randomUUID().toString();
         long timeMillis = System.currentTimeMillis();
@@ -119,27 +124,27 @@ public abstract class AbstractHCBatchOperationsTest {
                 .setTimeMillis(timeMillis)
                 .setMessage(new ObjectMessage(expectedMessage)).build();
 
-        ItemSource itemSource = layout.toSerializable(logEvent);
+        final ItemSource itemSource = layout.serialize(logEvent);
 
-        String indexName = UUID.randomUUID().toString();
-        IndexRequest indexRequest = (IndexRequest) batchOperations.createBatchItem(indexName, itemSource);
+        final String indexName = UUID.randomUUID().toString();
+        final IndexRequest indexRequest = (IndexRequest) batchOperations.createBatchItem(indexName, itemSource);
 
-        BatchBuilder<BatchRequest> batchBuilder = batchOperations.createBatchBuilder();
+        final BatchBuilder<BatchRequest> batchBuilder = batchOperations.createBatchBuilder();
         batchBuilder.add(indexRequest);
 
         // when
-        ByteBuf byteBuf = (ByteBuf) batchBuilder.build().serialize().getSource();
+        final ByteBuf byteBuf = (ByteBuf) batchBuilder.build().serialize().getSource();
 
         // then
-        Scanner scanner = new Scanner(new ByteBufInputStream(byteBuf));
+        final Scanner scanner = new Scanner(new ByteBufInputStream(byteBuf));
 
-        TestIndex deserializedAction = new ObjectMapper()
+        final TestIndex deserializedAction = new ObjectMapper()
                 .addMixIn(TestIndex.class, IndexRequestMixIn.class)
                 .readValue(scanner.nextLine(), TestIndex.class);
         assertEquals(indexName, deserializedAction.index);
         assertEquals(expectedType, deserializedAction.type);
 
-        TestLogEvent deserializedDocument = new ObjectMapper().readValue(scanner.nextLine(), TestLogEvent.class);
+        final TestLogEvent deserializedDocument = new ObjectMapper().readValue(scanner.nextLine(), TestLogEvent.class);
         assertEquals(timeMillis, deserializedDocument.timeMillis);
         assertNotNull(deserializedDocument.level);
         assertNotNull(deserializedDocument.thread);
@@ -218,14 +223,9 @@ public abstract class AbstractHCBatchOperationsTest {
 
     }
 
-    private JacksonJsonLayout createDefaultTestJacksonJsonLayout(PooledItemSourceFactory itemSourceFactory) {
-
-        JacksonJsonLayout.Builder builder = spy(JacksonJsonLayout.newBuilder()
-                .withItemSourceFactory(itemSourceFactory)
-                .setConfiguration(LoggerContext.getContext(false).getConfiguration())
-        );
-
-        return builder.build();
+    private <T, R> GenericItemSourceLayout.Builder<T, R> createDefaultTestLayoutBuilder(final ItemSourceFactory<T, R> itemSourceFactory) {
+        return new GenericItemSourceLayout.Builder<T, R>()
+                .withItemSourceFactory(itemSourceFactory);
     }
 
     private LifeCycle createLifeCycleTestObject() {

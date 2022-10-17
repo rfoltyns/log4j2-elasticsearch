@@ -21,20 +21,12 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MappingJsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.Deserializer;
-import org.appenders.log4j2.elasticsearch.ExtendedObjectMapper;
 import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.Serializer;
@@ -77,8 +69,7 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
          * @return index request metadata serializer
          */
         protected Serializer<Object> createItemSerializer() {
-            final ObjectWriter objectWriter = new ExtendedObjectMapper(new MappingJsonFactory())
-                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+            final ObjectWriter objectWriter = ElasticsearchBulkAPI.defaultObjectMapper()
                     .addMixIn(IndexRequest.class, DataStreamItemMixIn.class)
                     .writerFor(IndexRequest.class);
             return new JacksonSerializer<>(objectWriter);
@@ -89,13 +80,7 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
          */
         @SuppressWarnings("DuplicatedCode")
         protected Deserializer<BatchResult> createResultDeserializer() {
-            return new JacksonDeserializer<>(new ObjectMapper()
-                    .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
-                    .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                    .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                    .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                    .addMixIn(BatchResult.class, BatchResultMixIn.class)
-                    .addMixIn(Error.class, ErrorMixIn.class)
+            return new JacksonDeserializer<>(ElasticsearchBulkAPI.defaultObjectMapper()
                     .addMixIn(BatchItemResult.class, DataStreamItemResultMixIn.class)
                     .readerFor(BatchResult.class));
         }

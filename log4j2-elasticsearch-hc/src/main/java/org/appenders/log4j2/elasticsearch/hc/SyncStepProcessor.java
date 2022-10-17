@@ -21,6 +21,8 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.appenders.log4j2.elasticsearch.Deserializer;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.Result;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.appenders.log4j2.elasticsearch.StepProcessor;
@@ -30,10 +32,20 @@ import java.util.function.Function;
 public class SyncStepProcessor implements StepProcessor<SetupStep<Request, Response>> {
 
     private final HttpClientProvider clientProvider;
-    private final ObjectReader objectReader;
+    private final Deserializer responseDeserializer;
 
-    public SyncStepProcessor(HttpClientProvider clientProvider, ObjectReader objectReader) {
-        this.objectReader = objectReader;
+    /**
+     * @param clientProvider HTTP client config
+     * @param objectReader deprecated reader
+     * @deprecated As of 1.7, this constructor will be removed. Use {@link #SyncStepProcessor(HttpClientProvider, Deserializer)} instead
+     */
+    @Deprecated
+    public SyncStepProcessor(final HttpClientProvider clientProvider, final ObjectReader objectReader) {
+        this(clientProvider, new JacksonDeserializer<>(objectReader));
+    }
+
+    public SyncStepProcessor(final HttpClientProvider clientProvider, final Deserializer responseDeserializer) {
+        this.responseDeserializer = responseDeserializer;
         this.clientProvider = clientProvider;
     }
 
@@ -50,7 +62,7 @@ public class SyncStepProcessor implements StepProcessor<SetupStep<Request, Respo
     /* visible for testing */
     final BlockingResponseHandler<BasicResponse> createBlockingResponseHandler() {
         return new BlockingResponseHandler<>(
-                this.objectReader,
+                this.responseDeserializer,
                 createBlockingResponseFallbackHandler()
         );
     }

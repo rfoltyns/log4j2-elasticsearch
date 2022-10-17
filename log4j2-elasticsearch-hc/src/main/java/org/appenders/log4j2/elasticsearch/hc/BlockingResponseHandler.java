@@ -21,6 +21,8 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.appenders.log4j2.elasticsearch.Deserializer;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -36,17 +38,27 @@ import java.util.function.Function;
 public class BlockingResponseHandler<T extends Response> implements ResponseHandler<T> {
 
     protected final CountDownLatch countDownLatch = new CountDownLatch(1);
-    protected final ObjectReader objectReader;
     protected final Function<Exception, T> fallbackResponseTemplate;
+    protected final Deserializer<T> deserializer;
     protected T result;
+
+    /**
+     * @param deserializer used to deserialize response
+     * @param fallbackResponseTemplate used to generate response in case of any failures
+     */
+    public BlockingResponseHandler(final Deserializer<T> deserializer, final Function<Exception, T> fallbackResponseTemplate) {
+        this.deserializer = deserializer;
+        this.fallbackResponseTemplate = fallbackResponseTemplate;
+    }
 
     /**
      * @param objectReader used to deserialize response
      * @param fallbackResponseTemplate used to generate response in case of any failures
+     * @deprecated As of 1.7, this method will be removed. Use {@link #BlockingResponseHandler(Deserializer, Function)} instead
      */
-    public BlockingResponseHandler(ObjectReader objectReader, Function<Exception, T> fallbackResponseTemplate) {
-        this.objectReader = objectReader;
-        this.fallbackResponseTemplate = fallbackResponseTemplate;
+    @Deprecated
+    public BlockingResponseHandler(final ObjectReader objectReader, final Function<Exception, T> fallbackResponseTemplate) {
+        this(new JacksonDeserializer<>(objectReader), fallbackResponseTemplate);
     }
 
     /**
@@ -77,7 +89,7 @@ public class BlockingResponseHandler<T extends Response> implements ResponseHand
         if (inputStream == null) {
             return fallbackResponseTemplate.apply(null);
         }
-        return objectReader.readValue(inputStream);
+        return deserializer.read(inputStream);
     }
 
     /**

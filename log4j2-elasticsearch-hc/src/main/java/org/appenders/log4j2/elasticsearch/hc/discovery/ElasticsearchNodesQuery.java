@@ -20,8 +20,9 @@ package org.appenders.log4j2.elasticsearch.hc.discovery;
  * #L%
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.hc.BlockingResponseHandler;
+import org.appenders.log4j2.elasticsearch.hc.ElasticsearchBulkAPI;
 import org.appenders.log4j2.elasticsearch.hc.GenericRequest;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
 
@@ -37,7 +38,7 @@ public class ElasticsearchNodesQuery implements ServiceDiscoveryRequest<HttpClie
     public static final String DEFAULT_NODES_FILTER = "_all";
 
     private final BlockingResponseHandler<NodesResponse> responseHandler = new BlockingResponseHandler<>(
-            new ObjectMapper().readerFor(NodesResponse.class),
+            new JacksonDeserializer<>(ElasticsearchBulkAPI.defaultObjectMapper().readerFor(NodesResponse.class)),
             (ex) -> new NodesResponse(Collections.emptyMap()).withErrorMessage("Unable to refresh server list: " + ex.getMessage())
     );
 

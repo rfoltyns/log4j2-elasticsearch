@@ -21,13 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc.load;
  */
 
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.core.LogEvent;
@@ -52,6 +46,7 @@ import org.appenders.log4j2.elasticsearch.GenericItemSourcePool;
 import org.appenders.log4j2.elasticsearch.ILMPolicy;
 import org.appenders.log4j2.elasticsearch.IndexNameFormatter;
 import org.appenders.log4j2.elasticsearch.IndexTemplate;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.JacksonJsonLayoutPlugin;
 import org.appenders.log4j2.elasticsearch.JacksonMixIn;
 import org.appenders.log4j2.elasticsearch.JacksonSerializer;
@@ -66,17 +61,12 @@ import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.backoff.BatchLimitBackoffPolicy;
 import org.appenders.log4j2.elasticsearch.ecs.LogEventJacksonEcsJsonMixIn;
 import org.appenders.log4j2.elasticsearch.hc.BasicCredentials;
-import org.appenders.log4j2.elasticsearch.hc.BatchItemResult;
-import org.appenders.log4j2.elasticsearch.hc.BatchItemResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.BatchResult;
-import org.appenders.log4j2.elasticsearch.hc.BatchResultMixIn;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.hc.ClientProviderPolicy;
 import org.appenders.log4j2.elasticsearch.hc.ElasticsearchBulkAPI;
 import org.appenders.log4j2.elasticsearch.hc.ElasticsearchDataStreamAPI;
 import org.appenders.log4j2.elasticsearch.hc.ElasticsearchOperationFactory;
-import org.appenders.log4j2.elasticsearch.hc.Error;
-import org.appenders.log4j2.elasticsearch.hc.ErrorMixIn;
 import org.appenders.log4j2.elasticsearch.hc.HCBatchOperations;
 import org.appenders.log4j2.elasticsearch.hc.HCHttp;
 import org.appenders.log4j2.elasticsearch.hc.HttpClient;
@@ -229,11 +219,11 @@ public class LoadTest extends LoadTestBase {
         httpObjectFactoryBuilder
                 .withClientProvider(clientProvider)
                 .withOperationFactory(new ElasticsearchOperationFactory(
-                        new SyncStepProcessor(clientProvider, configuredReader()),
+                        new SyncStepProcessor(clientProvider, new JacksonDeserializer<BatchResult>(configuredReader())),
                         new Log4j2Lookup(configuration.getStrSubstitutor())));
 
         final BasicMetricsRegistry metricRegistry = new BasicMetricsRegistry();
-        BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
+        final BatchDelivery asyncBatchDelivery = AsyncBatchDelivery.newBuilder()
                 .withClientObjectFactory(httpObjectFactoryBuilder.build())
                 .withBatchSize(batchSize)
                 .withDeliveryInterval(1000)
@@ -345,14 +335,7 @@ public class LoadTest extends LoadTestBase {
     }
 
     private ObjectReader configuredReader() {
-        return new ObjectMapper()
-                .setVisibility(VisibilityChecker.Std.defaultInstance().with(JsonAutoDetect.Visibility.ANY))
-                .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
-                .configure(SerializationFeature.CLOSE_CLOSEABLE, false)
-                .configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                .addMixIn(BatchResult.class, BatchResultMixIn.class)
-                .addMixIn(Error.class, ErrorMixIn.class)
-                .addMixIn(BatchItemResult.class, BatchItemResultMixIn.class)
+        return ElasticsearchBulkAPI.defaultObjectMapper()
                 .readerFor(BatchResult.class);
     }
 

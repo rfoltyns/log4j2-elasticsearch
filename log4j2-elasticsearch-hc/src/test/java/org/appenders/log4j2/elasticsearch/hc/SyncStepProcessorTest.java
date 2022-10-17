@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
 import org.appenders.log4j2.elasticsearch.SetupStep;
 import org.junit.jupiter.api.Test;
 
@@ -87,6 +88,24 @@ public class SyncStepProcessorTest {
     }
 
     @Test
+    public void canDeserializeWithDeprecatedDeserializer() {
+
+        //given
+        final SyncStepProcessor stepProcessor = new SyncStepProcessor(
+                new HttpClientProvider(null),
+                new ObjectMapper().readerFor(BatchResult.class));
+
+        final Function<Exception, BasicResponse> blockingResponseExceptionHandler = stepProcessor.createBlockingResponseFallbackHandler();
+
+        // when
+        final BasicResponse basicResponse = blockingResponseExceptionHandler.apply(null);
+
+        // then
+        assertNull(basicResponse.getErrorMessage());
+
+    }
+
+    @Test
     public void processExecutesGivenStep() {
 
         // given
@@ -116,7 +135,7 @@ public class SyncStepProcessorTest {
             public HttpClient createClient() {
                 return mock;
             }
-        }, new ObjectMapper().readerFor(BatchResult.class));
+        }, new JacksonDeserializer<>(new ObjectMapper().readerFor(BatchResult.class)));
     }
 
 }
