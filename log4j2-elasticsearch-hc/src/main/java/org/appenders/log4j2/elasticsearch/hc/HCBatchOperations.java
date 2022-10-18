@@ -151,8 +151,14 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
     }
 
     @Override
-    public void register(MetricsRegistry registry) {
+    public void register(final MetricsRegistry registry) {
         Measured.of(batchBufferFactory).register(registry);
     }
+
+    @Override
+    public void deregister() {
+        Measured.of(batchBufferFactory).deregister();
+    }
+
 }
 

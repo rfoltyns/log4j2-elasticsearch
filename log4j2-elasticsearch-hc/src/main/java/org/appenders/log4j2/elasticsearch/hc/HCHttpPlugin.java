@@ -45,6 +45,7 @@ import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 
 import java.util.Collections;
+import java.util.List;
 
 /**
  * {@inheritDoc}
@@ -303,6 +304,11 @@ public class HCHttpPlugin extends HCHttp {
 
         public Builder withMetricConfig(final MetricConfig metricConfig) {
             metricsFactory.configure(metricConfig);
+            return this;
+        }
+
+        public Builder withMetricConfigs(final List<MetricConfig> metricConfigs) {
+            metricsFactory.configure(metricConfigs);
             return this;
         }
 

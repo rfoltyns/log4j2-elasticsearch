@@ -203,6 +203,36 @@ public class GenericItemSourceLayoutTest {
     }
 
     @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+
+        final PooledItemSourceFactory<Object, ByteBuf> itemSourceFactory = PooledItemSourceFactoryTest.createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(false))
+                .build();
+
+        final GenericItemSourceLayout<Object, ByteBuf> itemSourceLayout = createDefaultTestByteByfBasedLayoutBuilder()
+                .withItemSourceFactory(itemSourceFactory)
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        itemSourceLayout.register(registry);
+        assertEquals(5, registry.getMetrics(metric -> metric.getKey().toString().contains(expectedComponentName)).size());
+
+        // when
+        itemSourceLayout.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> metric.getKey().toString().contains(expectedComponentName)).size());
+
+    }
+
+    @Test
     public void registersComponentsMetrics() {
 
         // given

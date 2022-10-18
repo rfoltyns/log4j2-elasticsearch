@@ -327,6 +327,31 @@ public class ByteBufItemSourceFactoryPluginTest {
     }
 
     @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+        final ByteBufItemSourceFactoryPlugin itemSourceFactory = createDefaultTestSourceFactoryConfig()
+                .withPoolName(expectedComponentName)
+                .withMetricConfigs(GenericItemSourcePool.metricConfigs(true))
+                .build();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final MetricOutput metricOutput = mock(MetricOutput.class);
+        when(metricOutput.accepts(any())).thenReturn(true);
+
+        itemSourceFactory.register(registry);
+        assertEquals(5, registry.getMetrics(metric -> !TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+
+        // when
+        itemSourceFactory.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> true).size());
+
+    }
+
+    @Test
     public void enablesAllMetricsWithMetricRegistry() {
 
         // given

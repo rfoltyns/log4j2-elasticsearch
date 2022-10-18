@@ -507,6 +507,28 @@ public class HCServiceDiscoveryTest {
 
     }
 
+    @Test
+    public void lifecycleStopDeregistersMetrics() {
+
+        // given
+        final HttpClientProvider clientProvider = clientProviderMock();
+
+        final LifeCycle lifeCycle = createDefaultTestServiceDiscovery(clientProvider);
+
+        assertTrue(lifeCycle.isStopped());
+
+        lifeCycle.start();
+        assertTrue(lifeCycle.isStarted());
+
+        // when
+        lifeCycle.stop();
+        lifeCycle.stop();
+
+        // then
+        verify(clientProvider).deregister();
+
+    }
+
     // =======
     // METRICS
     // =======

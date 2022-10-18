@@ -34,6 +34,8 @@ import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactory;
 import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.json.jackson.ExtendedLog4j2JsonModule;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.Test;
 
 import java.util.Scanner;
@@ -47,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -118,9 +121,9 @@ public abstract class AbstractHCBatchOperationsTest {
                         .build())
                 .build();
 
-        String expectedMessage = UUID.randomUUID().toString();
-        long timeMillis = System.currentTimeMillis();
-        Log4jLogEvent logEvent = Log4jLogEvent.newBuilder()
+        final String expectedMessage = UUID.randomUUID().toString();
+        final long timeMillis = System.currentTimeMillis();
+        final Log4jLogEvent logEvent = Log4jLogEvent.newBuilder()
                 .setTimeMillis(timeMillis)
                 .setMessage(new ObjectMessage(expectedMessage)).build();
 
@@ -167,6 +170,10 @@ public abstract class AbstractHCBatchOperationsTest {
         verify(itemSourceFactory).start();
 
     }
+
+    // =========
+    // LIFECYCLE
+    // =========
 
     @Test
     public void lifecycleStopStopsItemSourceFactoryOnlyOnce() {
@@ -220,6 +227,40 @@ public abstract class AbstractHCBatchOperationsTest {
         // then
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
+
+    }
+    // =======
+    // METRICS
+    // =======
+
+    @Test
+    public void registersComponentsMetrics() {
+
+        final PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        final HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory);
+
+        final MetricsRegistry metricsRegistry = new BasicMetricsRegistry();
+
+        // when
+        batchOperations.register(metricsRegistry);
+
+        // then
+        verify(itemSourceFactory).register(eq(metricsRegistry));
+
+    }
+
+    @Test
+    public void deregistersComponentsMetrics() {
+
+        // given
+        final PooledItemSourceFactory itemSourceFactory = mock(PooledItemSourceFactory.class);
+        final HCBatchOperations batchOperations = createDefaultBatchOperations(itemSourceFactory);
+
+        // when
+        batchOperations.deregister();
+
+        // then
+        verify(itemSourceFactory).deregister();
 
     }
 

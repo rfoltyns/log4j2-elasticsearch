@@ -433,7 +433,7 @@ public class HttpClientFactoryTest {
     }
 
     @Test
-    public void deregistersAllMetricsWithMetricRegistry() throws IOException {
+    public void deregistersAllMetricsWithMetricRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();

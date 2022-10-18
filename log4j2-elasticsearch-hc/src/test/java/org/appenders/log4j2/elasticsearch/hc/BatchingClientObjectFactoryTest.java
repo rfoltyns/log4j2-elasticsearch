@@ -62,7 +62,7 @@ import static org.mockito.Mockito.when;
 public class BatchingClientObjectFactoryTest {
 
     @Test
-    public void lifecycleStartDoesntStartClientProvider() {
+    public void lifecycleStartDoesNotStartClientProvider() {
 
         // given
         HttpClientProvider clientProvider = mock(HttpClientProvider.class);
@@ -171,6 +171,28 @@ public class BatchingClientObjectFactoryTest {
         assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey5)).size());
         assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey6)).size());
         assertEquals(1, registry.getMetrics(metric -> metric.getKey().equals(expectedKey7)).size());
+
+    }
+
+    @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final BatchingClientObjectFactory<BatchRequest, IndexRequest> objectFactory = createDefaultBatchingObjectFactoryBuilder()
+                .withName(expectedComponentName)
+                .build();
+
+        objectFactory.register(registry);
+        assertEquals(7, registry.getMetrics(metric -> true).size());
+
+        // when
+        objectFactory.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> true).size());
 
     }
 

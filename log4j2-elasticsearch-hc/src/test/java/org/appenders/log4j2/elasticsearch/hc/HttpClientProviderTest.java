@@ -23,8 +23,10 @@ package org.appenders.log4j2.elasticsearch.hc;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -261,6 +263,32 @@ public class HttpClientProviderTest {
         verify(registry, times(6)).register(captor.capture());
 
         assertEquals(expectedKey1, captor.getValue().getKey());
+
+    }
+
+    @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+                .withName(expectedComponentName)
+                .withMetricConfigs(PoolingAsyncResponseConsumer.metricConfigs(true));
+
+        final HttpClientProvider provider = new HttpClientProvider(builder);
+
+        provider.createClient();
+        provider.register(registry);
+
+        assertEquals(1, registry.getMetrics(metric -> !TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+
+        // when
+        provider.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> true).size());
 
     }
 

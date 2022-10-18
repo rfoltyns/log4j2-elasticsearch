@@ -294,4 +294,29 @@ public class HCHttpPluginTest {
 
     }
 
+    @Test
+    public void deregistersAllMetricsWithMetricRegistry() {
+
+        // given
+        final String expectedComponentName = UUID.randomUUID().toString();
+
+        final MetricsRegistry registry = new BasicMetricsRegistry();
+        final HCHttpPlugin.Builder builder = spy(createDefaultHttpObjectFactoryBuilder())
+                .withName(expectedComponentName)
+                .withMetricConfigs(BatchingClientObjectFactory.BatchingClientMetrics.createConfigs(true));
+
+        final HCHttpPlugin plugin = builder.build();
+
+        plugin.register(registry);
+        assertEquals(7, registry.getMetrics(metric -> !TestKeyAccessor.getMetricType(metric.getKey()).equals("noop")).size());
+        assertEquals(12, registry.getMetrics(metric -> true).size()); // pool noop metrics
+
+        // when
+        plugin.deregister();
+
+        // then
+        assertEquals(0, registry.getMetrics(metric -> true).size());
+
+    }
+
 }
