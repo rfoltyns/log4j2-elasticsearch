@@ -30,6 +30,7 @@ public class LoadGenerator {
     private final AtomicInteger producerSleepMillis;
     private final AtomicInteger producerBatchSize;
     private final ThrottlingPolicy throttlingPolicy;
+    private double loadDiffThreshold = 0.15;
 
     public LoadGenerator(final Queue<ConditionalLoop> initialProducers,
                          final LoadProducerFactory producerFactory,
@@ -84,13 +85,15 @@ public class LoadGenerator {
         }
 
         while (producers.size() > numberOfProducers.get()) {
+            System.out.println("Removing producer");
             producers.remove().stopLoop();
         }
         while (producers.size() < numberOfProducers.get()) {
+            System.out.println("Adding producer");
             producers.add(createInternal());
         }
-        if (currentLoad - projectedLoad(limitPerSec) > 0.05) {
-            System.out.println("Stopping over-producing loop");
+        if (currentLoad - projectedLoad(limitPerSec) > loadDiffThreshold) {
+            System.out.println("Removing producer");
             producers.remove().stopLoop();
         }
 
