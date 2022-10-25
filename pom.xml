@@ -53,6 +53,10 @@
         <log4j2.version>2.17.1</log4j2.version>
         <jacoco.version>0.8.7</jacoco.version>
         <jackson.version>2.13.4</jackson.version>
+        <jackson-core.version>${jackson.version}</jackson-core.version>
+        <jackson-databind.version>${jackson.version}.2</jackson-databind.version>
+        <jackson-annotations.version>${jackson.version}</jackson-annotations.version>
+        <jackson-afterburner.version>${jackson.version}</jackson-afterburner.version>
         <httpclient.version>4.5.13</httpclient.version>
         <httpasyncclient.version>4.1.5</httpasyncclient.version>
         <httpcore.version>4.4.15</httpcore.version>
@@ -135,17 +139,17 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-databind.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-annotations.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.module</groupId>
                 <artifactId>jackson-module-afterburner</artifactId>
-                <version>${jackson.version}</version>
+                <version>${jackson-afterburner.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
