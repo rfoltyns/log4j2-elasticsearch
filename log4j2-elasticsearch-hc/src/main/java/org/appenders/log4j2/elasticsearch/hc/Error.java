@@ -25,17 +25,21 @@ package org.appenders.log4j2.elasticsearch.hc;
  */
 public class Error {
 
+    private static final Error[] NO_ROOT_CAUSE = new Error[0];
+
     private String type;
 
     private String reason;
 
     private Error causedBy;
 
+    private Error[] rootCause = NO_ROOT_CAUSE;
+
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(final String type) {
         this.type = type;
     }
 
@@ -43,7 +47,7 @@ public class Error {
         return reason;
     }
 
-    public void setReason(String reason) {
+    public void setReason(final String reason) {
         this.reason = reason;
     }
 
@@ -51,13 +55,24 @@ public class Error {
         return causedBy;
     }
 
-    public void setCausedBy(Error causedBy) {
+    public void setCausedBy(final Error causedBy) {
         this.causedBy = causedBy;
     }
 
-    StringBuilder appendErrorMessage(StringBuilder sb) {
+    public Error[] getRootCause() {
+        return rootCause;
+    }
+
+    public void setRootCause(final Error[] rootCause) {
+        this.rootCause = rootCause;
+    }
+
+    StringBuilder appendErrorMessage(final StringBuilder sb, int depth) {
         if (getCausedBy() != null) {
-            return getCausedBy().appendErrorMessage(sb);
+            return getCausedBy().appendErrorMessage(sb, --depth);
+        }
+        if (getRootCause().length > 0) {
+            return getRootCause()[0].appendErrorMessage(sb, --depth);
         }
         sb.append("errorType: ").append(getType());
         sb.append(", errorReason: ").append(getReason());

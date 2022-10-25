@@ -25,6 +25,7 @@ import java.util.Optional;
 
 public class BatchResult implements Response {
 
+    private static final int ERROR_MAX_STACK_DEPTH = Integer.parseInt(System.getProperty("appenders.BatchResult.error.depth", "1"));
     static final String UNABLE_TO_GET_MORE_INFO = "Unable to extract error info from failed items";
     static final String ONE_OR_MORE_ITEMS_FAILED = "One or more items failed";
     static final String FIRST_FAILED_ITEM_PREFIX = "First failed item: ";
@@ -100,7 +101,7 @@ public class BatchResult implements Response {
         }
 
         sb.append(FIRST_FAILED_ITEM_PREFIX);
-        firstFailedItem.get().getError().appendErrorMessage(sb);
+        firstFailedItem.get().getError().appendErrorMessage(sb, ERROR_MAX_STACK_DEPTH);
 
     }
 
@@ -125,7 +126,7 @@ public class BatchResult implements Response {
         }
         if (getError() != null) {
             sb.append(SEPARATOR).append(ROOT_ERROR_PREFIX);
-            getError().appendErrorMessage(sb);
+            getError().appendErrorMessage(sb, 1);
         }
 
         this.errorMessage = sb.toString();

@@ -93,7 +93,7 @@ public class BatchResultTest {
     }
 
     @Test
-    public void errorMessageDefaultsToProvidedIfRequestIsSucceeeded() {
+    public void errorMessageDefaultsToProvidedIfRequestIsSucceeded() {
 
         // given
         String expectedMessage = UUID.randomUUID().toString();
@@ -178,7 +178,7 @@ public class BatchResultTest {
     }
 
     @Test
-    public void errorMessageContainsRootErrorInfoIfAvailable() {
+    public void errorMessageContainsBasicRootErrorInfoIfAvailable() {
 
         // given
         String expectedType = UUID.randomUUID().toString();
@@ -201,7 +201,7 @@ public class BatchResultTest {
     }
 
     @Test
-    public void errorMessageContainsRootErrorCausedByInfoIfAvailable() {
+    public void errorMessageContainsErrorCausedByInfoIfAvailable() {
 
         // given
         String expectedType = UUID.randomUUID().toString();
@@ -218,6 +218,40 @@ public class BatchResultTest {
         error.setType(expectedType);
         error.setReason(expectedReason);
         error.setCausedBy(causedByError);
+
+        BatchResult result = createTestBatchResult(false, error);
+        result.withErrorMessage(DEFAULT_TEST_MESSAGE);
+
+        // when
+        String actualMessage = result.getErrorMessage();
+
+        // then
+        assertTrue(actualMessage.contains(expectedCausedByType));
+        assertTrue(actualMessage.contains(expectedCausedByReason));
+        assertFalse(actualMessage.contains(expectedType));
+        assertFalse(actualMessage.contains(expectedReason));
+
+
+    }
+
+    @Test
+    public void errorMessageContainsErrorRootCauseInfoIfAvailable() {
+
+        // given
+        String expectedType = UUID.randomUUID().toString();
+        String expectedReason = UUID.randomUUID().toString();
+
+        String expectedCausedByType = UUID.randomUUID().toString();
+        String expectedCausedByReason = UUID.randomUUID().toString();
+
+        Error causedByError = new Error();
+        causedByError.setType(expectedCausedByType);
+        causedByError.setReason(expectedCausedByReason);
+
+        Error error = new Error();
+        error.setType(expectedType);
+        error.setReason(expectedReason);
+        error.setRootCause(new Error[] { causedByError });
 
         BatchResult result = createTestBatchResult(false, error);
         result.withErrorMessage(DEFAULT_TEST_MESSAGE);

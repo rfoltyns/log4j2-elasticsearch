@@ -29,4 +29,7 @@ public class ErrorMixIn {
     @JsonProperty("caused_by")
     Error causedBy;
 
+    @JsonProperty("root_cause")
+    Error[] rootCause;
+
 }
