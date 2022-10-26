@@ -177,7 +177,11 @@ public class BatchRequest implements Batch<IndexRequest> {
         private Deserializer<BatchResult> resultDeserializer;
 
         public Builder() {
-            this.items = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).tryCreateMpscQueue(INITIAL_SIZE);
+            this(getQueueFactoryInstance(BatchRequest.class.getSimpleName()).tryCreateMpscQueue(INITIAL_SIZE));
+        }
+
+        Builder(final Collection<IndexRequest> items) {
+            this.items = items;
         }
 
         public Builder add(final Object item) {

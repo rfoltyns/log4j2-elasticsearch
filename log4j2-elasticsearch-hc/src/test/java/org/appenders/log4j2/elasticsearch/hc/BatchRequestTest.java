@@ -179,6 +179,26 @@ public abstract class BatchRequestTest {
     }
 
     @Test
+    public void builderCanStoreActionWithProvidedCollection() {
+
+        // given
+        final Collection<IndexRequest> expectedItems = new ArrayList<>();
+        final BatchRequest.Builder builder = new BatchRequest.Builder(expectedItems)
+                .withItemSerializer(mock(Serializer.class))
+                .withResultDeserializer(mock(Deserializer.class))
+                .withBuffer(mock(ByteBufItemSource.class));
+
+        builder.withItemSerializer(null);
+
+        // when
+        builder.add(mock(IndexRequest.class));
+
+        // then
+        assertEquals(1, expectedItems.size());
+
+    }
+
+    @Test
     public void builderCanStoreMultipleActionsAtOnce() {
 
         // given
