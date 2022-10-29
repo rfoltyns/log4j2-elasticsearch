@@ -45,7 +45,7 @@ public class HCBatchOperations implements BatchOperations<BatchRequest>, LifeCyc
     @Deprecated
     public HCBatchOperations(final PooledItemSourceFactory batchBufferFactory, final String mappingType) {
         this.batchBufferFactory = batchBufferFactory;
-        this.builderFactory = new ElasticsearchBulkAPI(mappingType);
+        this.builderFactory = new ElasticsearchBulkAPI(mappingType, null);
 
         // bad decisions pit..
         this.mappingType = mappingType;

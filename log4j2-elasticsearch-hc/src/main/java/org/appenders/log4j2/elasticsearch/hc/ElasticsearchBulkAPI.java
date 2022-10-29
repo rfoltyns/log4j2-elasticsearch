@@ -41,9 +41,15 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
     private final String mappingType;
     private final Serializer<Object> itemSerializer;
     private final Deserializer<BatchResult> resultDeserializer;
+    private final String filterPath;
 
-    public ElasticsearchBulkAPI(final String mappingType) {
+    public ElasticsearchBulkAPI() {
+        this(null, null);
+    }
+
+    public ElasticsearchBulkAPI(final String mappingType, final String filterPath) {
         this.mappingType = mappingType;
+        this.filterPath = filterPath;
         this.itemSerializer = createItemSerializer();
         this.resultDeserializer = createResultDeserializer();
     }
@@ -55,10 +61,12 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
      */
     public ElasticsearchBulkAPI(
             final String mappingType,
+            final String filterPath,
             final Serializer<Object> itemSerializer,
             final Deserializer<BatchResult> resultDeserializer
     ) {
         this.mappingType = mappingType;
+        this.filterPath = filterPath;
         this.itemSerializer = itemSerializer;
         this.resultDeserializer = resultDeserializer;
     }
@@ -73,6 +81,7 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
     @Override
     public BatchRequest.Builder batchBuilder() {
         return new BatchRequest.Builder()
+                .withFilterPath(filterPath)
                 .withItemSerializer(itemSerializer)
                 .withResultDeserializer(resultDeserializer);
     }

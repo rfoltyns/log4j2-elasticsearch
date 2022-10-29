@@ -27,6 +27,7 @@ import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.JacksonSerializer;
 import org.appenders.log4j2.elasticsearch.Serializer;
+import org.appenders.log4j2.elasticsearch.util.UriUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,20 +44,21 @@ public class BatchRequest implements Batch<IndexRequest> {
 
     public static final String HTTP_METHOD_NAME = "POST";
     public static final char LINE_SEPARATOR = '\n';
-
     private final Serializer<Object> itemSerializer;
     private final Deserializer<BatchResult> resultDeserializer;
     private ItemSource<ByteBuf> buffer;
 
     protected final Collection<IndexRequest> indexRequests;
     private final int size;
+    final String uri;
 
     protected BatchRequest(final Builder builder) {
         this.indexRequests = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).toIterable(builder.items);
         this.size = this.indexRequests.size();
         this.itemSerializer = builder.itemSerializer;
         this.resultDeserializer = builder.resultDeserializer;
-        this.buffer = builder.itemSource;
+        this.buffer = builder.buffer;
+        this.uri = builder.uriBuilder.toString();
     }
 
     /**
@@ -67,7 +69,7 @@ public class BatchRequest implements Batch<IndexRequest> {
      */
     public ItemSource serialize() throws Exception {
 
-        ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(buffer.getSource());
+        final ByteBufOutputStream byteBufOutputStream = new ByteBufOutputStream(buffer.getSource());
 
         // in current impl with no IDs, it's possible to reduce serialization by reusing first action
         IndexRequest identicalAction = uniformAction(indexRequests);
@@ -158,7 +160,7 @@ public class BatchRequest implements Batch<IndexRequest> {
 
     @Override
     public String getURI() {
-        return "/_bulk";
+        return uri;
     }
 
     @Override
@@ -171,8 +173,9 @@ public class BatchRequest implements Batch<IndexRequest> {
         private static final int INITIAL_SIZE = Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "8192"));
 
         protected final Collection<IndexRequest> items;
+        protected final StringBuilder uriBuilder = new StringBuilder(32);
 
-        private ItemSource<ByteBuf> itemSource;
+        private ItemSource<ByteBuf> buffer;
         private Serializer<Object> itemSerializer;
         private Deserializer<BatchResult> resultDeserializer;
 
@@ -182,6 +185,8 @@ public class BatchRequest implements Batch<IndexRequest> {
 
         Builder(final Collection<IndexRequest> items) {
             this.items = items;
+            // TODO: Parametrize and move to separate, Elasticsearch-specific class in 2.0
+            UriUtil.appendPath(this.uriBuilder, "_bulk");
         }
 
         public Builder add(final Object item) {
@@ -209,7 +214,7 @@ public class BatchRequest implements Batch<IndexRequest> {
 
         protected void validate() {
 
-            if (itemSource == null) {
+            if (buffer == null) {
                 throw new IllegalArgumentException("buffer cannot be null");
             }
 
@@ -223,8 +228,13 @@ public class BatchRequest implements Batch<IndexRequest> {
 
         }
 
+        public Builder withFilterPath(final String filterPath) {
+            UriUtil.appendQueryParam(uriBuilder, "filter_path", filterPath);
+            return this;
+        }
+
         public Builder withBuffer(final ItemSource<ByteBuf> buffer) {
-            this.itemSource = buffer;
+            this.buffer = buffer;
             return this;
         }
 
@@ -253,5 +263,7 @@ public class BatchRequest implements Batch<IndexRequest> {
             this.resultDeserializer = deserializer;
             return this;
         }
+
     }
+
 }

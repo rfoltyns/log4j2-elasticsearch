@@ -113,7 +113,7 @@ public class HCHttpTest {
 
         return new HCHttp.Builder()
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
-                .withBatchOperations(new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(null)))
+                .withBatchOperations(new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI()))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
 
     }
@@ -316,7 +316,7 @@ public class HCHttpTest {
                 .build();
 
         final Deserializer<BatchResult> deserializer = mock(Deserializer.class);
-        final HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(null) {
+        final HCBatchOperations batchOperations = new HCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI() {
             @Override
             protected Deserializer<BatchResult> createResultDeserializer() {
                 return deserializer;

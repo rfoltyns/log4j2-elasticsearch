@@ -128,6 +128,7 @@ public class LoadTest extends LoadTestBase {
                 .add("ecs.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false")))
                 .add("datastreams.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.datastreams.enabled", "false")))
                 .add("indexName", indexName)
+                .add("filterPath", System.getProperty("smokeTest.filterPath", null))
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
@@ -153,6 +154,7 @@ public class LoadTest extends LoadTestBase {
         final int initialBatchPoolSize = getConfig().getProperty("initialBatchPoolSize", Integer.class);
         final boolean ecsEnabled = getConfig().getProperty("ecs.enabled", Boolean.class);
         final boolean dataStreamsEnabled = getConfig().getProperty("datastreams.enabled", Boolean.class);
+        final String filterPath = getConfig().getProperty("filterPath", String.class);
         final String indexName = getConfig().getProperty("indexName", String.class);
         final boolean serviceDiscoveryEnabled = getConfig().getProperty("servicediscovery.enabled", Boolean.class);
         final String version = getConfig().getProperty("api.version", String.class);
@@ -183,7 +185,7 @@ public class LoadTest extends LoadTestBase {
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         HCHttp.Builder httpObjectFactoryBuilder = (HCHttp.Builder) new HCHttp.Builder()
-                .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), dataStreamsEnabled))
+                .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), filterPath, dataStreamsEnabled))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(8))
                 .withName("http-main")
@@ -300,11 +302,12 @@ public class LoadTest extends LoadTestBase {
 
     private BatchOperations batchOperations(final PooledItemSourceFactory pooledItemSourceFactory,
                                             final Version version,
+                                            final String filterPath,
                                             final boolean dataStreamsEnabled) {
         if (dataStreamsEnabled) {
             return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI());
         } else {
-            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version)));
+            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version), filterPath));
         }
     }
 

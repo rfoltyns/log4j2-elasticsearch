@@ -145,9 +145,10 @@ Configures builders and serializers for:
 ```
 
 #### ElasticsearchBulk Properties
-| Name        | Type      | Required | Default          | Description                                                                                                                                                                      |
-|-------------|-----------|----------|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| mappingType | Attribute | no       | `null` since 1.6 | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html). |
+| Name        | Type      | Required | Default          | Description                                                                                                                                                                                                                 |
+|-------------|-----------|----------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| mappingType | Attribute | no       | `null` since 1.6 | Name of index mapping type to use. Applicable to Elasticsearch <8.x. See [removal of types](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/removal-of-types.html).                                            |
+| filterPath  | Attribute | no       | `null`           | If not empty, `filter_path` query param will be added to Bulk API requests. See [Response Filtering](https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#common-options-response-filtering) |
 
 ### ElasticsearchDataStream
 
