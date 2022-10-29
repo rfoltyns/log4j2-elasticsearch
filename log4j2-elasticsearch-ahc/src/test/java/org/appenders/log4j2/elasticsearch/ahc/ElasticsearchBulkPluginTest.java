@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.ahc;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ElasticsearchBulkPluginTest extends ElasticsearchBulkAPITest {
 
@@ -99,6 +101,26 @@ public class ElasticsearchBulkPluginTest extends ElasticsearchBulkAPITest {
 
         // then
         assertEquals(expectedMappingType, indexRequest.type);
+
+    }
+
+    @Test
+    public void builderSetsConfiguredFilterPath() {
+
+        // given
+        final String expectedFilterPath = UUID.randomUUID().toString();
+        final ElasticsearchBulkPlugin.Builder builder = ElasticsearchBulkPlugin.newBuilder()
+                .withFilterPath(expectedFilterPath);
+
+        final ElasticsearchBulkPlugin plugin = builder.build();
+
+        // when
+        final BatchRequest batchRequest = plugin.batchBuilder()
+                .withBuffer(ByteBufItemSourceTest.createTestItemSource())
+                .build();
+
+        // then
+        assertTrue(batchRequest.getURI().endsWith(expectedFilterPath));
 
     }
 

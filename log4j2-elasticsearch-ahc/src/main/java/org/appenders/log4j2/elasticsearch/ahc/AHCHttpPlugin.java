@@ -189,7 +189,7 @@ public class AHCHttpPlugin extends AHCHttp {
             }
 
             if (clientAPIFactory == null) {
-                clientAPIFactory = new ElasticsearchBulkAPI(null);
+                clientAPIFactory = new ElasticsearchBulkAPI();
             }
 
             return new AHCBatchOperations(pooledItemSourceFactory, clientAPIFactory);

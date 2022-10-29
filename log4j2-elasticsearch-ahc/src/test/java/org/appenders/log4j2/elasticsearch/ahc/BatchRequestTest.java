@@ -393,7 +393,7 @@ public abstract class BatchRequestTest {
     }
 
     @Test
-    public void callingCompletedReleasesItemSource() {
+    public void callingCompletedReleasesBuffer() {
 
         // given
         final BatchRequest.Builder builder = createDefaultTestObjectBuilder();

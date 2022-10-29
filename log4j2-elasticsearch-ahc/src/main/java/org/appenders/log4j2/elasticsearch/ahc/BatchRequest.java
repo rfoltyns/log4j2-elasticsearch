@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.ItemSource;
 import org.appenders.log4j2.elasticsearch.Serializer;
+import org.appenders.log4j2.elasticsearch.util.UriUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,6 +48,7 @@ public class BatchRequest implements Batch<IndexRequest> {
 
     protected final Collection<IndexRequest> indexRequests;
     private final int size;
+    final String uri;
 
     protected BatchRequest(final Builder builder) {
         this.indexRequests = getQueueFactoryInstance(BatchRequest.class.getSimpleName()).toIterable(builder.items);
@@ -54,6 +56,7 @@ public class BatchRequest implements Batch<IndexRequest> {
         this.itemSerializer = builder.itemSerializer;
         this.resultDeserializer = builder.resultDeserializer;
         this.buffer = builder.buffer;
+        this.uri = builder.uriBuilder.toString();
     }
 
     /**
@@ -158,7 +161,7 @@ public class BatchRequest implements Batch<IndexRequest> {
 
     @Override
     public String getURI() {
-        return "/_bulk";
+        return uri;
     }
 
     @Override
@@ -171,6 +174,7 @@ public class BatchRequest implements Batch<IndexRequest> {
         private static final int INITIAL_SIZE = Integer.parseInt(System.getProperty("appenders." + BatchRequest.class.getSimpleName() + ".initialSize", "8192"));
 
         protected final Collection<IndexRequest> items;
+        protected final StringBuilder uriBuilder = new StringBuilder(32);
 
         private ItemSource<ByteBuf> buffer;
         private Serializer<Object> itemSerializer;
@@ -182,6 +186,8 @@ public class BatchRequest implements Batch<IndexRequest> {
 
         Builder(final Collection<IndexRequest> items) {
             this.items = items;
+            // TODO: Parametrize and move to separate, Elasticsearch-specific class in 2.0
+            UriUtil.appendPath(this.uriBuilder, "_bulk");
         }
 
         public Builder add(final Object item) {
@@ -223,6 +229,11 @@ public class BatchRequest implements Batch<IndexRequest> {
 
         }
 
+        public Builder withFilterPath(final String filterPath) {
+            UriUtil.appendQueryParam(uriBuilder, "filter_path", filterPath);
+            return this;
+        }
+
         public Builder withBuffer(final ItemSource<ByteBuf> buffer) {
             this.buffer = buffer;
             return this;
@@ -239,4 +250,5 @@ public class BatchRequest implements Batch<IndexRequest> {
         }
 
     }
+
 }

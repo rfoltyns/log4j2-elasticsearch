@@ -66,7 +66,7 @@ public class DataStreamBatchRequest extends BatchRequest {
 
     @Override
     public String getURI() {
-        return uniformAction(indexRequests).getIndex() + "/_bulk";
+        return uniformAction(indexRequests).getIndex() + uri;
     }
 
     @Override
@@ -86,4 +86,5 @@ public class DataStreamBatchRequest extends BatchRequest {
         }
 
     }
+
 }

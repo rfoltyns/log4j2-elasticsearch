@@ -159,7 +159,7 @@ public class AsyncBatchEmitterWithBatchOperationsTest {
                 .withResizeTimeout(100)
                 .build();
 
-        final BatchOperations<BatchRequest> batchOperations = new AHCBatchOperations(batchPool, new ElasticsearchBulkAPI(null));
+        final BatchOperations<BatchRequest> batchOperations = new AHCBatchOperations(batchPool, new ElasticsearchBulkAPI());
 
         final Function<BatchRequest, Boolean> listener = batchRequest -> {
 

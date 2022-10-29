@@ -77,7 +77,7 @@ public class AHCBatchOperationsTest {
     }
 
     private AHCBatchOperations createDefaultBatchOperations(final PooledItemSourceFactory itemSourceFactory, final String mappingType) {
-        return new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(mappingType));
+        return new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(mappingType, null));
     }
 
     @Test

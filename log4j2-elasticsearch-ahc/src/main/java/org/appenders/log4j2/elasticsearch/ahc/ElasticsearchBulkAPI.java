@@ -39,26 +39,30 @@ import org.appenders.log4j2.elasticsearch.Serializer;
 public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Builder, BatchRequest.Builder, BatchResult> {
 
     private final String mappingType;
+    private final String filterPath;
     private final Serializer<Object> itemSerializer;
     private final Deserializer<BatchResult> resultDeserializer;
 
-    public ElasticsearchBulkAPI(final String mappingType) {
+    public ElasticsearchBulkAPI() {
+        this(null, null);
+    }
+
+    public ElasticsearchBulkAPI(final String mappingType, final String filterPath) {
         this.mappingType = mappingType;
+        this.filterPath = filterPath;
         this.itemSerializer = createItemSerializer();
         this.resultDeserializer = createResultDeserializer();
     }
 
     /**
+     * @param mappingType Elasticsearch mapping type
+     * @param filterPath Elasticsearch {@code filter_path}
      * @param itemSerializer index request metadata serializer
      * @param resultDeserializer batch response deserializer
-     * @param mappingType Elasticsearch mapping type
      */
-    public ElasticsearchBulkAPI(
-            final String mappingType,
-            final Serializer<Object> itemSerializer,
-            final Deserializer<BatchResult> resultDeserializer
-    ) {
+    public ElasticsearchBulkAPI(final String mappingType, final String filterPath, final Serializer<Object> itemSerializer, final Deserializer<BatchResult> resultDeserializer) {
         this.mappingType = mappingType;
+        this.filterPath = filterPath;
         this.itemSerializer = itemSerializer;
         this.resultDeserializer = resultDeserializer;
     }
@@ -73,6 +77,7 @@ public class ElasticsearchBulkAPI implements ClientAPIFactory<IndexRequest.Build
     @Override
     public BatchRequest.Builder batchBuilder() {
         return new BatchRequest.Builder()
+                .withFilterPath(filterPath)
                 .withItemSerializer(itemSerializer)
                 .withResultDeserializer(resultDeserializer);
     }

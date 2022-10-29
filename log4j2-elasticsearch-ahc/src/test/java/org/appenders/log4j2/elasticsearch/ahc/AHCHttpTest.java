@@ -99,7 +99,7 @@ public class AHCHttpTest {
 
         return new AHCHttp.Builder()
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
-                .withBatchOperations(new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI(null)))
+                .withBatchOperations(new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI()))
                 .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
 
     }
@@ -306,6 +306,7 @@ public class AHCHttpTest {
                 .withBatchOperations(new AHCBatchOperations(itemSourceFactory,
                         new ElasticsearchBulkAPI(
                                 null,
+                                null,
                                 JacksonSerializerTest.createDefaultTestBuilder().build(),
                                 new JacksonDeserializer<>(mockedObjectReader))))
                 .build();
@@ -338,6 +339,7 @@ public class AHCHttpTest {
         final AHCHttp factory = createDefaultHttpObjectFactoryBuilder()
                 .withBatchOperations(new AHCBatchOperations(itemSourceFactory,
                         new ElasticsearchBulkAPI(
+                                null,
                                 null,
                                 JacksonSerializerTest.createDefaultTestBuilder().build(),
                                 new JacksonDeserializer<>(mockedObjectReader))))

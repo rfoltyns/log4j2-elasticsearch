@@ -60,6 +60,7 @@ import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.ahc.AHCBatchOperations;
 import org.appenders.log4j2.elasticsearch.ahc.AHCHttp;
 import org.appenders.log4j2.elasticsearch.ahc.BasicCredentials;
+import org.appenders.log4j2.elasticsearch.ahc.BatchRequest;
 import org.appenders.log4j2.elasticsearch.ahc.BatchResult;
 import org.appenders.log4j2.elasticsearch.ahc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.ahc.ClientProviderPolicy;
@@ -126,6 +127,7 @@ public class LoadTest extends LoadTestBase {
                 .add("ecs.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.ecs.enabled", "false")))
                 .add("datastreams.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.datastreams.enabled", "false")))
                 .add("indexName", indexName)
+                .add("filterPath", System.getProperty("smokeTest.filterPath", null))
                 .add("servicediscovery.enabled", Boolean.parseBoolean(System.getProperty("smokeTest.servicediscovery.enabled", "true")))
                 .add("servicediscovery.nodesFilter", System.getProperty("smokeTest.servicediscovery.nodesFilter", ElasticsearchNodesQuery.DEFAULT_NODES_FILTER))
                 .add("chroniclemap.sequenceId", 1)
@@ -151,6 +153,7 @@ public class LoadTest extends LoadTestBase {
         final int initialBatchPoolSize = getConfig().getProperty("initialBatchPoolSize", Integer.class);
         final boolean ecsEnabled = getConfig().getProperty("ecs.enabled", Boolean.class);
         final boolean dataStreamsEnabled = getConfig().getProperty("datastreams.enabled", Boolean.class);
+        final String filterPath = getConfig().getProperty("filterPath", String.class);
         final String indexName = getConfig().getProperty("indexName", String.class);
         final boolean serviceDiscoveryEnabled = getConfig().getProperty("servicediscovery.enabled", Boolean.class);
         final String version = getConfig().getProperty("api.version", String.class);
@@ -180,7 +183,7 @@ public class LoadTest extends LoadTestBase {
         final HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
         final AHCHttp.Builder httpObjectFactoryBuilder = (AHCHttp.Builder) new AHCHttp.Builder()
-                .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), dataStreamsEnabled))
+                .withBatchOperations(batchOperations(pooledItemSourceFactory, VersionUtil.parse(version), filterPath, dataStreamsEnabled))
                 .withClientProvider(clientProvider)
                 .withBackoffPolicy(new BatchLimitBackoffPolicy<>(16))
                 .withName("http-main")
@@ -292,11 +295,12 @@ public class LoadTest extends LoadTestBase {
 
     private BatchOperations batchOperations(final PooledItemSourceFactory pooledItemSourceFactory,
                                             final Version version,
+                                            final String filterPath,
                                             final boolean dataStreamsEnabled) {
         if (dataStreamsEnabled) {
             return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI());
         } else {
-            return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version)));
+            return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version), filterPath));
         }
     }
 

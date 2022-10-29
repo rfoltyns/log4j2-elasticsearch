@@ -47,6 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public abstract class DataStreamBatchRequestTest {
 
@@ -68,13 +69,43 @@ public abstract class DataStreamBatchRequestTest {
     public void uriIsBasedOnBatchItems() {
 
         // given
+        final String expectedIndex = UUID.randomUUID().toString();
         final BatchRequest.Builder builder = createDefaultTestObjectBuilder();
+
+        final DataStreamItem dataStreamItem = mock(DataStreamItem.class);
+        when(dataStreamItem.getIndex()).thenReturn(expectedIndex);
+
+        builder.add(dataStreamItem);
 
         // when
         final BatchRequest batchRequest = builder.build();
 
         // then
         assertNotNull(batchRequest);
+        assertEquals(expectedIndex + "/_bulk", batchRequest.getURI());
+
+    }
+
+    @Test
+    public void uriContainsFilterPath() {
+
+        // given
+        final String expectedIndex = UUID.randomUUID().toString();
+        final String expectedFilterPath = UUID.randomUUID().toString();
+        final BatchRequest.Builder builder = createDefaultTestObjectBuilder()
+                .withFilterPath(expectedFilterPath);
+
+        final DataStreamItem dataStreamItem = mock(DataStreamItem.class);
+        when(dataStreamItem.getIndex()).thenReturn(expectedIndex);
+
+        builder.add(dataStreamItem);
+
+        // when
+        final BatchRequest batchRequest = builder.build();
+
+        // then
+        assertNotNull(batchRequest);
+        assertEquals(expectedIndex + "/_bulk?filter_path=" + expectedFilterPath, batchRequest.getURI());
 
     }
 

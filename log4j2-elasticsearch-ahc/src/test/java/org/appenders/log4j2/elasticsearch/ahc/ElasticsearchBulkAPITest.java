@@ -55,7 +55,7 @@ public class ElasticsearchBulkAPITest {
         final Deserializer<BatchResult> deserializer = mock(Deserializer.class);
 
         final String mappingType = UUID.randomUUID().toString();
-        final ElasticsearchBulkAPI builder = new ElasticsearchBulkAPI(mappingType, serializer, deserializer);
+        final ElasticsearchBulkAPI builder = new ElasticsearchBulkAPI(mappingType, null, serializer, deserializer);
 
         final String target = IndexNamePluginTest.TEST_INDEX_NAME;
 
@@ -78,7 +78,8 @@ public class ElasticsearchBulkAPITest {
         final Deserializer<BatchResult> deserializer = mock(Deserializer.class);
 
         final String mappingType = UUID.randomUUID().toString();
-        final ElasticsearchBulkAPI builder = new ElasticsearchBulkAPI(mappingType, serializer, deserializer);
+        final String filterPath = UUID.randomUUID().toString();
+        final ElasticsearchBulkAPI builder = new ElasticsearchBulkAPI(mappingType, filterPath, serializer, deserializer);
 
         final ItemSource<ByteBuf> batchBuffer = createDefaultTestBatchBuffer();
 
@@ -106,6 +107,8 @@ public class ElasticsearchBulkAPITest {
         assertThat(batchString, containsString(target));
         assertThat(batchString, containsString(mappingType));
         assertThat(batchString, containsString(payloadString));
+
+        assertEquals("/_bulk?filter_path=" + filterPath, request.getURI());
 
     }
 

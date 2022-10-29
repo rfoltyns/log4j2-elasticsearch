@@ -38,9 +38,9 @@ public class ElasticsearchBulkPlugin extends ElasticsearchBulkAPI {
     private ElasticsearchBulkPlugin(
             final Serializer<Object> itemSerializer,
             final Deserializer<BatchResult> resultDeserializer,
-            final String mappingType
-    ) {
-        super(mappingType, itemSerializer, resultDeserializer);
+            final String mappingType,
+            final String filterPath) {
+        super(mappingType, filterPath, itemSerializer, resultDeserializer);
     }
 
     @PluginBuilderFactory
@@ -52,6 +52,9 @@ public class ElasticsearchBulkPlugin extends ElasticsearchBulkAPI {
 
         @PluginAttribute(value = "mappingType")
         protected String mappingType;
+
+        @PluginAttribute(value = "filterPath")
+        protected String filterPath;
 
         private Serializer<Object> itemSerializer = createItemSerializer();
         private Deserializer<BatchResult> resultDeserializer = createResultDeserializer();
@@ -67,11 +70,16 @@ public class ElasticsearchBulkPlugin extends ElasticsearchBulkAPI {
                 throw new ConfigurationException("resultDeserializer cannot be null");
             }
 
-            return new ElasticsearchBulkPlugin(itemSerializer, resultDeserializer, mappingType);
+            return new ElasticsearchBulkPlugin(itemSerializer, resultDeserializer, mappingType, filterPath);
         }
 
         public Builder withMappingType(final String mappingType) {
             this.mappingType = mappingType;
+            return this;
+        }
+
+        public Builder withFilterPath(final String filterPath) {
+            this.filterPath = filterPath;
             return this;
         }
 
