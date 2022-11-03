@@ -286,7 +286,7 @@ public class AsyncBatchDeliveryTest {
     }
 
     @Test
-    public void registersMeasuredComponentsWithMetricRegistry() {
+    public void registersMeasuredComponentsWithMetricsRegistry() {
 
         // given
         final MetricsRegistry registry = mock(MetricsRegistry.class);
@@ -309,7 +309,7 @@ public class AsyncBatchDeliveryTest {
     }
 
     @Test
-    public void deregistersMeasuredComponentsWithMetricRegistryExcludingMetricsProcessor() {
+    public void deregistersMeasuredComponentsWithMetricsRegistryExcludingMetricsProcessor() {
 
         // given
         final MetricsRegistry registry = mock(MetricsRegistry.class);

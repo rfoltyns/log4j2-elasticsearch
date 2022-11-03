@@ -343,7 +343,7 @@ public class HttpClientFactoryTest {
     }
 
     @Test
-    public void enablesAllPooledConsumerMetricsWithMetricRegistry() throws IOException {
+    public void enablesAllPooledConsumerMetricsWithMetricsRegistry() throws IOException {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -393,7 +393,7 @@ public class HttpClientFactoryTest {
     }
 
     @Test
-    public void configuresSubSetOfMetricsWithMetricRegistry() throws IOException {
+    public void configuresSubSetOfMetricsWithMetricsRegistry() throws IOException {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -433,7 +433,7 @@ public class HttpClientFactoryTest {
     }
 
     @Test
-    public void deregistersAllMetricsWithMetricRegistry() {
+    public void deregistersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();

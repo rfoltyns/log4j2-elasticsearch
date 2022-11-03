@@ -60,7 +60,6 @@ import org.appenders.log4j2.elasticsearch.VirtualProperty;
 import org.appenders.log4j2.elasticsearch.ahc.AHCBatchOperations;
 import org.appenders.log4j2.elasticsearch.ahc.AHCHttp;
 import org.appenders.log4j2.elasticsearch.ahc.BasicCredentials;
-import org.appenders.log4j2.elasticsearch.ahc.BatchRequest;
 import org.appenders.log4j2.elasticsearch.ahc.BatchResult;
 import org.appenders.log4j2.elasticsearch.ahc.ClientProviderPoliciesRegistry;
 import org.appenders.log4j2.elasticsearch.ahc.ClientProviderPolicy;

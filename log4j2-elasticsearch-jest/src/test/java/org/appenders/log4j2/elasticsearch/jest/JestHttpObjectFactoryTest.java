@@ -786,7 +786,7 @@ public class JestHttpObjectFactoryTest {
     // =======
 
     @Test
-    public void registersAllMetricsWithMetricRegistry() {
+    public void registersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -817,7 +817,7 @@ public class JestHttpObjectFactoryTest {
     }
 
     @Test
-    public void deregistersAllMetricsWithMetricRegistry() {
+    public void deregistersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -850,7 +850,7 @@ public class JestHttpObjectFactoryTest {
     }
 
     @Test
-    public void enablesAllMetricsWithMetricRegistry() {
+    public void enablesAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -887,7 +887,7 @@ public class JestHttpObjectFactoryTest {
     }
 
     @Test
-    public void configuresSubSetOfMetricsWithMetricRegistry() {
+    public void configuresSubSetOfMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();

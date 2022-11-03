@@ -791,7 +791,7 @@ public class PooledItemSourceFactoryTest {
     // =======
 
     @Test
-    public void registersAllMetricsWithMetricRegistry() {
+    public void registersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -824,7 +824,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void deregistersAllMetricsWithMetricRegistry() {
+    public void deregistersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -850,7 +850,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void enablesAllMetricsWithMetricRegistry() {
+    public void enablesAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -886,7 +886,7 @@ public class PooledItemSourceFactoryTest {
     }
 
     @Test
-    public void enablesSubSetIfMetricsWithMetricRegistry() {
+    public void enablesSubSetIfMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();

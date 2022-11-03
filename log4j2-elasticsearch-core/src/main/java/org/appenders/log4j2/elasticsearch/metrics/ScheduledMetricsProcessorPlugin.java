@@ -136,7 +136,7 @@ public class ScheduledMetricsProcessorPlugin extends ScheduledMetricsProcessor i
          * @param metricRegistry registered metrics store
          * @return this
          */
-        public Builder withMetricRegistry(final MetricsRegistry metricRegistry) {
+        public Builder withMetricsRegistry(final MetricsRegistry metricRegistry) {
             this.metricRegistry = metricRegistry;
             return this;
         }

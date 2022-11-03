@@ -78,7 +78,7 @@ class ScheduledMetricsProcessorPluginTest {
                 .withInitialDelay(initialDelay)
                 .withInterval(interval)
                 .withClock(clock)
-                .withMetricRegistry(registry)
+                .withMetricsRegistry(registry)
                 .withMetricOutputs(new MetricOutput[] {metricOutput})
                 .build();
 
@@ -113,11 +113,11 @@ class ScheduledMetricsProcessorPluginTest {
     }
 
     @Test
-    public void builderThrowsIfMetricRegistryIsNull() {
+    public void builderThrowsIfMetricsRegistryIsNull() {
 
         // given
         final ScheduledMetricsProcessorPlugin.Builder builder = createDefaultTestMetricProcessorBuilder()
-                .withMetricRegistry(null);
+                .withMetricsRegistry(null);
 
         // when
         final ConfigurationException exception = assertThrows(ConfigurationException.class, builder::build);
@@ -148,7 +148,7 @@ class ScheduledMetricsProcessorPluginTest {
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ScheduledMetricsProcessorPlugin.Builder builder = ScheduledMetricsProcessorPlugin.newBuilder()
-                .withMetricRegistry(registry)
+                .withMetricsRegistry(registry)
                 .withMetricOutputs(new MetricOutput[] {metricOutput});
         return builder;
     }

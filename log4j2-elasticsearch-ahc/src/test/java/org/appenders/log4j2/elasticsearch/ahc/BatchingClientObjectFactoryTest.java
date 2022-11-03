@@ -151,7 +151,7 @@ public class BatchingClientObjectFactoryTest {
     // =======
 
     @Test
-    public void registersBatchingClientMetricsWithMetricRegistry() {
+    public void registersBatchingClientMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -183,7 +183,7 @@ public class BatchingClientObjectFactoryTest {
     }
 
     @Test
-    public void deregistersBatchingClientMetricsWithMetricRegistry() {
+    public void deregistersBatchingClientMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -205,7 +205,7 @@ public class BatchingClientObjectFactoryTest {
     }
 
     @Test
-    public void enablesAllBatchingClientMetricsWithMetricRegistry() {
+    public void enablesAllBatchingClientMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -244,7 +244,7 @@ public class BatchingClientObjectFactoryTest {
     }
 
     @Test
-    public void registersClientProviderMetricsWithMetricRegistryOnFirstBatch() {
+    public void registersClientProviderMetricsWithMetricsRegistryOnFirstBatch() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -324,7 +324,7 @@ public class BatchingClientObjectFactoryTest {
     }
 
     @Test
-    public void configuresSubSetOfMetricsWithMetricRegistry() {
+    public void configuresSubSetOfMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();

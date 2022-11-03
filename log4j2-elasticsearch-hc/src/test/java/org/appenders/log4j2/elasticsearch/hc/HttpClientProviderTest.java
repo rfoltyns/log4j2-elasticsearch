@@ -241,7 +241,7 @@ public class HttpClientProviderTest {
     // =======
 
     @Test
-    public void registersAllMetricsWithMetricRegistry() {
+    public void registersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
@@ -267,7 +267,7 @@ public class HttpClientProviderTest {
     }
 
     @Test
-    public void deregistersAllMetricsWithMetricRegistry() {
+    public void deregistersAllMetricsWithMetricsRegistry() {
 
         // given
         final String expectedComponentName = UUID.randomUUID().toString();
