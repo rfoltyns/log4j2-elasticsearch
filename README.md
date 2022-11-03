@@ -23,7 +23,7 @@ Project consists of:
 * Asynchronous log delivery
 * Batch size and flush interval configuration
 * Failover (redirect failed batch to alternative target)
-* JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) or [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout) by default since 1.3 or Log4j2 JsonLayout)
+* JSON message format ([user-provided](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-jest/src/test/java/org/appenders/log4j2/elasticsearch/jest/smoke/CustomMessageFactoryTest.java) or [JacksonJsonLayout](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#jacksonjsonlayout) by default since 1.3 or Log4j2 JsonLayout)
 * (Since 1.1) Index rollover (hourly, daily, etc.)
 * Index template configuration
 * (1.2) Basic Authentication (XPack Security and Shield support)
@@ -32,18 +32,18 @@ Project consists of:
 * Configurable JSON output using [JacksonJsonLayout](log4j2-elasticsearch-core#jacksonjsonlayout)
 * (1.4) Failover with persistence and retry
 * Log overflow prevention with backoff policies
-* [`log4j2-elasticsearch-hc`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc) module - optimized HTTP client
+* [`log4j2-elasticsearch-hc`](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc) module - optimized HTTP client
 * Custom JSON output properties support using [VirtualProperty](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-properties) and (since 1.4.3) [filters](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#virtual-property-filters)
 * Pluggable [internal logging](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/core/logging/InternalLogging.java) (since 1.4.3)
 * (1.5) [ILM policy](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#index-lifecycle-management) configuration
-* Configurable [Jackson modules](log4j2-elasticsearch-core#jackson-modules) support
-* [Component templates](log4j2-elasticsearch-core#component-templates) configuration
-* [Composable index templates](log4j2-elasticsearch-core#composable-index-template) configuration
+* Configurable [Jackson modules](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#log4j2-elasticsearch-core#jackson-modules) support
+* [Component templates](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#component-templates) configuration
+* [Composable index templates](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#composable-index-template) configuration
 * [Service Discovery](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc#service-discovery) for HC module
 * (1.6) Elasticsearch 8.x support (`null` mapping type)
-* [Data Streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) support
+* [Data Streams](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#data-streams) support
 * [Metrics](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#metrics)
-* [`log4j2-elasticsearch-ahc`](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-ahc) module - HTTP client with GZIP support
+* [`log4j2-elasticsearch-ahc`](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-ahc) module - HTTP client with GZIP support
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
@@ -78,7 +78,7 @@ Feature Requests welcome!
     </Appenders>
     ```
 
-    or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc)
+    or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
 
     or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 

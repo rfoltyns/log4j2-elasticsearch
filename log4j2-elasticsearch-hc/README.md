@@ -80,15 +80,12 @@ Custom [`ServiceDiscoveryFactory`](https://github.com/rfoltyns/log4j2-elasticsea
 
 Example:
 ```xml
-<Elasticsearch ...>
-    <AsyncBatchDelivery ... >
-        ...
-        <HCHttp ...>
-            ...
+<Elasticsearch>
+    <AsyncBatchDelivery>
+        <HCHttp>
             <ServiceDiscovery serverUris="http://localhost:9250"
                               refreshInterval="10000"
                               nodesFilter="ingest:true" />
-            ...
         </HCHttp>
     </AsyncBatchDelivery>
 </Elasticsearch>
@@ -108,17 +105,14 @@ Example:
 
 Example:
 ```xml
-<Elasticsearch ...>
-    <AsyncBatchDelivery ... >
-        ...
+<Elasticsearch>
+    <AsyncBatchDelivery>
         <HCHttp>
-            ...
-            <Security .../>
+            <Security />
             <ServiceDiscovery serverUris="https://localhost:9200"
                               refreshInterval="10000"
                               targetScheme="https"
                               configPolicies="security" />
-            ...
         </HCHttp>
     </AsyncBatchDelivery>
 </Elasticsearch>

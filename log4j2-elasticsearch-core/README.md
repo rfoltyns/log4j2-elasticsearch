@@ -39,14 +39,14 @@ Main parts of default implementation are:
 
 `AsyncBatchDelivery` uses `ClientObjectFactory` objects to produce client specific requests and deliver them to target via `BatchEmitter` implementations.
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-clientObjectFactory | Element | yes | n/a | Provider of all client-specific objects: batch handlers, failover handlers, clients, setup operations, etc.
-batchSize | Attribute | no | 1000 | Maximum (rough) number of logs in one batch.
-deliveryInterval | Attribute | no | 1000 | Millis between deliveries, even if triggered by `batchSize` in the meantime.
-failoverPolicy | Element | no | NoopFailoverPolicy | Sink for failed batch items. By default, `NoopFailoverPolicy` drops failed batch items on the floor.
-shutdownDelayMillis| Attribute | no | 5000 | Millis before batch delivery is actually shutdown after Lifecycle.stop() call. This allow last batch items to be flushed and delivered to cluster or to configured `failoverPolicy`.
-setupOperation | Element[] | no | [] | List of operations to execute on before first batch. Exact moment of execution depends on client implementation.
+| Config property     | Type      | Required | Default            | Description                                                                                                                                                                          |
+|---------------------|-----------|----------|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| clientObjectFactory | Element   | yes      | n/a                | Provider of all client-specific objects: batch handlers, failover handlers, clients, setup operations, etc.                                                                          |
+| batchSize           | Attribute | no       | 1000               | Maximum (rough) number of logs in one batch.                                                                                                                                         |
+| deliveryInterval    | Attribute | no       | 1000               | Millis between deliveries, even if triggered by `batchSize` in the meantime.                                                                                                         |
+| failoverPolicy      | Element   | no       | NoopFailoverPolicy | Sink for failed batch items. By default, `NoopFailoverPolicy` drops failed batch items on the floor.                                                                                 |
+| shutdownDelayMillis | Attribute | no       | 5000               | Millis before batch delivery is actually shutdown after Lifecycle.stop() call. This allow last batch items to be flushed and delivered to cluster or to configured `failoverPolicy`. |
+| setupOperation      | Element[] | no       | []                 | List of operations to execute on before first batch. Exact moment of execution depends on client implementation.                                                                     |
 
 Delivery is triggered after `deliveryInterval` or when number of undelivered logs reached `batchSize`.
 
@@ -261,7 +261,7 @@ NOTE: This feature is supported by [log4j2-elasticsearch-jest](https://github.co
 
 NOTE: Be aware that policy parsing errors on cluster side MAY NOT prevent plugin from loading - error is logged on client side and startup continues.
 
-### Data streams support
+### Data streams
 
 Since 1.6, [Data streams](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html) are supported with `DataStream` setup operation in several modules.
 
@@ -282,15 +282,15 @@ Customizations of all aspects of LogEvent and Message output are allowed using `
 
 Furthermore, [ItemSource API](#itemsource-api) allows to use pooled [ByteByfItemSource](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ByteBufItemSource.java) payloads. Pooling is optional.
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-afterburner | Attribute | no | false | if `true`, `com.fasterxml.jackson.module:jackson-module-afterburner` will be used to optimize (de)serialization. Since this dependency is in `provided` scope by default, it MUST be declared explicitly.
-singleThread | Attribute | no | false | Use ONLY with `AsyncLogger`. If `true`, `com.fasterxml.jackson.core.JsonFactory` will be replaced with [SingleThreadJsonFactory](https://github.com/appenders/appenders-jackson-st/blob/main/src/main/java/org/appenders/st/jackson/SingleThreadJsonFactory.java) for `LogEvent` serialization. Offers slightly better serialization throughput.
-mixins | Element(s) | no | None | Array of `JacksonMixIn` elements. Can be used to override default serialization of LogEvent, Message and related objects
-virtualProperties (since 1.4) | Element(s) | no | None | Array of `VirtualProperty` elements. Similar to `KeyValuePair`, can be used to define properties resolvable on the fly, not available in LogEvent(s).
-virtualPropertiesFilter (since 1.4.3) | Element(s) | no | None | Array of `VirtualPropertyFilter` elements, can be used to include/exclude `VirtualProperty` dynamically.
-jacksonModules (since 1.5) | Element(s) | no | [ExtendedLog4j2JsonModule](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/apache/logging/log4j/core/jackson/ExtendedLog4j2JsonModule.java) | Array of `JacksonModule` elements. Can be used to configure any aspect of (de)serialization.
-itemSourceFactory | Element | yes (since 1.4) | n/a | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available
+| Config property                       | Type       | Required        | Default                                                                                                                                                                                              | Description                                                                                                                                                                                                                                                                                                                                      |
+|---------------------------------------|------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| afterburner                           | Attribute  | no              | false                                                                                                                                                                                                | if `true`, `com.fasterxml.jackson.module:jackson-module-afterburner` will be used to optimize (de)serialization. Since this dependency is in `provided` scope by default, it MUST be declared explicitly.                                                                                                                                        |
+| singleThread                          | Attribute  | no              | false                                                                                                                                                                                                | Use ONLY with `AsyncLogger`. If `true`, `com.fasterxml.jackson.core.JsonFactory` will be replaced with [SingleThreadJsonFactory](https://github.com/appenders/appenders-jackson-st/blob/main/src/main/java/org/appenders/st/jackson/SingleThreadJsonFactory.java) for `LogEvent` serialization. Offers slightly better serialization throughput. |
+| mixins                                | Element(s) | no              | None                                                                                                                                                                                                 | Array of `JacksonMixIn` elements. Can be used to override default serialization of LogEvent, Message and related objects                                                                                                                                                                                                                         |
+| virtualProperties (since 1.4)         | Element(s) | no              | None                                                                                                                                                                                                 | Array of `VirtualProperty` elements. Similar to `KeyValuePair`, can be used to define properties resolvable on the fly, not available in LogEvent(s).                                                                                                                                                                                            |
+| virtualPropertiesFilter (since 1.4.3) | Element(s) | no              | None                                                                                                                                                                                                 | Array of `VirtualPropertyFilter` elements, can be used to include/exclude `VirtualProperty` dynamically.                                                                                                                                                                                                                                         |
+| jacksonModules (since 1.5)            | Element(s) | no              | [ExtendedLog4j2JsonModule](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/apache/logging/log4j/core/jackson/ExtendedLog4j2JsonModule.java) | Array of `JacksonModule` elements. Can be used to configure any aspect of (de)serialization.                                                                                                                                                                                                                                                     |
+| itemSourceFactory                     | Element    | yes (since 1.4) | n/a                                                                                                                                                                                                  | `ItemSourceFactory` used to create wrappers for serialized items. `StringItemSourceFactory` and `PooledItemSourceFactory` are available                                                                                                                                                                                                          |
 
 Default output:
 
@@ -330,22 +330,24 @@ Custom `org.appenders.log4j2.elasticsearch.ItemSourceLayout` can be provided to 
 
 Since 1.4, `VirtualProperty` elements (`KeyValuePair` on steroids) can be appended to serialized objects.
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-name | Attribute | yes | n/a |
-value | Attribute | yes | n/a | Static value or contextual variable resolvable with <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>.
-dynamic | Attribute | no | false | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4j2Lookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4j2Lookup.java)). Otherwise, will be resolved only on startup.
-writeRaw (since 1.6) | Attribute | no | false | indicates that the value is a valid, structured object (e.g JSON string) and should be written as such.
+| Config property      | Type      | Required | Default | Description                                                                                                                                                                                                                                                                                                                      |
+|----------------------|-----------|----------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| name                 | Attribute | yes      | n/a     |                                                                                                                                                                                                                                                                                                                                  |
+| value                | Attribute | yes      | n/a     | Static value or contextual variable resolvable with <a href="https://logging.apache.org/log4j/2.x/manual/lookups.html">Log4j2 Lookups</a>.                                                                                                                                                                                       |
+| dynamic              | Attribute | no       | false   | if `true`, indicates that value may change over time and should be resolved on every serialization (see [Log4j2Lookup](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/Log4j2Lookup.java)). Otherwise, will be resolved only on startup. |
+| writeRaw (since 1.6) | Attribute | no       | false   | indicates that the value is a valid, structured object (e.g JSON string) and should be written as such.                                                                                                                                                                                                                          |
 
 Since 1.6, one can put a valid, structured object (e.g. a JSON string) into a VirtualProperty's value, set `writeRaw` to `true` and it will be written without quotes when serialized.
 
 ###### Example:
 
 ```xml
-<NonEmptyFilter/>
-<VirtualProperty name="jsonStringField" 
-	value="$${ctx:myJsonObject:-}" 
+<JacksonJsonLayout>
+    <NonEmptyFilter/>
+    <VirtualProperty name="jsonStringField" 
+        value="$${ctx:myJsonObject:-}" 
 	dynamic="true" writeRaw="true"/>
+</JacksonJsonLayout>
 ```
 
 Custom lookup can implemented with [ValueResolver](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/ValueResolver.java).
@@ -480,9 +482,9 @@ Each unsuccessful batch can be redirected to any given `FailoverPolicy` implemen
 
 Redirects failed batches to configured `org.apache.logging.log4j.core.Appender`. Output depends on target appender layout.
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-appenderRef | Attribute | yes | n/a | Name of appender available in current configuration
+| Config property | Type      | Required | Default | Description                                         |
+|-----------------|-----------|----------|---------|-----------------------------------------------------|
+| appenderRef     | Attribute | yes      | n/a     | Name of appender available in current configuration |
 
 Example:
 ```xml
@@ -517,16 +519,16 @@ This failover policy consists of following key components:
 * [KeySequenceConfig](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequenceConfig.java) - persistable view of `KeySequence`
 * [KeySequenceConfigRepository](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/failover/KeySequenceConfigRepository.java) - `KeySequenceConfig` CRUD operations
 
-Config property | Type | Required | Default | Description
------------- | ------------- | ------------- | ------------- | -------------
-fileName | Attribute | Yes | None | Path to [ChronicleMap](https://github.com/OpenHFT/Chronicle-Map) file. Will get created if doesn't exist. Will TRY to recover previous state if exist.
-numberOfEntries | Attribute | Yes | None | Storage capacity. Actual number of stored items MAY exceed this number but it's NOT recommended. Store operations MAY fail below this limit if `averageValueSize` was exceeded.
-keySequenceSelector | Element | Yes | None | `KeySequence` provider. See documentation below for available options
-averageValueSize | Attribute | No | 1024 | Average size of failed item including additional metadata. By default, suitable for small logs (up to 100-200 characters)
-batchSize | Attribute | No | 1000 | Maximum size of failed items list retried by `RetryProcessor` after each `retryDelay`
-retryDelay | Attribute | No | 10000 | Delay between the end of previous `RetryProcessor` run and start of next one. This is NOT an interval between two consecutive `RetryProcessor` runs (reasons behind `scheduleAtFixedDelay`: retry runs should not overlap; retry should be a fairly transparent background operation; retry should not generate too much additional load on top of the current load if target cluster is down or slow anyway; retrying itself should be a temporary state, it's the storage capacity that should allow it to recover so there's no need to rush it)
-monitored | Attribute | No | false | If `true`, retry metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly. <br><br>Example output: `sequenceId: 1, total: 452920, enqueued: 452918` where: <br> `total` is a number of failed items + number of key sequences + key sequence list (internal index of all available key sequences) <br> `enqueued` is a number of entries currently available for retry within `KeySequence` with `sequenceId`=1
-monitorTaskInterval | Attribute | No | 30000 | Interval between metrics logs. 30 seconds by default.
+| Config property     | Type      | Required | Default | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|---------------------|-----------|----------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| fileName            | Attribute | Yes      | None    | Path to [ChronicleMap](https://github.com/OpenHFT/Chronicle-Map) file. Will get created if doesn't exist. Will TRY to recover previous state if exist.                                                                                                                                                                                                                                                                                                                                                                                              |
+| numberOfEntries     | Attribute | Yes      | None    | Storage capacity. Actual number of stored items MAY exceed this number but it's NOT recommended. Store operations MAY fail below this limit if `averageValueSize` was exceeded.                                                                                                                                                                                                                                                                                                                                                                     |
+| keySequenceSelector | Element   | Yes      | None    | `KeySequence` provider. See documentation below for available options                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| averageValueSize    | Attribute | No       | 1024    | Average size of failed item including additional metadata. By default, suitable for small logs (up to 100-200 characters)                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| batchSize           | Attribute | No       | 1000    | Maximum size of failed items list retried by `RetryProcessor` after each `retryDelay`                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| retryDelay          | Attribute | No       | 10000   | Delay between the end of previous `RetryProcessor` run and start of next one. This is NOT an interval between two consecutive `RetryProcessor` runs (reasons behind `scheduleAtFixedDelay`: retry runs should not overlap; retry should be a fairly transparent background operation; retry should not generate too much additional load on top of the current load if target cluster is down or slow anyway; retrying itself should be a temporary state, it's the storage capacity that should allow it to recover so there's no need to rush it) |
+| monitored           | Attribute | No       | false   | If `true`, retry metrics will be printed. Metrics are prined by Status Logger at `INFO` level, so be sure to modify your Log4j2 configuration accordingly. <br><br>Example output: `sequenceId: 1, total: 452920, enqueued: 452918` where: <br> `total` is a number of failed items + number of key sequences + key sequence list (internal index of all available key sequences) <br> `enqueued` is a number of entries currently available for retry within `KeySequence` with `sequenceId`=1                                                     |
+| monitorTaskInterval | Attribute | No       | 30000   | Interval between metrics logs. 30 seconds by default.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 ##### Considerations
 
@@ -728,11 +730,11 @@ Since 1.5, if [org.jctools:jctools-core:3.x](https://mvnrepository.com/artifact/
 
 JVM params:
 
-Param | Type | Default
------------- | ------------- | -------------
--Dappenders.GenericItemSourcePool.jctools.enabled | boolean | true
--Dappenders.BulkEmitter.jctools.enabled | boolean |  true
--Dappenders.BulkEmitter.initialSize | int | 65536
+| Param                                             | Type    | Default |
+|---------------------------------------------------|---------|---------|
+| -Dappenders.GenericItemSourcePool.jctools.enabled | boolean | true    |
+| -Dappenders.BulkEmitter.jctools.enabled           | boolean | true    |
+| -Dappenders.BulkEmitter.initialSize               | int     | 65536   |
 
 See submodules documentation for module-specific properties.
 
