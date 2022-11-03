@@ -20,12 +20,34 @@ package org.appenders.log4j2.elasticsearch.metrics;
  * #L%
  */
 
+import java.util.Comparator;
+
 /**
  * {@link Metric} destination.
  * <p>Implementations of this class can be used as {@link MetricsProcessor} output consumers
  * <p>Can filter with {@link #accepts(Metric.Key)}
  */
-public interface MetricOutput {
+public interface MetricOutput extends Comparable<MetricOutput> {
+
+    Comparator<MetricOutput> COMPARATOR = Comparator.comparing(MetricOutput::getName, (o1, o2) -> {
+
+        if (o1.equals(o2)) {
+            return 0;
+        }
+        return o1.compareTo(o2) > 0 ? 1 : -1;
+
+    });
+
+    @SuppressWarnings("NullableProblems")
+    @Override
+    default int compareTo(MetricOutput other) {
+        return COMPARATOR.compare(this, other);
+    }
+
+    /**
+     * @return output name
+     */
+    String getName();
 
     /**
      * @param key metric key

@@ -26,9 +26,11 @@ import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
@@ -52,6 +54,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -310,7 +313,7 @@ public class ByteBufItemSourceFactoryPluginTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         // when
@@ -337,7 +340,7 @@ public class ByteBufItemSourceFactoryPluginTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         itemSourceFactory.register(registry);
@@ -368,10 +371,10 @@ public class ByteBufItemSourceFactoryPluginTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         itemSourceFactory.start();
@@ -405,10 +408,10 @@ public class ByteBufItemSourceFactoryPluginTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         itemSourceFactory.start();

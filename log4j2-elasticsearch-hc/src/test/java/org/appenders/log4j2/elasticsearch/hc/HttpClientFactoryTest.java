@@ -43,10 +43,12 @@ import org.apache.http.nio.reactor.IOReactorException;
 import org.appenders.log4j2.elasticsearch.hc.discovery.HCServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.hc.discovery.ServiceDiscovery;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Measured;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.hamcrest.BaseMatcher;
@@ -359,10 +361,10 @@ public class HttpClientFactoryTest {
                 .withMaxTotalConnections(2)
                 .build());
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         final CloseableHttpAsyncClient closeableHttpAsyncClient = mock(CloseableHttpAsyncClient.class);
         final HttpClient httpClient = spy(config.createInstance());
@@ -407,10 +409,10 @@ public class HttpClientFactoryTest {
                 .withMaxTotalConnections(2)
                 .build();
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         final HttpAsyncResponseConsumerFactory consumerFactory = config.createHttpAsyncResponseConsumerFactory();
 

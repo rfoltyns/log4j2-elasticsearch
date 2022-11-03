@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.TestKeyAccessor;
 import org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper;
@@ -186,7 +187,7 @@ public class GenericItemSourceLayoutTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         // when
@@ -218,7 +219,7 @@ public class GenericItemSourceLayoutTest {
                 .build();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         itemSourceLayout.register(registry);

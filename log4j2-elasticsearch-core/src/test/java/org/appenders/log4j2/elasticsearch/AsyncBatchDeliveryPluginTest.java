@@ -23,6 +23,7 @@ package org.appenders.log4j2.elasticsearch;
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessorTest;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
@@ -180,7 +181,8 @@ public class AsyncBatchDeliveryPluginTest {
         // given
         final MetricsProcessor metricsProcessor = MetricsProcessorTest.createTestProcessor(
                 createTestClock(System.currentTimeMillis()),
-                new BasicMetricsRegistry());
+                new BasicMetricsRegistry(),
+                new BasicMetricOutputsRegistry());
 
         final long expectedShutdownDelayMillis = 10 + new Random().nextInt(100);
         final FailoverPolicy failoverPolicy = spy(new TestFailoverPolicy());

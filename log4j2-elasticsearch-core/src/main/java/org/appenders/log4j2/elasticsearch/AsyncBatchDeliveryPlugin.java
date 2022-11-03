@@ -28,7 +28,7 @@ import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginElement;
 import org.apache.logging.log4j.core.config.plugins.PluginFactory;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
-import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 
 /**
@@ -66,7 +66,7 @@ public class AsyncBatchDeliveryPlugin extends AsyncBatchDelivery {
                 .withFailoverPolicy(failoverPolicy == null ? Builder.DEFAULT_FAILOVER_POLICY : failoverPolicy)
                 .withSetupOpSources(setupOpSources.length == 0 ? Builder.DEFAULT_OP_SOURCES : setupOpSources)
                 .withShutdownDelayMillis(shutdownDelayMillis < 0 ? Builder.DEFAULT_SHUTDOWN_DELAY : shutdownDelayMillis)
-                .withMetricProcessor(metricsProcessor == null ? new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0]) : metricsProcessor);
+                .withMetricProcessor(metricsProcessor == null ? new MetricsProcessor(new BasicMetricsRegistry(), new BasicMetricOutputsRegistry()) : metricsProcessor);
 
         return new AsyncBatchDeliveryPlugin(builder);
 

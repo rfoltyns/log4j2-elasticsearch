@@ -20,6 +20,8 @@ package org.appenders.log4j2.elasticsearch.metrics;
  * #L%
  */
 
+import org.appenders.log4j2.elasticsearch.LifeCycle;
+
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -29,37 +31,45 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
+import static org.appenders.core.logging.InternalLogging.getLogger;
+import static org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry.ALL;
+
 /**
  * Collects metrics provided by given {@link MetricsRegistry} and writes collected values to compatible {@link MetricOutput}(s).
- * <p>
- * Processes all metrics registered with {@link MetricsRegistry} before creation of instance this class.
- * <p>
- * Processes all metrics registered with {@link MetricsRegistry} after creation of instance this class.
+ * <p>Processes all metrics registered with {@link MetricsRegistry} before creation of instance this class.
+ * <p>Processes all metrics registered with {@link MetricsRegistry} after creation of instance this class.
+ * <p>Processes all metrics registered by {@link MetricOutputsRegistry} before creation of instance this class.
+ * <p>Processes all metrics registered by {@link MetricOutputsRegistry} after creation of instance this class.
  */
-public class MetricsProcessor implements Measured {
+public class MetricsProcessor implements Measured, LifeCycle {
 
+    private volatile State state = State.STOPPED;
     private final Tasks tasks;
-    private final MetricsRegistry registry;
+    private final MetricsRegistry metrics;
+    private final MetricOutputsRegistry outputs;
 
     /**
-     * @param registry registered metrics store
-     * @param metricOutputs collected values listeners
+     * @param metrics registered metrics store
+     * @param metricOutputsManager registered outputs store
      */
-    public MetricsProcessor(final MetricsRegistry registry, final MetricOutput[] metricOutputs) {
-        this(Clock.systemDefaultZone(), registry, metricOutputs);
+    public MetricsProcessor(final MetricsRegistry metrics, final MetricOutputsRegistry metricOutputsManager) {
+        this(Clock.systemDefaultZone(), metrics, metricOutputsManager);
     }
 
     /**
      * @param clock clock to use on value collection
-     * @param registry registered metrics store
-     * @param metricOutputs collected values listeners
+     * @param metrics registered metrics store
+     * @param outputs collected values listeners
      */
     public MetricsProcessor(final Clock clock,
-                            final MetricsRegistry registry,
-                            final MetricOutput[] metricOutputs) {
+                            final MetricsRegistry metrics,
+                            final MetricOutputsRegistry outputs) {
         this.tasks = new Tasks();
-        this.registry = registry;
-        tasks.set(new Reconfigure(clock, this.registry, tasks, metricOutputs).createTaskList());
+        this.metrics = metrics;
+        this.outputs = outputs;
+
+        final MetricOutput[] metricOutputs = outputs.get(ALL).toArray(new MetricOutput[0]);
+        tasks.set(new Reconfigure(clock, this.metrics, tasks, outputs).createTaskList(metricOutputs));
     }
 
     /**
@@ -81,7 +91,7 @@ public class MetricsProcessor implements Measured {
 
     @Override
     public void register(final Measured measured) {
-        measured.register(registry);
+        measured.register(metrics);
     }
 
     /**
@@ -90,7 +100,7 @@ public class MetricsProcessor implements Measured {
      * In practice, may be used to dereference dangling metrics that failed to {@link Measured#deregister()} on their own.
      */
     public void reset() {
-        registry.clear();
+        metrics.clear();
     }
 
 
@@ -234,31 +244,37 @@ public class MetricsProcessor implements Measured {
         public static final Predicate<Metric> EXCLUDE_NOOP = metric -> !"noop".equals(metric.getKey().getMetricTypePart());
         private static final int NO_CHANGES = 0;
         private static final int RECONFIGURED = 1;
-
-        private final MetricOutput[] writers;
         private final MetricsRegistry registry;
         private final Tasks tasks;
-        private final AtomicLong lastKnownVersion;
+        private final AtomicLong lastKnownRegistryVersion;
         private final Clock clock;
+        private final MetricOutputsRegistry outputs;
+        private final AtomicLong lastKnownOutputsVersion;
 
-        private Reconfigure(final Clock clock, final MetricsRegistry registry, final Tasks tasks, final MetricOutput[] writers) {
+        private Reconfigure(final Clock clock, final MetricsRegistry registry, final Tasks tasks, final MetricOutputsRegistry outputs) {
             this.clock = clock;
-            this.lastKnownVersion = new AtomicLong(registry.version());
+            this.lastKnownRegistryVersion = new AtomicLong(registry.version());
+            this.lastKnownOutputsVersion = new AtomicLong(outputs.version());
             this.registry = registry;
             this.tasks = tasks;
-            this.writers = writers;
+            this.outputs = outputs;
         }
 
         @Override
         public int execute() {
 
-            final long version = registry.version();
+            final long registryVersion = registry.version();
+            final long outputsVersion = outputs.version();
 
-            final long lastKnownVersion = this.lastKnownVersion.get();
-            if (lastKnownVersion < version) {
-                this.lastKnownVersion.set(version);
+            final long lastKnownRegistryVersion = this.lastKnownRegistryVersion.get();
+            final long lastKnownOutputsVersion = this.lastKnownOutputsVersion.get();
+            if (lastKnownRegistryVersion < registryVersion || lastKnownOutputsVersion < outputsVersion) {
+                final MetricOutput[] metricOutputs = outputs.get(ALL).toArray(new MetricOutput[0]);
 
-                final Task[] newTasks = createTaskList();
+                this.lastKnownRegistryVersion.set(registryVersion);
+                this.lastKnownOutputsVersion.set(outputsVersion);
+
+                final Task[] newTasks = createTaskList(metricOutputs);
                 tasks.set(newTasks);
 
                 return RECONFIGURED;
@@ -269,15 +285,15 @@ public class MetricsProcessor implements Measured {
 
         }
 
-        private Task[] createTaskList() {
+        private Task[] createTaskList(final MetricOutput[] metricOutputs) {
 
             final Set<Metric> metrics = registry.getMetrics(EXCLUDE_NOOP);
             final Collector collector = new Collector(clock, metrics);
 
             return new Task[] {
-                    new Reconfigure(clock, registry, tasks, writers),
+                    new Reconfigure(clock, registry, tasks, outputs),
                     new Collect(collector, metrics),
-                    new Flush(collector, writers)
+                    new Flush(collector, metricOutputs)
             };
 
         }
@@ -368,6 +384,50 @@ public class MetricsProcessor implements Measured {
 
         }
 
+    }
+
+    @Override
+    public void start() {
+
+        if (isStarted()) {
+            return;
+        }
+
+        final String name = MetricsProcessor.class.getSimpleName();
+        getLogger().debug("{}: Starting", name);
+
+        LifeCycle.of(outputs).start();
+
+        state = State.STARTED;
+
+    }
+
+    @Override
+    public void stop() {
+
+        if (isStopped()) {
+            return;
+        }
+
+        final String name = MetricsProcessor.class.getSimpleName();
+        getLogger().debug("{}: Stopping", name);
+
+        LifeCycle.of(outputs).stop();
+
+        state = State.STOPPED;
+
+        getLogger().debug("{}: Stopped", name);
+
+    }
+
+    @Override
+    public boolean isStarted() {
+        return state == State.STARTED;
+    }
+
+    @Override
+    public boolean isStopped() {
+        return state == State.STOPPED;
     }
 
 }

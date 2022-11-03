@@ -41,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +56,7 @@ class ScheduledMetricsProcessorPluginTest {
         // given
         final int initialDelay = 100;
         final long interval = 100;
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final long expectedTimestamp = System.currentTimeMillis();
@@ -144,7 +145,7 @@ class ScheduledMetricsProcessorPluginTest {
 
     private ScheduledMetricsProcessorPlugin.Builder createDefaultTestMetricProcessorBuilder() {
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ScheduledMetricsProcessorPlugin.Builder builder = ScheduledMetricsProcessorPlugin.newBuilder()

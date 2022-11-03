@@ -26,11 +26,11 @@ import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
 import org.appenders.log4j2.elasticsearch.metrics.Measured;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
-import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
@@ -267,7 +267,7 @@ public class AsyncBatchDeliveryTest {
 
         // given
         final MetricsRegistry registry = mock(MetricsRegistry.class);
-        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[0]);
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry());
 
         final Builder batchDeliveryBuilder = createTestBatchDeliveryBuilder()
                 .withMetricProcessor(metricsProcessor);
@@ -290,7 +290,7 @@ public class AsyncBatchDeliveryTest {
 
         // given
         final MetricsRegistry registry = mock(MetricsRegistry.class);
-        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[0]);
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry());
 
         final TestHttpObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
 
@@ -313,7 +313,7 @@ public class AsyncBatchDeliveryTest {
 
         // given
         final MetricsRegistry registry = mock(MetricsRegistry.class);
-        final MetricsProcessor metricsProcessor = spy(new MetricsProcessor(registry, new MetricOutput[0]));
+        final MetricsProcessor metricsProcessor = spy(new MetricsProcessor(registry, new BasicMetricOutputsRegistry()));
 
         final TestHttpObjectFactory clientObjectFactory = spy(createTestObjectFactoryBuilder().build());
 
@@ -670,7 +670,7 @@ public class AsyncBatchDeliveryTest {
                 1000,
                 TestClock.createTestClock(System.currentTimeMillis()),
                 new BasicMetricsRegistry(),
-                new MetricOutput[0]));
+                new BasicMetricOutputsRegistry()));
 
         final BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withMetricProcessor(metricsProcessor)
@@ -694,7 +694,7 @@ public class AsyncBatchDeliveryTest {
                 1000,
                 TestClock.createTestClock(System.currentTimeMillis()),
                 new BasicMetricsRegistry(),
-                new MetricOutput[0]));
+                new BasicMetricOutputsRegistry()));
 
         final BatchDelivery batchDelivery = createTestBatchDeliveryBuilder()
                 .withMetricProcessor(metricsProcessor)

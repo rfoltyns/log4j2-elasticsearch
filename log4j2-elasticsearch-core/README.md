@@ -801,7 +801,7 @@ Visit submodules documentation for list of supported metrics.
 #### (Pseudo-)diagram
 
 ```text
-MetricConfig -> MetricsFactory -> Metric -> Measured -> MetricsRegistry -> MetricsProcessor -> MetricOutput
+MetricConfig -> MetricsFactory -> Metric -> Measured -> MetricsRegistry -> MetricsProcessor -> MetricOutputRegistry -> MetricOutput
 ```
 
 #### Simple words
@@ -809,7 +809,7 @@ MetricConfig -> MetricsFactory -> Metric -> Measured -> MetricsRegistry -> Metri
 1. `MetricConfig` defining enabled metric is configured with `MetricFactory`
 2. `MetricFactory` provides `Metric`(s) for `Measured` component instance at creation time
 3. `Measured` instance registers metrics with `MetricsRegistry`
-4. `MetricsProcessor`, once scheduled/instructed to process the latest list of metrics provided by `MetricsRegistry`, will collect all known metrics and write collected values to `MetricOutput`(s).
+4. `MetricsProcessor`, once scheduled/instructed to process the latest list of metrics provided by `MetricsRegistry`, will collect all known metrics and write collected values to the latest list of `MetricOutput`(s) provided by `MetricOutputsRegistry`.
 
 #### Details
 

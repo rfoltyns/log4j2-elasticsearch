@@ -51,7 +51,7 @@ public class ScheduledMetricsProcessorPlugin extends ScheduledMetricsProcessor i
                                            final long interval,
                                            final Clock clock,
                                            final MetricsRegistry metricsRegistry,
-                                           final MetricOutput[] metricOutputs) {
+                                           final MetricOutputsRegistry metricOutputs) {
         super(initialDelay,
                 interval,
                 clock,
@@ -101,7 +101,7 @@ public class ScheduledMetricsProcessorPlugin extends ScheduledMetricsProcessor i
                     interval,
                     clock,
                     metricRegistry,
-                    metricOutputs);
+                    new BasicMetricOutputsRegistry(metricOutputs));
 
         }
 

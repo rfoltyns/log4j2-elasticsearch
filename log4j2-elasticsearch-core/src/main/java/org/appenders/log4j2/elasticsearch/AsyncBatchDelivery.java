@@ -24,8 +24,8 @@ package org.appenders.log4j2.elasticsearch;
 import org.appenders.log4j2.elasticsearch.failover.FailoverListener;
 import org.appenders.log4j2.elasticsearch.failover.RetryListener;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Measured;
-import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.appenders.log4j2.elasticsearch.spi.BatchEmitterServiceProvider;
@@ -64,7 +64,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String>, Measured  {
                 failoverPolicy,
                 shutdownDelayMillis,
                 setupOpSources,
-                new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0])
+                new MetricsProcessor(new BasicMetricsRegistry(), new BasicMetricOutputsRegistry())
         );
     }
 
@@ -188,7 +188,7 @@ public class AsyncBatchDelivery implements BatchDelivery<String>, Measured  {
         protected Long shutdownDelayMillis = DEFAULT_SHUTDOWN_DELAY;
         protected OpSource[] setupOpSources = DEFAULT_OP_SOURCES;
 
-        protected MetricsProcessor metricsProcessor = new MetricsProcessor(new BasicMetricsRegistry(), new MetricOutput[0]);
+        protected MetricsProcessor metricsProcessor = new MetricsProcessor(new BasicMetricsRegistry(), new BasicMetricOutputsRegistry());
 
         public AsyncBatchDelivery build() {
             if (clientObjectFactory == null) {

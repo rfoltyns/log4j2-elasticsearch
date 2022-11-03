@@ -20,13 +20,11 @@ package org.appenders.log4j2.elasticsearch.jmh;
  * #L%
  */
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.UnpooledByteBufAllocator;
 import org.apache.logging.log4j.LogManager;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.load.Log4j2Delegate;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.MaxLongMetric;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
@@ -72,9 +70,7 @@ public class MetricsProcessorTest {
 
         final BasicMetricsRegistry metricRegistry = new BasicMetricsRegistry();
 
-        this.metricsProcessor = new MetricsProcessor(metricRegistry, new MetricOutput[] {
-                new MetricDummy(),
-        });
+        this.metricsProcessor = new MetricsProcessor(metricRegistry, new BasicMetricOutputsRegistry(new MetricDummy()));
 
         for (int i = 0; i < numberOfMetrics; i++) {
             final Metric metric = new MaxLongMetric(new Metric.Key("test-component", UUID.randomUUID().toString(), "test"), 0L, false);
@@ -104,8 +100,10 @@ public class MetricsProcessorTest {
     }
 
     private class MetricDummy implements MetricOutput {
-
-        private ByteBuf byteBuf = new CompositeByteBuf(UnpooledByteBufAllocator.DEFAULT, false, 2);
+        @Override
+        public String getName() {
+            return getClass().getSimpleName();
+        }
 
         @Override
         public boolean accepts(final Metric.Key key) {

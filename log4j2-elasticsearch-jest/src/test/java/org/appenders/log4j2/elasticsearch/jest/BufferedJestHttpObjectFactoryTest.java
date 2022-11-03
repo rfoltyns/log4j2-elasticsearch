@@ -47,10 +47,12 @@ import org.appenders.log4j2.elasticsearch.PooledItemSourceFactoryTest;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.junit.jupiter.api.Test;
@@ -772,10 +774,10 @@ public class BufferedJestHttpObjectFactoryTest {
                 .withMetricConfigs(JestHttpObjectFactory.metricConfigs(true))
                 .build();
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         config.register(registry);
@@ -818,10 +820,10 @@ public class BufferedJestHttpObjectFactoryTest {
 
         final JestHttpObjectFactory config = spy(builder.build());
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         config.register(registry);
@@ -848,10 +850,10 @@ public class BufferedJestHttpObjectFactoryTest {
         final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsSent"));
         when(config.createClient()).thenReturn(mock(JestClient.class));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 
@@ -877,14 +879,14 @@ public class BufferedJestHttpObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsDelivered"));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
         final Bulk batchRequest = createTestBatch(payload1);
 
         final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 
@@ -910,14 +912,14 @@ public class BufferedJestHttpObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsFailed"));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
         final Bulk batchRequest = createTestBatch(payload1);
 
         final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 
@@ -952,10 +954,10 @@ public class BufferedJestHttpObjectFactoryTest {
                 .build());
         when(config.createClient()).thenReturn(mock(JestClient.class));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 
@@ -987,14 +989,14 @@ public class BufferedJestHttpObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("batchesFailed"));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
         final Bulk batchRequest = createTestBatch(payload1);
 
         final JestResultHandler<JestResult> resultHandler = config.createResultHandler(batchRequest, config.createFailureHandler(new NoopFailoverPolicy.Builder().build()));
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 
@@ -1024,7 +1026,7 @@ public class BufferedJestHttpObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final JestHttpObjectFactory config = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("failoverTookMs"));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final ItemSource<ByteBuf> payload1 = createDefaultTestBufferedItemSource("test1");
@@ -1038,7 +1040,7 @@ public class BufferedJestHttpObjectFactoryTest {
             }
         }));
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         config.register(registry);
 

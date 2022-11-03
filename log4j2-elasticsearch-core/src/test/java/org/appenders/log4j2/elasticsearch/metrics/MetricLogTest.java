@@ -53,6 +53,7 @@ public class MetricLogTest {
         metricLog.write(expectedTimestamp, key, expectedMetricValue);
 
         // then
+        assertEquals(expectedLogName, metricLog.getName());
         verify(logger).info("{} {}: {}={}",
                 expectedTimestamp,
                 expectedLogName,

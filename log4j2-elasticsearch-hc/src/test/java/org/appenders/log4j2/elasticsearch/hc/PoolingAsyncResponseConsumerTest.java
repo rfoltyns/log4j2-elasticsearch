@@ -33,9 +33,11 @@ import org.appenders.log4j2.elasticsearch.ItemSourcePool;
 import org.appenders.log4j2.elasticsearch.PoolResourceException;
 import org.appenders.log4j2.elasticsearch.ResizePolicy;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.util.TestClock;
 import org.junit.jupiter.api.Test;
@@ -146,14 +148,14 @@ public class PoolingAsyncResponseConsumerTest {
         final long expectedContentLength = random.nextInt();
         when(httpEntity.getContentLength()).thenReturn(expectedContentLength);
 
-        final MetricOutput metricOutput1 = mock(MetricOutput.class);
+        final MetricOutput metricOutput1 = spy(MetricOutputTest.dummy());
         when(metricOutput1.accepts(any())).thenReturn(true);
 
         final BasicMetricsRegistry metricsRegistry = new BasicMetricsRegistry();
 
         long expectedTimestamp = random.nextLong();
         final Clock clock = TestClock.createTestClock(expectedTimestamp);
-        final MetricsProcessor processor = new MetricsProcessor(clock, metricsRegistry, new MetricOutput[] { metricOutput1 });
+        final MetricsProcessor processor = new MetricsProcessor(clock, metricsRegistry, new BasicMetricOutputsRegistry(metricOutput1));
 
         // when
         metrics.register(metricsRegistry);

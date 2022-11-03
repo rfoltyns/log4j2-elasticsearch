@@ -31,10 +31,12 @@ import org.appenders.log4j2.elasticsearch.failover.FailedItemInfo;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfig;
 import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
 import org.asynchttpclient.AsyncHttpClient;
@@ -223,10 +225,10 @@ public class BatchingClientObjectFactoryTest {
                 .withMetricConfigs(BatchingClientObjectFactory.BatchingClientMetrics.metricConfigs(true))
                 .build();
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         objectFactory.register(registry);
@@ -264,7 +266,7 @@ public class BatchingClientObjectFactoryTest {
                 .withMetricConfigs(BatchingClientObjectFactory.BatchingClientMetrics.metricConfigs(true))
                 .build());
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         objectFactory.register(registry);
@@ -303,7 +305,7 @@ public class BatchingClientObjectFactoryTest {
                 .withMetricConfigs(BatchingClientObjectFactory.BatchingClientMetrics.metricConfigs(true))
                 .build());
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         objectFactory.register(registry);
@@ -346,10 +348,10 @@ public class BatchingClientObjectFactoryTest {
                 .withMetricConfig(MetricConfigFactory.createCountConfig("backoffApplied"))
                 .build();
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         // when
         objectFactory.register(registry);
@@ -377,10 +379,10 @@ public class BatchingClientObjectFactoryTest {
         final BatchingClientObjectFactory<BatchRequest, IndexRequest> objectFactory = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("itemsSent"));
         when(objectFactory.createClient()).thenReturn(mock(HttpClient.class));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         objectFactory.register(registry);
 
@@ -412,7 +414,7 @@ public class BatchingClientObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final BatchingClientObjectFactory<BatchRequest, IndexRequest> objectFactory = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig(true, "itemsFailed", false));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final BatchRequest batchRequest = mock(BatchRequest.class);
@@ -421,7 +423,7 @@ public class BatchingClientObjectFactoryTest {
         when(batchRequest.size()).thenReturn(expectedValue);
 
         final Function<BatchRequest, Boolean> failureHandler = objectFactory.createFailureHandler(new NoopFailoverPolicy.Builder().build());
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         objectFactory.register(registry);
 
@@ -452,10 +454,10 @@ public class BatchingClientObjectFactoryTest {
                 .build());
         when(objectFactory.createClient()).thenReturn(mock(HttpClient.class));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         objectFactory.register(registry);
 
@@ -490,7 +492,7 @@ public class BatchingClientObjectFactoryTest {
         final MetricsRegistry registry = new BasicMetricsRegistry();
         final BatchingClientObjectFactory<BatchRequest, IndexRequest> objectFactory = createTestObjectFactoryWithMetric(expectedComponentName, MetricConfigFactory.createCountConfig("batchesFailed"));
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final BatchRequest batchRequest = mock(BatchRequest.class);
@@ -499,7 +501,7 @@ public class BatchingClientObjectFactoryTest {
         when(batchRequest.size()).thenReturn(expectedValue);
 
         final Function<BatchRequest, Boolean> failureHandler = objectFactory.createFailureHandler(new NoopFailoverPolicy.Builder().build());
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         objectFactory.register(registry);
 
@@ -538,7 +540,7 @@ public class BatchingClientObjectFactoryTest {
                 })
                 .build();
 
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final BatchRequest batchRequest = mock(BatchRequest.class);
@@ -551,7 +553,7 @@ public class BatchingClientObjectFactoryTest {
                 throw new RuntimeException(e);
             }
         });
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         objectFactory.register(registry);
 

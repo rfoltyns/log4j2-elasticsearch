@@ -53,6 +53,16 @@ public class MetricLog implements MetricOutput {
     }
 
     /**
+     * Effectively, instance id.
+     *
+     * @return Metric log name
+     */
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    /**
      * @param timestamp timestamp
      * @param key metric key
      * @param value value to be written

@@ -39,8 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,7 +56,7 @@ class ScheduledMetricsProcessorTest {
 
         // given
         initialDelay = 100;
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final long expectedTimestamp = System.currentTimeMillis();
@@ -78,11 +78,15 @@ class ScheduledMetricsProcessorTest {
 
     }
 
+    // =========
+    // LIFECYCLE
+    // =========
+
     @Test
     public void lifecycleStartsOnlyOnce() {
 
         // given
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final long expectedTimestamp = System.currentTimeMillis();
@@ -101,6 +105,7 @@ class ScheduledMetricsProcessorTest {
         assertFalse(lifeCycle.isStopped());
         assertTrue(lifeCycle.isStarted());
 
+        verify(LifeCycle.of(metricOutput)).start();
         verify(metricOutput, timeout(500L)).write(eq(expectedTimestamp), eq(expectedKey), eq(0L));
 
     }
@@ -109,7 +114,7 @@ class ScheduledMetricsProcessorTest {
     public void lifecycleStop() {
 
         // given
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
         final LifeCycle lifeCycle = createLifeCycleTestObject(new BasicMetricsRegistry(), metricOutput, System.currentTimeMillis(), UUID.randomUUID().toString());
@@ -127,6 +132,8 @@ class ScheduledMetricsProcessorTest {
         assertFalse(lifeCycle.isStarted());
         assertTrue(lifeCycle.isStopped());
 
+        verify(LifeCycle.of(metricOutput)).stop();
+
     }
 
     @Test
@@ -138,13 +145,19 @@ class ScheduledMetricsProcessorTest {
         final CountDownLatch metricOutputLatch = new CountDownLatch(1);
 
         final MetricOutput metricOutput = new MetricOutput() {
+
             @Override
-            public boolean accepts(Metric.Key key) {
+            public String getName() {
+                return UUID.randomUUID().toString();
+            }
+
+            @Override
+            public boolean accepts(final Metric.Key key) {
                 return true;
             }
 
             @Override
-            public void write(long timestamp, Metric.Key key, long value) {
+            public void write(final long timestamp, final Metric.Key key, final long value) {
                 metricOutputLatch.countDown();
                 try {
                     Thread.sleep(1000L);
@@ -169,7 +182,7 @@ class ScheduledMetricsProcessorTest {
         metricsRegistry.register(metric);
         metric.store(2);
 
-        final ScheduledMetricsProcessor processor = new ScheduledMetricsProcessor( 0, 1000, createTestClock(expectedTimestamp), metricsRegistry, new MetricOutput[]{ metricOutput });
+        final ScheduledMetricsProcessor processor = new ScheduledMetricsProcessor( 0, 1000, createTestClock(expectedTimestamp), metricsRegistry, new BasicMetricOutputsRegistry(metricOutput));
 
 
         // when
@@ -193,10 +206,10 @@ class ScheduledMetricsProcessorTest {
         latch.await(500L, TimeUnit.MILLISECONDS);
 
         // then
-        verify(logger, timeout(500)).info("{}: Stopping", ScheduledMetricsProcessor.class.getSimpleName());
+        verify(logger, timeout(500)).debug("{}: Stopping", ScheduledMetricsProcessor.class.getSimpleName());
         verify(logger, timeout(500)).warn("{}: Thread did not stop in time. In-flight data may be lost", ScheduledMetricsProcessor.class.getSimpleName());
         verify(logger, never()).error("{}: Thread interrupted. In-flight data may be lost", ScheduledMetricsProcessor.class.getSimpleName());
-        verify(logger, timeout(500)).info("{}: Stopped", ScheduledMetricsProcessor.class.getSimpleName());
+        verify(logger, timeout(500)).debug("{}: Stopped", ScheduledMetricsProcessor.class.getSimpleName());
 
         InternalLogging.setLogger(null);
 
@@ -209,6 +222,12 @@ class ScheduledMetricsProcessorTest {
         final Logger logger = mockTestLogger();
 
         final MetricOutput metricOutput = new MetricOutput() {
+
+            @Override
+            public String getName() {
+                return UUID.randomUUID().toString();
+            }
+
             @Override
             public boolean accepts(Metric.Key key) {
                 return true;
@@ -235,7 +254,7 @@ class ScheduledMetricsProcessorTest {
         metricsRegistry.register(metric);
         metric.store(2);
 
-        final ScheduledMetricsProcessor processor = new ScheduledMetricsProcessor( 0, 1000, createTestClock(expectedTimestamp), metricsRegistry, new MetricOutput[]{ metricOutput });
+        final ScheduledMetricsProcessor processor = new ScheduledMetricsProcessor( 0, 1000, createTestClock(expectedTimestamp), metricsRegistry, new BasicMetricOutputsRegistry(metricOutput));
 
 
         // when
@@ -255,10 +274,10 @@ class ScheduledMetricsProcessorTest {
         t1.interrupt();
 
         // then
-        verify(logger, timeout(500)).info("{}: Stopping", ScheduledMetricsProcessor.class.getSimpleName());
+        verify(logger, timeout(500)).debug("{}: Stopping", ScheduledMetricsProcessor.class.getSimpleName());
         verify(logger, never()).warn("{}: Thread did not stop in time. In-flight data may be lost", ScheduledMetricsProcessor.class.getSimpleName());
         verify(logger, timeout(500)).error("{}: Thread interrupted. In-flight data may be lost", ScheduledMetricsProcessor.class.getSimpleName());
-        verify(logger, timeout(500)).info("{}: Stopped", ScheduledMetricsProcessor.class.getSimpleName());
+        verify(logger, timeout(500)).debug("{}: Stopped", ScheduledMetricsProcessor.class.getSimpleName());
 
         InternalLogging.setLogger(null);
 
@@ -269,7 +288,7 @@ class ScheduledMetricsProcessorTest {
                                                  final Clock clock,
                                                  final MetricsRegistry metricsRegistry,
                                                  final MetricOutput... metricOutputs) {
-        return new ScheduledMetricsProcessor(initialDelay, interval, clock, metricsRegistry, metricOutputs);
+        return new ScheduledMetricsProcessor(initialDelay, interval, clock, metricsRegistry, new BasicMetricOutputsRegistry(metricOutputs));
     }
 
     private LifeCycle createLifeCycleTestObject(final MetricsRegistry registry, final MetricOutput writer, final long expectedTimestamp, final String expectedName) {

@@ -20,8 +20,6 @@ package org.appenders.log4j2.elasticsearch.metrics;
  * #L%
  */
 
-import org.appenders.log4j2.elasticsearch.LifeCycle;
-
 import java.time.Clock;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,11 +30,9 @@ import static org.appenders.core.logging.InternalLogging.getLogger;
 /**
  * {@inheritDoc}
  */
-public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeCycle {
+public class ScheduledMetricsProcessor extends MetricsProcessor {
 
     private static final long SHUTDOWN_TIMEOUT_MILLIS = Long.parseLong(System.getProperty("appenders.metrics.shutdownTimeoutMillis", "100"));
-
-    private volatile State state = State.STOPPED;
 
     private final ScheduledExecutorService executor;
     private final long initialDelay;
@@ -48,7 +44,7 @@ public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeC
                               final long interval,
                               final Clock clock,
                               final MetricsRegistry metricsRegistry,
-                              final MetricOutput[] metricOutputs) {
+                              final MetricOutputsRegistry metricOutputs) {
         super(clock, metricsRegistry, metricOutputs);
         this.initialDelay = initialDelay;
         this.interval = interval;
@@ -60,13 +56,13 @@ public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeC
      * @param interval time to wait after metric collection is completed
      * @param clock metric timestamp source
      * @param metricsRegistry registered metrics store
-     * @param metricOutputs metric values listeners
+     * @param metricOutputs metric outputs store
      */
     public ScheduledMetricsProcessor(final long initialDelay,
                               final long interval,
                               final Clock clock,
                               final MetricsRegistry metricsRegistry,
-                              final MetricOutput[] metricOutputs) {
+                              final MetricOutputsRegistry metricOutputs) {
         this(Executors.newSingleThreadScheduledExecutor(ScheduledMetricsProcessor::newThread),
                 initialDelay,
                 interval,
@@ -89,12 +85,12 @@ public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeC
             return;
         }
 
+        super.start();
+
         executor.scheduleWithFixedDelay(this::process,
                 initialDelay,
                 interval,
                 TimeUnit.MILLISECONDS);
-
-        state = State.STARTED;
 
     }
 
@@ -106,7 +102,7 @@ public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeC
         }
 
         final String name = ScheduledMetricsProcessor.class.getSimpleName();
-        getLogger().info("{}: Stopping", name);
+        getLogger().debug("{}: Stopping", name);
 
         try {
 
@@ -122,20 +118,10 @@ public class ScheduledMetricsProcessor extends MetricsProcessor implements LifeC
             getLogger().error("{}: Thread interrupted. In-flight data may be lost", name);
         }
 
-        state = State.STOPPED;
+        super.stop();
 
-        getLogger().info("{}: Stopped", name);
+        getLogger().debug("{}: Stopped", name);
 
-    }
-
-    @Override
-    public boolean isStarted() {
-        return state == State.STARTED;
-    }
-
-    @Override
-    public boolean isStopped() {
-        return state == State.STOPPED;
     }
 
 }

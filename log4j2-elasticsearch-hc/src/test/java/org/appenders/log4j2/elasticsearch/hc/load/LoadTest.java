@@ -84,9 +84,9 @@ import org.appenders.log4j2.elasticsearch.json.jackson.LogEventDataStreamMixIn;
 import org.appenders.log4j2.elasticsearch.load.LoadTestBase;
 import org.appenders.log4j2.elasticsearch.load.TestConfig;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.IncludeExclude;
 import org.appenders.log4j2.elasticsearch.metrics.MetricLog;
-import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
 import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
 import org.appenders.log4j2.elasticsearch.util.Version;
@@ -232,9 +232,9 @@ public class LoadTest extends LoadTestBase {
                 .withSetupOpSources(setupOpSources(VersionUtil.parse(version), indexName, ecsEnabled, dataStreamsEnabled))
                 .withFailoverPolicy(resolveFailoverPolicy())
                 .withShutdownDelayMillis(10000)
-                .withMetricProcessor(new ScheduledMetricsProcessor(0L, 5000L, Clock.systemDefaultZone(), metricRegistry, new MetricOutput[] {
-                        new MetricLog(indexName, new LazyLogger(InternalLogging::getLogger), new IncludeExclude(metricsIncludes, metricsExcludes)),
-                }))
+                .withMetricProcessor(new ScheduledMetricsProcessor(0L, 5000L, Clock.systemDefaultZone(), metricRegistry, new BasicMetricOutputsRegistry(
+                        new MetricLog(indexName, new LazyLogger(InternalLogging::getLogger), new IncludeExclude(metricsIncludes, metricsExcludes))
+                )))
                 .build();
 
         IndexNameFormatter<Object> indexNameFormatter = new SimpleIndexName.Builder<>()

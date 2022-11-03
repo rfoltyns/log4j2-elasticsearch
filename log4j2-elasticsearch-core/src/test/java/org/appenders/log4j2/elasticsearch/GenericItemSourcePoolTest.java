@@ -26,9 +26,11 @@ import io.netty.buffer.UnpooledByteBufAllocator;
 import org.appenders.core.logging.InternalLogging;
 import org.appenders.core.logging.Logger;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
+import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.DefaultMetricsFactory;
 import org.appenders.log4j2.elasticsearch.metrics.Metric;
 import org.appenders.log4j2.elasticsearch.metrics.MetricOutput;
+import org.appenders.log4j2.elasticsearch.metrics.MetricOutputTest;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsProcessor;
 import org.appenders.log4j2.elasticsearch.metrics.MetricsRegistry;
@@ -323,10 +325,10 @@ public abstract class GenericItemSourcePoolTest {
         final Metric.Key expectedKey5 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         final ByteBufPooledObjectOps pooledObjectOps = new ByteBufPooledObjectOps(
                 byteBufAllocator,
@@ -450,10 +452,10 @@ public abstract class GenericItemSourcePoolTest {
         final Metric.Key expectedKey2 = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         System.setProperty("appenders." + GenericItemSourcePool.class.getSimpleName() + ".resize.retries", "" + expectedRetries);
 
@@ -504,10 +506,10 @@ public abstract class GenericItemSourcePoolTest {
         final Metric.Key resizeAttemptsKey = new Metric.Key(expectedComponentName, "resizeAttempts", "count");
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
 
-        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         final ByteBufPooledObjectOps pooledObjectOps = createTestPooledObjectOps(DEFAULT_TEST_ITEM_SIZE_IN_BYTES);
         final GenericItemSourcePool<ByteBuf> pool = spy(new GenericItemSourcePool<>(
@@ -601,10 +603,10 @@ public abstract class GenericItemSourcePoolTest {
         });
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final MetricOutput metricOutput = mock(MetricOutput.class);
+        final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
         when(metricOutput.accepts(any())).thenReturn(true);
         pool.register(registry);
-        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new MetricOutput[] { metricOutput });
+        final MetricsProcessor metricsProcessor = new MetricsProcessor(registry, new BasicMetricOutputsRegistry(metricOutput));
 
         final Exception[] caught = new Exception[1];
 
