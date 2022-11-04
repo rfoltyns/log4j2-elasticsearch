@@ -24,6 +24,8 @@ import org.appenders.log4j2.elasticsearch.LifeCycle;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,12 +47,23 @@ public class BasicMetricOutputsRegistry implements MetricOutputsRegistry, LifeCy
     private final AtomicInteger version = new AtomicInteger(1);
     private final Collection<MetricOutput> outputs = new ConcurrentSkipListSet<>(MetricOutput.COMPARATOR);
 
+    public BasicMetricOutputsRegistry() {
+        this(Collections.emptyList());
+    }
+
     /**
      * @param initialMetricOutputs initial outputs
      */
     public BasicMetricOutputsRegistry(final MetricOutput... initialMetricOutputs) {
-        if (initialMetricOutputs.length > 0) {
-            outputs.addAll(Arrays.asList(initialMetricOutputs));
+        this(Arrays.asList(initialMetricOutputs));
+    }
+
+    /**
+     * @param initialMetricOutputs initial outputs
+     */
+    public BasicMetricOutputsRegistry(final List<MetricOutput> initialMetricOutputs) {
+        if (initialMetricOutputs.size() > 0) {
+            outputs.addAll(initialMetricOutputs);
         }
     }
 

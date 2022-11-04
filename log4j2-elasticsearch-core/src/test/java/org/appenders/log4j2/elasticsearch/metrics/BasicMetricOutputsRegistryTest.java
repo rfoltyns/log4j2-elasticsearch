@@ -23,8 +23,6 @@ package org.appenders.log4j2.elasticsearch.metrics;
 import org.appenders.log4j2.elasticsearch.LifeCycle;
 import org.junit.jupiter.api.Test;
 
-import java.util.UUID;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +32,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BasicMetricOutputsRegistryTest {
+
+    @Test
+    public void isEmptyByDefault() {
+
+        // when
+        final MetricOutputsRegistry registry = new BasicMetricOutputsRegistry();
+
+        // then
+        assertEquals(0, registry.get(output -> true).size());
+
+    }
 
     @Test
     public void addsGivenMetricOutput() {
@@ -54,7 +63,8 @@ public class BasicMetricOutputsRegistryTest {
 
         // given
         final MetricOutput metricOutput = spy(MetricOutputTest.dummy());
-        final MetricOutputsRegistry registry = new BasicMetricOutputsRegistry(metricOutput);
+        final MetricOutputsRegistry registry = new BasicMetricOutputsRegistry();
+        registry.register(metricOutput);
 
         assertEquals(1, registry.get(output -> true).size());
 
@@ -128,7 +138,7 @@ public class BasicMetricOutputsRegistryTest {
     }
 
     @Test
-    public void defaultVersionIsAlwaysEqualToOne() {
+    public void initialVersionIsAlwaysEqualToOne() {
 
         // given
         final MetricOutputsRegistry registry1 = new BasicMetricOutputsRegistry();
@@ -141,9 +151,6 @@ public class BasicMetricOutputsRegistryTest {
         // then
         assertEquals(1, registry1version);
         assertEquals(1, registry2version);
-
-        assertEquals(0, registry1.get(output -> true).size());
-        assertEquals(1, registry2.get(output -> true).size());
 
     }
 
