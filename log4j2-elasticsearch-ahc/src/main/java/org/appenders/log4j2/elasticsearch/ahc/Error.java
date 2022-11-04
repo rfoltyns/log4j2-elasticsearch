@@ -25,13 +25,16 @@ package org.appenders.log4j2.elasticsearch.ahc;
  */
 public class Error {
 
-    private Error[] rootCause;
+    private static final String SEPARATOR = ". ";
+    private static final Error[] NO_ROOT_CAUSE = new Error[0];
 
     private String type;
 
     private String reason;
 
     private Error causedBy;
+
+    private Error[] rootCause = NO_ROOT_CAUSE;
 
     public String getType() {
         return type;
@@ -65,12 +68,29 @@ public class Error {
         this.rootCause = rootCause;
     }
 
-    StringBuilder appendErrorMessage(final StringBuilder sb) {
-        if (getCausedBy() != null) {
-            return getCausedBy().appendErrorMessage(sb);
+    StringBuilder appendErrorMessage(final StringBuilder sb, int depth) {
+
+        if (depth <= 0) {
+            return sb;
         }
-        sb.append("errorType: ").append(getType());
-        sb.append(", errorReason: ").append(getReason());
+
+        depth -= 1;
+
+        if (getCausedBy() != null) {
+            getCausedBy().appendErrorMessage(sb, depth);
+        }
+        if (getRootCause().length > 0) {
+            getRootCause()[0].appendErrorMessage(sb, depth);
+        }
+
+        if (getType() != null) {
+            sb.append(SEPARATOR).append("type: ").append(getType());
+        }
+        if (getReason() != null) {
+            sb.append(SEPARATOR).append("reason: ").append(getReason());
+
+        }
+
         return sb;
     }
 

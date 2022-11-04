@@ -235,9 +235,85 @@ public class BatchResultTest {
         // then
         assertTrue(actualMessage.contains(expectedCausedByType));
         assertTrue(actualMessage.contains(expectedCausedByReason));
-        assertFalse(actualMessage.contains(expectedType));
-        assertFalse(actualMessage.contains(expectedReason));
+        assertTrue(actualMessage.contains(expectedType));
+        assertTrue(actualMessage.contains(expectedReason));
 
+    }
+
+    @Test
+    public void errorMessageContainsErrorRootCauseInfoIfAvailable() {
+
+        // given
+        final String expectedType = UUID.randomUUID().toString();
+        final String expectedReason = UUID.randomUUID().toString();
+
+        final String expectedCausedByType = UUID.randomUUID().toString();
+        final String expectedCausedByReason = UUID.randomUUID().toString();
+
+        final Error causedByError = new Error();
+        causedByError.setType(expectedCausedByType);
+        causedByError.setReason(expectedCausedByReason);
+
+        final Error error = new Error();
+        error.setType(expectedType);
+        error.setReason(expectedReason);
+        error.setRootCause(new Error[] { causedByError });
+
+        final BatchResult result = createTestBatchResult(false, error);
+        result.withErrorMessage(DEFAULT_TEST_MESSAGE);
+
+        // when
+        final String actualMessage = result.getErrorMessage();
+
+        // then
+        assertTrue(actualMessage.contains(expectedCausedByType));
+        assertTrue(actualMessage.contains(expectedCausedByReason));
+        assertTrue(actualMessage.contains(expectedType));
+        assertTrue(actualMessage.contains(expectedReason));
+
+    }
+
+    @Test
+    public void errorMessageContainsErrorInfoAtDefaultDepth() {
+
+        // given
+        final String expectedType = UUID.randomUUID().toString();
+        final String expectedReason = UUID.randomUUID().toString();
+
+        final String expectedCausedByType1 = UUID.randomUUID().toString();
+        final String expectedCausedByReason1 = UUID.randomUUID().toString();
+
+        final Error unreachableError = new Error();
+        unreachableError.setReason("Not expected");
+
+        final Error causedByCausedByError = new Error();
+        causedByCausedByError.setReason("Default max level");
+        causedByCausedByError.setCausedBy(unreachableError);
+
+        final Error causedByError = new Error();
+        causedByError.setType(expectedCausedByType1 + "2");
+        causedByError.setReason(expectedCausedByReason1 + "2");
+        causedByError.setCausedBy(causedByCausedByError);
+        final Error error = new Error();
+        error.setType(expectedType);
+        error.setReason(expectedReason);
+        error.setCausedBy(causedByError);
+
+        final BatchResult result = createTestBatchResult(false, error);
+        result.withErrorMessage(DEFAULT_TEST_MESSAGE);
+
+        // when
+        final String actualMessage = result.getErrorMessage();
+
+        // then
+        assertTrue(actualMessage.contains(expectedCausedByType1));
+        assertTrue(actualMessage.contains(expectedCausedByReason1));
+        assertTrue(actualMessage.contains(expectedType));
+        assertTrue(actualMessage.contains(expectedReason));
+        assertTrue(actualMessage.contains("Default max level"));
+        assertFalse(actualMessage.contains("Not expected"));
+
+        System.clearProperty("appenders." + BatchResult.class.getSimpleName() + ".error.depth");
 
     }
 
