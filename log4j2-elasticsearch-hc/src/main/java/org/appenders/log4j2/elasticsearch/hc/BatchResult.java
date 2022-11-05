@@ -30,7 +30,6 @@ public class BatchResult implements Response {
     static final String ONE_OR_MORE_ITEMS_FAILED = "One or more items failed";
     static final String FIRST_FAILED_ITEM_PREFIX = "First failed item: ";
     static final String ROOT_ERROR_PREFIX = "Root error: ";
-    static final String REQUEST_FAILED_MESAGE = "Request failed";
     private static final String SEPARATOR = ". ";
 
     private final int took;
@@ -87,22 +86,18 @@ public class BatchResult implements Response {
         return this;
     }
 
-    private void appendFailedItemErrorMessageIfAvailable(final StringBuilder sb) {
-
+    private StringBuilder appendFailedItemErrorMessageIfAvailable(final StringBuilder sb) {
         if (getItems() == null) {
-            sb.append(UNABLE_TO_GET_MORE_INFO);
-            return;
+            return sb.append(UNABLE_TO_GET_MORE_INFO);
         }
 
         final Optional<BatchItemResult> firstFailedItem = getItems().stream().filter(item -> item.getError() != null).findFirst();
         if (!firstFailedItem.isPresent()) {
-            sb.append(UNABLE_TO_GET_MORE_INFO);
-            return;
+            return sb.append(UNABLE_TO_GET_MORE_INFO);
         }
 
         sb.append(FIRST_FAILED_ITEM_PREFIX);
-        firstFailedItem.get().getError().appendErrorMessage(sb, ERROR_MAX_STACK_DEPTH);
-
+        return firstFailedItem.get().getError().appendErrorMessage(sb, ERROR_MAX_STACK_DEPTH);
     }
 
     public BatchResult withErrorMessage(String errorMessage) {
@@ -113,12 +108,13 @@ public class BatchResult implements Response {
             return this;
         }
 
-        StringBuilder sb = new StringBuilder(256);
+        final StringBuilder sb = new StringBuilder(256);
+
+        sb.append(errorMessage);
+
         if (errors) {
-            sb.append(ONE_OR_MORE_ITEMS_FAILED);
+            sb.append(SEPARATOR).append(ONE_OR_MORE_ITEMS_FAILED);
             appendFailedItemErrorMessageIfAvailable(sb.append(SEPARATOR));
-        } else {
-            sb.append(REQUEST_FAILED_MESAGE);
         }
 
         if (statusCode > 0) {
@@ -126,7 +122,7 @@ public class BatchResult implements Response {
         }
         if (getError() != null) {
             sb.append(SEPARATOR).append(ROOT_ERROR_PREFIX);
-            getError().appendErrorMessage(sb, 1);
+            getError().appendErrorMessage(sb, ERROR_MAX_STACK_DEPTH);
         }
 
         this.errorMessage = sb.toString();
