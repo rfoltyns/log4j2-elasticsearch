@@ -20,7 +20,6 @@ package org.appenders.log4j2.elasticsearch.ahc;
  * #L%
  */
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import org.appenders.core.logging.InternalLogging;
@@ -60,7 +59,6 @@ import java.util.Random;
 import java.util.UUID;
 
 import static org.appenders.core.logging.InternalLogging.setLogger;
-import static org.appenders.log4j2.elasticsearch.ahc.AHCHttpTest.createDefaultHttpObjectFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.ahc.BatchRequestTest.createTestBatch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -192,7 +190,9 @@ public class HttpClientTest {
 
         // given
         final HttpClient client = spy(createDefaultTestObject());
-        final AsyncHttpClient asyncClient = mockAsyncClient(client);
+        final AsyncHttpClient asyncClient1 = mock(AsyncHttpClient.class);
+        when(client.getAsyncClient()).thenReturn(asyncClient1);
+        final AsyncHttpClient asyncClient = asyncClient1;
 
         final BatchRequest request = createDefaultTestBatchRequest();
 
@@ -264,35 +264,17 @@ public class HttpClientTest {
     public void executeDelegatesToExecuteAsync() {
 
         // given
-        final HttpClient httpClient = spy(createDefaultTestObject());
-        httpClient.start();
+        final AsyncHttpClient asyncHttpClient = mock(AsyncHttpClient.class);
+        final HttpClient httpClient = createDefaultTestObject(asyncHttpClient);
 
-        final BlockingResponseHandler<Response> responseHandler = createDefaultTestBlockingResponseHandler();
+        final BlockingResponseHandler<Response> responseHandler = mock(BlockingResponseHandler.class);
         final IndexTemplateRequest request = IndexTemplateRequestTest.createDefaultTestObjectBuilder().build();
 
         // when
         httpClient.execute(request, responseHandler);
 
         // then
-        verify(httpClient).executeAsync(eq(request), eq(responseHandler));
-
-    }
-
-    @Test
-    public void executeDelegatesToBlockingResponseHandler() {
-
-        // given
-        final HttpClient httpClient = spy(createDefaultTestObject());
-        httpClient.start();
-
-        final BlockingResponseHandler<Response> responseHandler = spy(createDefaultTestBlockingResponseHandler());
-        final IndexTemplateRequest request = IndexTemplateRequestTest.createDefaultTestObjectBuilder().build();
-
-        // when
-        httpClient.execute(request, responseHandler);
-
-        // then
-        verify(responseHandler).getResult();
+        verify(asyncHttpClient).executeRequest((RequestBuilder) any(), any());
 
     }
 
@@ -641,18 +623,11 @@ public class HttpClientTest {
                     }
                 };
             }
-        };
+        }.withServerList(Collections.singletonList("http://localhost:9200"));
     }
 
     private LifeCycle createLifeCycleTestObject() {
         return createDefaultTestObject();
-    }
-
-    private BlockingResponseHandler<Response> createDefaultTestBlockingResponseHandler() {
-        return new BlockingResponseHandler<>(
-                new ObjectMapper().readerFor(BatchResult.class),
-                (ex) -> new BasicResponse().withErrorMessage("test_exception: " + ex)
-        );
     }
 
     private org.asynchttpclient.Response createDefaultTestHttpResponse() {
@@ -661,8 +636,10 @@ public class HttpClientTest {
 
     private AHCResultCallback mockHttpResponseCallback(final ResponseHandler<Response> responseHandler) throws Exception {
 
-        final HttpClient client = spy(createDefaultTestObject());
-        final AsyncHttpClient asyncClient = mockAsyncClient(client);
+        final AsyncHttpClient asyncHttpClient = mock(AsyncHttpClient.class);
+        final HttpClientFactory.Builder builder = createTestHttpClientFactoryBuilder(asyncHttpClient);
+        final HttpClientProvider provider = new HttpClientProvider(builder);
+        final HttpClient client = provider.createClient();
 
         final BatchRequest request = mock(BatchRequest.class);
         when(request.getURI()).thenReturn(UUID.randomUUID().toString());
@@ -672,17 +649,11 @@ public class HttpClientTest {
         when(request.serialize()).thenReturn(itemSource);
 
         client.executeAsync(request, responseHandler);
-        verify(asyncClient).executeRequest(
+        verify(asyncHttpClient).executeRequest(
                 any(RequestBuilder.class),
                 hcResultCallbackCaptor.capture());
 
         return hcResultCallbackCaptor.getValue();
-    }
-
-    private AsyncHttpClient mockAsyncClient(final HttpClient client) {
-        final AsyncHttpClient asyncClient = mock(AsyncHttpClient.class);
-        when(client.getAsyncClient()).thenReturn(asyncClient);
-        return asyncClient;
     }
 
     private BatchRequest createDefaultTestBatchRequest() {
@@ -711,8 +682,15 @@ public class HttpClientTest {
     }
 
     private HttpClient createDefaultTestObject() {
-        final AHCHttp.Builder testObjectFactoryBuilder = createDefaultHttpObjectFactoryBuilder();
-        return testObjectFactoryBuilder.build().createClient();
+        return createDefaultTestObject(mock(AsyncHttpClient.class));
+    }
+
+    private HttpClient createDefaultTestObject(final AsyncHttpClient asyncHttpClient) {
+
+        final HttpClientFactory.Builder builder = createTestHttpClientFactoryBuilder(asyncHttpClient);
+        final HttpClientProvider provider = new HttpClientProvider(builder);
+        return provider.createClient();
+
     }
 
     private ItemSource<ByteBuf> createDefaultTestByteBufItemSource(final String payload) {

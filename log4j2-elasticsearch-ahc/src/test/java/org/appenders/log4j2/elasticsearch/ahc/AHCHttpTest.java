@@ -45,6 +45,7 @@ import org.appenders.log4j2.elasticsearch.ahc.failover.HCFailedItemOps;
 import org.appenders.log4j2.elasticsearch.backoff.BackoffPolicy;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemOps;
 import org.appenders.log4j2.elasticsearch.failover.FailedItemSource;
+import org.asynchttpclient.AsyncHttpClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -100,8 +101,22 @@ public class AHCHttpTest {
         return new AHCHttp.Builder()
                 .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
                 .withBatchOperations(new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI()))
-                .withClientProvider(HttpClientProviderTest.createDefaultTestClientProvider());
+                .withClientProvider(new HttpClientProvider(createDefaultTestBuilder(mock(AsyncHttpClient.class))));
 
+    }
+
+    private static HttpClientFactory.Builder createDefaultTestBuilder(final AsyncHttpClient asyncHttpClient) {
+
+        final HttpClientFactory.Builder httpClientFactoryBuilder = spy(HttpClientProviderTest.createDefaultTestBuilder());
+        final HttpClientFactory httpClientFactory = new HttpClientFactory(httpClientFactoryBuilder) {
+            @Override
+            protected AsyncHttpClient createAsyncHttpClient() {
+                return asyncHttpClient;
+            }
+        };
+        when(httpClientFactoryBuilder.build()).thenReturn(httpClientFactory);
+
+        return httpClientFactoryBuilder;
     }
 
     @Test
@@ -276,7 +291,7 @@ public class AHCHttpTest {
     public void authIsNotAppliedIfNull() {
 
         // given
-        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestHttpClientFactoryBuilder()
+        final HttpClientProvider clientProvider = new HttpClientProvider(createDefaultTestBuilder(mock(AsyncHttpClient.class))
                 .withAuth(null));
 
         final AHCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder().withClientProvider(clientProvider);
@@ -394,7 +409,15 @@ public class AHCHttpTest {
     public void clientIsCalledWhenListenerIsNotified() {
 
         // given
-        final AHCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
+        final PooledItemSourceFactory itemSourceFactory = PooledItemSourceFactoryTest
+                .createDefaultTestSourceFactoryConfig()
+                .build();
+
+        final AHCHttp.Builder builder = new AHCHttp.Builder()
+                .withOperationFactory(new ElasticsearchOperationFactory(step -> Result.SUCCESS, ValueResolver.NO_OP))
+                .withBatchOperations(new AHCBatchOperations(itemSourceFactory, new ElasticsearchBulkAPI()))
+                .withClientProvider(new HttpClientProvider(new HttpClientFactory.Builder())); // Too much mocking. Real client here.
+
         final ClientObjectFactory<HttpClient, BatchRequest> config = spy(builder.build());
 
         final HttpClient mockedHttpClient = mock(HttpClient.class);
@@ -426,9 +449,6 @@ public class AHCHttpTest {
         final AHCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         final ClientObjectFactory<HttpClient, BatchRequest> config = spy(builder.build());
 
-        final HttpClient mockedHttpClient = mock(HttpClient.class);
-        when(config.createClient()).thenReturn(mockedHttpClient);
-
         final FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
         final Function<BatchRequest, Boolean> listener = config.createBatchListener(failoverPolicy);
 
@@ -459,9 +479,6 @@ public class AHCHttpTest {
         // given
         final AHCHttp.Builder builder = createDefaultHttpObjectFactoryBuilder();
         final ClientObjectFactory<HttpClient, BatchRequest> config = spy(builder.build());
-
-        final HttpClient mockedHttpClient = mock(HttpClient.class);
-        when(config.createClient()).thenReturn(mockedHttpClient);
 
         final FailoverPolicy failoverPolicy = spy(new NoopFailoverPolicy());
         final Function<BatchRequest, Boolean> listener = config.createBatchListener(failoverPolicy);
@@ -791,9 +808,6 @@ public class AHCHttpTest {
                 .build()
         );
 
-        final HttpClient client = mock(HttpClient.class);
-        when(objectFactory.createClient()).thenReturn(client);
-
         // when
         objectFactory.start();
         objectFactory.start();
@@ -835,9 +849,6 @@ public class AHCHttpTest {
                 .withOperationFactory(operationFactory)
                 .build()
         );
-
-        final HttpClient client = mock(HttpClient.class);
-        when(objectFactory.createClient()).thenReturn(client);
 
         // when
         objectFactory.start();

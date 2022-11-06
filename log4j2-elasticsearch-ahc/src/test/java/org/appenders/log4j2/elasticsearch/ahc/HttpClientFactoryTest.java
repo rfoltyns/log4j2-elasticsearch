@@ -36,6 +36,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 
 import static org.appenders.log4j2.elasticsearch.ahc.HttpClientProviderTest.createDefaultTestClientProvider;
 import static org.appenders.log4j2.elasticsearch.ahc.discovery.AHCServiceDiscoveryTest.createNonSchedulingServiceDiscovery;
@@ -46,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -190,12 +190,20 @@ public class HttpClientFactoryTest {
     public void createInstanceConfiguresAsyncHttpClient() {
 
         // given
-        final HttpClientFactory factory = spy(createDefaultTestHttpClientFactory());
-        final HttpClient client = spy(factory.createConfiguredClient(any(), any(), any()));
-        when(factory.createConfiguredClient(any(), any(), any())).thenReturn(client);
-
-        final AsyncHttpClient httpAsyncClient = mock(AsyncHttpClient.class);
-        when(factory.createAsyncHttpClient()).thenReturn(httpAsyncClient);
+        final HttpClientFactory factory = spy(new HttpClientFactory.Builder() {
+            @Override
+            public HttpClientFactory build() {
+                return new HttpClientFactory(this) {
+                    @Override
+                    protected AsyncHttpClient createAsyncHttpClient() {
+                        return mock(AsyncHttpClient.class);
+                    }
+                };
+            }
+        }
+                .withServerList(TEST_SERVER_LIST)
+                .withMaxTotalConnections(1)
+                .build());
 
         // when
         factory.createInstance();
@@ -212,11 +220,23 @@ public class HttpClientFactoryTest {
         final String expectedAddress = "http://expected:9234";
 
         final AHCServiceDiscovery<HttpClient> serviceDiscovery = new AHCServiceDiscovery<>(
-                createDefaultTestClientProvider(),
+                new HttpClientProvider(createDefaultTestBuilder(() -> mock(AsyncHttpClient.class))),
                 (client, callback) -> callback.onSuccess(Collections.singletonList(expectedAddress)),
                 Integer.MAX_VALUE);
 
-        final HttpClientFactory.Builder builder = createDefaultTestHttpClientFactoryBuilder()
+        final HttpClientFactory.Builder builder = new HttpClientFactory.Builder() {
+            @Override
+            public HttpClientFactory build() {
+                return new HttpClientFactory(this) {
+                    @Override
+                    protected AsyncHttpClient createAsyncHttpClient() {
+                        return mock(AsyncHttpClient.class);
+                    }
+                };
+            }
+        }
+                .withServerList(TEST_SERVER_LIST)
+                .withMaxTotalConnections(1)
                 .withServerList(Collections.emptyList())
                 .withServiceDiscovery(serviceDiscovery);
 
@@ -246,6 +266,20 @@ public class HttpClientFactoryTest {
         return new HttpClientFactory.Builder()
                 .withServerList(TEST_SERVER_LIST)
                 .withMaxTotalConnections(1);
+    }
+
+    private HttpClientFactory.Builder createDefaultTestBuilder(final Supplier<AsyncHttpClient> asyncHttpClientSupplier) {
+
+        final HttpClientFactory.Builder httpClientFactoryBuilder = spy(HttpClientProviderTest.createDefaultTestBuilder());
+        final HttpClientFactory httpClientFactory = spy(new HttpClientFactory(httpClientFactoryBuilder) {
+            @Override
+            protected AsyncHttpClient createAsyncHttpClient() {
+                return asyncHttpClientSupplier.get();
+            }
+        });
+        when(httpClientFactoryBuilder.build()).thenReturn(httpClientFactory);
+
+        return httpClientFactoryBuilder;
     }
 
     public static class BuilderMatcher extends BaseMatcher<HttpClientFactory.Builder> {

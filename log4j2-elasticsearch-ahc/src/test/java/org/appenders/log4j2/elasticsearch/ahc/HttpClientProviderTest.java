@@ -32,6 +32,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.Collections;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static org.appenders.log4j2.elasticsearch.ahc.HttpClientFactoryTest.createDefaultTestHttpClientFactoryBuilder;
 import static org.appenders.log4j2.elasticsearch.mock.LifecycleTestHelper.falseOnlyOnce;
@@ -42,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -57,8 +59,6 @@ public class HttpClientProviderTest {
     public static final String TEST_SERVER_URIS = "http://localhost:9200";
     public static final int TEST_MAX_TOTAL_CONNECTIONS = RANDOM.nextInt(1000) + 10;
     public static final int TEST_IO_THREAD_COUNT = RANDOM.nextInt(1000) + 10;
-    public static final boolean TEST_POOLED_RESPONSE_BUFFERS_ENABLED = true;
-    public static final int TEST_POOLED_RESPONSE_BUFFERS_SIZE_IN_BYTES = 34;
     public static final Security TEST_AUTH = SecurityTest.createDefaultTestSecurityBuilder().build();
 
     public static HttpClientFactory.Builder createDefaultTestBuilder() {
@@ -72,6 +72,42 @@ public class HttpClientProviderTest {
 
     public static HttpClientProvider createDefaultTestClientProvider() {
         return new HttpClientProvider(createDefaultTestBuilder());
+    }
+
+    private static HttpClientFactory.Builder createDefaultTestBuilder(final Supplier<AsyncHttpClient> asyncHttpClientSupplier) {
+
+        return new HttpClientFactory.Builder() {
+            @Override
+            public HttpClientFactory build() {
+                return new HttpClientFactory(this) {
+                    @Override
+                    protected AsyncHttpClient createAsyncHttpClient() {
+                        return asyncHttpClientSupplier.get();
+                    }
+                };
+            }
+        };
+    }
+
+    public static HttpClientFactory.Builder createMockHttpClientFactoryBuilder() {
+
+        final HttpClientFactory.Builder defaultTestBuilder = spy(createDefaultTestBuilder());
+        final HttpClientFactory httpClientFactory = spy(new HttpClientFactory(defaultTestBuilder) {
+            @Override
+            protected AsyncHttpClient createAsyncHttpClient() {
+                return super.createAsyncHttpClient();
+            }
+        });
+
+        final HttpClient expectedHttpClient = mock(HttpClient.class);
+        final HttpClient notExpectedHttpClient = mock(HttpClient.class);
+        when(httpClientFactory.createInstance())
+                .thenReturn(expectedHttpClient);
+
+        when(defaultTestBuilder.build()).thenReturn(httpClientFactory);
+
+        return defaultTestBuilder;
+
     }
 
     @Test
@@ -101,13 +137,25 @@ public class HttpClientProviderTest {
     public void createClientReturnsSameInstance() {
 
         // given
-        final HttpClientProvider clientProvider = createDefaultTestClientProvider();
+        final HttpClientFactory.Builder defaultTestBuilder = spy(createDefaultTestBuilder());
+        final HttpClientFactory httpClientFactory = mock(HttpClientFactory.class);
+        final HttpClient expectedHttpClient = mock(HttpClient.class);
+        final HttpClient notExpectedHttpClient = mock(HttpClient.class);
+        when(httpClientFactory.createInstance())
+                .thenReturn(expectedHttpClient)
+                .thenReturn(notExpectedHttpClient);
+
+        when(defaultTestBuilder.build()).thenReturn(httpClientFactory);
+
+        final HttpClientProvider clientProvider = new HttpClientProvider(defaultTestBuilder);
 
         // when
-        final HttpClient httpClient = clientProvider.createClient();
+        final HttpClient httpClient1 = clientProvider.createClient();
+        final HttpClient httpClient2 = clientProvider.createClient();
 
         // then
-        assertSame(httpClient, clientProvider.createClient());
+        assertSame(httpClient1, expectedHttpClient);
+        assertSame(httpClient2, expectedHttpClient);
 
     }
 
@@ -196,8 +244,12 @@ public class HttpClientProviderTest {
         final HttpClientFactory.Builder clientFactoryBuilder = new HttpClientFactory.Builder() {
             @Override
             public HttpClientFactory build() {
-                super.build();
                 return new HttpClientFactory(this) {
+                    @Override
+                    protected AsyncHttpClient createAsyncHttpClient() {
+                        return mock(AsyncHttpClient.class);
+                    }
+
                     @Override
                     protected HttpClient createConfiguredClient(
                             final AsyncHttpClient asyncHttpClient,
@@ -231,7 +283,8 @@ public class HttpClientProviderTest {
     }
 
     private LifeCycle createLifeCycleTestObject() {
-        return createDefaultTestClientProvider();
+        final Supplier<AsyncHttpClient> asyncHttpClientSupplier = () -> mock(AsyncHttpClient.class);
+        return new HttpClientProvider(createDefaultTestBuilder(asyncHttpClientSupplier));
     }
 
     // =======
@@ -245,7 +298,8 @@ public class HttpClientProviderTest {
         final String expectedComponentName = UUID.randomUUID().toString();
 
         final MetricsRegistry registry = mock(MetricsRegistry.class);
-        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+        final Supplier<AsyncHttpClient> asyncHttpClientSupplier = () -> mock(AsyncHttpClient.class);
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder(asyncHttpClientSupplier)
                 .withName(expectedComponentName)
                 .withMetricConfigs(Collections.emptyList());
 
@@ -268,7 +322,8 @@ public class HttpClientProviderTest {
         final String expectedComponentName = UUID.randomUUID().toString();
 
         final MetricsRegistry registry = new BasicMetricsRegistry();
-        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+        final Supplier<AsyncHttpClient> asyncHttpClientSupplier = () -> mock(AsyncHttpClient.class);
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder(asyncHttpClientSupplier)
                 .withName(expectedComponentName)
                 .withMetricConfigs(Collections.emptyList());
 
@@ -293,7 +348,8 @@ public class HttpClientProviderTest {
         final String expectedComponentName = UUID.randomUUID().toString();
 
         final MetricsRegistry registry = mock(MetricsRegistry.class);
-        final HttpClientFactory.Builder builder = createDefaultTestBuilder()
+        final Supplier<AsyncHttpClient> asyncHttpClientSupplier = () -> mock(AsyncHttpClient.class);
+        final HttpClientFactory.Builder builder = createDefaultTestBuilder(asyncHttpClientSupplier)
                 .withName(expectedComponentName)
                 .withMetricConfigs(Collections.emptyList());
 
