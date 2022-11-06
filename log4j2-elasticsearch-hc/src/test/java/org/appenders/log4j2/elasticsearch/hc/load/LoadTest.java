@@ -86,6 +86,7 @@ import org.appenders.log4j2.elasticsearch.load.TestConfig;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.BasicMetricOutputsRegistry;
 import org.appenders.log4j2.elasticsearch.metrics.IncludeExclude;
+import org.appenders.log4j2.elasticsearch.metrics.MetricConfigFactory;
 import org.appenders.log4j2.elasticsearch.metrics.MetricLog;
 import org.appenders.log4j2.elasticsearch.metrics.ScheduledMetricsProcessor;
 import org.appenders.log4j2.elasticsearch.util.SplitUtil;
@@ -180,7 +181,9 @@ public class LoadTest extends LoadTestBase {
                 .withMaxTotalConnections(8)
                 .withAuth(secured ? getAuth() : null)
                 .withPooledResponseBuffers(true)
-                .withPooledResponseBuffersSizeInBytes(3145728);
+                .withPooledResponseBuffersSizeInBytes(3145728)
+                .withName("http-main")
+                .withMetricConfigs(PoolingAsyncResponseConsumer.metricConfigs(metricsEnabled));
 
         HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
