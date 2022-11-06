@@ -52,7 +52,7 @@ import static org.appenders.core.logging.InternalLogging.setLogger;
 import static org.appenders.core.util.PropertiesUtil.getInt;
 import static org.appenders.log4j2.elasticsearch.failover.ChronicleMapUtil.resolveChronicleMapFilePath;
 
-public abstract class LoadTestBase {
+public abstract class SmokeTestBase {
 
     public static final long ONE_SECOND_MILLIS = 1000;
     public static final long ONE_SECOND_NANOS = TimeUnit.MILLISECONDS.toNanos(ONE_SECOND_MILLIS);

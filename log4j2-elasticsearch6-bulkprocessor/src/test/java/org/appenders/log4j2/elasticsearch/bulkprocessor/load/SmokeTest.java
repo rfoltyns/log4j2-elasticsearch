@@ -34,11 +34,11 @@ import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSetting;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.ClientSettings;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.PEMCertInfo;
 import org.appenders.log4j2.elasticsearch.bulkprocessor.XPackAuth;
-import org.appenders.log4j2.elasticsearch.load.LoadTestBase;
+import org.appenders.log4j2.elasticsearch.load.SmokeTestBase;
 
 import static org.appenders.core.util.PropertiesUtil.getInt;
 
-public class LoadTest extends LoadTestBase {
+public class SmokeTest extends SmokeTestBase {
 
     @Override
     public ElasticsearchAppender.Builder createElasticsearchAppenderBuilder(boolean messageOnly, boolean buffered, boolean secured) {

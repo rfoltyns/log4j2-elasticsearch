@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class CustomMessageFactoryTest extends LoadTest {
+public class CustomMessageFactoryTest extends SmokeTest {
 
     @BeforeAll
     public static void beforeClass() {
