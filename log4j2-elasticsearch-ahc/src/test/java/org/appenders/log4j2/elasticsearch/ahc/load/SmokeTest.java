@@ -177,7 +177,9 @@ public class SmokeTest extends SmokeTestBase {
                 .withReadTimeout(10000)
                 .withIoThreadCount(4)
                 .withMaxTotalConnections(16)
-                .withAuth(secured ? getAuth() : null);
+                .withAuth(secured ? getAuth() : null)
+                .withName("http-main")
+                .withMetricConfigs(HttpClient.metricConfigs(metricsEnabled));
 
         final HttpClientProvider clientProvider = new HttpClientProvider(httpConfig);
 
