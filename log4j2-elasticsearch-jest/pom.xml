@@ -3,7 +3,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>org.appenders.log4j</groupId>
-        <version>1.6.0-SNAPSHOT</version>
+        <version>1.6.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>log4j2-elasticsearch-jest</artifactId>
@@ -207,8 +207,8 @@
         <profile>
             <id>e2e</id>
             <properties>
-                <e2e.gc.logging/>
-                <e2e.jvm.args/>
+                <e2e.gc.logging />
+                <e2e.jvm.args />
             </properties>
             <build>
                 <plugins>
