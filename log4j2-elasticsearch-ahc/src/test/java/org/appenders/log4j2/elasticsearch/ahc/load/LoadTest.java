@@ -297,7 +297,7 @@ public class LoadTest extends LoadTestBase {
                                             final String filterPath,
                                             final boolean dataStreamsEnabled) {
         if (dataStreamsEnabled) {
-            return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI());
+            return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI(filterPath));
         } else {
             return new AHCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version), filterPath));
         }

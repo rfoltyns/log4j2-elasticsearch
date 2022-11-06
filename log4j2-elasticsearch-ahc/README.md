@@ -149,6 +149,11 @@ Configures `BatchOperations`-level builders and serializers for:
 * [DataStreamBatchRequest](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-ahc/src/main/java/org/appenders/log4j2/elasticsearch/hc/DataStreamBatchRequest.java) - `/<indexName>/_bulk` request (batch)
 * [DataStreamItem](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-ahc/src/main/java/org/appenders/log4j2/elasticsearch/hc/DataStreamItem.java) - document (batch item)
 
+#### ElasticsearchDataStream Properties
+| Name        | Type      | Required | Default          | Description                                                                                                                                                                                                                 |
+|-------------|-----------|----------|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| filterPath  | Attribute | no       | `null`           | If not empty, `filter_path` query param will be added to Bulk API requests. See [Response Filtering](https://www.elastic.co/guide/en/elasticsearch/reference/current/common-options.html#common-options-response-filtering) |
+
 If `ILMPolicy` is used, `ILMPolicy.createBootstrapIndex` MUST be set to `false`. This behaviour will be changed in future releases - bootstrap index will be created separately, similar to other setup operations.
 
 With `JacksonJsonLayout`, use [LogEventDataStreamMixIn](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-core/src/main/java/org/appenders/log4j2/elasticsearch/json/jackson/LogEventDataStreamMixIn.java) or equivalent to serialize `LogEvent.timeMillis` as `@timestamp`.

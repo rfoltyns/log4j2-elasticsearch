@@ -21,6 +21,7 @@ package org.appenders.log4j2.elasticsearch.ahc;
  */
 
 import org.apache.logging.log4j.core.config.ConfigurationException;
+import org.appenders.log4j2.elasticsearch.ByteBufItemSourceTest;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -30,6 +31,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ElasticsearchDataStreamAPIPluginTest extends ElasticsearchBulkAPITest {
 
@@ -68,6 +70,27 @@ public class ElasticsearchDataStreamAPIPluginTest extends ElasticsearchBulkAPITe
 
     }
 
+    @Test
+    public void builderSetsConfiguredFilterPath() {
+
+        // given
+        final String expectedFilterPath = UUID.randomUUID().toString();
+        final ElasticsearchDataStreamAPIPlugin.Builder builder = ElasticsearchDataStreamAPIPlugin.newBuilder()
+                .withFilterPath(expectedFilterPath);
+
+        final ElasticsearchDataStreamAPIPlugin plugin = builder.build();
+        final BatchRequest.Builder batchBuilder = plugin.batchBuilder();
+        batchBuilder.add(IndexRequestTest.createIndexRequestBuilder().build());
+
+        // when
+        final BatchRequest batchRequest = batchBuilder
+                .withBuffer(ByteBufItemSourceTest.createTestItemSource())
+                .build();
+
+        // then
+        assertTrue(batchRequest.getURI().endsWith(expectedFilterPath));
+
+    }
 
     @Test
     public void builderThrowsWhenItemSerializerIsNull() {
