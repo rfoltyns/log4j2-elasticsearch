@@ -110,6 +110,87 @@ public class ElasticsearchDataStreamAPITest {
 
     }
 
+    @Test
+    public void createsBatchRequestBuilderWithFilterPath() throws Exception {
+
+        // given
+        final Serializer<Object> serializer = spy(ElasticsearchDataStreamAPIPlugin.newBuilder().createItemSerializer());
+        final Deserializer<BatchResult> deserializer = mock(Deserializer.class);
+
+        final String mappingType = UUID.randomUUID().toString();
+        final String filterPath = UUID.randomUUID().toString();
+        final ElasticsearchDataStreamAPI builder = new ElasticsearchDataStreamAPI(serializer, deserializer, filterPath);
+
+        final ItemSource<ByteBuf> batchBuffer = createDefaultTestBatchBuffer();
+
+        final String target = IndexNamePluginTest.TEST_INDEX_NAME;
+
+        final String payloadString = UUID.randomUUID().toString();
+        final ItemSource payload = createTestItemSource(payloadString);
+        final IndexRequest.Builder indexRequestBuilder = builder.itemBuilder(target, payload);
+        final IndexRequest indexRequest = indexRequestBuilder.build();
+
+        // when
+        final BatchRequest.Builder requestBuilder = builder.batchBuilder();
+        requestBuilder.withBuffer(batchBuffer);
+        requestBuilder.add(indexRequest);
+
+        final BatchRequest request = requestBuilder.build();
+        final ItemSource serialized = request.serialize();
+
+        // then
+        verify(serializer).writeAsBytes(eq(indexRequest));
+
+        final ByteBuf source = (ByteBuf) serialized.getSource();
+        final String batchString = source.toString(StandardCharsets.UTF_8);
+
+        assertThat(batchString, containsString("{\"create\":{}}"));
+        assertThat(batchString, not(containsString(target)));
+        assertThat(batchString, not(containsString(mappingType)));
+        assertThat(batchString, containsString(payloadString));
+
+        assertEquals(IndexNamePluginTest.TEST_INDEX_NAME + "/_bulk?filter_path=" + filterPath, request.getURI());
+
+    }
+
+    @Test
+    public void createsBatchRequestBuilderWithFilterPathAndDefaultSerializers() throws Exception {
+
+        // given
+        final String mappingType = UUID.randomUUID().toString();
+        final String filterPath = UUID.randomUUID().toString();
+        final ElasticsearchDataStreamAPI builder = new ElasticsearchDataStreamAPI(filterPath);
+
+        final ItemSource<ByteBuf> batchBuffer = createDefaultTestBatchBuffer();
+
+        final String target = IndexNamePluginTest.TEST_INDEX_NAME;
+
+        final String payloadString = UUID.randomUUID().toString();
+        final ItemSource payload = createTestItemSource(payloadString);
+        final IndexRequest.Builder indexRequestBuilder = builder.itemBuilder(target, payload);
+        final IndexRequest indexRequest = indexRequestBuilder.build();
+
+        // when
+        final BatchRequest.Builder requestBuilder = builder.batchBuilder();
+        requestBuilder.withBuffer(batchBuffer);
+        requestBuilder.add(indexRequest);
+
+        final BatchRequest request = requestBuilder.build();
+        final ItemSource serialized = request.serialize();
+
+        // then
+        final ByteBuf source = (ByteBuf) serialized.getSource();
+        final String batchString = source.toString(StandardCharsets.UTF_8);
+
+        assertThat(batchString, containsString("{\"create\":{}}"));
+        assertThat(batchString, not(containsString(target)));
+        assertThat(batchString, not(containsString(mappingType)));
+        assertThat(batchString, containsString(payloadString));
+
+        assertEquals(IndexNamePluginTest.TEST_INDEX_NAME + "/_bulk?filter_path=" + filterPath, request.getURI());
+
+    }
+
     ItemSource createTestItemSource(final String payloadString) {
 
         final CompositeByteBuf buffer = ByteBufItemSourceTest.createDefaultTestByteBuf();

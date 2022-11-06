@@ -32,10 +32,18 @@ public class ElasticsearchDataStreamAPI implements ClientAPIFactory<IndexRequest
 
     private final Serializer<Object> itemSerializer;
     private final Deserializer<BatchResult> resultDeserializer;
+    private final String filterPath;
 
     public ElasticsearchDataStreamAPI() {
         this.itemSerializer = createItemSerializer();
         this.resultDeserializer = createResultDeserializer();
+        this.filterPath = null;
+    }
+
+    public ElasticsearchDataStreamAPI(final String filterPath) {
+        this.itemSerializer = createItemSerializer();
+        this.resultDeserializer = createResultDeserializer();
+        this.filterPath = filterPath;
     }
 
     /**
@@ -48,6 +56,22 @@ public class ElasticsearchDataStreamAPI implements ClientAPIFactory<IndexRequest
     ) {
         this.itemSerializer = itemSerializer;
         this.resultDeserializer = resultDeserializer;
+        this.filterPath = null;
+    }
+
+    /**
+     * @param filterPath Elasticsearch {@code filter_path}
+     * @param itemSerializer index request metadata serializer
+     * @param resultDeserializer batch response deserializer
+     */
+    public ElasticsearchDataStreamAPI(
+            final Serializer<Object> itemSerializer,
+            final Deserializer<BatchResult> resultDeserializer,
+            final String filterPath
+    ) {
+        this.itemSerializer = itemSerializer;
+        this.resultDeserializer = resultDeserializer;
+        this.filterPath = filterPath;
     }
 
     @Override
@@ -59,6 +83,7 @@ public class ElasticsearchDataStreamAPI implements ClientAPIFactory<IndexRequest
     @Override
     public BatchRequest.Builder batchBuilder() {
         return new DataStreamBatchRequest.Builder()
+                .withFilterPath(filterPath)
                 .withItemSerializer(itemSerializer)
                 .withResultDeserializer(resultDeserializer);
     }

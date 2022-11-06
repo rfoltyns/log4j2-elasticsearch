@@ -305,7 +305,7 @@ public class LoadTest extends LoadTestBase {
                                             final String filterPath,
                                             final boolean dataStreamsEnabled) {
         if (dataStreamsEnabled) {
-            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI());
+            return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchDataStreamAPI(filterPath));
         } else {
             return new HCBatchOperations(pooledItemSourceFactory, new ElasticsearchBulkAPI(mappingType(version), filterPath));
         }

@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.logging.log4j.core.config.ConfigurationException;
 import org.apache.logging.log4j.core.config.Node;
 import org.apache.logging.log4j.core.config.plugins.Plugin;
+import org.apache.logging.log4j.core.config.plugins.PluginAttribute;
 import org.apache.logging.log4j.core.config.plugins.PluginBuilderFactory;
 import org.appenders.log4j2.elasticsearch.Deserializer;
 import org.appenders.log4j2.elasticsearch.JacksonDeserializer;
@@ -36,9 +37,10 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
 
     private ElasticsearchDataStreamAPIPlugin(
             final Serializer<Object> serializer,
-            final Deserializer<BatchResult> deserializer
+            final Deserializer<BatchResult> deserializer,
+            final String filterPath
     ) {
-        super(serializer, deserializer);
+        super(serializer, deserializer, filterPath);
     }
 
     @PluginBuilderFactory
@@ -47,6 +49,9 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
     }
 
     public static class Builder implements org.apache.logging.log4j.core.util.Builder<ElasticsearchDataStreamAPIPlugin> {
+
+        @PluginAttribute(value = "filterPath")
+        protected String filterPath;
 
         private Serializer<Object> itemSerializer = createItemSerializer();
         private Deserializer<BatchResult> resultDeserializer = createResultDeserializer();
@@ -62,7 +67,7 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
                 throw new ConfigurationException("resultDeserializer cannot be null");
             }
 
-            return new ElasticsearchDataStreamAPIPlugin(itemSerializer, resultDeserializer);
+            return new ElasticsearchDataStreamAPIPlugin(itemSerializer, resultDeserializer, filterPath);
         }
 
         /**
@@ -85,13 +90,18 @@ public class ElasticsearchDataStreamAPIPlugin extends ElasticsearchDataStreamAPI
                     .readerFor(BatchResult.class));
         }
 
-    public Builder withItemSerializer(final Serializer<Object> itemSerializer) {
+        public Builder withItemSerializer(final Serializer<Object> itemSerializer) {
             this.itemSerializer = itemSerializer;
             return this;
         }
 
         public Builder withResultDeserializer(final Deserializer<BatchResult> resultDeserializer) {
             this.resultDeserializer = resultDeserializer;
+            return this;
+        }
+
+        public Builder withFilterPath(String filterPath) {
+            this.filterPath = filterPath;
             return this;
         }
 
