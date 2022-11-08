@@ -172,7 +172,7 @@ public class CheckBootstrapIndexTest {
         // then
         assertEquals("HEAD", request.getHttpMethodName());
         assertEquals(TEST_ROLLOVER_ALIAS, request.getURI());
-        assertNull(request.serialize().getSource());
+        assertNull(request.serialize());
 
     }
 
