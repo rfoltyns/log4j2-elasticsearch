@@ -72,7 +72,7 @@ public class CheckBootstrapIndex extends SetupStep<Request, Response> {
 
     @Override
     public Request createRequest() {
-        return new GenericRequest("HEAD", rolloverAlias, () -> null);
+        return new GenericRequest("HEAD", rolloverAlias, null);
     }
 
 }
