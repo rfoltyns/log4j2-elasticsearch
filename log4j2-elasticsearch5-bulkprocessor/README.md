@@ -8,7 +8,7 @@ To use it, add this XML snippet to your `pom.xml` file:
 <dependency>
     <groupId>org.appenders.log4j</groupId>
     <artifactId>log4j2-elasticsearch5-bulkprocessor</artifactId>
-    <version>1.5.5</version>
+    <version>1.6.0</version>
 </dependency>
 ```
 

@@ -5,9 +5,9 @@
 [![codecov](https://codecov.io/gh/rfoltyns/log4j2-elasticsearch/branch/master/graph/badge.svg)](https://codecov.io/gh/rfoltyns/log4j2-elasticsearch)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
-This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
+Log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
-Latest released code (1.5.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.5).
+Latest released code (1.6.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.6).
 
 Project consists of:
 * `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
@@ -58,7 +58,7 @@ Feature Requests welcome!
     <dependency>
         <groupId>org.appenders.log4j</groupId>
         <artifactId>log4j2-elasticsearch-jest</artifactId>
-        <version>1.5.5</version>
+        <version>1.6.0</version>
     </dependency>
     ```
 
@@ -78,7 +78,9 @@ Feature Requests welcome!
     </Appenders>
     ```
 
-    or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
+    or use [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
+
+    or [AsyncHttpClient (Netty) based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-ahc)
 
     or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 
@@ -86,9 +88,9 @@ Feature Requests welcome!
 
     NOTE: `indexTemplate.json` file is not a part of main jars. You have to create it on your own (because only YOU know which mapping you'd like to use). You can find a few basic ones in tests jars and [log4j2-elasticsearch-examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples).
 
-3. Start logging directly to Elasticsearch!
+4. Start logging directly to Elasticsearch!
     ```java
-    Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
+    Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch");
     log.info("Hello, World!");
     ```
 
