@@ -7,7 +7,7 @@
 
 Log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
-Latest released code (1.6.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.6).
+Latest 1.6.x release: [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j)
 
 Project consists of:
 * `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
