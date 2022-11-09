@@ -47,9 +47,13 @@ Project consists of:
 
 ### Roadmap [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/rfoltyns/log4j2-elasticsearch)
 
+* Send [Metrics](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-core#metrics) to Elasticsearch
+* Prep for "batch-core" (or whatever the final name is) module based on common AHC and HC classes
 * More Elasticsearch API integrations
+* TRY to maintain compatibility with OpenSearch
 
 Feature Requests welcome!
+
 
 ## Usage
 
