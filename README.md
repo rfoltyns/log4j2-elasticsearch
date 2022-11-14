@@ -7,13 +7,13 @@
 
 This is a parent project for log4j2 appender plugins capable of pushing logs in batches to Elasticsearch clusters.
 
-Latest released code (1.5.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.5).
+Latest released code (1.6.x) is available [here](https://github.com/rfoltyns/log4j2-elasticsearch/tree/1.6).
 
 Project consists of:
 * `log4j2-elasticsearch-core` - skeleton provider for conrete implementations
 * `log4j2-elasticsearch-hc` - optimized Apache Async HTTP client compatible with Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters
 * (Since 1.6.0) `log4j2-elasticsearch-ahc` - [AsyncHttpClient](https://github.com/AsyncHttpClient/async-http-client) compatible with Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters
-* `log4j2-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x, 6.x and 7.x clusters
+* `log4j2-elasticsearch-jest` - [Jest HTTP Client](https://github.com/searchbox-io/Jest) compatible with Elasticsearch 2.x, 5.x, 6.x, 7.x and 8.x clusters
 * `log4j2-elasticsearch2-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/2.4/java-docs-bulk-processor.html) compatible with 2.x clusters
 * `log4j2-elasticsearch5-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/5.6/java-docs-bulk-processor.html) compatible with 5.x and 6.x clusters
 * `log4j2-elasticsearch6-bulkprocessor` - [TCP client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.2/java-docs-bulk-processor.html) compatible with 6.x clusters
@@ -54,7 +54,6 @@ Project consists of:
 
 Feature Requests welcome!
 
-
 ## Usage
 
 1. Add this snippet to your `pom.xml` file:
@@ -67,6 +66,7 @@ Feature Requests welcome!
     ```
 
     Ensure that Log4j2 and Jackson FasterXML jars are added as well - see `Dependencies` section below
+
 
 2. Use simple `log4j2.xml` configuration:
     ```xml
@@ -82,13 +82,16 @@ Feature Requests welcome!
     </Appenders>
     ```
 
-    or use new, [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
+    or use [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
+
+    or new [AsyncHttpClient based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-ahc)
 
     or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 
     or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
 
     NOTE: `indexTemplate.json` file is not a part of main jars. You have to create it on your own (because only YOU know which mapping you'd like to use). You can find a few basic ones in tests jars and [log4j2-elasticsearch-examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples).
+
 
 3. Start logging directly to Elasticsearch!
     ```java
@@ -98,9 +101,15 @@ Feature Requests welcome!
 
     Logs not arriving? Visit [examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples) and verify your config.
 
+## General recommendations
+
+* Start simple with `jest` module. Suitable for smaller loads - 1-5k logs per second
+* Use `hc` for 5-200kps (depends on log size and network bandwidth)
+* Use `ahc` and GZIP for 200-500kps+ (depends on log size and network bandwidth)
+
 ## Dependencies
 
-Be aware that Jackson FasterXML, Log4j2, Apache HC, Netty, Chronicle or JCTools jars may need to be provided for this library to work. By design, you can choose which jars you'd like to have on your classpath.
+Be aware that Jackson FasterXML, Log4j2, Apache HC, AsyncHttpClient, Netty, Chronicle or JCTools jars (depends on the module you choose) may need to be provided for this library to work. By design, you can choose which jars you'd like to have on your classpath.
 Please visit [mvnrepository](https://mvnrepository.com/artifact/org.appenders.log4j) for an overview of provided and compile dependencies
 
 In order to fix [#56](https://github.com/rfoltyns/log4j2-elasticsearch/issues/56), two new modules were extracted from `log4j2-elasticsearch-core`:
