@@ -43,7 +43,7 @@ public class AHCResultCallback<T extends Response> extends AsyncCompletionHandle
 
     @Override
     public void onThrowable(final Throwable t) {
-        getLogger().error("{}: Throwable caught: {}", AHCResultCallback.class.getSimpleName(), t.getMessage());
+        getLogger().error("{}: Throwable caught: {}", AHCResultCallback.class.getSimpleName(), t);
         failed(new RuntimeException(t));
     }
 

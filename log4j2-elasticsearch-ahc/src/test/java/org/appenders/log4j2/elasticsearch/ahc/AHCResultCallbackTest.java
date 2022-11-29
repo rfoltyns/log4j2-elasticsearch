@@ -147,7 +147,7 @@ public class AHCResultCallbackTest {
         callback.onThrowable(exception);
 
         // then
-        verify(logger).error(eq("{}: Throwable caught: {}"), eq(AHCResultCallback.class.getSimpleName()), same(exception.getMessage()));
+        verify(logger).error(eq("{}: Throwable caught: {}"), eq(AHCResultCallback.class.getSimpleName()), same(exception));
 
         InternalLogging.setLogger(null);
 
