@@ -84,7 +84,7 @@ Feature Requests welcome!
 
     or use [optimized Apache HC based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-hc)
 
-    or new [AsyncHttpClient based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-ahc)
+    or new [AsyncHttpClient (Netty) based HTTP client](https://github.com/rfoltyns/log4j2-elasticsearch/tree/master/log4j2-elasticsearch-ahc)
 
     or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 
@@ -103,9 +103,9 @@ Feature Requests welcome!
 
 ## General recommendations
 
-* Start simple with `jest` module. Suitable for smaller loads - 1-5k logs per second
-* Use `hc` for 5-200kps (depends on log size and network bandwidth)
-* Use `ahc` and GZIP for 200-500kps+ (depends on log size and network bandwidth)
+* Start simple with `jest` module. Suitable for smaller loads, up to few thousands of logs per second
+* Use `hc` up to 100-200kps (depends on log size and network bandwidth)
+* Use `ahc` and GZIP for all of the above and 200kps+ (depends on log size and network bandwidth)
 
 ## Dependencies
 
