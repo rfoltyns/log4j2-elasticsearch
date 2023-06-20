@@ -67,7 +67,7 @@
         <jupiter.version>5.8.2</jupiter.version>
         <mockito.version>4.4.0</mockito.version>
         <hamcrest.version>2.2</hamcrest.version>
-        <jmh.version>1.32</jmh.version>
+        <jmh.version>1.36</jmh.version>
     </properties>
 
     <modules>
