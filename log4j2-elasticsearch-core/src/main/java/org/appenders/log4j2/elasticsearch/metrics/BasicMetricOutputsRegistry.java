@@ -124,7 +124,7 @@ public class BasicMetricOutputsRegistry implements MetricOutputsRegistry, LifeCy
         }
 
         final String name = BasicMetricOutputsRegistry.class.getSimpleName();
-        getLogger().debug("{}: Stopping", name);
+        getLogger().debug("{}: Starting", name);
 
         for (MetricOutput output : outputs) {
             LifeCycle.of(output).start();
