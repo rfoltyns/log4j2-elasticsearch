@@ -696,7 +696,7 @@ public abstract class GenericItemSourcePoolTest {
         // then
         ArgumentCaptor<GenericItemSourcePool.MetricPrinter> runnableCaptor = ArgumentCaptor.forClass(GenericItemSourcePool.MetricPrinter.class);
         verify(spiedExecutor).scheduleAtFixedRate(runnableCaptor.capture(), anyLong(), eq(DEFAULT_TEST_MONITOR_TASK_INTERVAL), any(TimeUnit.class));
-        assertEquals(DEFAULT_TEST_ITEM_POOL_NAME + "-MetricPrinter", runnableCaptor.getValue().getName());
+        assertEquals(DEFAULT_TEST_ITEM_POOL_NAME + "-MetricPrinter-1", runnableCaptor.getValue().getName());
 
     }
 

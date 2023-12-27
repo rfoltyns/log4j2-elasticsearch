@@ -479,7 +479,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T>, Measured {
         private final Consumer<String> printer;
 
         MetricPrinter(final String threadName, final PoolMetrics metrics, final Supplier<String> additionalMetricsSupplier) {
-            super(threadName);
+            super(threadName + "-" + thIndex.incrementAndGet());
             this.additionalMetricsSupplier = additionalMetricsSupplier;
             this.printer = additionalMetrics -> {
 
@@ -487,7 +487,7 @@ public class GenericItemSourcePool<T> implements ItemSourcePool<T>, Measured {
 
                 final StringBuilder sb = new StringBuilder(capacity)
                         .append('{')
-                        .append(" poolName: ").append(getName())
+                        .append(" poolName: ").append(poolName)
                         .append(", initialPoolSize: ").append(metrics.initialSize.getValue())
                         .append(", totalPoolSize: ").append(metrics.totalSize.getValue())
                         .append(", availablePoolSize: ").append(metrics.availableSize.getValue());
