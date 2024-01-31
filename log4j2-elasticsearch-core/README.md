@@ -452,13 +452,13 @@ ECS output can be configured with `JacksonMixIn`:
 
 At the moment, it provides only a minimal set of fields.
 
-##### ECSLayout
+##### Elastic's EcsLayout
 
 Once [log4j2-ecs-layout](https://mvnrepository.com/artifact/co.elastic.logging/log4j2-ecs-layout) is provided, `ECSLayout` can be configured (`JestHttp` only):
 ```xml
 <Elasticsearch name="elasticsearchAsyncBatch">
     ...
-    <ECSLayout/>
+    <EcsLayout/>
     ...
 </Elasticsearch>
 ```
