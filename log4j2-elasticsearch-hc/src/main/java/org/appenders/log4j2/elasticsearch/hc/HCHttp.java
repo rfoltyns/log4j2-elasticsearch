@@ -169,8 +169,6 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
 
             metrics.serverTookMs(result.getTook());
 
-            backoffPolicy.deregister(request);
-
             if (!result.isSucceeded()) {
                 // TODO: filter only failed indexRequests when retry is ready.
                 // failing whole request for now
@@ -178,6 +176,8 @@ public class HCHttp extends BatchingClientObjectFactory<BatchRequest, IndexReque
             } else {
                 metrics.itemsDelivered(request.size());
             }
+
+            backoffPolicy.deregister(request);
             request.completed();
 
         }
