@@ -88,7 +88,7 @@ Feature Requests welcome!
 
     or [log4j2.properties](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/resources/log4j2.properties)
 
-    or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java)
+    or [configure programmatically](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/load/SmokeTest.java)
 
     NOTE: `indexTemplate.json` file is not a part of main jars. You have to create it on your own (because only YOU know which mapping you'd like to use). You can find a few basic ones in tests jars and [log4j2-elasticsearch-examples](https://github.com/rfoltyns/log4j2-elasticsearch-examples).
 

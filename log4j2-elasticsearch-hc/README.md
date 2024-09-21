@@ -177,7 +177,7 @@ With `JacksonJsonLayout`, use [LogEventDataStreamMixIn](https://github.com/rfolt
 ```
 
 ### Programmatic config
-See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/smoke/SmokeTest.java).
+See [programmatc config example](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch-hc/src/test/java/org/appenders/log4j2/elasticsearch/hc/load/SmokeTest.java).
 
 ### Delivery frequency
 See [delivery frequency](../log4j2-elasticsearch-core#delivery-frequency)

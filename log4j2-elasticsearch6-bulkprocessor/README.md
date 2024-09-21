@@ -28,7 +28,7 @@ Add this snippet to `log4j2.xml` configuration:
 </Appenders>
 ```
 
-or [configure programmatcally](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch6-bulkprocessor/src/test/java/org/appenders/log4j2/elasticsearch/bulkprocessor/smoke/SmokeTest.java).
+or [configure programmatcally](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch6-bulkprocessor/src/test/java/org/appenders/log4j2/elasticsearch/bulkprocessor/load/SmokeTest.java).
 
 It's highly encouraged to put this plugin behind `Async` appender or `AsyncLogger`. See [log4j2.xml](https://github.com/rfoltyns/log4j2-elasticsearch/blob/master/log4j2-elasticsearch6-bulkprocessor/src/test/resources/log4j2.xml) example.
 
