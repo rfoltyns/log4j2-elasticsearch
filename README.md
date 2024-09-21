@@ -95,7 +95,7 @@ Feature Requests welcome!
 
 3. Start logging directly to Elasticsearch!
     ```java
-    Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch")
+    Logger log = LogManager.getLogger("Logger that references elasticsearchAsyncBatch");
     log.info("Hello, World!");
     ```
 
